@@ -27,27 +27,31 @@ lower_limit = [-.967,-2.,-2.96,.19,-2.96,-2.09,-3.05]
 upper_limit = []
 
 gripper = p.loadSDF('gripper/wsg50_one_motor_gripper_new_free_base.sdf')
+
 f = open('trajectory0113-111606.csv', 'r')
 reader = csv.reader(f)
 delay = 0
-try:
-	for row in reader:
-		if int(row[0]) == -1:
-			delay = float(row[1])
+
+for row in reader:
+	if int(row[0]) == -1:
+		delay = float(row[1]) / 15
+	else:
+		time.sleep(delay)
+		if int(row[0]) != 3:
+			p.resetBasePositionAndOrientation(int(row[0]) - 4, (float(row[1]), float(row[2]), float(row[3])), \
+				(float(row[4]), float(row[5]), float(row[6]), float(row[7])))
 		else:
-			time.sleep(delay)
-			if int(row[0]) != 3:
-				p.resetBasePositionAndOrientation(int(row[0]) - 4, (float(row[1]), float(row[2]), float(row[3])), \
-					(float(row[4]), float(row[5]), float(row[6]), float(row[7])))
-			else:
-				eef_pos = (float(row[1]), float(row[2]), float(row[3]))
-				eef_orien = (float(row[4]), float(row[5]), float(row[6]), float(row[7]))
-				joint_pos = p.calculateInverseKinematics(robot, 6, eef_pos, eef_orien)
+			eef_pos = (float(row[1]), float(row[2]), float(row[3]))
+			eef_orien = (float(row[4]), float(row[5]), float(row[6]), float(row[7]))
+			joint_pos = p.calculateInverseKinematics(robot, 6, eef_pos, eef_orien)
+			p.resetBasePositionAndOrientation(gripper[0], eef_pos, eef_orien)
+			for i in range(len(joint_pos)):
+				p.resetJointState(robot, i, joint_pos[i])
 
-				for i in range(len(joint_pos)):
-					p.resetJointState(robot, i, joint_pos[i])
+f.close()
+p.resetSimulation()
+p.disconnect()
 
-except KeyboardInterrupt:
-	p.disconnect()
-	f.close()
+
+
 
