@@ -1,22 +1,18 @@
-import pybullet as p
+# import pybullet as p
 # import matplotlib.pyplot as plt
 # import matplotlib.animation as animation
 import time
 import csv
-import sys
-
-RUN = 0
-REPLAY = 1
 
 class BulletPhysicsVR(object):
 
-	def __init__(self, pybullet, filename):
+	def __init__(self, pybullet, kuka_id, task=0):
 		self.tasks = self._init_task()
+		self.task = task
 		self.p = pybullet
-		self.p.connect(self.p.SHARED_MEMORY)
 
 		self.CONTROLLER_ID = 0
-		self.KUKA_GRIPPER_ID = 3
+		self.KUKA_GRIPPER_ID = kuka_id
 		self.POSITION = 1
 		self.BUTTONS = 6
 
@@ -27,27 +23,36 @@ class BulletPhysicsVR(object):
 		self.FOCAL_LENGTH = 4.
 		self.UP_AX_IDX = 2
 
-		self.OBJ_CNT = 4
+		self.OBJ_CNT = self.KUKA_GRIPPER_ID + 1
 		self.tracking_obj = None
 
-		self.file = filename
-
-	def load_task(self, flag, task=0):
-		if flag:
-			self.p.setInternalSimFlags(0)
+	def _load_task(self, flag):
+		self.p.connect(self.p.SHARED_MEMORY)
+		try:
+			if flag:
+				self.p.setInternalSimFlags(0)
+				self.p.setRealTimeSimulation(0)
+			else:
+				self.p.setInternalSimFlags(1)
+				self.p.setRealTimeSimulation(1)
+		except self.p.error:
+			return 0
 		self._init_scene()
-		seq = self.tasks[task]
+		seq = self.tasks[self.task]
 		curr_idx = self.p.getNumBodies() + self.OBJ_CNT
 		ob_s, ob_e = seq[0]
 		self.tracking_obj = range(curr_idx + ob_s, curr_idx + ob_e + 1)
 		for t in seq[1:]:
 			self.p.loadURDF(*t)
+		return 1
 
-	def run_task(self):
-		
-		self.p.setRealTimeSimulation(1)
+	def record(self, file):
+		load_status = 0
+		while load_status == 0:
+			self.p.connect(self.p.SHARED_MEMORY)
+			load_status = self._load_task(0)
 		try:
-			f = open(self.file, 'w', newline='')
+			f = open(file, 'w', newline='')
 			writer = csv.writer(f)
 			prev_time = time.time()
 			while True:
@@ -66,15 +71,16 @@ class BulletPhysicsVR(object):
 					delay = [-1, time_elapse]
 					writer.writerow(gripper_info)
 					writer.writerow(delay)
-		except KeyboardInterrupt:	
-			self.p.disconnect()
-			f.close()
-			sys.exit()
+		except KeyboardInterrupt:
+			self._exit_routine(f)
 
-	def replay(self):
-		self.p.setRealTimeSimulation(0)
+	def replay(self, file):
+		load_status = 0
+		while load_status == 0:
+			self.p.connect(self.p.SHARED_MEMORY)
+			load_status = self._load_task(1)
 		r, g = self._setup_robot()
-		f = open(self.file, 'r')
+		f = open(file, 'r')
 		reader = csv.reader(f)
 		delay = 0
 		for row in reader:
@@ -92,18 +98,16 @@ class BulletPhysicsVR(object):
 					self.p.resetBasePositionAndOrientation(g[0], eef_pos, eef_orien)
 					for i in range(len(joint_pos)):
 						self.p.resetJointState(r, i, joint_pos[i])
-
-		f.close()
-		self.p.resetSimulation()
-		self.p.disconnect()
+		self._exit_routine(f)
 
 	def _init_scene(self):
+
 		self.p.resetSimulation()
 		self.p.setGravity(0,0,-9.81)
 		self.p.loadURDF("table/table.urdf", 1.000000,-0.200000,0.000000,0.000000,0.000000,0.707107,0.707107)
-		self.p.loadURDF("jenga/jenga.urdf", 1.300000,0.200000,0.699990,-0.000005,0.707107,0.000006,0.707107)
-		self.p.loadURDF("jenga/jenga.urdf", 1.200000,0.200000,0.699990,-0.000005,0.707107,0.000006,0.707107)
-		self.p.loadURDF("jenga/jenga.urdf", 1.100000,0.200000,0.699990,-0.000005,0.707107,0.000006,0.707107)
+		# self.p.loadURDF("jenga/jenga.urdf", 1.300000,0.200000,0.699990,-0.000005,0.707107,0.000006,0.707107)
+		# self.p.loadURDF("jenga/jenga.urdf", 1.200000,0.200000,0.699990,-0.000005,0.707107,0.000006,0.707107)
+		# self.p.loadURDF("jenga/jenga.urdf", 1.100000,0.200000,0.699990,-0.000005,0.707107,0.000006,0.707107)
 
 	def _setup_robot(self):
 		self.p.loadURDF("plane.urdf",0,0,0,0,0,0,1)
@@ -123,10 +127,14 @@ class BulletPhysicsVR(object):
 			("rl/torus_4.urdf",0.8,0.1,0.89999,0,0,0,1)]
 		return repo
 
-b = BulletPhysicsVR(p, 'see.csv')
-b.load_task(REPLAY)
-# b.run_task()
-b.replay()
+	def _exit_routine(self, fp):
+		fp.close()
+		self.p.resetSimulation()
+		self.p.disconnect()
+
+# b = BulletPhysicsVR(p, 2)
+# b.record('see.csv')
+# b.replay('see.csv')
 
 
 # def set_camera_position():
