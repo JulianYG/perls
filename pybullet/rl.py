@@ -27,12 +27,13 @@ class BulletPhysicsVR(object):
 		self.tracking_obj = None
 
 	def _load_task(self, flag):
-		self.p.connect(self.p.SHARED_MEMORY)
 		try:
 			if flag:
+				self.p.connect(self.p.GUI)
 				self.p.setInternalSimFlags(0)
 				self.p.setRealTimeSimulation(0)
 			else:
+				self.p.connect(self.p.SHARED_MEMORY)
 				self.p.setInternalSimFlags(1)
 				self.p.setRealTimeSimulation(1)
 		except self.p.error:
@@ -77,8 +78,9 @@ class BulletPhysicsVR(object):
 	def replay(self, file):
 		load_status = 0
 		while load_status == 0:
-			self.p.connect(self.p.SHARED_MEMORY)
+			# self.p.connect(self.p.GUI)
 			load_status = self._load_task(1)
+		# self.p.connect(self.p.GUI)
 		r, g = self._setup_robot()
 		f = open(file, 'r')
 		reader = csv.reader(f)
