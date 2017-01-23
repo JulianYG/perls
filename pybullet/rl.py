@@ -1,8 +1,9 @@
 # import pybullet as p
-# import matplotlib.pyplot as plt
-# import matplotlib.animation as animation
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 import time
 import csv
+import numpy as np
 
 class BulletPhysicsVR(object):
 
@@ -16,15 +17,17 @@ class BulletPhysicsVR(object):
 		self.POSITION = 1
 		self.BUTTONS = 6
 
-		self.FOCAL_POINT = [0., 0., 0.]
-		self.YAW = 40.
-		self.PITCH = 0.
+		self.FOCAL_POINT = (0., 0., 0.)
+		self.YAW = 35.
+		self.PITCH = 50.
 		self.ROLL = 0.
-		self.FOCAL_LENGTH = 4.
+		self.FOCAL_LENGTH = 5.
 		self.UP_AX_IDX = 2
 
 		self.OBJ_CNT = self.KUKA_GRIPPER_ID + 1
 		self.tracking_obj = None
+		self.viewMatrix = None
+		self.projectionMatrix = None
 
 	def _load_task(self, flag):
 		try:
@@ -56,11 +59,21 @@ class BulletPhysicsVR(object):
 			f = open(file, 'w', newline='')
 			writer = csv.writer(f)
 			prev_time = time.time()
+
 			while True:
 				events = self.p.getVREvents()
-				# for e in events:
-				# 	pass
+
+				for e in (events):
+					# If the user think one task is completed
+					if (e[self.BUTTONS][1] & self.p.VR_BUTTON_WAS_TRIGGERED):
+							# self.p.resetSimulation()
+							# self.p.removeAllUserDebugItems()
+						self.p.addUserDebugText('good job!', (1.7, 0, 1), (255, 0, 0), 12, 10)
+						# Can add line for mark here		
+
+				# Saving events routine
 				if events and events[0][5] > 0:	# Only take record when moving events happen
+				# Removing this line for video generation may sync the process?
 					curr_time = time.time()
 					time_elapse = curr_time - prev_time
 					prev_time = curr_time
@@ -72,15 +85,18 @@ class BulletPhysicsVR(object):
 					delay = [-1, time_elapse]
 					writer.writerow(gripper_info)
 					writer.writerow(delay)
+
 		except KeyboardInterrupt:
 			self._exit_routine(f)
 
-	def replay(self, file):
+	def replay(self, file, saveVideo=0):
 		load_status = 0
 		while load_status == 0:
-			# self.p.connect(self.p.GUI)
 			load_status = self._load_task(1)
-		# self.p.connect(self.p.GUI)
+
+		self.p.setCameraViewPoint(self.FOCAL_POINT[0], self.FOCAL_POINT[1], self.FOCAL_POINT[2], 
+			self.PITCH, self.YAW, self.FOCAL_LENGTH)
+
 		r, g = self._setup_robot()
 		f = open(file, 'r')
 		reader = csv.reader(f)
@@ -100,7 +116,32 @@ class BulletPhysicsVR(object):
 					self.p.resetBasePositionAndOrientation(g[0], eef_pos, eef_orien)
 					for i in range(len(joint_pos)):
 						self.p.resetJointState(r, i, joint_pos[i])
+				if saveVideo:
+					self.video_capture()
 		self._exit_routine(f)
+
+
+	def video_capture(self):
+
+		# viewMatrix = self.p.computeViewMatrixFromYawPitchRoll((targetPosX, targetPosY, targetPosZ), dist, yaw, pitch, roll, 2)
+
+		# projectionMatrix = self.p.computeProjectionMatrixFOV(60, 600 / 540., .01, 1000.)
+		img_arr = self.p.getCameraImage(600, 540, self.viewMatrix, self.projectionMatrix)
+		np_img = np.reshape(img_arr[2], (img_arr[1], img_arr[0], 4)) / 255.
+
+		plt.imshow(np_img)
+		plt.pause(0.001)
+
+	def set_camera_view(self, targetPosX, targetPosY, targetPosZ, roll, pitch, yaw, dist):
+		
+		self.FOCAL_POINT = (targetPosX, targetPosY,  targetPosZ)
+		self.PITCH = pitch
+		self.ROLL = roll
+		self.YAW = yaw
+		self.FOCAL_LENGTH = dist
+		self.viewMatrix = self.p.computeViewMatrixFromYawPitchRoll((targetPosX, targetPosY, targetPosZ), dist, yaw, pitch, roll, 2)
+		self.projectionMatrix = self.p.computeProjectionMatrixFOV(60, 600 / 540., .01, 1000.)
+
 
 	def _init_scene(self):
 
@@ -119,14 +160,14 @@ class BulletPhysicsVR(object):
 
 	def _init_task(self):
 		repo = {}
-		repo[0] = [(3,7), ("rl/pole.urdf",0.80000,0.100000,0.699990,0.00000,0.0,0.00000,1), 
-			("rl/pole.urdf",0.80000,-0.200000,0.699990,0.000000,0.0,0.00000,1),
-			("rl/pole.urdf",0.80000,-0.500000,0.699990,0.00000,0.0,0.00000,1),
-			("rl/torus_0.urdf",0.8,0.1,0.69999,1,0,0,1),
-			("rl/torus_1.urdf",0.8,0.1,0.74999,1,0,0,1),
-			("rl/torus_2.urdf",0.8,0.1,0.79999,1,0,0,1),
-			("rl/torus_3.urdf",0.8,0.1,0.84999,1,0,0,1),
-			("rl/torus_4.urdf",0.8,0.1,0.89999,0,0,0,1)]
+		repo[0] = [(3,7), ("cvgl/pole.urdf",0.80000,0.100000,0.699990,0.00000,0.0,0.00000,1), 
+			("cvgl/pole.urdf",0.80000,-0.200000,0.699990,0.000000,0.0,0.00000,1),
+			("cvgl/pole.urdf",0.80000,-0.500000,0.699990,0.00000,0.0,0.00000,1),
+			("cvgl/torus_0.urdf",0.8,0.1,0.69999,1,0,0,1),
+			("cvgl/torus_1.urdf",0.8,0.1,0.74999,1,0,0,1),
+			("cvgl/torus_2.urdf",0.8,0.1,0.79999,1,0,0,1),
+			("cvgl/torus_3.urdf",0.8,0.1,0.84999,1,0,0,1),
+			("cvgl/torus_4.urdf",0.8,0.1,0.89999,0,0,0,1)]
 		return repo
 
 	def _exit_routine(self, fp):
