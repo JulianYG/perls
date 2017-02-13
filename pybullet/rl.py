@@ -13,7 +13,7 @@ class BulletPhysicsVR(object):
 		self.task = task
 		self.p = pybullet
 
-		self.CONTROLLER_ID = 0
+		# self.CONTROLLER_ID = 0
 		self.GRIPPER_ID = gripper_id
 		self.VR_HAND_ID = None
 		self.POSITION = 1
@@ -71,12 +71,21 @@ class BulletPhysicsVR(object):
 			writer = csv.writer(f)
 			prev_time = time.time()
 
+			controlMap = {3: 2, 4: 4}
+
 			while True:
 				events = self.p.getVREvents()
 
 				for e in (events):
 					# If the user think one task is completed, 
 					# he/she will push the menu button
+
+					controller_id = e[0]
+					gripper_pos_x, gripper_pos_y, gripper_pos_z = self.p.getBasePositionAndOrientation(controlMap[controller_id])[0]
+					gripper_orn_x, gripper_orn_y, gripper_orn_z, gripper_orn_w = e[2]
+					self.p.resetBasePositionAndOrientation(controlMap[controller_id], (gripper_pos_x, gripper_pos_y, gripper_pos_z), 
+						(gripper_orn_x, gripper_orn_y, gripper_orn_z, gripper_orn_w))
+
 					if (e[self.BUTTONS][1] & self.p.VR_BUTTON_WAS_TRIGGERED):
 							# self.p.resetSimulation()
 							# self.p.removeAllUserDebugItems()
@@ -122,7 +131,7 @@ class BulletPhysicsVR(object):
 		delay = 0
 		for row in reader:
 			if int(row[0]) == -1:
-				delay = float(row[1]) / 12
+				delay = float(row[1]) / 15
 			else:
 				time.sleep(delay)
 				# Keep the simulation synced
@@ -181,9 +190,9 @@ class BulletPhysicsVR(object):
 
 	def _setup_robot(self):
 		self.p.loadURDF("plane.urdf",0,0,0,0,0,0,1)
-		pos = [0.28, -0.95]		# Original y-coord for the robot arms; need to match with VS src code
+		pos = [0.3, -0.5]		# Original y-coord for the robot arms; need to match with VS src code
 		for i in range(len(self.GRIPPER_ID)):
-			self.ROBOT_MAP[self.GRIPPER_ID[i]] = self.p.loadURDF('kuka_iiwa/model_vr_limits.urdf', 1.4, pos[i], 0.6,0,0,0,1)
+			self.ROBOT_MAP[self.GRIPPER_ID[i]] = self.p.loadURDF('kuka_iiwa/model_vr_limits.urdf', -1.0, pos[i], 1.1, 1, 0, 1, 0)
 			self.p.loadSDF('gripper/wsg50_one_motor_gripper_new_free_base.sdf')
 
 	def _init_task(self):
@@ -202,6 +211,10 @@ class BulletPhysicsVR(object):
 				("sphere_small.urdf",0.76000,-0.1400000,0.729990,0.000000,0.0,0.00000,1),
 				("sphere_small.urdf",0.83000,-0.520000,0.699990,0.000000,0.0,0.00000,1),
 				("tray/tray_textured2.urdf", 1.2, -0.2, 0.6, 0, 0, 0, 1)]
+
+		# repo[2] = [(, ), ("", )
+		# 		   (, ), ("", )
+		# 		   (, ), ("", )]
 
 		return repo
 
