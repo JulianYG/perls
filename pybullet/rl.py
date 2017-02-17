@@ -32,7 +32,6 @@ class BulletPhysicsVR(object):
 		self.THRESHOLD = 1.15
 		self.MAX_FORCE = 500
 		self.ROBOT_MAP = {}
-		self.tracking_obj = None
 		self.viewMatrix = None
 		self.projectionMatrix = None
 		self.hand = hand
