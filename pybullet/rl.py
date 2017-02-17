@@ -47,6 +47,7 @@ class BulletPhysicsVR(object):
 		Load task for both recording and replay
 		"""
 		try:
+			# Use GUI and turn off simulation for replay
 			if flag:
 				self.p.connect(self.p.GUI)
 				self.p.setRealTimeSimulation(0)
@@ -54,7 +55,7 @@ class BulletPhysicsVR(object):
 				self.p.connect(self.p.SHARED_MEMORY)
 				self.p.setRealTimeSimulation(1)
 			self.p.setInternalSimFlags(0)
-			# Use GUI and turn off simulation for replay
+			
 			# In order to generate deterministic paths
 			# convenient for video recording
 		
@@ -125,7 +126,7 @@ class BulletPhysicsVR(object):
 						if e[self.BUTTONS][32] & self.p.VR_BUTTON_IS_DOWN:
 							
 							self.p.setJointMotorControl2(kuka, 6, self.p.POSITION_CONTROL, targetPosition=z_orig, force=5)		
-							self._ik_helper(kuka, target_pos, (0, 1, 0, 0))
+							self._ik_helper(kuka, targetPos, (0, 1, 0, 0))
 							
 						# p.resetBasePositionAndOrientation(kuka_gripper, p.getBasePositionAndOrientation(kuka_gripper)[0], eef_orien)
 
@@ -157,17 +158,20 @@ class BulletPhysicsVR(object):
 					prev_time = curr_time
 					for o_id in range(self.p.getNumBodies()):
 						# Track objects
-						# if o_id not in self.grippers:
-						row = [(o_id)] + list(self.p.getBasePositionAndOrientation(o_id)[0]) + list(self.p.getBasePositionAndOrientation(o_id)[1])
+						if o_id in self.kuka_arms:
+							jointStates = [self.p.getJointState(o_id, i)[0] for i in range(self.p.getNumJoints(o_id))]
+							row = [(o_id)] + jointStates
+						else:
+							row = [(o_id)] + list(self.p.getBasePositionAndOrientation(o_id)[0]) + list(self.p.getBasePositionAndOrientation(o_id)[1])
 						writer.writerow(row)
 					# Write extra vr_hand now
 					# if self.hand:
 					# 	hand = [self.VR_HAND_ID] + list(self.p.getBasePositionAndOrientation(self.VR_HAND_ID)[0]) + list(self.p.getBasePositionAndOrientation(self.VR_HAND_ID)[1])
 					# 	writer.writerow(hand)
-						# else:
-						# 	gripper_info = ['g'] + [o_id] + list(self.p.getBasePositionAndOrientation(o_id)[0]) + \
-						# 		list(self.p.getBasePositionAndOrientation(o_id)[1])
-						# 	writer.writerow(gripper_info)
+					# 	else:
+					# 		gripper_info = ['g'] + [o_id] + list(self.p.getBasePositionAndOrientation(o_id)[0]) + \
+					# 			list(self.p.getBasePositionAndOrientation(o_id)[1])
+					# 		writer.writerow(gripper_info)
 					
 					delay = [-1, time_elapse]
 					writer.writerow(delay)
@@ -187,27 +191,34 @@ class BulletPhysicsVR(object):
 		reader = csv.reader(f)
 		delay = 0
 		for row in reader:
-			if int(row[0]) == -1:
+			obj_idx = int(row[0])
+			if obj_idx == -1:
 				delay = float(row[1]) / 15
 			else:
 				time.sleep(delay)
 				# Keep the simulation synced
 
-				if int(row[0]) not in self.kuka_grippers:
-					if int(row[0]) == -2:
+				if obj_idx not in self.kuka_grippers:
+					
+					if obj_idx in self.kuka_arms:
+						jointStates = [float(x) for x in row[1:]]
+						for i in range(self.p.getNumJoints(obj_idx)):
+							self.p.resetJointState(obj_idx, i, jointStates[i])
+
+					elif obj_idx == -2:
 						kuka_gripper = int(row[1])
 						# self.p.setRealTimeSimulation(1)
 						for i in range(self.p.getNumJoints(kuka_gripper)):
 							self.p.setJointMotorControl2(kuka_gripper, i, self.p.VELOCITY_CONTROL, targetVelocity=5, force=50)
 						# self.p.setRealTimeSimulation(0)
-					elif int(row[0]) == -3:
+					elif obj_idx == -3:
 						kuka_gripper = int(row[1])
 						# self.p.setRealTimeSimulation(1)
 						for i in range(self.p.getNumJoints(kuka_gripper)):
 							self.p.setJointMotorControl2(kuka_gripper, i, self.p.VELOCITY_CONTROL, targetVelocity=-5, force=50)
 						# self.p.setRealTimeSimulation(0)
 					else:
-						self.p.resetBasePositionAndOrientation(int(row[0]), (float(row[1]), float(row[2]), 
+						self.p.resetBasePositionAndOrientation(obj_idx, (float(row[1]), float(row[2]), 
 							float(row[3])), (float(row[4]), float(row[5]), float(row[6]), float(row[7])))
 
 				else:
@@ -215,14 +226,8 @@ class BulletPhysicsVR(object):
 					eef_pos = (float(row[1]), float(row[2]), float(row[3]))
 					eef_orien = (float(row[4]), float(row[5]), float(row[6]), float(row[7]))
 					
-					# self.p.resetBasePositionAndOrientation(self.ROBOT_MAP[int(row[0])] + 1, 
-					# 	eef_pos, eef_orien)
-
-					self._ik_helper(self.ROBOT_MAP[int(row[0])], eef_pos, eef_orien)
-					# joint_pos = self.p.calculateInverseKinematics(s, 6, 
-					# 	eef_pos, eef_orien)
-					# for i in range(len(joint_pos)):
-					# 	self.p.resetJointState(self.ROBOT_MAP[int(row[0])], i, joint_pos[i])
+					# Set the gripper position
+					self.p.resetBasePositionAndOrientation(obj_idx, eef_pos, eef_orien)
 			
 				if saveVideo:
 					self.video_capture()
@@ -260,12 +265,12 @@ class BulletPhysicsVR(object):
 
 	def _ik_helper(self, arm_id, eef_pos, eef_orien):
 
-		joint_pos = self.p.calculateInverseKinematics(arm_id, 6, eef_pos, eef_orien)
+		joint_pos = self.p.calculateInverseKinematics(arm_id, 6, eef_pos, eef_orien, 
+			lowerLimits=self.LOWER_LIMITS, upperLimits=self.UPPER_LIMITS, 
+			jointRanges=self.JOINT_RANGE, restPoses=self.REST_POSE)
 		for i in range(len(joint_pos)):
 			self.p.setJointMotorControl2(arm_id, i, self.p.POSITION_CONTROL, 
-				targetPosition=joint_pos[i], force=self.MAX_FORCE, 
-				lowerLimits=self.LOWER_LIMITS, upperLimits=self.UPPER_LIMITS, 
-				jointRanges=self.JOINT_RANGE, restPoses=self.REST_POSE)
+				targetPosition=joint_pos[i], force=self.MAX_FORCE)
 
 	def _init_scene(self):
 		"""

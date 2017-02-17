@@ -43,7 +43,7 @@ for jointIndex in range (p.getNumJoints(kuka_gripper)):
 	p.setJointMotorControl2(kuka_gripper,jointIndex,p.POSITION_CONTROL,jointPositions[jointIndex],0)
 
 
-# kuka_cid = p.createConstraint(kuka,   6,  kuka_gripper, 0, p.JOINT_FIXED, [0,0,0], [0,0,0.05], [0,0,0])
+kuka_cid = p.createConstraint(kuka,   6,  kuka_gripper, 0, p.JOINT_FIXED, [0,0,0], [0,0,0.05], [0,0,0], childFrameOrientation=[0, 0, 0, 1])
 
 objects = [p.loadURDF("jenga/jenga.urdf", 1.300000,-0.700000,0.750000,0.000000,0.707107,0.000000,0.707107)]
 objects = [p.loadURDF("jenga/jenga.urdf", 1.200000,-0.700000,0.750000,0.000000,0.707107,0.000000,0.707107)]
@@ -142,17 +142,21 @@ while True:
 			_, _, z = p.getEulerFromQuaternion(e[ORIENTATION])
 			# # print(x, y, z)
 			# eef_orien = p.getBasePositionAndOrientation(kuka_gripper)[1]
-			eef_orien = p.getQuaternionFromEuler([x, y, z])
+
+			xx = p.getLinkState(kuka, 6)
+
+			# eef_orien = p.getQuaternionFromEuler
+			# eef_orien = p.getQuaternionFromEuler([x, y, z])
 			# print(eef_orien)
 
-			print(p.VR_BUTTON_IS_DOWN)
-			if e[BUTTONS][32] & p.VR_BUTTON_WAS_RELEASED:
+			print(xx)
+			# if e[BUTTONS][32] & p.VR_BUTTON_WAS_RELEASED:
 			
-				_, _, z = p.getEulerFromQuaternion(e[ORIENTATION])
-				p.setJointMotorControl2(kuka, 6, p.POSITION_CONTROL, targetPosition=z, force=5)
+			# 	_, _, z = p.getEulerFromQuaternion(e[ORIENTATION])
+			# 	p.setJointMotorControl2(kuka, 6, p.POSITION_CONTROL, targetPosition=z, force=5)
 			if e[BUTTONS][32] & p.VR_BUTTON_IS_DOWN:
 					
-				p.setJointMotorControl2(kuka, 6, p.POSITION_CONTROL, targetPosition=z_orig, force=5)
+				# p.setJointMotorControl2(kuka, 6, p.POSITION_CONTROL, targetPosition=z_orig, force=5)
 				joint_pos = p.calculateInverseKinematics(kuka, 6, targetPos, (0, 1, 0, 0), lowerLimits=LOWER_LIMITS, 
 					upperLimits=UPPER_LIMITS, jointRanges=JOINT_RANGE, restPoses=REST_POSE)
 				for i in range(len(joint_pos)):
