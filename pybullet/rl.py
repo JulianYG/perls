@@ -123,14 +123,10 @@ class BulletPhysicsVR(object):
 							self.p.setJointMotorControl2(kuka, 6, self.p.POSITION_CONTROL, targetPosition=z, force=5)
 						
 						if e[self.BUTTONS][32] & self.p.VR_BUTTON_IS_DOWN:
-								
-							self.p.setJointMotorControl2(kuka, 6, self.p.POSITION_CONTROL, targetPosition=z_orig, force=5)
-							joint_pos = self.p.calculateInverseKinematics(kuka, 6, targetPos, (0, 1, 0, 0), 
-								lowerLimits=self.LOWER_LIMITS, upperLimits=self.UPPER_LIMITS, jointRanges=self.JOINT_RANGE, restPoses=self.REST_POSE)
-							for i in range(len(joint_pos)):
-								self.p.setJointMotorControl2(kuka, i, self.p.POSITION_CONTROL, targetPosition=joint_pos[i], force=500)
-
-			
+							
+							self.p.setJointMotorControl2(kuka, 6, self.p.POSITION_CONTROL, targetPosition=z_orig, force=5)		
+							self._ik_helper(kuka, target_pos, (0, 1, 0, 0))
+							
 						# p.resetBasePositionAndOrientation(kuka_gripper, p.getBasePositionAndOrientation(kuka_gripper)[0], eef_orien)
 
 						# p.setJointMotorControl2(kuka, 6, p.POSITION_CONTROL, targetPosition=z, force=5)
@@ -218,12 +214,15 @@ class BulletPhysicsVR(object):
 					# Assert load order for the plane, robot, and gripper are the same
 					eef_pos = (float(row[1]), float(row[2]), float(row[3]))
 					eef_orien = (float(row[4]), float(row[5]), float(row[6]), float(row[7]))
-					joint_pos = self.p.calculateInverseKinematics(self.ROBOT_MAP[int(row[0])], 6, 
-						eef_pos, eef_orien)
-					self.p.resetBasePositionAndOrientation(self.ROBOT_MAP[int(row[0])] + 1, 
-						eef_pos, eef_orien)
-					for i in range(len(joint_pos)):
-						self.p.resetJointState(self.ROBOT_MAP[int(row[0])], i, joint_pos[i])
+					
+					# self.p.resetBasePositionAndOrientation(self.ROBOT_MAP[int(row[0])] + 1, 
+					# 	eef_pos, eef_orien)
+
+					self._ik_helper(self.ROBOT_MAP[int(row[0])], eef_pos, eef_orien)
+					# joint_pos = self.p.calculateInverseKinematics(s, 6, 
+					# 	eef_pos, eef_orien)
+					# for i in range(len(joint_pos)):
+					# 	self.p.resetJointState(self.ROBOT_MAP[int(row[0])], i, joint_pos[i])
 			
 				if saveVideo:
 					self.video_capture()
@@ -263,8 +262,10 @@ class BulletPhysicsVR(object):
 
 		joint_pos = self.p.calculateInverseKinematics(arm_id, 6, eef_pos, eef_orien)
 		for i in range(len(joint_pos)):
-			self.p.setJointMotorControl2(arm_id, i, self.p.POSITION_CONTROL, targetPosition=joint_pos[i], force=self.MAX_FORCE)
-
+			self.p.setJointMotorControl2(arm_id, i, self.p.POSITION_CONTROL, 
+				targetPosition=joint_pos[i], force=self.MAX_FORCE, 
+				lowerLimits=self.LOWER_LIMITS, upperLimits=self.UPPER_LIMITS, 
+				jointRanges=self.JOINT_RANGE, restPoses=self.REST_POSE)
 
 	def _init_scene(self):
 		"""
