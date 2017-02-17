@@ -49,13 +49,11 @@ class BulletPhysicsVR(object):
 		try:
 			if flag:
 				self.p.connect(self.p.GUI)
-			else:
-				self.p.connect(self.p.SHARED_MEMORY)
-			self.p.setInternalSimFlags(0)
-			if flag:
 				self.p.setRealTimeSimulation(0)
 			else:
+				self.p.connect(self.p.SHARED_MEMORY)
 				self.p.setRealTimeSimulation(1)
+			self.p.setInternalSimFlags(0)
 			# Use GUI and turn off simulation for replay
 			# In order to generate deterministic paths
 			# convenient for video recording
