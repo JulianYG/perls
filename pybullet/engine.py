@@ -5,9 +5,9 @@ from rl import BulletPhysicsVR
 
 
 # generate_trajectory((6,6,6), (0,0,0), 'see.csv', 'newsee.csv')
-simulator = BulletPhysicsVR(p, [2, 4], task=1, hand=False)
+simulator = BulletPhysicsVR(p, task=1, hand=False)
 
-simulator.set_camera_view(.8, -.2, 1, 0, -90, 120, 1)
+simulator.set_camera_view(-.4, -.2, 1, 0, -90, 120, 1)
 
-simulator.replay('two_arms.csv', saveVideo=0)
-# simulator.record('two_arms_hanoi.csv')
+simulator.replay('two_arms_try.csv', saveVideo=0)
+# simulator.record('two_arms_try.csv')
