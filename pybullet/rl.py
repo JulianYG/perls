@@ -94,12 +94,14 @@ class BulletPhysicsVR(object):
 					# Add sliders for gripper joints
 					if e[self.BUTTONS][33] & self.p.VR_BUTTON_WAS_TRIGGERED:
 						for i in range(self.p.getNumJoints(kuka_gripper)):
-							self.p.setJointMotorControl2(kuka_gripper, i, self.p.VELOCITY_CONTROL, targetVelocity=5, force=50)
+							self.p.setJointMotorControl2(kuka_gripper, i, 
+							self.p.VELOCITY_CONTROL, targetVelocity=5, force=50)
 						row = [-2, kuka_gripper]
 						writer.writerow(row)
 					if e[self.BUTTONS][33] & self.p.VR_BUTTON_WAS_RELEASED:	
 						for i in range(self.p.getNumJoints(kuka_gripper)):
-							self.p.setJointMotorControl2(kuka_gripper, i, self.p.VELOCITY_CONTROL, targetVelocity=-5, force=50)
+							self.p.setJointMotorControl2(kuka_gripper, i, 
+							self.p.VELOCITY_CONTROL, targetVelocity=-5, force=50)
 						row = [-3, kuka_gripper]
 						writer.writerow(row)
 					sq_len = self._euc_dist(self.p.getBasePositionAndOrientation(kuka_gripper)[0], e[1])
@@ -121,11 +123,13 @@ class BulletPhysicsVR(object):
 						if e[self.BUTTONS][32] & self.p.VR_BUTTON_WAS_RELEASED:
 						
 							_, _, z = self.p.getEulerFromQuaternion(e[self.ORIENTATION])
-							self.p.setJointMotorControl2(kuka, 6, self.p.POSITION_CONTROL, targetPosition=z, force=5)
+							self.p.setJointMotorControl2(kuka, 6, 
+								self.p.POSITION_CONTROL, targetPosition=z, force=5)
 						
 						if e[self.BUTTONS][32] & self.p.VR_BUTTON_IS_DOWN:
 							
-							self.p.setJointMotorControl2(kuka, 6, self.p.POSITION_CONTROL, targetPosition=z_orig, force=5)		
+							self.p.setJointMotorControl2(kuka, 6, 
+								self.p.POSITION_CONTROL, targetPosition=z_orig, force=5)		
 							self._ik_helper(kuka, targetPos, (0, 1, 0, 0))
 							
 						# p.resetBasePositionAndOrientation(kuka_gripper, p.getBasePositionAndOrientation(kuka_gripper)[0], eef_orien)
@@ -135,9 +139,11 @@ class BulletPhysicsVR(object):
 
 							# p.setJointMotorControl2(kuka, 6, p.POSITION_CONTROL, targetPosition=z, force=5)
 					else:
-						jointPositions = [-0.000000, -0.000000, 0.000000, 1.570793, 0.000000, -1.036725, 0.000001]
+						jointPositions = [-0.000000, -0.000000, 0.000000, 
+										1.570793, 0.000000, -1.036725, 0.000001]
 						for jointIndex in range(self.p.getNumJoints(kuka)):
-							self.p.setJointMotorControl2(kuka,jointIndex, self.p.POSITION_CONTROL, jointPositions[jointIndex], 1)
+							self.p.setJointMotorControl2(kuka,jointIndex, 
+								self.p.POSITION_CONTROL, jointPositions[jointIndex], 1)
 
 								# self.p.setJointMotorControl2(kukaMap[e[0]], 6, self.p.POSITION_CONTROL, targetPosition=math.pi, force=50)
 
@@ -159,10 +165,12 @@ class BulletPhysicsVR(object):
 					for o_id in range(self.p.getNumBodies()):
 						# Track objects
 						if o_id in self.kuka_arms:
-							jointStates = [self.p.getJointState(o_id, i)[0] for i in range(self.p.getNumJoints(o_id))]
+							jointStates = [self.p.getJointState(o_id, i)[0] for i in\
+								range(self.p.getNumJoints(o_id))]
 							row = [(o_id)] + jointStates
 						else:
-							row = [(o_id)] + list(self.p.getBasePositionAndOrientation(o_id)[0]) + list(self.p.getBasePositionAndOrientation(o_id)[1])
+							row = [(o_id)] + list(self.p.getBasePositionAndOrientation(o_id)[0])\
+								+ list(self.p.getBasePositionAndOrientation(o_id)[1])
 						writer.writerow(row)
 					# Write extra vr_hand now
 					# if self.hand:
@@ -209,13 +217,15 @@ class BulletPhysicsVR(object):
 						kuka_gripper = int(row[1])
 						# self.p.setRealTimeSimulation(1)
 						for i in range(self.p.getNumJoints(kuka_gripper)):
-							self.p.setJointMotorControl2(kuka_gripper, i, self.p.VELOCITY_CONTROL, targetVelocity=5, force=50)
+							self.p.setJointMotorControl2(kuka_gripper, i, 
+								self.p.VELOCITY_CONTROL, targetVelocity=5, force=50)
 						# self.p.setRealTimeSimulation(0)
 					elif obj_idx == -3:
 						kuka_gripper = int(row[1])
 						# self.p.setRealTimeSimulation(1)
 						for i in range(self.p.getNumJoints(kuka_gripper)):
-							self.p.setJointMotorControl2(kuka_gripper, i, self.p.VELOCITY_CONTROL, targetVelocity=-5, force=50)
+							self.p.setJointMotorControl2(kuka_gripper, i, 
+								self.p.VELOCITY_CONTROL, targetVelocity=-5, force=50)
 						# self.p.setRealTimeSimulation(0)
 					else:
 						self.p.resetBasePositionAndOrientation(obj_idx, (float(row[1]), float(row[2]), 
@@ -282,7 +292,8 @@ class BulletPhysicsVR(object):
 			self.VR_HAND_ID = self.p.loadMJCF("MPL/mpl2.xml")[0]
 		# self.p.loadURDF("table/table.urdf", 1.000000,-0.200000,0.000000,0.000000,0.000000,0.707107,0.707107)
 		self.p.loadURDF("plane.urdf",0,0,0,0,0,0,1)
-		self.p.loadURDF("table/table.urdf", -1.0,-0.200000,0.000000,0.000000,0.000000,0.707107,0.707107)
+		self.p.loadURDF("table/table.urdf", -1.0,-0.200000,0.000000,
+								0.000000,0.000000,0.707107,0.707107)
 		self._setup_robot()
 
 	def _setup_robot(self):
@@ -291,7 +302,8 @@ class BulletPhysicsVR(object):
 			self.kuka_arms.append(self.p.loadURDF('kuka_iiwa/model_vr_limits.urdf', -0.1, pos[i], 0.6, 0, 0, 0, 1))
 			self.kuka_grippers.append(self.p.loadSDF('gripper/wsg50_one_motor_gripper_new_free_base.sdf')[0])
 
-		kuka_jointPositions = [-0.000000, -0.000000, 0.000000, 1.570793, 0.000000, -1.036725, 0.000001]
+		kuka_jointPositions = [-0.000000, -0.000000, 0.000000, 
+					1.570793, 0.000000, -1.036725, 0.000001]
 		
 		# Setup initial conditions for both arms
 		for kuka in self.kuka_arms:
@@ -306,7 +318,8 @@ class BulletPhysicsVR(object):
 			self.p.resetBasePositionAndOrientation(kuka_gripper,
 				[0.923103,-0.200000,1.250036],
 				[-0.000000,0.964531,-0.000002,-0.263970])
-			kuka_gripper_jointPositions = [0.000000, -0.011130, -0.206421, 0.205143, -0.009999, 0.000000, -0.010055, 0.000000]
+			kuka_gripper_jointPositions = [0.000000, -0.011130, -0.206421, 
+						0.205143, -0.009999, 0.000000, -0.010055, 0.000000]
 			for jointIndex in range(self.p.getNumJoints(kuka_gripper)):
 				self.p.resetJointState(kuka_gripper, jointIndex, kuka_gripper_jointPositions[jointIndex])
 				self.p.setJointMotorControl2(kuka_gripper, jointIndex, 

@@ -16,7 +16,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-				<mesh filename="torus.obj" scale=".1 .1 .1"/>
+				<mesh filename="torus.obj" scale=".01 .01 .01"/>
       </geometry>
        <material name="yellow">
         <color rgba="1 1 0 1"/>
@@ -25,7 +25,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-	 	<mesh filename="torus.obj" scale=".1 .1 .1"/>
+	 	<mesh filename="torus.obj" scale=".01 .01 .01"/>
       </geometry>
     </collision>
   </link>
