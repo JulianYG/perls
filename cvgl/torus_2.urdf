@@ -3,10 +3,10 @@
   <link name="baseLink">
     <contact>
       <lateral_friction value="1.0"/>
-      <rolling_friction value="1.0"/>
-      <inertia_scaling value="3.0"/>
+      <!-- <rolling_friction value="1.0"/> -->
+  <!--     <inertia_scaling value="3.0"/>
       <contact_cfm value="0.0"/>
-      <contact_erp value="1.0"/>
+      <contact_erp value="1.0"/> -->
     </contact>
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -16,16 +16,16 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-				<mesh filename="torus.obj" scale=".016 .016 .016"/>
+				<mesh filename="torus.obj" scale=".021 .021 .021"/>
       </geometry>
        <material name="green">
         <color rgba="0 1 0 1"/>
       </material>
     </visual>
-    <collision>
+    <collision concave="yes">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-	 	<mesh filename="torus.obj" scale=".016 .016 .016"/>
+	 	<mesh filename="torus.obj" scale=".021 .021 .021"/>
       </geometry>
     </collision>
   </link>

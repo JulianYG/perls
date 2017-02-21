@@ -23,7 +23,7 @@
           <color rgba="1 1 1 1"/>
         </material>
     </visual>
-    <collision>
+    <collision concave="yes">
         <origin rpy="0 0 0" xyz="0 0 0"/>
         <geometry>
           <mesh filename="model.obj" scale=".6 .6 .6"/>
