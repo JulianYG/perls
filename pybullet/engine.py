@@ -1,5 +1,5 @@
 import pybullet as p
-from VRControl import *
+from VRcontrol import *
 # from render import generate_trajectory
 
 repo = {}
@@ -18,12 +18,17 @@ repo['ball'] = [("sphere_small.urdf",-0.80000,-0.200000,0.699990,0.000000,0.0,0.
 		("sphere_small.urdf",-0.83000,-0.520000,0.699990,0.000000,0.0,0.00000,1),
 		("tray/tray_textured2.urdf", -0.56, -0.11, 0.6, 0, 0, 0, 1)]
 
-# generate_trajectory((6,6,6), (0,0,0), 'see.csv', 'newsee.csv')
-simulator = KukaDoubleArmVR(p, task=repo['ball'], hand=False)
+# kukaSimulator = KukaDoubleArmVR(p, repo['ball'])
+# kukaSimulator.set_camera_view(-.4, -.2, 1, 0, -90, 120, 1)
 
-simulator.set_camera_view(-.4, -.2, 1, 0, -90, 120, 1)
+# kukaSimulator.replay('two_arms_try.csv', saveVideo=0)
+# kukaSimulator.replay('two_arms_hanoi.csv', saveVideo=0)
 
-# simulator.replay('two_arms_try.csv', saveVideo=0)
-# simulator.replay('two_arms_hanoi.csv', saveVideo=0)
+graspSimulator = PR2GripperVR(p, repo['ball'])
+graspSimulator.set_camera_view(.8, -.2, 1, 0, -90, 120, 1)
 
-simulator.record('two_arms_ball.csv')
+# kukaSimulator.record('two_arms_ball.csv')
+# kukaSimulator.replay('two_arms_ball.csv')
+
+graspSimulator.record('pr2_try.csv')
+# graspSimulator.replay('pr2_try.csv')

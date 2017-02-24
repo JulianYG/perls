@@ -10,7 +10,7 @@ class KukaDoubleArmVR(BulletPhysicsVR):
 
 	def __init__(self, pybullet, task):
 
-		super().__init__(self, pybullet, task)
+		super().__init__(pybullet, task)
 
 		self.kuka_arms = []
 		self.kuka_grippers = []
@@ -165,7 +165,7 @@ class KukaDoubleArmVR(BulletPhysicsVR):
 		for row in reader:
 			obj_id = int(row[0])
 			if obj_id == -1:
-				delay = float(row[1]) / 15
+				delay = float(row[1]) / 25
 			else:
 				time.sleep(delay)
 				# Keep the simulation synced
@@ -269,8 +269,9 @@ class PR2GripperVR(BulletPhysicsVR):
 
 	def __init__(self, pybullet, task):
 
-		super().__init__(self, pybullet, task)
+		super().__init__(pybullet, task)
 		self.pr2_gripper = 0
+		self.pr2_cid = 0
 
 	def create_scene(self):
 		"""
@@ -279,11 +280,8 @@ class PR2GripperVR(BulletPhysicsVR):
 		self.p.resetSimulation()
 		self.p.setGravity(0, 0, -9.81)
 
-		self.p.loadURDF("plane.urdf",0,0,0,0,0,0,1)
-		self.p.loadURDF("table/table.urdf", -1.0,-0.200000,0.000000,0.000000,0.000000,0.707107,0.707107)
-		
 		self.p.loadURDF("plane.urdf", 0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,1.000000)
-		self.p.loadURDF("samurai.urdf", 0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,1.000000)
+		# self.p.loadURDF("samurai.urdf", 0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,1.000000)
 		self.pr2_gripper = self.p.loadURDF("pr2_gripper.urdf", 0.500000,0.300006,0.700000,-0.000000,-0.000000,-0.000031,1.000000)
 
 		# Setup the pr2_gripper
@@ -292,12 +290,8 @@ class PR2GripperVR(BulletPhysicsVR):
 			self.p.resetJointState(self.pr2_gripper, jointIndex,jointPositions[jointIndex])
 
 		# Use -1 for the base, constrained within controller
-		pr2_cid = self.p.createConstraint(self.pr2_gripper,-1,-1,-1, self.p.JOINT_FIXED,
+		self.pr2_cid = self.p.createConstraint(self.pr2_gripper,-1,-1,-1, self.p.JOINT_FIXED,
 			[0,0,0],[0.2,0,0],[0.500000,0.300006,0.700000])
-
-		self.p.loadURDF("lego/lego.urdf", 1.000000,-0.200000,0.700000,0.000000,0.000000,0.000000,1.000000)
-		self.p.loadURDF("lego/lego.urdf", 1.000000,-0.200000,0.800000,0.000000,0.000000,0.000000,1.000000)
-		self.p.loadURDF("lego/lego.urdf", 1.000000,-0.200000,0.900000,0.000000,0.000000,0.000000,1.000000)
 
 		self.p.loadURDF("jenga/jenga.urdf", 1.300000,-0.700000,0.750000,0.000000,0.707107,0.000000,0.707107)
 		self.p.loadURDF("jenga/jenga.urdf", 1.200000,-0.700000,0.750000,0.000000,0.707107,0.000000,0.707107)
@@ -305,17 +299,17 @@ class PR2GripperVR(BulletPhysicsVR):
 		self.p.loadURDF("jenga/jenga.urdf", 1.000000,-0.700000,0.750000,0.000000,0.707107,0.000000,0.707107)
 		self.p.loadURDF("jenga/jenga.urdf", 0.900000,-0.700000,0.750000,0.000000,0.707107,0.000000,0.707107)
 		self.p.loadURDF("jenga/jenga.urdf", 0.800000,-0.700000,0.750000,0.000000,0.707107,0.000000,0.707107)
-		self.p.loadURDF("table/table.urdf", 1.000000,-0.200000,0.000000,0.000000,0.000000,0.707107,0.707107)
-		self.p.loadURDF("teddy_vhacd.urdf", 1.050000,-0.500000,0.700000,0.000000,0.000000,0.707107,0.707107)
-		self.p.loadURDF("cube_small.urdf", 0.950000,-0.100000,0.700000,0.000000,0.000000,0.707107,0.707107)
-		self.p.loadURDF("sphere_small.urdf", 0.850000,-0.400000,0.700000,0.000000,0.000000,0.707107,0.707107)
-		self.p.loadURDF("duck_vhacd.urdf", 0.850000,-0.400000,0.900000,0.000000,0.000000,0.707107,0.707107)
-		shelf = self.p.loadSDF("kiva_shelf/model.sdf")
-		self.p.resetBasePositionAndOrientation(shelf,[0.000000,1.000000,1.204500],[0.000000,0.000000,0.000000,1.000000])
-		self.p.loadURDF("teddy_vhacd.urdf", -0.100000,0.600000,0.850000,0.000000,0.000000,0.000000,1.000000)
-		self.p.loadURDF("sphere_small.urdf", -0.100000,0.955006,1.169706,0.633232,-0.000000,-0.000000,0.773962)
-		self.p.loadURDF("cube_small.urdf", 0.300000,0.600000,0.850000,0.000000,0.000000,0.000000,1.000000)
-		self.p.loadURDF("table_square/table_square.urdf", -1.000000,0.000000,0.000000,0.000000,0.000000,0.000000,1.000000)
+		# self.p.loadURDF("table/table.urdf", 1.000000,-0.200000,0.000000,0.000000,0.000000,0.707107,0.707107)
+		# self.p.loadURDF("teddy_vhacd.urdf", 1.050000,-0.500000,0.700000,0.000000,0.000000,0.707107,0.707107)
+		# self.p.loadURDF("cube_small.urdf", 0.950000,-0.100000,0.700000,0.000000,0.000000,0.707107,0.707107)
+		# self.p.loadURDF("sphere_small.urdf", 0.850000,-0.400000,0.700000,0.000000,0.000000,0.707107,0.707107)
+		# self.p.loadURDF("duck_vhacd.urdf", 0.850000,-0.400000,0.900000,0.000000,0.000000,0.707107,0.707107)
+		shelf = self.p.loadSDF("kiva_shelf/model.sdf")[0]
+		self.p.resetBasePositionAndOrientation(shelf, [-0.700000,-2.200000,1.204500],[0.000000,0.000000,0.000000,1.000000])
+		# self.p.loadURDF("teddy_vhacd.urdf", -0.100000,0.600000,0.850000,0.000000,0.000000,0.000000,1.000000)
+		# self.p.loadURDF("sphere_small.urdf", -0.100000,0.955006,1.169706,0.633232,-0.000000,-0.000000,0.773962)
+		# self.p.loadURDF("cube_small.urdf", 0.300000,0.600000,0.850000,0.000000,0.000000,0.000000,1.000000)
+		# self.p.loadURDF("table_square/table_square.urdf", -1.000000,0.000000,0.000000,0.000000,0.000000,0.000000,1.000000)
 
 	def record(self, file):
 
@@ -331,14 +325,18 @@ class PR2GripperVR(BulletPhysicsVR):
 				events = self.p.getVREvents()
 
 				for e in (events):
+
+					# PR2 gripper follows VR controller				
+					self.p.changeConstraint(self.pr2_cid, e[1], e[self.ORIENTATION], maxForce=100000)	
+
 					if e[self.BUTTONS][33] & self.p.VR_BUTTON_WAS_TRIGGERED:
 						for i in range(self.p.getNumJoints(self.pr2_gripper)):
-							self.p.setJointMotorControl2(self.pr2_gripper, i, self.p.VELOCITY_CONTROL, targetVelocity=5, force=50)
+							self.p.setJointMotorControl2(self.pr2_gripper, i, self.p.POSITION_CONTROL, targetPosition=0, force=50)
 						row = [-2]
 						writer.writerow(row)
 					if e[self.BUTTONS][33] & self.p.VR_BUTTON_WAS_RELEASED:	
 						for i in range(self.p.getNumJoints(self.pr2_gripper)):
-							self.p.setJointMotorControl2(self.pr2_gripper, i, self.p.VELOCITY_CONTROL, targetVelocity=-5, force=50)
+							self.p.setJointMotorControl2(self.pr2_gripper, i, self.p.POSITION_CONTROL, targetPosition=1, force=50)
 						row = [-3]
 						writer.writerow(row)
 					if (e[self.BUTTONS][1] & self.p.VR_BUTTON_WAS_TRIGGERED):
@@ -352,11 +350,7 @@ class PR2GripperVR(BulletPhysicsVR):
 					prev_time = curr_time
 					for o_id in range(self.p.getNumBodies()):
 						# Track objects
-						if o_id in self.kuka_arms:
-							jointStates = [self.p.getJointState(o_id, i)[0] for i in range(self.p.getNumJoints(o_id))]
-							row = [(o_id)] + jointStates
-						else:
-							row = [(o_id)] + list(self.p.getBasePositionAndOrientation(o_id)[0]) + list(self.p.getBasePositionAndOrientation(o_id)[1])
+						row = [(o_id)] + list(self.p.getBasePositionAndOrientation(o_id)[0]) + list(self.p.getBasePositionAndOrientation(o_id)[1])
 						writer.writerow(row)
 
 					delay = [-1, time_elapse]
@@ -380,16 +374,16 @@ class PR2GripperVR(BulletPhysicsVR):
 		for row in reader:
 			obj_id = int(row[0])
 			if obj_id == -1:
-				delay = float(row[1]) / 15
+				delay = float(row[1]) / 50
 			else:
 				time.sleep(delay)
 				# Keep the simulation synced
 				if obj_id == -2:
 					for i in range(self.p.getNumJoints(self.pr2_gripper)):
-						self.p.setJointMotorControl2(self.pr2_gripper, i, self.p.VELOCITY_CONTROL, targetVelocity=5, force=50)
+						self.p.setJointMotorControl2(self.pr2_gripper, i, self.p.POSITION_CONTROL, targetPosition=0, force=50)
 				elif obj_id == -3:
 					for i in range(self.p.getNumJoints(self.pr2_gripper)):
-						self.p.setJointMotorControl2(self.pr2_gripper, i, self.p.VELOCITY_CONTROL, targetVelocity=-5, force=50)
+						self.p.setJointMotorControl2(self.pr2_gripper, i, self.p.POSITION_CONTROL, targetPosition=1, force=50)
 				else:
 					self.p.resetBasePositionAndOrientation(obj_id, (float(row[1]), float(row[2]), 
 						float(row[3])), (float(row[4]), float(row[5]), float(row[6]), float(row[7])))

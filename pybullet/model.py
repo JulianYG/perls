@@ -10,7 +10,7 @@ class BulletPhysicsVR(object):
 		
 		self.BUTTONS = 6
 		self.ORIENTATION = 2
-		self.controllers = [3, 4]
+		self.controllers = None
 
 		# Default settings for camera
 		self.FOCAL_POINT = (0., 0., 0.)
@@ -44,6 +44,7 @@ class BulletPhysicsVR(object):
 		
 		except self.p.error:
 			return 0
+		self.controllers = [e[0] for e in self.p.getVREvents()]
 		self.create_scene()
 		for obj in self.task:
 			self.p.loadURDF(*obj)
