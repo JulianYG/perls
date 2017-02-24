@@ -40,7 +40,7 @@ for pitch in range (0,360,10) :
     rgb=img_arr[2] #color data RGB
     dep=img_arr[3] #depth data
 
-    print ('width = %d height = %d' % (w,h))
+    print 'width = %d height = %d' % (w,h)
 
     #note that sending the data to matplotlib is really slow
     #show

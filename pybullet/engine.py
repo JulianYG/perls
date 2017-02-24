@@ -1,15 +1,29 @@
 import pybullet as p
-from rl import BulletPhysicsVR
+from VRControl import *
 # from render import generate_trajectory
 
+repo = {}
+# Indicate the indices of the objects that need to be tracked in the first entry
+repo['hanoi'] = [("cvgl/pole.urdf",-0.80000,0.100000,0.699990,0.00000,0.0,0.00000,1), 
+	("cvgl/pole.urdf",-0.80000,-0.200000,0.699990,0.000000,0.0,0.00000,1),
+	("cvgl/pole.urdf",-0.80000,-0.500000,0.699990,0.00000,0.0,0.00000,1),
+	("cvgl/torus_0.urdf",-0.81,0.1,0.69999,1,0,0,1),
+	("cvgl/torus_1.urdf",-0.82,0.1,0.69999,1,0,0,1),
+	("cvgl/torus_2.urdf",-0.83,0.1,0.69999,1,0,0,1),
+	("cvgl/torus_3.urdf",-0.84,0.1,0.69999,1,0,0,1),
+	("cvgl/torus_4.urdf",-0.88,0.1,0.69999,0,0,0,1)]
 
+repo['ball'] = [("sphere_small.urdf",-0.80000,-0.200000,0.699990,0.000000,0.0,0.00000,1),
+		("sphere_small.urdf",-0.76000,-0.1400000,0.729990,0.000000,0.0,0.00000,1),
+		("sphere_small.urdf",-0.83000,-0.520000,0.699990,0.000000,0.0,0.00000,1),
+		("tray/tray_textured2.urdf", -0.56, -0.11, 0.6, 0, 0, 0, 1)]
 
 # generate_trajectory((6,6,6), (0,0,0), 'see.csv', 'newsee.csv')
-simulator = BulletPhysicsVR(p, task=1, hand=False)
+simulator = KukaDoubleArmVR(p, task=repo['ball'], hand=False)
 
 simulator.set_camera_view(-.4, -.2, 1, 0, -90, 120, 1)
 
 # simulator.replay('two_arms_try.csv', saveVideo=0)
-simulator.replay('two_arms_useDIK.csv', saveVideo=0)
+# simulator.replay('two_arms_hanoi.csv', saveVideo=0)
 
-# simulator.record('two_arms_useDIK.csv')
+simulator.record('two_arms_ball.csv')

@@ -13,6 +13,7 @@ pr2_gripper = objects[0]
 print ("pr2_gripper=")
 print (pr2_gripper)
 
+
 jointPositions=[ 0.550569, 0.000000, 0.549657, 0.000000 ]
 for jointIndex in range (p.getNumJoints(pr2_gripper)):
 	p.resetJointState(pr2_gripper,jointIndex,jointPositions[jointIndex])
@@ -110,14 +111,22 @@ while True:
 		# for i in range(64):
 		# 	if e[BUTTONS][i] & p.VR_BUTTON_WAS_TRIGGERED:
 		# 		print(i)
+		
+
 	
 		if e[BUTTONS][33] & p.VR_BUTTON_WAS_TRIGGERED:
 			for i in range(p.getNumJoints(kuka_gripper)):
 				p.setJointMotorControl2(kuka_gripper, i, p.VELOCITY_CONTROL, targetVelocity=5, force=50)
 		
 			# p.setJointMotorControl2(kuka_gripper, 6, p.VELOCITY_CONTROL, targetVelocity=5, force=5)
-		
+			
 			# p.setJointMotorControl2(kuka_gripper, 4, p.VELOCITY_CONTROL, targetVelocity=5, force=5)
+
+			for i in range(p.getNumJoints(pr2_gripper)):
+				p.setJointMotorControl2(pr2_gripper, i, p.VELOCITY_CONTROL, targetVelocity=5, force=50)
+
+
+
 		if e[BUTTONS][33] & p.VR_BUTTON_WAS_RELEASED:
 				
 			for i in range(p.getNumJoints(kuka_gripper)):
@@ -126,6 +135,11 @@ while True:
 			# p.setJointMotorControl2(kuka_gripper, 6, p.VELOCITY_CONTROL, targetVelocity=-5, force=5)
 		
 			# p.setJointMotorControl2(kuka_gripper, 4, p.VELOCITY_CONTROL, targetVelocity=-5, force=5)
+
+			for i in range(p.getNumJoints(pr2_gripper)):
+				p.setJointMotorControl2(pr2_gripper, i, p.VELOCITY_CONTROL, targetVelocity=-5, force=50)
+
+
 
 		# print((p.getBasePositionAndOrientation(kuka_gripper)[0], e[1]))
 		sq_len = euc_dist(p.getBasePositionAndOrientation(kuka_gripper)[0], e[1])
