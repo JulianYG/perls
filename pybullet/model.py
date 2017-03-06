@@ -1,3 +1,4 @@
+import struct
 
 class BulletPhysicsVR(object):
 
@@ -10,7 +11,7 @@ class BulletPhysicsVR(object):
 		
 		self.BUTTONS = 6
 		self.ORIENTATION = 2
-		self.controllers = None
+		# self.controllers = None
 
 		# Default settings for camera
 		self.FOCAL_POINT = (0., 0., 0.)
@@ -44,7 +45,7 @@ class BulletPhysicsVR(object):
 		
 		except self.p.error:
 			return 0
-		self.controllers = [e[0] for e in self.p.getVREvents()]
+		# self.controllers = [e[0] for e in self.p.getVREvents()]
 		self.create_scene()
 		for obj in self.task:
 			self.p.loadURDF(*obj)
@@ -82,8 +83,49 @@ class BulletPhysicsVR(object):
 		plt.imshow(np_img)
 		plt.pause(0.001)
 
-	def quit(self, fp):
-		fp.close()
+	def parse_log(filename, verbose=True):
+
+	  	f = open(filename, 'rb')
+	  	print('Opened'),
+	  	print(filename)
+
+	  	keys = f.readline().rstrip('\n').split(',')
+	  	fmt = f.readline().rstrip('\n')
+	  
+		# The byte number of one record
+		sz = struct.calcsize(fmt)
+		# The type number of one record
+		ncols = len(fmt)
+
+	  	if verbose:
+	    	print('Keys:'),
+	    	print(keys)
+	    	print('Format:'),
+	    	print(fmt)
+	    	print('Size:'),
+	    	print(sz)
+	    	print('Columns:'),
+	    	print(ncols)
+
+	  	# Read data
+	  	wholeFile = f.read()
+	  	# split by alignment word
+	  	chunks = wholeFile.split('\xaa\xbb')
+	  	log = list()
+	  	for chunk in chunks:
+	    if len(chunk) == sz:
+	      	values = struct.unpack(fmt, chunk)
+	      	record = list()
+	      	for i in range(ncols):
+	        	record.append(values[i])
+	      	log.append(record)
+
+	  	return log
+
+	def quit(self, logId):
+		# fp.close()
+		for Id in logId:
+			self.p.stopStateLogging(Id)
 		self.p.resetSimulation()
 		self.p.disconnect()
 

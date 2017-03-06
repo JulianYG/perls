@@ -27,8 +27,16 @@ repo['ball'] = [("sphere_small.urdf",-0.80000,-0.200000,0.699990,0.000000,0.0,0.
 graspSimulator = PR2GripperVR(p, repo['ball'])
 graspSimulator.set_camera_view(.8, -.2, 1, 0, -90, 120, 1)
 
+demoSimulator = DemoVR(p, repo['ball'])
+demoSimulator.set_camera_view(.8, -.2, 1, 0, -90, 120, 1)
+
 # kukaSimulator.record('two_arms_ball.csv')
 # kukaSimulator.replay('two_arms_ball.csv')
 
-graspSimulator.record('pr2_try.csv')
+# graspSimulator.record('pr2_try.csv')
 # graspSimulator.replay('pr2_try.csv')
+
+# demoSimulator.record('demo.csv')
+demoSimulator.replay('demo.csv')
+
+
