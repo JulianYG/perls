@@ -39,11 +39,9 @@ class KukaSingleArmVR(KukaArmVR):
 				for e in (events):
 					# If the user think one task is completed, 
 					# he/she will push the menu button
-
 					eef_pos = self.p.getLinkState(self.kuka, 6)[0]
 
-					if not cId:
-						
+					if not cId:		
 						# If detected contact points
 						touch = self.p.getContactPoints(self.kuka)
 						
@@ -64,19 +62,11 @@ class KukaSingleArmVR(KukaArmVR):
 						
 						# eef_pos = self.p.getBasePositionAndOrientation()
 						target_plane_pos = (e[1][0], e[1][1], 1.33)
-
 						curr_pos = self.p.getLinkState(self.kuka, 6)[0]
 						target_point_pos = (curr_pos[0], curr_pos[1], e[1][2])
 						eef_orn = (0, 1, 0, 0)
-
-						# if e[self.BUTTONS][32] & self.p.VR_BUTTON_WAS_RELEASED:
-						# 	_, _, z = self.p.getEulerFromQuaternion(e[self.ORIENTATION])
-						# 	self.p.setJointMotorControl2(kuka, 6, self.p.POSITION_CONTROL, targetPosition=z, force=5)
 						
 						if e[self.BUTTONS][32] & self.p.VR_BUTTON_IS_DOWN:
-							
-							# self.p.setJointMotorControl2(kuka, 6, self.p.POSITION_CONTROL, targetPosition=z_orig, force=5)		
-							# self.ik_helper(kuka, targetPos, (0, 1, 0, 0))
 							self.ik_helper(self.kuka, target_point_pos, eef_orn)
 						else: 
 							self.ik_helper(self.kuka, target_plane_pos, eef_orn)
@@ -108,11 +98,9 @@ class KukaSingleArmVR(KukaArmVR):
 
 		log = self.parse_log('generic.' + file, verbose=True)
 		self.replay_log(log)
-
 		# 		if saveVideo:
 		# 			self.video_capture()
 		self.quit([])
-
 
 	def _setup_robot(self):
 		# Only load a kuka arm, no need for gripper this time
@@ -124,7 +112,6 @@ class KukaSingleArmVR(KukaArmVR):
 			self.p.resetJointState(self.kuka, jointIndex, jointPositions[jointIndex])
 			self.p.setJointMotorControl2(self.kuka, jointIndex, self.p.POSITION_CONTROL, 
 				jointPositions[jointIndex], 0)
-
 
 
 class KukaDoubleArmVR(KukaArmVR):
@@ -142,8 +129,8 @@ class KukaDoubleArmVR(KukaArmVR):
 		while load_status == 0:
 			self.p.connect(self.p.SHARED_MEMORY)
 			load_status = self.setup(0)
-		try:
 
+		try:
 			gripperMap = dict(zip(self.controllers, self.kuka_grippers))
 			kukaMap = dict(zip(self.controllers, self.kuka_arms))
 			
@@ -159,9 +146,9 @@ class KukaDoubleArmVR(KukaArmVR):
 				events = self.p.getVREvents()
 
 				for e in (events):
-					# # If the user think one task is completed, 
-					# # he/she will push the menu button
-					# # controller_pos, controller_orien = e
+					# If the user think one task is completed, 
+					# he/she will push the menu button
+					# controller_pos, controller_orien = e
 					kuka_gripper = gripperMap[e[0]]
 					kuka = kukaMap[e[0]]			
 
@@ -169,13 +156,11 @@ class KukaDoubleArmVR(KukaArmVR):
 					if e[self.BUTTONS][33] & self.p.VR_BUTTON_WAS_TRIGGERED:
 						for i in range(self.p.getNumJoints(kuka_gripper)):
 							self.p.setJointMotorControl2(kuka_gripper, i, self.p.VELOCITY_CONTROL, targetVelocity=5, force=50)
-						# row = [-2, kuka_gripper]
-						# writer.writerow(row)
+
 					if e[self.BUTTONS][33] & self.p.VR_BUTTON_WAS_RELEASED:	
 						for i in range(self.p.getNumJoints(kuka_gripper)):
 							self.p.setJointMotorControl2(kuka_gripper, i, self.p.VELOCITY_CONTROL, targetVelocity=-5, force=50)
-						# row = [-3, kuka_gripper]
-						# writer.writerow(row)
+
 					sq_len = self.euc_dist(self.p.getBasePositionAndOrientation(kuka_gripper)[0], e[1])
 					
 					# Allows robot arm control by VR controllers
@@ -190,7 +175,6 @@ class KukaDoubleArmVR(KukaArmVR):
 						# if e[self.BUTTONS][32] & self.p.VR_BUTTON_WAS_RELEASED:
 						# 	_, _, z = self.p.getEulerFromQuaternion(e[self.ORIENTATION])
 						# 	self.p.setJointMotorControl2(kuka, 6, self.p.POSITION_CONTROL, targetPosition=z, force=5)
-						
 						if e[self.BUTTONS][32] & self.p.VR_BUTTON_IS_DOWN:
 							
 							# self.p.setJointMotorControl2(kuka, 6, self.p.POSITION_CONTROL, targetPosition=z_orig, force=5)		
@@ -199,11 +183,10 @@ class KukaDoubleArmVR(KukaArmVR):
 							self.ik_helper(kuka, targetPos, eef_orn)
 
 						# p.resetBasePositionAndOrientation(kuka_gripper, p.getBasePositionAndOrientation(kuka_gripper)[0], eef_orien)
-
 						# p.setJointMotorControl2(kuka, 6, p.POSITION_CONTROL, targetPosition=z, force=5)
 						# if e[self.BUTTONS][32] & p.VR_BUTTON_WAS_TRIGGERED:
-
 							# p.setJointMotorControl2(kuka, 6, p.POSITION_CONTROL, targetPosition=z, force=5)
+
 					else:
 						jointPositions = [-0.000000, -0.000000, 0.000000, 1.570793, 0.000000, -1.036725, 0.000001]
 						for jointIndex in range(self.p.getNumJoints(kuka)):
@@ -231,7 +214,6 @@ class KukaDoubleArmVR(KukaArmVR):
 			self.PITCH, self.FOCAL_POINT)
 
 		log = self.parse_log('generic.' + file, verbose=True)
-
 		self.replay_log(log, delay=0.00045)
 
 		# 		if saveVideo:
@@ -286,37 +268,7 @@ class PR2GripperVR(BulletPhysicsVR):
 		"""
 		self.p.resetSimulation()
 		self.p.setGravity(0, 0, -9.81)
-
-		self.p.loadURDF("plane.urdf", 0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,1.000000)
-		# self.p.loadURDF("samurai.urdf", 0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,1.000000)
-		self.pr2_gripper = self.p.loadURDF("pr2_gripper.urdf", 0.500000,0.300006,0.700000,-0.000000,-0.000000,-0.000031,1.000000)
-
-		# Setup the pr2_gripper
-		jointPositions = [0.550569, 0.000000, 0.549657, 0.000000]
-		for jointIndex in range(self.p.getNumJoints(self.pr2_gripper)):
-			self.p.resetJointState(self.pr2_gripper, jointIndex,jointPositions[jointIndex])
-
-		# Use -1 for the base, constrained within controller
-		self.pr2_cid = self.p.createConstraint(self.pr2_gripper,-1,-1,-1, self.p.JOINT_FIXED,
-			[0,0,0],[0.2,0,0],[0.500000,0.300006,0.700000])
-
-		self.p.loadURDF("jenga/jenga.urdf", 1.300000,-0.700000,0.750000,0.000000,0.707107,0.000000,0.707107)
-		self.p.loadURDF("jenga/jenga.urdf", 1.200000,-0.700000,0.750000,0.000000,0.707107,0.000000,0.707107)
-		self.p.loadURDF("jenga/jenga.urdf", 1.100000,-0.700000,0.750000,0.000000,0.707107,0.000000,0.707107)
-		self.p.loadURDF("jenga/jenga.urdf", 1.000000,-0.700000,0.750000,0.000000,0.707107,0.000000,0.707107)
-		self.p.loadURDF("jenga/jenga.urdf", 0.900000,-0.700000,0.750000,0.000000,0.707107,0.000000,0.707107)
-		self.p.loadURDF("jenga/jenga.urdf", 0.800000,-0.700000,0.750000,0.000000,0.707107,0.000000,0.707107)
-		# self.p.loadURDF("table/table.urdf", 1.000000,-0.200000,0.000000,0.000000,0.000000,0.707107,0.707107)
-		# self.p.loadURDF("teddy_vhacd.urdf", 1.050000,-0.500000,0.700000,0.000000,0.000000,0.707107,0.707107)
-		# self.p.loadURDF("cube_small.urdf", 0.950000,-0.100000,0.700000,0.000000,0.000000,0.707107,0.707107)
-		# self.p.loadURDF("sphere_small.urdf", 0.850000,-0.400000,0.700000,0.000000,0.000000,0.707107,0.707107)
-		# self.p.loadURDF("duck_vhacd.urdf", 0.850000,-0.400000,0.900000,0.000000,0.000000,0.707107,0.707107)
-		shelf = self.p.loadSDF("kiva_shelf/model.sdf")[0]
-		self.p.resetBasePositionAndOrientation(shelf, [-0.700000,-2.200000,1.204500],[0.000000,0.000000,0.000000,1.000000])
-		# self.p.loadURDF("teddy_vhacd.urdf", -0.100000,0.600000,0.850000,0.000000,0.000000,0.000000,1.000000)
-		# self.p.loadURDF("sphere_small.urdf", -0.100000,0.955006,1.169706,0.633232,-0.000000,-0.000000,0.773962)
-		# self.p.loadURDF("cube_small.urdf", 0.300000,0.600000,0.850000,0.000000,0.000000,0.000000,1.000000)
-		# self.p.loadURDF("table_square/table_square.urdf", -1.000000,0.000000,0.000000,0.000000,0.000000,0.000000,1.000000)
+		self.load_default_env()
 
 	def record(self, file):
 
@@ -325,12 +277,17 @@ class PR2GripperVR(BulletPhysicsVR):
 			self.p.connect(self.p.SHARED_MEMORY)
 			load_status = self.setup(0)
 		try:
-			f = open(file, 'w', newline='')
-			writer = csv.writer(f)
-			prev_time = time.time()
-			while True:
-				events = self.p.getVREvents()
+			# Record everything
+			bodyLog = self.p.startStateLogging(self.p.STATE_LOGGING_GENERIC_ROBOT,
+				'../examples/pybullet/generic.' + file)
 
+			# ctrlLog = self.p.startStateLogging(self.p.STATE_LOGGING_VR_CONTROLLERS, 
+			# 	file + '_ctrl')
+			logIds = [bodyLog]
+
+			while True:
+
+				events = self.p.getVREvents()
 				for e in (events):
 
 					# PR2 gripper follows VR controller				
@@ -339,32 +296,16 @@ class PR2GripperVR(BulletPhysicsVR):
 					if e[self.BUTTONS][33] & self.p.VR_BUTTON_WAS_TRIGGERED:
 						for i in range(self.p.getNumJoints(self.pr2_gripper)):
 							self.p.setJointMotorControl2(self.pr2_gripper, i, self.p.POSITION_CONTROL, targetPosition=0, force=50)
-						row = [-2]
-						writer.writerow(row)
+
 					if e[self.BUTTONS][33] & self.p.VR_BUTTON_WAS_RELEASED:	
 						for i in range(self.p.getNumJoints(self.pr2_gripper)):
 							self.p.setJointMotorControl2(self.pr2_gripper, i, self.p.POSITION_CONTROL, targetPosition=1, force=50)
-						row = [-3]
-						writer.writerow(row)
+
 					if (e[self.BUTTONS][1] & self.p.VR_BUTTON_WAS_TRIGGERED):
 						self.p.addUserDebugText('One Item Inserted', (1.7, 0, 1), (255, 0, 0), 12, 10)
-				
-				# Saving events routine
-				if events and events[0][5] > 0:	# Only take record when moving events happen
-				# Removing this line for video generation may sync the process?
-					curr_time = time.time()
-					time_elapse = curr_time - prev_time
-					prev_time = curr_time
-					for o_id in range(self.p.getNumBodies()):
-						# Track objects
-						row = [(o_id)] + list(self.p.getBasePositionAndOrientation(o_id)[0]) + list(self.p.getBasePositionAndOrientation(o_id)[1])
-						writer.writerow(row)
-
-					delay = [-1, time_elapse]
-					writer.writerow(delay)
 
 		except KeyboardInterrupt:
-			self.quit(f)
+			self.quit(logIds)
 
 	def replay(self, file, saveVideo=0):
 
@@ -375,29 +316,12 @@ class PR2GripperVR(BulletPhysicsVR):
 		self.p.resetDebugVisualizerCamera(self.FOCAL_LENGTH, self.YAW, 
 			self.PITCH, self.FOCAL_POINT)
 
-		f = open(file, 'r')
-		reader = csv.reader(f)
-		delay = 0
-		for row in reader:
-			obj_id = int(row[0])
-			if obj_id == -1:
-				delay = float(row[1]) / 50
-			else:
-				time.sleep(delay)
-				# Keep the simulation synced
-				if obj_id == -2:
-					for i in range(self.p.getNumJoints(self.pr2_gripper)):
-						self.p.setJointMotorControl2(self.pr2_gripper, i, self.p.POSITION_CONTROL, targetPosition=0, force=50)
-				elif obj_id == -3:
-					for i in range(self.p.getNumJoints(self.pr2_gripper)):
-						self.p.setJointMotorControl2(self.pr2_gripper, i, self.p.POSITION_CONTROL, targetPosition=1, force=50)
-				else:
-					self.p.resetBasePositionAndOrientation(obj_id, (float(row[1]), float(row[2]), 
-						float(row[3])), (float(row[4]), float(row[5]), float(row[6]), float(row[7])))
+		log = self.parse_log('generic.' + file, verbose=True)
+		self.replay_log(log, delay=1e-9)
 
-				if saveVideo:
-					self.video_capture()
-		self.quit(f)
+		# 		if saveVideo:
+		# 			self.video_capture()
+		self.quit([])
 
 
 class DemoVR(BulletPhysicsVR):
@@ -407,8 +331,6 @@ class DemoVR(BulletPhysicsVR):
 
 		super().__init__(pybullet, task)
 		self.pr2_gripper = 2
-		self.obj_cnt = 0
-		# self.tracking_obj = None
 
 	def create_scene(self, flag):
 		"""
@@ -420,76 +342,38 @@ class DemoVR(BulletPhysicsVR):
 				load_status = self.p.connect(self.p.SHARED_MEMORY)
 			else:
 				load_status = self.p.connect(self.p.GUI)
-		# self.p.resetSimulation()
-		# Comment out the reset simulation to provide entire control and access to obj info...
+		# self.p.resetSimulation()       # Comment out the reset simulation to provide entire control and access to obj info...
 		self.p.setGravity(0, 0, -9.81)
-		self.obj_cnt = 25
 		if flag:
 			for obj in self.task:
 				self.p.loadURDF(*obj)
-		# self.tracking_obj = range(self.obj_cnt, self.p.getNumBodies())
 
 	def record(self, file):
 
 		self.create_scene(1)
 		try:
-			f = open(file, 'w', newline='')
-			writer = csv.writer(f)
-			prev_time = time.time()
+			# Record everything
+			bodyLog = self.p.startStateLogging(self.p.STATE_LOGGING_GENERIC_ROBOT,
+				'../examples/pybullet/generic.' + file)
+
+			# ctrlLog = self.p.startStateLogging(self.p.STATE_LOGGING_VR_CONTROLLERS, 
+			# 	file + '_ctrl')
+			logIds = [bodyLog]
+
 			while True:
 				events = self.p.getVREvents()
-
 				for e in (events):
 					if (e[self.BUTTONS][1] & self.p.VR_BUTTON_WAS_TRIGGERED):
 						self.p.addUserDebugText('One Task Completed', (1.7, 0, 1), (255, 0, 0), 12, 10)
 
-					# Mark the grasp
-					if e[self.BUTTONS][33] & self.p.VR_BUTTON_WAS_TRIGGERED:
-						row = [-3]
-						writer.writerow(row)
-					# Mark the release
-					if e[self.BUTTONS][33] & self.p.VR_BUTTON_WAS_RELEASED:	
-						row = [-4]
-						writer.writerow(row)
-
-					# _, _, z = self.p.getEulerFromQuaternion(e[2])
-					# self.p.setJointMotorControl2(3, 6, self.p.POSITION_CONTROL, targetPosition=z, force=5)
-				
-				# Saving events routine
-				if events and events[0][5] > 0:	# Only take record when moving events happen
-				# Removing this line for video generation may sync the process?
-					curr_time = time.time()
-					time_elapse = curr_time - prev_time
-					prev_time = curr_time
-
-					# Need to track everything
-					# for o_id in self.tracking_obj:
-					# for o_id in range(self.p.getNumBodies() + self.obj_cnt):
-					for o_id in range(self.p.getNumBodies()):
-						# This suggests the robot arm is chosen
-						if self.p.getNumJoints(o_id) == 7:
-							jointStates = [self.p.getJointState(o_id, i)[0] for i in range(self.p.getNumJoints(o_id))]
-							row = [(-2)] + jointStates
-
-						# # This suggests the pr2 gripper
-						# elif o_id == 2:
-
-						else:
-							row = [(o_id)] + list(self.p.getBasePositionAndOrientation(o_id)[0]) + list(self.p.getBasePositionAndOrientation(o_id)[1])
-						writer.writerow(row)
-
-					gripper_info = [self.pr2_gripper] + list(self.p.getBasePositionAndOrientation(self.pr2_gripper)[0])\
-						 + list(self.p.getBasePositionAndOrientation(self.pr2_gripper)[1])
-					delay = [-1, time_elapse]
-					writer.writerow(gripper_info)
-					writer.writerow(delay)
-
 		except KeyboardInterrupt:
-			self.quit(f)
+			self.quit(logIds)
 
 	def replay(self, file, saveVideo=0):
 		self.create_scene(0)
 		self.p.setRealTimeSimulation(0)
+
+		# Sorry, but must follow the same order of initialization as in compiled executable demo
 		objects = [self.p.loadURDF("plane.urdf", 0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,1.000000)]
 		objects = [self.p.loadURDF("samurai.urdf", 0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,1.000000)]
 		objects = [self.p.loadURDF("pr2_gripper.urdf", 0.500000,0.300006,0.700000,-0.000000,-0.000000,-0.000031,1.000000)]
@@ -509,15 +393,15 @@ class DemoVR(BulletPhysicsVR):
 		objects = [self.p.loadURDF("lego/lego.urdf", 1.000000,-0.200000,0.700000,0.000000,0.000000,0.000000,1.000000)]
 		objects = [self.p.loadURDF("lego/lego.urdf", 1.000000,-0.200000,0.800000,0.000000,0.000000,0.000000,1.000000)]
 		objects = [self.p.loadURDF("lego/lego.urdf", 1.000000,-0.200000,0.900000,0.000000,0.000000,0.000000,1.000000)]
+		
+
 		objects = self.p.loadSDF("gripper/wsg50_one_motor_gripper_new_free_base.sdf")
 		kuka_gripper = objects[0]
-
 		self.p.resetBasePositionAndOrientation(kuka_gripper,[0.923103,-0.200000,1.250036],[-0.000000,0.964531,-0.000002,-0.263970])
 		jointPositions = [ 0.000000, -0.011130, -0.206421, 0.205143, -0.009999, 0.000000, -0.010055, 0.000000 ]
 		for jointIndex in range (self.p.getNumJoints(kuka_gripper)):
 			self.p.resetJointState(kuka_gripper,jointIndex,jointPositions[jointIndex])
 			self.p.setJointMotorControl2(kuka_gripper,jointIndex,self.p.POSITION_CONTROL,jointPositions[jointIndex],0)
-
 		kuka_cid = self.p.createConstraint(kuka, 6, kuka_gripper, 0, self.p.JOINT_FIXED, [0,0,0], [0,0,0.05], [0,0,0], childFrameOrientation=[0, 0, 0, 1])
 
 		objects = [self.p.loadURDF("jenga/jenga.urdf", 1.300000,-0.700000,0.750000,0.000000,0.707107,0.000000,0.707107)]
@@ -556,28 +440,12 @@ class DemoVR(BulletPhysicsVR):
 		self.p.resetDebugVisualizerCamera(self.FOCAL_LENGTH, self.YAW, 
 			self.PITCH, self.FOCAL_POINT)
 
-		f = open(file, 'r')
-		reader = csv.reader(f)
-		delay = 0
-		for row in reader:
-			obj_id = int(row[0])
-			if obj_id == -1:
-				delay = float(row[1]) / 1000
-			else:
-				time.sleep(delay)
-				# Keep the simulation synced
-				if obj_id == -2:
-					for i in range(self.p.getNumJoints(kuka)):
-						self.p.resetJointState(kuka, i, float(row[i + 1]))
-				else:
-					if obj_id == -3 or obj_id == -4:
-						continue
-					self.p.resetBasePositionAndOrientation(obj_id, (float(row[1]), float(row[2]), 
-						float(row[3])), (float(row[4]), float(row[5]), float(row[6]), float(row[7])))
+		log = self.parse_log('generic.' + file, verbose=False)
+		self.replay_log(log, delay=0)
 			
-				if saveVideo:
-					self.video_capture()
-		self.quit(f)
+				# if saveVideo:
+				# 	self.video_capture()
+		self.quit([])
 
 
 
