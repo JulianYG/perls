@@ -175,7 +175,7 @@ class KukaArmVR(BulletPhysicsVR):
 		self.p.setGravity(0, 0, -9.81)
 
 		self.p.loadURDF("plane.urdf",0,0,0,0,0,0,1)
-		self.p.loadURDF("table/table.urdf", -1.0,-0.200000,0.000000,0.000000,0.000000,0.707107,0.707107)
+		self.p.loadURDF("table/table.urdf", 1.1,-0.200000,0.000000,0.000000,0.000000,0.707107,0.707107)
 		self._setup_robot()
 
 	def ik_helper(self, arm_id, eef_pos, eef_orien):

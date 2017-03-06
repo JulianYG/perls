@@ -14,7 +14,6 @@ class KukaSingleArmVR(KukaArmVR):
 
 		super().__init__(pybullet, task)
 		self.kuka = -2
-		self.eff_constraint = -3
 		
 	def record(self, file):
 		load_status = 0
@@ -32,23 +31,42 @@ class KukaSingleArmVR(KukaArmVR):
 			# 	file + '_ctrl')
 
 			logIds = [bodyLog]
-
+			cId = None
 			while True:
 				events = self.p.getVREvents()
+
+
 				for e in (events):
 					# If the user think one task is completed, 
 					# he/she will push the menu button
 
-					sq_len = self.euc_dist(self.p.getLinkState(self.kuka, 6)[0], e[1])
-					
+					eef_pos = self.p.getLinkState(self.kuka, 6)[0]
+
+					if not cId:
+						
+						# If detected contact points
+						touch = self.p.getContactPoints(self.kuka)
+						
+						# Only attach when sticked around the eef center
+						for contact_point in touch:
+							if self.euc_dist(eef_pos, contact_point[5]) < 0.01 and contact_point[2] not in range(3):
+								cId = self.p.createConstraint(self.kuka, 6, contact_point[2], -1, self.p.JOINT_FIXED, [0, 0, 0], [0, 0, 0.05], [0, 0, 0])
+								
+					if e[self.BUTTONS][33] & self.p.VR_BUTTON_IS_DOWN:
+						if cId:
+							self.p.removeConstraint(cId)
+						cId = None
+
+					sq_len = self.euc_dist(eef_pos, e[1])
+
 					# Allows robot arm control by VR controllers
 					if sq_len < self.THRESHOLD * self.THRESHOLD:
 						
 						# eef_pos = self.p.getBasePositionAndOrientation()
-						target_plane_pos = (e[1][0], e[1][1], 1.1)
+						target_plane_pos = (e[1][0], e[1][1], 1.33)
 
 						curr_pos = self.p.getLinkState(self.kuka, 6)[0]
-						target_point_pos = (curr_pos[0], curr_pos[1], 0.5)
+						target_point_pos = (curr_pos[0], curr_pos[1], e[1][2])
 						eef_orn = (0, 1, 0, 0)
 
 						# if e[self.BUTTONS][32] & self.p.VR_BUTTON_WAS_RELEASED:
@@ -223,7 +241,7 @@ class KukaDoubleArmVR(KukaArmVR):
 	def _setup_robot(self):
 		pos = [0.3, -0.5]		# Original y-coord for the robot arms
 		for i in range(2):		# Setup two arms
-			self.kuka_arms.append(self.p.loadURDF('kuka_iiwa/model_vr_limits.urdf', -0.1, pos[i], 0.6, 0, 0, 0, 1))
+			self.kuka_arms.append(self.p.loadURDF('kuka_iiwa/model_vr_limits.urdf', 1.4, pos[i], 0.6, 0, 0, 0, 1))
 			self.kuka_grippers.append(self.p.loadSDF('gripper/wsg50_one_motor_gripper_new_free_base.sdf')[0])
 
 		kuka_jointPositions = [-0.000000, -0.000000, 0.000000, 1.570793, 0.000000, -1.036725, 0.000001]
