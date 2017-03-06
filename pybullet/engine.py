@@ -21,14 +21,15 @@ repo['ball'] = [("sphere_small.urdf",-0.80000,-0.200000,0.699990,0.000000,0.0,0.
 # kukaSimulator = KukaDoubleArmVR(p, repo['ball'])
 # kukaSimulator.set_camera_view(-.4, -.2, 1, 0, -90, 120, 1)
 
-# kukaSimulator.replay('two_arms_try.csv', saveVideo=0)
+# # kukaSimulator.record('try', saveVideo=0)
+# kukaSimulator.replay('try')
 # kukaSimulator.replay('two_arms_hanoi.csv', saveVideo=0)
 
-graspSimulator = PR2GripperVR(p, repo['ball'])
-graspSimulator.set_camera_view(.8, -.2, 1, 0, -90, 120, 1)
+# graspSimulator = PR2GripperVR(p, repo['ball'])
+# graspSimulator.set_camera_view(.8, -.2, 1, 0, -90, 120, 1)
 
-demoSimulator = DemoVR(p, repo['ball'])
-demoSimulator.set_camera_view(.8, -.2, 1, 0, -90, 120, 1)
+# demoSimulator = DemoVR(p, repo['ball'])
+# demoSimulator.set_camera_view(.8, -.2, 1, 0, -90, 120, 1)
 
 # kukaSimulator.record('two_arms_ball.csv')
 # kukaSimulator.replay('two_arms_ball.csv')
@@ -37,6 +38,10 @@ demoSimulator.set_camera_view(.8, -.2, 1, 0, -90, 120, 1)
 # graspSimulator.replay('pr2_try.csv')
 
 # demoSimulator.record('demo.csv')
-demoSimulator.replay('demo.csv')
+# demoSimulator.replay('demo.csv')
 
+simSimulator = KukaSingleArmVR(p, repo['ball'])
+simSimulator.set_camera_view(-.4, -.2, 1, 0, -90, 120, 1)
 
+# simSimulator.record('easy')
+simSimulator.replay('easy')

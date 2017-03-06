@@ -1,4 +1,6 @@
 import struct
+import math
+import time
 
 class BulletPhysicsVR(object):
 
@@ -11,7 +13,7 @@ class BulletPhysicsVR(object):
 		
 		self.BUTTONS = 6
 		self.ORIENTATION = 2
-		# self.controllers = None
+		self.controllers = None
 
 		# Default settings for camera
 		self.FOCAL_POINT = (0., 0., 0.)
@@ -45,7 +47,7 @@ class BulletPhysicsVR(object):
 		
 		except self.p.error:
 			return 0
-		# self.controllers = [e[0] for e in self.p.getVREvents()]
+		self.controllers = [e[0] for e in self.p.getVREvents()]
 		self.create_scene()
 		for obj in self.task:
 			self.p.loadURDF(*obj)
@@ -83,49 +85,68 @@ class BulletPhysicsVR(object):
 		plt.imshow(np_img)
 		plt.pause(0.001)
 
-	def parse_log(filename, verbose=True):
+	def parse_log(self, filename, verbose=True):
 
 	  	f = open(filename, 'rb')
 	  	print('Opened'),
 	  	print(filename)
 
-	  	keys = f.readline().rstrip('\n').split(',')
-	  	fmt = f.readline().rstrip('\n')
-	  
-		# The byte number of one record
-		sz = struct.calcsize(fmt)
-		# The type number of one record
-		ncols = len(fmt)
+	  	keys = f.readline().decode('utf8').rstrip('\n').split(',')
+	  	fmt = f.readline().decode('utf8').rstrip('\n')
+
+	  	# The byte number of one record
+	  	sz = struct.calcsize(fmt)
+	  	# The type number of one record
+	  	ncols = len(fmt)
 
 	  	if verbose:
-	    	print('Keys:'),
-	    	print(keys)
-	    	print('Format:'),
-	    	print(fmt)
-	    	print('Size:'),
-	    	print(sz)
-	    	print('Columns:'),
-	    	print(ncols)
+	  		print('Keys:'), 
+	  		print(keys)
+	  		print('Format:'),
+	  		print(fmt)
+	  		print('Size:'),
+	  		print(sz)
+	  		print('Columns:'),
+	  		print(ncols)
 
 	  	# Read data
 	  	wholeFile = f.read()
 	  	# split by alignment word
-	  	chunks = wholeFile.split('\xaa\xbb')
+	  	chunks = wholeFile.split(b'\xaa\xbb')
 	  	log = list()
 	  	for chunk in chunks:
-	    if len(chunk) == sz:
-	      	values = struct.unpack(fmt, chunk)
-	      	record = list()
-	      	for i in range(ncols):
-	        	record.append(values[i])
-	      	log.append(record)
+		    if len(chunk) == sz:
+		      	values = struct.unpack(fmt, chunk)
+		      	record = list()
+		      	for i in range(ncols):
+		        	record.append(values[i])
+		      	log.append(record)
 
 	  	return log
 
+	def replay_log(self, log, delay=0.0005):
+
+		for record in log:
+			time_stamp = float(record[1])
+			obj = record[2]
+			pos = record[3: 6]
+			orn = record[6: 10]
+			self.p.resetBasePositionAndOrientation(obj, pos, orn)
+			numJoints = self.p.getNumJoints(obj)
+			for i in range(numJoints):
+				jointInfo = self.p.getJointInfo(obj, i)
+				qIndex = jointInfo[3]
+				if qIndex > -1:
+					self.p.resetJointState(obj, i, record[qIndex - 7 + 17])
+			time.sleep(delay)
+
 	def quit(self, fp): # logId
-		fp.close()
-		# for Id in logId:
-		# 	self.p.stopStateLogging(Id)
+		if isinstance(fp, list):
+			for Id in fp:
+				self.p.stopStateLogging(Id)
+		else:
+			fp.close()
+			
 		self.p.resetSimulation()
 		self.p.disconnect()
 
