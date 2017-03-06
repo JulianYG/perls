@@ -6,46 +6,142 @@ import csv
 import numpy as np
 from model import BulletPhysicsVR
 
-class KukaSingleArmVR(BulletPhysicsVR):
+class KukaSingleArmVR(KukaArmVR):
 	"""
-	An easier task without 
+	An easier task without grasping
 	"""
+	def __init__(self, pybullet, task):
+
+		super().__init__(pybullet, task)
+		self.kuka = -2
+		self.eff_constraint = -3
+		
+	def record(self, file):
+		load_status = 0
+		while load_status == 0:
+			self.p.connect(self.p.SHARED_MEMORY)
+			load_status = self.setup(0)
+		try:
+			f = open(file, 'w', newline='')
+			writer = csv.writer(f)
+			prev_time = time.time()
+
+			gripperMap = dict(zip(self.controllers, self.kuka_grippers))
+			kukaMap = dict(zip(self.controllers, self.kuka_arms))
+			
+			# # Record everything
+			# bodyLog = self.p.startStateLogging(self.p.STATE_LOGGING_GENERIC_ROBOT,
+			# 	file + '_body')
+
+			# # May not needed anymore
+			# ctrlLog = self.p.startStateLogging(self.p.STATE_LOGGING_VR_CONTROLLERS, 
+			# 	file + '_ctrl')
+			# logIds = [bodyLog]
+
+			while True:
+				events = self.p.getVREvents()
+
+				for e in (events):
+					# If the user think one task is completed, 
+					# he/she will push the menu button
+
+					sq_len = self.euc_dist(self.p.getBasePositionAndOrientation(kuka_gripper)[0], e[1])
+					
+					# Allows robot arm control by VR controllers
+					if sq_len < self.THRESHOLD * self.THRESHOLD:
+						# time = 0.0
+						# time += 0.01
+						# targetPos = (0.4 - 0.4 * math.cos(time), 0, 0.8 + 0.4 * math.cos(time))
+						# eef_pos = (e[1][0] + targetPos[0], e[1][1] + targetPos[1], e[1][2] + targetPos[2])
+						
+						eef_pos = self.p.getBasePositionAndOrientation()
+						target_plane_pos = (e[1][0], e[1][1], 0.77)
+
+						target_point_pos = ()
+						eef_orn = (0, 1, 0, 0)
+
+						# if e[self.BUTTONS][32] & self.p.VR_BUTTON_WAS_RELEASED:
+						# 	_, _, z = self.p.getEulerFromQuaternion(e[self.ORIENTATION])
+						# 	self.p.setJointMotorControl2(kuka, 6, self.p.POSITION_CONTROL, targetPosition=z, force=5)
+						
+						if e[self.BUTTONS][32] & self.p.VR_BUTTON_IS_DOWN:
+							
+							# self.p.setJointMotorControl2(kuka, 6, self.p.POSITION_CONTROL, targetPosition=z_orig, force=5)		
+							# self.ik_helper(kuka, targetPos, (0, 1, 0, 0))
+							self.ik_helper(self.kuka, target_plane_pos, eef_orn)
+
+						else: 
+							self.ik_helper(self.kuka, target_point_pos, eef_orn)
+
+
+					else:
+						jointPositions = [-0.000000, -0.000000, 0.000000, 1.570793, 0.000000, -1.036725, 0.000001]
+						for jointIndex in range(self.p.getNumJoints(kuka)):
+							self.p.setJointMotorControl2(kuka,jointIndex, self.p.POSITION_CONTROL, jointPositions[jointIndex], 1)
+
+								# self.p.setJointMotorControl2(kukaMap[e[0]], 6, self.p.POSITION_CONTROL, targetPosition=math.pi, force=50)
+
+					# Add user interaction for task completion
+					if (e[self.BUTTONS][1] & self.p.VR_BUTTON_WAS_TRIGGERED):
+							# self.p.resetSimulation()
+							# self.p.removeAllUserDebugItems()
+						self.p.addUserDebugText('good job!', (1.7, 0, 1), (255, 0, 0), 12, 10)
+						# Can add line for mark here
+						# so that in saved csv file, we know when one task is complete		
+
+				# # Saving events routine
+				# if events and events[0][5] > 0:	# Only take record when moving events happen
+				# # Removing this line for video generation may sync the process?
+				# 	curr_time = time.time()
+				# 	time_elapse = curr_time - prev_time
+				# 	prev_time = curr_time
+				# 	for o_id in range(self.p.getNumBodies()):
+				# 		# Track objects
+				# 		if o_id in self.kuka_arms:
+				# 			jointStates = [self.p.getJointState(o_id, i)[0] for i in range(self.p.getNumJoints(o_id))]
+				# 			row = [(o_id)] + jointStates
+				# 		else:
+				# 			row = [(o_id)] + list(self.p.getBasePositionAndOrientation(o_id)[0]) + list(self.p.getBasePositionAndOrientation(o_id)[1])
+				# 		writer.writerow(row)
+				# 	# Write extra vr_hand now
+				# 	# if self.hand:
+				# 	# 	hand = [self.VR_HAND_ID] + list(self.p.getBasePositionAndOrientation(self.VR_HAND_ID)[0]) + list(self.p.getBasePositionAndOrientation(self.VR_HAND_ID)[1])
+				# 	# 	writer.writerow(hand)
+				# 	# 	else:
+				# 	# 		gripper_info = ['g'] + [o_id] + list(self.p.getBasePositionAndOrientation(o_id)[0]) + \
+				# 	# 			list(self.p.getBasePositionAndOrientation(o_id)[1])
+				# 	# 		writer.writerow(gripper_info)
+					
+				# 	delay = [-1, time_elapse]
+				# 	writer.writerow(delay)
+
+		except KeyboardInterrupt:
+			self.quit(logIds)
+
+	def replay(self, file, saveVideo=0):
+		pass
+
+	def _setup_robot(self):
+		self.kuka = self.p.loadURDF("kuka_iiwa/model_vr_limits.urdf", 
+			1.400000, -0.200000, 0.600000,
+			0.000000, 0.000000, 0.000000, 1.000000)
+		jointPositions = [-0.000000, -0.000000, 0.000000, 1.570793, 0.000000, -1.036725, 0.000001]
+		for jointIndex in range(self.p.getNumJoints(self.kuka)):
+			self.p.resetJointState(self.kuka, jointIndex, jointPositions[jointIndex])
+			self.p.setJointMotorControl2(self.kuka, jointIndex, self.p.POSITION_CONTROL, 
+				jointPositions[jointIndex], 0)
 
 
 
-
-class KukaDoubleArmVR(BulletPhysicsVR):
+class KukaDoubleArmVR(KukaArmVR):
 
 	# This one try out the new loggingState method
 	def __init__(self, pybullet, task):
 
 		super().__init__(pybullet, task)
-
 		self.kuka_arms = []
 		self.kuka_grippers = []
 		self.kuka_constraints = []
-
-		# Set boundaries on kuka arm
-		self.LOWER_LIMITS = [-.967, -2.0, -2.96, 0.19, -2.96, -2.09, -3.05]
-		self.UPPER_LIMITS = [.96, 2.0, 2.96, 2.29, 2.96, 2.09, 3.05]
-		self.JOINT_RANGE = [5.8, 4, 5.8, 4, 5.8, 4, 6]
-		self.REST_POSE = [0, 0, 0, math.pi / 2, 0, -math.pi * 0.66, 0]
-
-		self.THRESHOLD = 1.15
-		self.MAX_FORCE = 500
-
-	def create_scene(self):
-		"""
-		Basic scene needed for running tasks
-		"""
-		self.p.resetSimulation()
-		self.p.setGravity(0, 0, -9.81)
-		if self.hand:
-			self.VR_HAND_ID = self.p.loadMJCF("MPL/mpl2.xml")[0]
-		# self.p.loadURDF("table/table.urdf", 1.000000,-0.200000,0.000000,0.000000,0.000000,0.707107,0.707107)
-		self.p.loadURDF("plane.urdf",0,0,0,0,0,0,1)
-		self.p.loadURDF("table/table.urdf", -1.0,-0.200000,0.000000,0.000000,0.000000,0.707107,0.707107)
-		self._setup_robot()
 
 	def record(self, file):
 		load_status = 0
@@ -57,8 +153,8 @@ class KukaDoubleArmVR(BulletPhysicsVR):
 			# writer = csv.writer(f)
 			# prev_time = time.time()
 
-			# gripperMap = dict(zip(self.controllers, self.kuka_grippers))
-			# kukaMap = dict(zip(self.controllers, self.kuka_arms))
+			gripperMap = dict(zip(self.controllers, self.kuka_grippers))
+			kukaMap = dict(zip(self.controllers, self.kuka_arms))
 			
 			# Record everything
 			bodyLog = self.p.startStateLogging(self.p.STATE_LOGGING_GENERIC_ROBOT,
@@ -90,7 +186,7 @@ class KukaDoubleArmVR(BulletPhysicsVR):
 							self.p.setJointMotorControl2(kuka_gripper, i, self.p.VELOCITY_CONTROL, targetVelocity=-5, force=50)
 						# row = [-3, kuka_gripper]
 						# writer.writerow(row)
-					sq_len = self._euc_dist(self.p.getBasePositionAndOrientation(kuka_gripper)[0], e[1])
+					sq_len = self.euc_dist(self.p.getBasePositionAndOrientation(kuka_gripper)[0], e[1])
 					
 					# Allows robot arm control by VR controllers
 					if sq_len < self.THRESHOLD * self.THRESHOLD:
@@ -100,23 +196,20 @@ class KukaDoubleArmVR(BulletPhysicsVR):
 						# eef_pos = (e[1][0] + targetPos[0], e[1][1] + targetPos[1], e[1][2] + targetPos[2])
 						targetPos = e[1]
 						
-						x, y, z_orig = self.p.getEulerFromQuaternion((0, 1, 0, 0))
+						# x, y, z_orig = self.p.getEulerFromQuaternion((0, 1, 0, 0))
 						_, _, z = self.p.getEulerFromQuaternion(e[self.ORIENTATION])
-						# # print(x, y, z)
-						# eef_orien = p.getBasePositionAndOrientation(kuka_gripper)[1]
-						eef_orn = self.p.getQuaternionFromEuler([x, y, z])
-						# print(eef_orien)
+						eef_orn = self.p.getQuaternionFromEuler([0, -math.pi, z])
 
 						# if e[self.BUTTONS][32] & self.p.VR_BUTTON_WAS_RELEASED:
-						
 						# 	_, _, z = self.p.getEulerFromQuaternion(e[self.ORIENTATION])
 						# 	self.p.setJointMotorControl2(kuka, 6, self.p.POSITION_CONTROL, targetPosition=z, force=5)
 						
 						if e[self.BUTTONS][32] & self.p.VR_BUTTON_IS_DOWN:
 							
 							# self.p.setJointMotorControl2(kuka, 6, self.p.POSITION_CONTROL, targetPosition=z_orig, force=5)		
-							# self._ik_helper(kuka, targetPos, (0, 1, 0, 0))
-							self._ik_helper(kuka, targetPos, eef_orn)
+							# self.ik_helper(kuka, targetPos, (0, 1, 0, 0))
+							
+							self.ik_helper(kuka, targetPos, eef_orn)
 
 						# p.resetBasePositionAndOrientation(kuka_gripper, p.getBasePositionAndOrientation(kuka_gripper)[0], eef_orien)
 
@@ -138,7 +231,6 @@ class KukaDoubleArmVR(BulletPhysicsVR):
 						self.p.addUserDebugText('good job!', (1.7, 0, 1), (255, 0, 0), 12, 10)
 						# Can add line for mark here
 						# so that in saved csv file, we know when one task is complete		
-
 
 				# # Saving events routine
 				# if events and events[0][5] > 0:	# Only take record when moving events happen
@@ -180,7 +272,6 @@ class KukaDoubleArmVR(BulletPhysicsVR):
 		log = self.parse_log(file + '_body', verbose=True)
 
 		for record in log:
-
 			time_stamp = float(record[1])
 			obj = record[2]
 		    pos = [record[3], record[4], record[5]]
@@ -231,21 +322,6 @@ class KukaDoubleArmVR(BulletPhysicsVR):
 		# 			self.video_capture()
 		self.quit(f)
 
-	def _euc_dist(self, posA, posB):
-		dist = 0.
-		for i in range(len(posA)):
-			dist += (posA[i] - posB[i]) ** 2
-		return dist
-
-	def _ik_helper(self, arm_id, eef_pos, eef_orien):
-
-		joint_pos = self.p.calculateInverseKinematics(arm_id, 6, eef_pos, eef_orien, 
-			lowerLimits=self.LOWER_LIMITS, upperLimits=self.UPPER_LIMITS, 
-			jointRanges=self.JOINT_RANGE, restPoses=self.REST_POSE)
-		for i in range(len(joint_pos)):
-			self.p.setJointMotorControl2(arm_id, i, self.p.POSITION_CONTROL, 
-				targetPosition=joint_pos[i], force=self.MAX_FORCE)
-
 	def _setup_robot(self):
 		pos = [0.3, -0.5]		# Original y-coord for the robot arms
 		for i in range(2):		# Setup two arms
@@ -278,24 +354,6 @@ class KukaDoubleArmVR(BulletPhysicsVR):
 			self.kuka_constraints.append(self.p.createConstraint(kuka,
 				6, kuka_gripper, 0, self.p.JOINT_FIXED, [0,0,0], [0,0,0.05], [0,0,0]))
 			# Gripper ID to kuka arm ID
-
-# def render_camera_port(focus_pt, focal_len, yaw, pitch, roll, upAxisIndex=2):
-# 	viewMatrix = p.computeViewMatrixFromYawPitchRoll(focus_pt, focal_len, yaw, pitch, roll, upAxisIndex)
-# 	projectionMatrix = p.computeProjectionMatrixFOV(60, 320/240., 0.01, 1000.)
-# 	img_arr = p.getCameraImage(320, 240, viewMatrix, projectionMatrix)
-# 	np_img = np.reshape(img_arr[2], (img_arr[1], img_arr[0], 4)) / 255.
-# 	fig = plt.figure()
-# 	ax = fig.add_subplot(111)
-# 	im = ax.imshow(np_img)
-	
-# 	def next_camera_frame():
-# 		return p.getCameraImage(320, 240, viewMatrix, projectionMatrix)
-
-# 	return animation.FuncAnimation(fig, next_camera_frame, interval=75) # draw/75ms
-
-# obj = create_task_scene()
-# ani = render_camera_port(FOCAL_POINT, FOCAL_LENGTH, YAW, PITCH, ROLL, UP_AX_IDX)
-# # writer = animation.writers['ffmpeg'](fps=1000/75)
 
 
 class PR2GripperVR(BulletPhysicsVR):

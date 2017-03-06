@@ -122,10 +122,54 @@ class BulletPhysicsVR(object):
 
 	  	return log
 
-	def quit(self, logId):
-		# fp.close()
-		for Id in logId:
-			self.p.stopStateLogging(Id)
+	def quit(self, fp): # logId
+		fp.close()
+		# for Id in logId:
+		# 	self.p.stopStateLogging(Id)
 		self.p.resetSimulation()
 		self.p.disconnect()
+
+
+
+class KukaArmVR(BulletPhysicsVR):
+
+	def __init__(self, pybullet, task):
+
+		super().__init__(pybullet, task)
+
+		# Set boundaries on kuka arm
+		self.LOWER_LIMITS = [-.967, -2.0, -2.96, 0.19, -2.96, -2.09, -3.05]
+		self.UPPER_LIMITS = [.96, 2.0, 2.96, 2.29, 2.96, 2.09, 3.05]
+		self.JOINT_RANGE = [5.8, 4, 5.8, 4, 5.8, 4, 6]
+		self.REST_POSE = [0, 0, 0, math.pi / 2, 0, -math.pi * 0.66, 0]
+
+		self.THRESHOLD = 1.2
+		self.MAX_FORCE = 500
+
+	def create_scene(self):
+		"""
+		Basic scene needed for running tasks
+		"""
+		self.p.resetSimulation()
+		self.p.setGravity(0, 0, -9.81)
+
+		self.p.loadURDF("plane.urdf",0,0,0,0,0,0,1)
+		self.p.loadURDF("table/table.urdf", -1.0,-0.200000,0.000000,0.000000,0.000000,0.707107,0.707107)
+		self._setup_robot()
+
+	def ik_helper(self, arm_id, eef_pos, eef_orien):
+
+		joint_pos = self.p.calculateInverseKinematics(arm_id, 6, eef_pos, eef_orien, 
+			lowerLimits=self.LOWER_LIMITS, upperLimits=self.UPPER_LIMITS, 
+			jointRanges=self.JOINT_RANGE, restPoses=self.REST_POSE)
+		for i in range(len(joint_pos)):
+			self.p.setJointMotorControl2(arm_id, i, self.p.POSITION_CONTROL, 
+				targetPosition=joint_pos[i], force=self.MAX_FORCE)
+
+	def euc_dist(self, posA, posB):
+		dist = 0.
+		for i in range(len(posA)):
+			dist += (posA[i] - posB[i]) ** 2
+		return dist
+
 
