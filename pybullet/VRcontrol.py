@@ -188,7 +188,8 @@ class KukaDoubleArmVR(KukaArmVR):
 
 	def _setup_robot(self):
 		pos = [0.3, -0.5]		# Original y-coord for the robot arms
-		for i in range(2):		# Setup two arms
+		# Gripper ID to kuka arm ID
+		for i in range(2):
 			self.kuka_arms.append(self.p.loadURDF('kuka_iiwa/model_vr_limits.urdf', 1.4, pos[i], 0.6, 0, 0, 0, 1))
 			self.kuka_grippers.append(self.p.loadSDF('gripper/wsg50_one_motor_gripper_new_free_base.sdf')[0])
 		
@@ -198,17 +199,13 @@ class KukaDoubleArmVR(KukaArmVR):
 
 		# Setup initial conditions for both grippers
 		for kuka_gripper in self.kuka_grippers:
-			# self.p.resetBasePositionAndOrientation(kuka_gripper,
-			# 	[0.923103,-0.200000,1.250036],
-			# 	[-0.,0.964531,-0.000002,-0.263970])
 			self.reset_kuka_gripper(kuka_gripper)
 			
 		# Setup constraints on kuka grippers
 		for kuka, kuka_gripper in zip(self.kuka_arms, self.kuka_grippers):
 			self.kuka_constraints.append(self.p.createConstraint(kuka,
-				6, kuka_gripper, 0, self.p.JOINT_FIXED, [0,0,0], [0,0,0.05], [0,0,0]))
-			# Gripper ID to kuka arm ID
-
+				6, kuka_gripper, 0, self.p.JOINT_FIXED, [0,0,0], [0,0,0.05], [0,0,0], parentFrameOrientation=[0, 0, 0, 1]))
+			
 
 class PR2GripperVR(BulletPhysicsVR):
 
