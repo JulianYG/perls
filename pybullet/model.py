@@ -275,7 +275,7 @@ class KukaArmVR(BulletPhysicsVR):
 			joint_pos = self.p.calculateInverseKinematics(arm_id, 6, eef_pos, eef_orien)
 		for i in range(len(joint_pos)):
 			self.p.setJointMotorControl2(arm_id, i, self.p.POSITION_CONTROL, 
-				targetPosition=joint_pos[i], targetVelocity=1, force=self.MAX_FORCE)
+				targetPosition=joint_pos[i], targetVelocity=0, force=self.MAX_FORCE)
 
 	def euc_dist(self, posA, posB):
 		dist = 0.
