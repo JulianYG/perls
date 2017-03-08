@@ -202,8 +202,9 @@ class KukaArmVR(BulletPhysicsVR):
 		self.UPPER_LIMITS = [.96, 2.0, 2.96, 2.29, 2.96, 2.09, 3.05]
 		self.JOINT_RANGE = [5.8, 4, 5.8, 4, 5.8, 4, 6]
 		self.REST_POSE = [0, 0, 0, math.pi / 2, 0, -math.pi * 0.66, 0]
+		self.JOIN_DAMP = [.1, .1, .1, .1, .1, .1, .1]
 
-		self.THRESHOLD = 1.2
+		self.THRESHOLD = 1.3
 		self.MAX_FORCE = 500
 
 	def create_scene(self):
@@ -217,11 +218,35 @@ class KukaArmVR(BulletPhysicsVR):
 		self.p.loadURDF("table/table.urdf", 1.1,-0.200000,0.000000,0.000000,0.000000,0.707107,0.707107)
 		self._setup_robot()
 
+	def arm_control(self, kuka, controller_pos, controller_orn, fixed=True):
+
+		targetPos = controller_pos
+
+		# if e[self.BUTTONS][32] & self.p.VR_BUTTON_WAS_RELEASED:
+		# 	_, _, z = self.p.getEulerFromQuaternion(e[self.ORIENTATION])
+		# 	self.p.setJointMotorControl2(kuka, 6, self.p.POSITION_CONTROL, targetPosition=z, force=5)
+		if e[self.BUTTONS][32] & self.p.VR_BUTTON_IS_DOWN:
+			
+			# self.p.setJointMotorControl2(kuka, 6, self.p.POSITION_CONTROL, targetPosition=z_orig, force=5)		
+			# self.ik_helper(kuka, targetPos, (0, 1, 0, 0))
+			if fixed:
+				_, _, z = self.p.getEulerFromQuaternion(controller_orn)
+				eef_orn = self.p.getQuaternionFromEuler([0, -math.pi, z])
+				self.ik_helper(kuka, targetPos, (0, 1, 0, 0))
+			else:
+				self.ik_helper(kuka, targetPos, eef_orn)
+
+		# p.resetBasePositionAndOrientation(kuka_gripper, p.getBasePositionAndOrientation(kuka_gripper)[0], eef_orien)
+		# p.setJointMotorControl2(kuka, 6, p.POSITION_CONTROL, targetPosition=z, force=5)
+		# if e[self.BUTTONS][32] & p.VR_BUTTON_WAS_TRIGGERED:
+			# p.setJointMotorControl2(kuka, 6, p.POSITION_CONTROL, targetPosition=z, force=5)
+
+
 	def ik_helper(self, arm_id, eef_pos, eef_orien):
 
 		joint_pos = self.p.calculateInverseKinematics(arm_id, 6, eef_pos, eef_orien, 
 			lowerLimits=self.LOWER_LIMITS, upperLimits=self.UPPER_LIMITS, 
-			jointRanges=self.JOINT_RANGE, restPoses=self.REST_POSE)
+			jointRanges=self.JOINT_RANGE, restPoses=self.REST_POSE, jointDamping=self.JOINT_DAMP)
 		for i in range(len(joint_pos)):
 			self.p.setJointMotorControl2(arm_id, i, self.p.POSITION_CONTROL, 
 				targetPosition=joint_pos[i], force=self.MAX_FORCE)

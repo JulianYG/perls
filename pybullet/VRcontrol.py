@@ -35,7 +35,6 @@ class KukaSingleArmVR(KukaArmVR):
 			while True:
 				events = self.p.getVREvents()
 
-
 				for e in (events):
 					# If the user think one task is completed, 
 					# he/she will push the menu button
@@ -143,8 +142,8 @@ class KukaDoubleArmVR(KukaArmVR):
 			logIds = [bodyLog]
 
 			while True:
-				events = self.p.getVREvents()
 
+				events = self.p.getVREvents()
 				for e in (events):
 					# If the user think one task is completed, 
 					# he/she will push the menu button
@@ -161,38 +160,18 @@ class KukaDoubleArmVR(KukaArmVR):
 						for i in range(self.p.getNumJoints(kuka_gripper)):
 							self.p.setJointMotorControl2(kuka_gripper, i, self.p.VELOCITY_CONTROL, targetVelocity=-5, force=50)
 
-					sq_len = self.euc_dist(self.p.getBasePositionAndOrientation(kuka_gripper)[0], e[1])
+					# sq_len = self.euc_dist(self.p.getBasePositionAndOrientation(kuka_gripper)[0], e[1])
+					sq_len = self.euc_dist(self.p.getLinkState(kuka, 6)[0], e[1])
 					
 					# Allows robot arm control by VR controllers
 					if sq_len < self.THRESHOLD * self.THRESHOLD:
-	
-						targetPos = e[1]
+						self.arm_control(kuka, e[1], e[self.ORIENTATION], fixed=False)
 						
-						# x, y, z_orig = self.p.getEulerFromQuaternion((0, 1, 0, 0))
-						_, _, z = self.p.getEulerFromQuaternion(e[self.ORIENTATION])
-						eef_orn = self.p.getQuaternionFromEuler([0, -math.pi, z])
-
-						# if e[self.BUTTONS][32] & self.p.VR_BUTTON_WAS_RELEASED:
-						# 	_, _, z = self.p.getEulerFromQuaternion(e[self.ORIENTATION])
-						# 	self.p.setJointMotorControl2(kuka, 6, self.p.POSITION_CONTROL, targetPosition=z, force=5)
-						if e[self.BUTTONS][32] & self.p.VR_BUTTON_IS_DOWN:
-							
-							# self.p.setJointMotorControl2(kuka, 6, self.p.POSITION_CONTROL, targetPosition=z_orig, force=5)		
-							# self.ik_helper(kuka, targetPos, (0, 1, 0, 0))
-							
-							self.ik_helper(kuka, targetPos, eef_orn)
-
-						# p.resetBasePositionAndOrientation(kuka_gripper, p.getBasePositionAndOrientation(kuka_gripper)[0], eef_orien)
-						# p.setJointMotorControl2(kuka, 6, p.POSITION_CONTROL, targetPosition=z, force=5)
-						# if e[self.BUTTONS][32] & p.VR_BUTTON_WAS_TRIGGERED:
-							# p.setJointMotorControl2(kuka, 6, p.POSITION_CONTROL, targetPosition=z, force=5)
-
-					else:
-						jointPositions = [-0.000000, -0.000000, 0.000000, 1.570793, 0.000000, -1.036725, 0.000001]
-						for jointIndex in range(self.p.getNumJoints(kuka)):
-							self.p.setJointMotorControl2(kuka,jointIndex, self.p.POSITION_CONTROL, jointPositions[jointIndex], 1)
-
-								# self.p.setJointMotorControl2(kukaMap[e[0]], 6, self.p.POSITION_CONTROL, targetPosition=math.pi, force=50)
+					jointPositions = [-0.000000, -0.000000, 0.000000, 1.570793, 0.000000, -1.036725, 0.000001]
+					for jointIndex in range(self.p.getNumJoints(kuka)):
+						self.p.setJointMotorControl2(kuka,jointIndex, self.p.POSITION_CONTROL, 
+							jointPositions[jointIndex], force=.1)
+						# self.p.setJointMotorControl2(kukaMap[e[0]], 6, self.p.POSITION_CONTROL, targetPosition=math.pi, force=50)
 
 					# Add user interaction for task completion
 					if (e[self.BUTTONS][1] & self.p.VR_BUTTON_WAS_TRIGGERED):
