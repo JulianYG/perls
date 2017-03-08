@@ -99,9 +99,9 @@ REST_POSE = [0, 0, 0, math.pi / 2, 0, -math.pi * 0.66, 0]
 JOINT_DAMP = [.1, .1, .1, .1, .1, .1, .1]
 
 
-targetPos = (1.55, -0.07, 0.82)
-targetOrn = p.getQuaternionFromEuler([1, -math.pi, 2])
-
+targetPos = (2, -0.07, 0.82)
+# targetOrn = p.getQuaternionFromEuler([1, -math.pi, 2])
+targetOrn = (0, 1, 1, 0)
 
 joint_pos = p.calculateInverseKinematics(kuka, 6, targetPos, targetOrn, 
 	lowerLimits=LOWER_LIMITS, upperLimits=UPPER_LIMITS, jointRanges=JOINT_RANGE, 
@@ -203,8 +203,21 @@ for i in range(7):
 # 			# 
 
 
+import numpy as np
 
+while 1:
+	# targetOrn = p.getQuaternionFromEuler([1, -math.pi, 2])
+	# random = np.random.random(3) * 3
+	# targetOrn = p.getQuaternionFromEuler(random)
 
-p.stepSimulation()
+	# joint_pos = p.calculateInverseKinematics(kuka, 6, targetPos, targetOrn, 
+	# 	lowerLimits=LOWER_LIMITS, upperLimits=UPPER_LIMITS, jointRanges=JOINT_RANGE, 
+	# 		restPoses=REST_POSE, jointDamping=JOINT_DAMP)
+	# print(joint_pos)
+	# for i in range(7):
+	# 	p.setJointMotorControl2(kuka, i, p.POSITION_CONTROL, targetPosition=joint_pos[i], force=500)
+	p.setJointMotorControl2(kuka, 5, p.POSITION_CONTROL, targetPosition=np.random.random(1) * 30, force=5)
+	# p.setJointMotorControl2(kuka, 6, p.POSITION_CONTROL, targetPosition=np.random.random(1) * 3, force=5)
+	p.stepSimulation()
 
 # p.disconnect()

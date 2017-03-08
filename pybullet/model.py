@@ -202,7 +202,7 @@ class KukaArmVR(BulletPhysicsVR):
 		self.UPPER_LIMITS = [.96, 2.0, 2.96, 2.29, 2.96, 2.09, 3.05]
 		self.JOINT_RANGE = [5.8, 4, 5.8, 4, 5.8, 4, 6]
 		self.REST_POSE = [0, 0, 0, math.pi / 2, 0, -math.pi * 0.66, 0]
-		self.JOIN_DAMP = [.1, .1, .1, .1, .1, .1, .1]
+		self.JOINT_DAMP = [.1, .1, .1, .1, .1, .1, .1]
 
 		self.THRESHOLD = 1.3
 		self.MAX_FORCE = 500
@@ -215,7 +215,7 @@ class KukaArmVR(BulletPhysicsVR):
 		self.p.setGravity(0, 0, -9.81)
 
 		self.p.loadURDF("plane.urdf",0,0,0,0,0,0,1)
-		self.p.loadURDF("table/table.urdf", 1.1,-0.200000,0.000000,0.000000,0.000000,0.707107,0.707107)
+		self.p.loadURDF("table/table.urdf", 1.1, -0.2, 0., 0., 0., 0.707107, 0.707107)
 		self._setup_robot()
 
 	def arm_control(self, kuka, controller_pos, controller_orn, fixed=True):
@@ -240,7 +240,6 @@ class KukaArmVR(BulletPhysicsVR):
 		# p.setJointMotorControl2(kuka, 6, p.POSITION_CONTROL, targetPosition=z, force=5)
 		# if e[self.BUTTONS][32] & p.VR_BUTTON_WAS_TRIGGERED:
 			# p.setJointMotorControl2(kuka, 6, p.POSITION_CONTROL, targetPosition=z, force=5)
-
 
 	def ik_helper(self, arm_id, eef_pos, eef_orien):
 
