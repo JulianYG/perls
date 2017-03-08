@@ -203,6 +203,8 @@ class KukaArmVR(BulletPhysicsVR):
 		self.JOINT_RANGE = [5.8, 4, 5.8, 4, 5.8, 4, 6]
 		self.REST_POSE = [0, 0, 0, math.pi / 2, 0, -math.pi * 0.66, 0]
 		self.JOINT_DAMP = [.1, .1, .1, .1, .1, .1, .1]
+		self.REST_JOINT_POS = [-0., -0., 0., 1.570793, 0., -1.036725, 0.000001]
+		self.KUKA_GRIPPER_REST_POS = [0., -0.011130, -0.206421, 0.205143, -0.009999, 0., -0.010055, 0.]
 
 		self.THRESHOLD = 1.3
 		self.MAX_FORCE = 500
@@ -218,22 +220,36 @@ class KukaArmVR(BulletPhysicsVR):
 		self.p.loadURDF("table/table.urdf", 1.1, -0.2, 0., 0., 0., 0.707107, 0.707107)
 		self._setup_robot()
 
-	def arm_control(self, kuka, controller_pos, controller_orn, fixed=True):
+	def reset_kuka(self, kuka):
+		for jointIndex in range(self.p.getNumJoints(kuka)):
+			self.p.resetJointState(kuka, jointIndex, self.REST_JOINT_POS[jointIndex])
+			self.p.setJointMotorControl2(kuka, jointIndex, self.p.POSITION_CONTROL, 
+				self.REST_JOINT_POS[jointIndex], 0)
 
+	def reset_kuka_gripper(self, kuka_gripper):
+		for jointIndex in range(self.p.getNumJoints(kuka_gripper)):
+			self.p.resetJointState(kuka_gripper, jointIndex, self.KUKA_GRIPPER_REST_POS[jointIndex])
+			self.p.setJointMotorControl2(kuka_gripper, jointIndex, 
+				self.p.POSITION_CONTROL, self.KUKA_GRIPPER_REST_POS[jointIndex], 0)
+
+	def engage(self, kuka, controller_event, fixed=True):
+
+		controller_pos = controller_event[1]
+		controller_orn = controller_event[self.ORIENTATION]
 		targetPos = controller_pos
 
 		# if e[self.BUTTONS][32] & self.p.VR_BUTTON_WAS_RELEASED:
 		# 	_, _, z = self.p.getEulerFromQuaternion(e[self.ORIENTATION])
 		# 	self.p.setJointMotorControl2(kuka, 6, self.p.POSITION_CONTROL, targetPosition=z, force=5)
-		if e[self.BUTTONS][32] & self.p.VR_BUTTON_IS_DOWN:
+		if controller_event[self.BUTTONS][32] & self.p.VR_BUTTON_IS_DOWN:
 			
 			# self.p.setJointMotorControl2(kuka, 6, self.p.POSITION_CONTROL, targetPosition=z_orig, force=5)		
 			# self.ik_helper(kuka, targetPos, (0, 1, 0, 0))
 			if fixed:
-				_, _, z = self.p.getEulerFromQuaternion(controller_orn)
-				eef_orn = self.p.getQuaternionFromEuler([0, -math.pi, z])
 				self.ik_helper(kuka, targetPos, (0, 1, 0, 0))
 			else:
+				_, _, z = self.p.getEulerFromQuaternion(controller_orn)
+				eef_orn = self.p.getQuaternionFromEuler([0, -math.pi, z])
 				self.ik_helper(kuka, targetPos, eef_orn)
 
 		# p.resetBasePositionAndOrientation(kuka_gripper, p.getBasePositionAndOrientation(kuka_gripper)[0], eef_orien)
@@ -241,14 +257,25 @@ class KukaArmVR(BulletPhysicsVR):
 		# if e[self.BUTTONS][32] & p.VR_BUTTON_WAS_TRIGGERED:
 			# p.setJointMotorControl2(kuka, 6, p.POSITION_CONTROL, targetPosition=z, force=5)
 
-	def ik_helper(self, arm_id, eef_pos, eef_orien):
+	def disengage(self, kuka, controller_event):
 
-		joint_pos = self.p.calculateInverseKinematics(arm_id, 6, eef_pos, eef_orien, 
-			lowerLimits=self.LOWER_LIMITS, upperLimits=self.UPPER_LIMITS, 
-			jointRanges=self.JOINT_RANGE, restPoses=self.REST_POSE, jointDamping=self.JOINT_DAMP)
+		if controller_event[self.BUTTONS][32] & self.p.VR_BUTTON_IS_DOWN:
+			for jointIndex in range(self.p.getNumJoints(kuka)):
+				# self.p.resetJointState(kuka, jointIndex, self.REST_JOINT_POS[jointIndex])
+				self.p.setJointMotorControl2(kuka, jointIndex, self.p.POSITION_CONTROL, 
+					self.REST_JOINT_POS[jointIndex], 0)
+
+	def ik_helper(self, arm_id, eef_pos, eef_orien, nullSpace=True):
+
+		if nullSpace:
+			joint_pos = self.p.calculateInverseKinematics(arm_id, 6, eef_pos, eef_orien, 
+				lowerLimits=self.LOWER_LIMITS, upperLimits=self.UPPER_LIMITS, 
+				jointRanges=self.JOINT_RANGE, restPoses=self.REST_POSE, jointDamping=self.JOINT_DAMP)
+		else:
+			joint_pos = self.p.calculateInverseKinematics(arm_id, 6, eef_pos, eef_orien)
 		for i in range(len(joint_pos)):
 			self.p.setJointMotorControl2(arm_id, i, self.p.POSITION_CONTROL, 
-				targetPosition=joint_pos[i], force=self.MAX_FORCE)
+				targetPosition=joint_pos[i], targetVelocity=1, force=self.MAX_FORCE)
 
 	def euc_dist(self, posA, posB):
 		dist = 0.

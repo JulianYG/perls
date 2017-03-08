@@ -58,23 +58,19 @@ class KukaSingleArmVR(KukaArmVR):
 
 					# Allows robot arm control by VR controllers
 					if sq_len < self.THRESHOLD * self.THRESHOLD:
-						
 						# eef_pos = self.p.getBasePositionAndOrientation()
-						target_plane_pos = (e[1][0], e[1][1], 1.33)
+						target_plane_pos = (e[1][0], e[1][1], 1.23)
 						curr_pos = self.p.getLinkState(self.kuka, 6)[0]
-						target_point_pos = (curr_pos[0], curr_pos[1], e[1][2])
+						target_point_pos = (curr_pos[0], curr_pos[1], 0.525)  # e[1][2]
 						eef_orn = (0, 1, 0, 0)
 						
 						if e[self.BUTTONS][32] & self.p.VR_BUTTON_IS_DOWN:
 							self.ik_helper(self.kuka, target_point_pos, eef_orn)
 						else: 
 							self.ik_helper(self.kuka, target_plane_pos, eef_orn)
-
 					else:
-						jointPositions = [-0.000000, -0.000000, 0.000000, 1.570793, 0.000000, -1.036725, 0.000001]
-						for jointIndex in range(self.p.getNumJoints(self.kuka)):
-							self.p.setJointMotorControl2(self.kuka,jointIndex, self.p.POSITION_CONTROL, jointPositions[jointIndex], 1)
-
+						self.disengage(self.kuka, e)
+	
 					# Add user interaction for task completion
 					if (e[self.BUTTONS][1] & self.p.VR_BUTTON_WAS_TRIGGERED):
 							# self.p.resetSimulation()
@@ -106,11 +102,7 @@ class KukaSingleArmVR(KukaArmVR):
 		self.kuka = self.p.loadURDF("kuka_iiwa/model_vr_limits.urdf", 
 			1.400000, -0.200000, 0.600000,
 			0.000000, 0.000000, 0.000000, 1.000000)
-		jointPositions = [-0.000000, -0.000000, 0.000000, 1.570793, 0.000000, -1.036725, 0.000001]
-		for jointIndex in range(self.p.getNumJoints(self.kuka)):
-			self.p.resetJointState(self.kuka, jointIndex, jointPositions[jointIndex])
-			self.p.setJointMotorControl2(self.kuka, jointIndex, self.p.POSITION_CONTROL, 
-				jointPositions[jointIndex], 0)
+		self.reset_kuka(self.kuka)
 
 
 class KukaDoubleArmVR(KukaArmVR):
@@ -160,18 +152,13 @@ class KukaDoubleArmVR(KukaArmVR):
 						for i in range(self.p.getNumJoints(kuka_gripper)):
 							self.p.setJointMotorControl2(kuka_gripper, i, self.p.VELOCITY_CONTROL, targetVelocity=-5, force=50)
 
-					# sq_len = self.euc_dist(self.p.getBasePositionAndOrientation(kuka_gripper)[0], e[1])
 					sq_len = self.euc_dist(self.p.getLinkState(kuka, 6)[0], e[1])
 					
 					# Allows robot arm control by VR controllers
 					if sq_len < self.THRESHOLD * self.THRESHOLD:
-						self.arm_control(kuka, e[1], e[self.ORIENTATION], fixed=False)
-						
-					jointPositions = [-0.000000, -0.000000, 0.000000, 1.570793, 0.000000, -1.036725, 0.000001]
-					for jointIndex in range(self.p.getNumJoints(kuka)):
-						self.p.setJointMotorControl2(kuka,jointIndex, self.p.POSITION_CONTROL, 
-							jointPositions[jointIndex], force=.1)
-						# self.p.setJointMotorControl2(kukaMap[e[0]], 6, self.p.POSITION_CONTROL, targetPosition=math.pi, force=50)
+						self.engage(kuka, e, fixed=True)
+					else:
+						self.disengage(kuka, e)
 
 					# Add user interaction for task completion
 					if (e[self.BUTTONS][1] & self.p.VR_BUTTON_WAS_TRIGGERED):
@@ -204,28 +191,18 @@ class KukaDoubleArmVR(KukaArmVR):
 		for i in range(2):		# Setup two arms
 			self.kuka_arms.append(self.p.loadURDF('kuka_iiwa/model_vr_limits.urdf', 1.4, pos[i], 0.6, 0, 0, 0, 1))
 			self.kuka_grippers.append(self.p.loadSDF('gripper/wsg50_one_motor_gripper_new_free_base.sdf')[0])
-
-		kuka_jointPositions = [-0.000000, -0.000000, 0.000000, 1.570793, 0.000000, -1.036725, 0.000001]
 		
 		# Setup initial conditions for both arms
 		for kuka in self.kuka_arms:
-			for jointIndex in range(self.p.getNumJoints(kuka)):
-				self.p.resetJointState(kuka, jointIndex, kuka_jointPositions[jointIndex])
-				self.p.setJointMotorControl2(kuka,jointIndex, self.p.POSITION_CONTROL, 
-					kuka_jointPositions[jointIndex], 0)
-				# pos = [0.28, -0. 95]
+			self.reset_kuka(kuka)
 
 		# Setup initial conditions for both grippers
 		for kuka_gripper in self.kuka_grippers:
-			self.p.resetBasePositionAndOrientation(kuka_gripper,
-				[0.923103,-0.200000,1.250036],
-				[-0.000000,0.964531,-0.000002,-0.263970])
-			kuka_gripper_jointPositions = [0.000000, -0.011130, -0.206421, 0.205143, -0.009999, 0.000000, -0.010055, 0.000000]
-			for jointIndex in range(self.p.getNumJoints(kuka_gripper)):
-				self.p.resetJointState(kuka_gripper, jointIndex, kuka_gripper_jointPositions[jointIndex])
-				self.p.setJointMotorControl2(kuka_gripper, jointIndex, 
-					self.p.POSITION_CONTROL, kuka_gripper_jointPositions[jointIndex], 0)
-
+			# self.p.resetBasePositionAndOrientation(kuka_gripper,
+			# 	[0.923103,-0.200000,1.250036],
+			# 	[-0.,0.964531,-0.000002,-0.263970])
+			self.reset_kuka_gripper(kuka_gripper)
+			
 		# Setup constraints on kuka grippers
 		for kuka, kuka_gripper in zip(self.kuka_arms, self.kuka_grippers):
 			self.kuka_constraints.append(self.p.createConstraint(kuka,
@@ -270,7 +247,7 @@ class PR2GripperVR(BulletPhysicsVR):
 				for e in (events):
 
 					# PR2 gripper follows VR controller				
-					self.p.changeConstraint(self.pr2_cid, e[1], e[self.ORIENTATION], maxForce=100000)	
+					self.p.changeConstraint(self.pr2_cid, e[1], e[self.ORIENTATION], maxForce=1000)	
 
 					if e[self.BUTTONS][33] & self.p.VR_BUTTON_WAS_TRIGGERED:
 						for i in range(self.p.getNumJoints(self.pr2_gripper)):
