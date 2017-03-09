@@ -418,7 +418,7 @@ class DemoVR(BulletPhysicsVR):
 					self.completed_task[obj] = True
 					self.p.addUserDebugText('Finished', obj_pos, [255, 0, 0], lifeTime=5.)
 
-	def _fit_boundary(self, position, boundary)
+	def _fit_boundary(self, position, boundary):
 
 		return all([(boundary[0][i] - boundary[1][i] / 2) <= position[i]\
 			<= (boundary[0][i] + boundary[1][i] / 2)  for i in range(3)])
