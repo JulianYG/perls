@@ -202,9 +202,6 @@ for i in range(7):
 # 				p.setJointMotorControl2(kuka,jointIndex,p.POSITION_CONTROL,jointPositions[jointIndex], 0)
 # 			# 
 
-
-
-
 p.stepSimulation()
 
 # p.disconnect()

@@ -153,7 +153,7 @@ class KukaDoubleArmVR(KukaArmVR):
 							self.p.setJointMotorControl2(kuka_gripper, i, self.p.VELOCITY_CONTROL, targetVelocity=-5, force=50)
 
 					sq_len = self.euc_dist(self.p.getLinkState(kuka, 6)[0], e[1])
-					
+					print(sq_len)
 					# Allows robot arm control by VR controllers
 					if sq_len < self.THRESHOLD * self.THRESHOLD:
 						self.engage(kuka, e, fixed=True)
@@ -284,6 +284,7 @@ class DemoVR(BulletPhysicsVR):
 
 		super().__init__(pybullet, task)
 		self.pr2_gripper = 2
+		self.completed_task = {}
 
 	def create_scene(self, flag):
 		"""
@@ -314,10 +315,15 @@ class DemoVR(BulletPhysicsVR):
 			logIds = [bodyLog]
 
 			while True:
+
+				self._check_task()
+
 				events = self.p.getVREvents()
 				for e in (events):
 					if (e[self.BUTTONS][1] & self.p.VR_BUTTON_WAS_TRIGGERED):
 						self.p.addUserDebugText('One Task Completed', (1.7, 0, 1), (255, 0, 0), 12, 10)
+
+
 
 		except KeyboardInterrupt:
 			self.quit(logIds)
@@ -346,7 +352,6 @@ class DemoVR(BulletPhysicsVR):
 		objects = [self.p.loadURDF("lego/lego.urdf", 1.000000,-0.200000,0.700000,0.000000,0.000000,0.000000,1.000000)]
 		objects = [self.p.loadURDF("lego/lego.urdf", 1.000000,-0.200000,0.800000,0.000000,0.000000,0.000000,1.000000)]
 		objects = [self.p.loadURDF("lego/lego.urdf", 1.000000,-0.200000,0.900000,0.000000,0.000000,0.000000,1.000000)]
-		
 
 		objects = self.p.loadSDF("gripper/wsg50_one_motor_gripper_new_free_base.sdf")
 		kuka_gripper = objects[0]
@@ -369,7 +374,7 @@ class DemoVR(BulletPhysicsVR):
 		objects = [self.p.loadURDF("sphere_small.urdf", 0.850000,-0.400000,0.700000,0.000000,0.000000,0.707107,0.707107)]
 		objects = [self.p.loadURDF("duck_vhacd.urdf", 0.850000,-0.400000,0.900000,0.000000,0.000000,0.707107,0.707107)]
 		objects = self.p.loadSDF("kiva_shelf/model.sdf")
-		ob = objects[0]
+		self.container = objects[0]
 		self.p.resetBasePositionAndOrientation(ob,[0.000000,1.000000,1.204500],[0.000000,0.000000,0.000000,1.000000])
 		objects = [self.p.loadURDF("teddy_vhacd.urdf", -0.100000,0.600000,0.850000,0.000000,0.000000,0.000000,1.000000)]
 		objects = [self.p.loadURDF("sphere_small.urdf", -0.100000,0.955006,1.169706,0.633232,-0.000000,-0.000000,0.773962)]
@@ -400,10 +405,23 @@ class DemoVR(BulletPhysicsVR):
 				# 	self.video_capture()
 		self.quit([])
 
+	def _check_task(self):
 
+		for obj in self.task:
+			if obj not in self.completed_task:
 
+				base = self.p.getBasePositionAndOrientation(self.container)
+				obj_pos = self.p.getBasePositionAndOrientation(obj)[0]
+				shape_dim = self.p.getVisualShapeData(self.container)[3]
+				bound = (base, shape_dim)
+				if self._fit_boundary(obj_pos, bound):
+					self.completed_task[obj] = True
+					self.p.addUserDebugText('Finished', obj_pos, [255, 0, 0], lifeTime=5.)
 
+	def _fit_boundary(self, position, boundary)
 
+		return all([(boundary[0][i] - boundary[1][i] / 2) <= position[i]\
+			<= (boundary[0][i] + boundary[1][i] / 2)  for i in range(3)])
 
 			
 
