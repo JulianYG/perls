@@ -285,6 +285,8 @@ class DemoVR(BulletPhysicsVR):
 		super().__init__(pybullet, task)
 		self.pr2_gripper = 2
 		self.completed_task = {}
+		self.obj_cnt = 0
+		self.container = 19
 
 	def create_scene(self, flag):
 		"""
@@ -298,6 +300,7 @@ class DemoVR(BulletPhysicsVR):
 				load_status = self.p.connect(self.p.GUI)
 		# self.p.resetSimulation()       # Comment out the reset simulation to provide entire control and access to obj info...
 		self.p.setGravity(0, 0, -9.81)
+		self.obj_cnt = self.p.getNumBodies()
 		if flag:
 			for obj in self.task:
 				self.p.loadURDF(*obj)
@@ -406,14 +409,15 @@ class DemoVR(BulletPhysicsVR):
 		self.quit([])
 
 	def _check_task(self):
-
-		for obj in self.task:
+		# Only check boundaries for objects in task
+		for obj in range(self.obj_cnt, self.p.getNumBodies()):
 			if obj not in self.completed_task:
 
-				base = self.p.getBasePositionAndOrientation(self.container)
+				base = self.p.getBasePositionAndOrientation(self.container)[0]
 				obj_pos = self.p.getBasePositionAndOrientation(obj)[0]
-				shape_dim = self.p.getVisualShapeData(self.container)[3]
+				shape_dim = self.p.getVisualShapeData(self.container)[0][3]
 				bound = (base, shape_dim)
+				print(bound)
 				if self._fit_boundary(obj_pos, bound):
 					self.completed_task[obj] = True
 					self.p.addUserDebugText('Finished', obj_pos, [255, 0, 0], lifeTime=5.)
