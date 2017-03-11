@@ -305,7 +305,7 @@ class DemoVR(BulletPhysicsVR):
 		if flag:
 			for obj in self.task:
 				self.p.loadURDF(*obj)
-		self._load_boxes(numOfBoxes=5)
+		self._load_boxes(numOfBoxes=9)
 
 	def record(self, file):
 
@@ -377,7 +377,7 @@ class DemoVR(BulletPhysicsVR):
 		objects = [self.p.loadURDF("duck_vhacd.urdf", 0.850000,-0.400000,0.900000,0.000000,0.000000,0.707107,0.707107)]
 		objects = self.p.loadSDF("kiva_shelf/model.sdf")
 		self.container = objects[0]
-		self.p.resetBasePositionAndOrientation(ob,[0.000000,1.000000,1.204500],[0.000000,0.000000,0.000000,1.000000])
+		self.p.resetBasePositionAndOrientation(self.container,[0.000000,1.000000,1.204500],[0.000000,0.000000,0.000000,1.000000])
 		objects = [self.p.loadURDF("teddy_vhacd.urdf", -0.100000,0.600000,0.850000,0.000000,0.000000,0.000000,1.000000)]
 		objects = [self.p.loadURDF("sphere_small.urdf", -0.100000,0.955006,1.169706,0.633232,-0.000000,-0.000000,0.773962)]
 		objects = [self.p.loadURDF("cube_small.urdf", 0.300000,0.600000,0.850000,0.000000,0.000000,0.000000,1.000000)]
@@ -401,7 +401,7 @@ class DemoVR(BulletPhysicsVR):
 			self.PITCH, self.FOCAL_POINT)
 
 		log = self.parse_log('generic.' + file, verbose=False)
-		self.replay_log(log, delay=0)
+		self.replay_log(log, delay=1e-9)
 			
 				# if saveVideo:
 				# 	self.video_capture()
@@ -416,32 +416,31 @@ class DemoVR(BulletPhysicsVR):
 				obj_pos = self.p.getBasePositionAndOrientation(obj)[0]
 				# shape_dim = self.p.getVisualShapeData(self.container)[0][3]
 				# bound = (base, shape_dim)
-				# print(bound)
-				if self._fit_boundary(obj_pos, obj, boxes[obj - self.obj_cnt]):
+
+				if self._fit_boundary(obj_pos, obj, self.boxes[obj - self.obj_cnt]):
 					self.completed_task[obj] = True
 					self.p.addUserDebugText('Finished', obj_pos, [255, 0, 0], lifeTime=5.)
 
 	def _fit_boundary(self, position, obj, boundary):
 
-		table_top = [i[1] for i in self.p.getContactPoints(14)]	# hardcoded table
-
+		table_top = [i[2] for i in self.p.getContactPoints(14)]	# hardcoded table
 		return boundary[0][0] < position[0] < boundary[1][0] and boundary[0][1] < position[1] < boundary[1][1]\
 			and obj in table_top
 		# all([(boundary[0][i] - boundary[1][i] / 2) <= position[i]\
 		# 	<= (boundary[0][i] + boundary[1][i] / 2)  for i in range(2)])
 
 			
-	def _load_boxes(self, startPos=(1.0, -0.7), numOfBoxes=3, size=0.07, interval=0.01, height=0.62):
+	def _load_boxes(self, startPos=(1.0, -0.7), numOfBoxes=3, size=0.07, interval=0.01, height=0.63):
 		"""
 		Currently display the box shapes on the table surface
 		"""
 		self.boxes = [0] * numOfBoxes
 		for i in range(numOfBoxes):
 			a_i_x = startPos[0] + i * (size + interval)
-			a_i_y = startPos[1] + i * (size + interval) + size
-			b_i_x = startPos[0] 
+			a_i_y = startPos[1] 
+			b_i_x = startPos[0] + i * (size + interval) + size
 			b_i_y = startPos[1] + size
-			boxes[i] = (((a_i_x, a_i_y), (b_i_x, b_i_y)))
+			self.boxes[i] = (((a_i_x, a_i_y), (b_i_x, b_i_y)))
 
 		def construct_box(diag_a, diag_b):
 
@@ -453,13 +452,13 @@ class DemoVR(BulletPhysicsVR):
 			v_d = (ax, by, height)
 			color = (255, 0, 0)
 			t = 0
-			self.p.addUserDebugLine(a, b, lineColorRGB=color, lifeTime=t)
-			self.p.addUserDebugLine(b, c, lineColorRGB=color, lifeTime=t)
-			self.p.addUserDebugLine(c, d, lineColorRGB=color, lifeTime=t)
-			self.p.addUserDebugLine(d, a, lineColorRGB=color, lifeTime=t)
+			self.p.addUserDebugLine(v_a, v_b, lineColorRGB=color, lifeTime=t)
+			self.p.addUserDebugLine(v_b, v_c, lineColorRGB=color, lifeTime=t)
+			self.p.addUserDebugLine(v_c, v_d, lineColorRGB=color, lifeTime=t)
+			self.p.addUserDebugLine(v_d, v_a, lineColorRGB=color, lifeTime=t)
 
-		for box in boxes:
-			construct_box(box)
+		for box in self.boxes:
+			construct_box(*box)
 
 
 
