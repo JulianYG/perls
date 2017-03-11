@@ -286,7 +286,8 @@ class DemoVR(BulletPhysicsVR):
 		self.pr2_gripper = 2
 		self.completed_task = {}
 		self.obj_cnt = 0
-		self.container = 19
+		self.container = 19	# Hard coded Amazon design contest bookshelf
+		self.boxes = None
 
 	def create_scene(self, flag):
 		"""
@@ -304,6 +305,7 @@ class DemoVR(BulletPhysicsVR):
 		if flag:
 			for obj in self.task:
 				self.p.loadURDF(*obj)
+		self._load_boxes(numOfBoxes=5)
 
 	def record(self, file):
 
@@ -318,15 +320,12 @@ class DemoVR(BulletPhysicsVR):
 			logIds = [bodyLog]
 
 			while True:
-
 				self._check_task()
 
 				events = self.p.getVREvents()
 				for e in (events):
 					if (e[self.BUTTONS][1] & self.p.VR_BUTTON_WAS_TRIGGERED):
 						self.p.addUserDebugText('One Task Completed', (1.7, 0, 1), (255, 0, 0), 12, 10)
-
-
 
 		except KeyboardInterrupt:
 			self.quit(logIds)
@@ -413,21 +412,54 @@ class DemoVR(BulletPhysicsVR):
 		for obj in range(self.obj_cnt, self.p.getNumBodies()):
 			if obj not in self.completed_task:
 
-				base = self.p.getBasePositionAndOrientation(self.container)[0]
+				# base = self.p.getBasePositionAndOrientation(self.container)[0]
 				obj_pos = self.p.getBasePositionAndOrientation(obj)[0]
-				shape_dim = self.p.getVisualShapeData(self.container)[0][3]
-				bound = (base, shape_dim)
-				print(bound)
-				if self._fit_boundary(obj_pos, bound):
+				# shape_dim = self.p.getVisualShapeData(self.container)[0][3]
+				# bound = (base, shape_dim)
+				# print(bound)
+				if self._fit_boundary(obj_pos, obj, boxes[obj - self.obj_cnt]):
 					self.completed_task[obj] = True
 					self.p.addUserDebugText('Finished', obj_pos, [255, 0, 0], lifeTime=5.)
 
-	def _fit_boundary(self, position, boundary):
+	def _fit_boundary(self, position, obj, boundary):
 
-		return all([(boundary[0][i] - boundary[1][i] / 2) <= position[i]\
-			<= (boundary[0][i] + boundary[1][i] / 2)  for i in range(3)])
+		table_top = [i[1] for i in self.p.getContactPoints(14)]	# hardcoded table
+
+		return boundary[0][0] < position[0] < boundary[1][0] and boundary[0][1] < position[1] < boundary[1][1]\
+			and obj in table_top
+		# all([(boundary[0][i] - boundary[1][i] / 2) <= position[i]\
+		# 	<= (boundary[0][i] + boundary[1][i] / 2)  for i in range(2)])
 
 			
+	def _load_boxes(self, startPos=(1.0, -0.7), numOfBoxes=3, size=0.07, interval=0.01, height=0.62):
+		"""
+		Currently display the box shapes on the table surface
+		"""
+		self.boxes = [0] * numOfBoxes
+		for i in range(numOfBoxes):
+			a_i_x = startPos[0] + i * (size + interval)
+			a_i_y = startPos[1] + i * (size + interval) + size
+			b_i_x = startPos[0] 
+			b_i_y = startPos[1] + size
+			boxes[i] = (((a_i_x, a_i_y), (b_i_x, b_i_y)))
+
+		def construct_box(diag_a, diag_b):
+
+			ax, ay = diag_a
+			bx, by = diag_b
+			v_a = (ax, ay, height)
+			v_b = (bx, ay, height)
+			v_c = (bx, by, height)
+			v_d = (ax, by, height)
+			color = (255, 0, 0)
+			t = 0
+			self.p.addUserDebugLine(a, b, lineColorRGB=color, lifeTime=t)
+			self.p.addUserDebugLine(b, c, lineColorRGB=color, lifeTime=t)
+			self.p.addUserDebugLine(c, d, lineColorRGB=color, lifeTime=t)
+			self.p.addUserDebugLine(d, a, lineColorRGB=color, lifeTime=t)
+
+		for box in boxes:
+			construct_box(box)
 
 
 
