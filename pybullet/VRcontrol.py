@@ -65,9 +65,9 @@ class KukaSingleArmVR(KukaArmVR):
 						eef_orn = (0, 1, 0, 0)
 						
 						if e[self.BUTTONS][32] & self.p.VR_BUTTON_IS_DOWN:
-							self.ik_helper(self.kuka, target_point_pos, eef_orn)
+							self.ik_helper(self.kuka, target_point_pos, eef_orn, fixed=True)
 						else: 
-							self.ik_helper(self.kuka, target_plane_pos, eef_orn)
+							self.ik_helper(self.kuka, target_plane_pos, eef_orn, fixed=True)
 					else:
 						self.disengage(self.kuka, e)
 	
@@ -153,10 +153,10 @@ class KukaDoubleArmVR(KukaArmVR):
 							self.p.setJointMotorControl2(kuka_gripper, i, self.p.VELOCITY_CONTROL, targetVelocity=-5, force=50)
 
 					sq_len = self.euc_dist(self.p.getLinkState(kuka, 6)[0], e[1])
-					print(sq_len)
+					# print(sq_len)
 					# Allows robot arm control by VR controllers
 					if sq_len < self.THRESHOLD * self.THRESHOLD:
-						self.engage(kuka, e, fixed=True)
+						self.engage(kuka, e, fixed=False)
 					else:
 						self.disengage(kuka, e)
 

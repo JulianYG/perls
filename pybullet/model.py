@@ -1,6 +1,7 @@
 import struct
 import math
 import time
+import numpy as np
 
 class BulletPhysicsVR(object):
 
@@ -237,25 +238,13 @@ class KukaArmVR(BulletPhysicsVR):
 		controller_pos = controller_event[1]
 		controller_orn = controller_event[self.ORIENTATION]
 		targetPos = controller_pos
-
-		# if e[self.BUTTONS][32] & self.p.VR_BUTTON_WAS_RELEASED:
-		# 	_, _, z = self.p.getEulerFromQuaternion(e[self.ORIENTATION])
-		# 	self.p.setJointMotorControl2(kuka, 6, self.p.POSITION_CONTROL, targetPosition=z, force=5)
+		eef_orn = controller_orn
 		if controller_event[self.BUTTONS][32] & self.p.VR_BUTTON_IS_DOWN:
-			
-			# self.p.setJointMotorControl2(kuka, 6, self.p.POSITION_CONTROL, targetPosition=z_orig, force=5)		
-			# self.ik_helper(kuka, targetPos, (0, 1, 0, 0))
 			if fixed:
-				self.ik_helper(kuka, targetPos, (0, 1, 0, 0))
+				self.ik_helper(kuka, targetPos, (0, 1, 0, 0), fixed=fixed)
 			else:
-				_, _, z = self.p.getEulerFromQuaternion(controller_orn)
-				eef_orn = self.p.getQuaternionFromEuler([0, -math.pi, z])
-				self.ik_helper(kuka, targetPos, eef_orn)
-
-		# p.resetBasePositionAndOrientation(kuka_gripper, p.getBasePositionAndOrientation(kuka_gripper)[0], eef_orien)
-		# p.setJointMotorControl2(kuka, 6, p.POSITION_CONTROL, targetPosition=z, force=5)
-		# if e[self.BUTTONS][32] & p.VR_BUTTON_WAS_TRIGGERED:
-			# p.setJointMotorControl2(kuka, 6, p.POSITION_CONTROL, targetPosition=z, force=5)
+				# eef_orn = self.p.getQuaternionFromEuler([0, -math.pi, z])
+				self.ik_helper(kuka, targetPos, controller_orn)
 
 	def disengage(self, kuka, controller_event):
 
@@ -265,18 +254,48 @@ class KukaArmVR(BulletPhysicsVR):
 				self.p.setJointMotorControl2(kuka, jointIndex, self.p.POSITION_CONTROL, 
 					self.REST_JOINT_POS[jointIndex], 0)
 
-	def ik_helper(self, arm_id, eef_pos, eef_orien, nullSpace=True):
+	def ik_helper(self, arm_id, eef_pos, eef_orien, fixed=False):
 
-		if nullSpace:
+		if fixed:
 			joint_pos = self.p.calculateInverseKinematics(arm_id, 6, eef_pos, eef_orien, 
 				lowerLimits=self.LOWER_LIMITS, upperLimits=self.UPPER_LIMITS, 
 				jointRanges=self.JOINT_RANGE, restPoses=self.REST_POSE, jointDamping=self.JOINT_DAMP)
+			for i in range(len(joint_pos)):
+				self.p.setJointMotorControl2(arm_id, i, self.p.POSITION_CONTROL, 
+					targetPosition=joint_pos[i], targetVelocity=0, positionGain=0.05, velocityGain=1.0, force=self.MAX_FORCE)
 		else:
-			joint_pos = self.p.calculateInverseKinematics(arm_id, 6, eef_pos, eef_orien)
-		for i in range(len(joint_pos)):
-			self.p.setJointMotorControl2(arm_id, i, self.p.POSITION_CONTROL, 
-				targetPosition=joint_pos[i], targetVelocity=0, positionGain=0.6, velocityGain=1.0, force=self.MAX_FORCE)
+			joint_pos = self.p.calculateInverseKinematics(arm_id, 6, eef_pos, 
+				lowerLimits=self.LOWER_LIMITS, upperLimits=self.UPPER_LIMITS, 
+				jointRanges=self.JOINT_RANGE, restPoses=self.REST_POSE, jointDamping=self.JOINT_DAMP)
+			# Only need links 1- 5, no need for joint 4-6 with pure position IK
+			for i in range(len(joint_pos) - 3):
+				self.p.setJointMotorControl2(arm_id, i, self.p.POSITION_CONTROL, 
+					targetPosition=joint_pos[i], targetVelocity=0, positionGain=0.05, velocityGain=1.0, force=self.MAX_FORCE)
+			
+			x, y, z = self.p.getEulerFromQuaternion(eef_orien)
+			# End effector needs protection, done by using triangular tricks
+			self.p.setJointMotorControl2(arm_id, 6, self.p.POSITION_CONTROL, 
+				targetPosition=np.arcsin(np.sin(z)), targetVelocity=0, positionGain=0.6, velocityGain=1.0, force=self.MAX_FORCE)
+		
+			# Link 4 needs protection
+			if self.LOWER_LIMITS[4] < x < self.UPPER_LIMITS[4]:	# JOInt limits!!
+				self.p.setJointMotorControl2(arm_id, 4, self.p.POSITION_CONTROL, 
+					targetPosition=x, targetVelocity=0, positionGain=0.02, velocityGain=1, force=self.MAX_FORCE)
+			else:
+				self.p.addUserDebugText('Warning: you are flipping arm link 4', self.p.getLinkState(arm_id, 0)[0], 
+					textColorRGB=(255, 0, 0), lifeTime=1.5)
+				self.p.setJointMotorControl2(arm_id, 4, self.p.POSITION_CONTROL, 
+					targetPosition=joint_pos[4], targetVelocity=0, positionGain=0.01, velocityGain=1.0, force=self.MAX_FORCE)
 
+			if self.LOWER_LIMITS[5] < y < self.UPPER_LIMITS[5]:
+				self.p.setJointMotorControl2(arm_id, 5, self.p.POSITION_CONTROL, 
+					targetPosition=- (y + 0.8) * 2, targetVelocity=0, positionGain=0.03, velocityGain=1.0, force=self.MAX_FORCE)
+			else:
+				self.p.addUserDebugText('Warning: you are flipping arm link 5', self.p.getLinkState(arm_id, 1)[0], 
+					textColorRGB=(255, 0, 0), lifeTime=1.5)
+				self.p.setJointMotorControl2(arm_id, 5, self.p.POSITION_CONTROL, 
+					targetPosition=joint_pos[5], targetVelocity=0, positionGain=0.01, velocityGain=1.0, force=self.MAX_FORCE)
+				#-y-math.pi /2
 	def euc_dist(self, posA, posB):
 		dist = 0.
 		for i in range(len(posA)):
