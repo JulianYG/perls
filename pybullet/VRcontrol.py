@@ -155,9 +155,18 @@ class KukaDoubleArmVR(KukaArmVR):
 								targetPosition=self.KUKA_GRIPPER_REST_POS[i], force=50)		#TO-DO: Modify this
 
 					sq_len = self.euc_dist(self.p.getLinkState(kuka, 6)[0], e[1])
-					# print(sq_len)
+
 					# Allows robot arm control by VR controllers
 					if sq_len < self.THRESHOLD * self.THRESHOLD:
+						# print(self.p.getEulerFromQuaternion(self.p.getLinkState(kuka, 5)[1])[1], 'y')
+						current_x = self.p.getEulerFromQuaternion(self.p.getLinkState(kuka, 6)[1])[0]
+						current_y = self.p.getEulerFromQuaternion(self.p.getLinkState(kuka, 5)[1])[1]
+						#  current_y, current_z = 
+						# and abs(self.p.getLinkState(kuka, 6)[1] - ) < math.pi / 6
+						ctrl_x, ctrl_y, _ = self.p.getEulerFromQuaternion(e[self.ORIENTATION])
+						print (abs(current_x - ctrl_x), abs(current_y - ctrl_y))
+						# if abs(current_y - ctrl_y) < math.pi / 4:
+
 						self.engage(kuka, e, fixed=False)
 					else:
 						self.disengage(kuka, e)

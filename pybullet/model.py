@@ -275,28 +275,40 @@ class KukaArmVR(BulletPhysicsVR):
 			
 			x, y, z = self.p.getEulerFromQuaternion(eef_orien)
 			# End effector needs protection, done by using triangular tricks
-			self.p.setJointMotorControl2(arm_id, 6, self.p.POSITION_CONTROL, 
-				targetPosition=np.arcsin(np.sin(z)), targetVelocity=0, positionGain=0.6, velocityGain=1.0, force=self.MAX_FORCE)
-		
+
+			# if self.LOWER_LIMITS[0] < z < self.UPPER_LIMITS[0]:	# JOInt limits!!
+			# 	self.p.setJointMotorControl2(arm_id, 0, self.p.POSITION_CONTROL, 
+			# 		targetPosition=z, targetVelocity=0, positionGain=0.02, velocityGain=1, force=self.MAX_FORCE)
+			# else:
+			# 	self.p.addUserDebugText('Warning: you are flipping arm link 0', self.p.getLinkState(arm_id, 0)[0], 
+			# 		textColorRGB=(255, 0, 0), lifeTime=1.5)
+			# 	self.p.setJointMotorControl2(arm_id, 0, self.p.POSITION_CONTROL, 
+			# 		targetPosition=joint_pos[0], targetVelocity=0, positionGain=0.01, velocityGain=1.0, force=self.MAX_FORCE)
+
+			# self.p.setJointMotorControl2(arm_id, 6, self.p.POSITION_CONTROL, 
+			# 	targetPosition=np.arcsin(np.sin(z)), targetVelocity=0, positionGain=0.6, velocityGain=1.0, force=self.MAX_FORCE)
+			
+			#TO-DO: add wait till fit
+
 			# Link 4 needs protection
-			if self.LOWER_LIMITS[4] < x < self.UPPER_LIMITS[4]:	# JOInt limits!!
-				self.p.setJointMotorControl2(arm_id, 4, self.p.POSITION_CONTROL, 
+			if self.LOWER_LIMITS[6] < x < self.UPPER_LIMITS[6]:	# JOInt limits!!
+				self.p.setJointMotorControl2(arm_id, 6, self.p.POSITION_CONTROL, 
 					targetPosition=x, targetVelocity=0, positionGain=0.02, velocityGain=1, force=self.MAX_FORCE)
 			else:
-				self.p.addUserDebugText('Warning: you are flipping arm link 4', self.p.getLinkState(arm_id, 0)[0], 
+				self.p.addUserDebugText('Warning: you are flipping arm link 6', self.p.getLinkState(arm_id, 0)[0], 
 					textColorRGB=(255, 0, 0), lifeTime=1.5)
-				self.p.setJointMotorControl2(arm_id, 4, self.p.POSITION_CONTROL, 
-					targetPosition=joint_pos[4], targetVelocity=0, positionGain=0.01, velocityGain=1.0, force=self.MAX_FORCE)
+				self.p.setJointMotorControl2(arm_id, 6, self.p.POSITION_CONTROL, 
+					targetPosition=joint_pos[6], targetVelocity=0, positionGain=0.01, velocityGain=1.0, force=self.MAX_FORCE)
 
 			if self.LOWER_LIMITS[5] < y < self.UPPER_LIMITS[5]:
 				self.p.setJointMotorControl2(arm_id, 5, self.p.POSITION_CONTROL, 
-					targetPosition=- (y + 0.8) * 2, targetVelocity=0, positionGain=0.03, velocityGain=1.0, force=self.MAX_FORCE)
+					targetPosition=-y, targetVelocity=0, positionGain=0.03, velocityGain=1.0, force=self.MAX_FORCE)
 			else:
 				self.p.addUserDebugText('Warning: you are flipping arm link 5', self.p.getLinkState(arm_id, 1)[0], 
 					textColorRGB=(255, 0, 0), lifeTime=1.5)
 				self.p.setJointMotorControl2(arm_id, 5, self.p.POSITION_CONTROL, 
 					targetPosition=joint_pos[5], targetVelocity=0, positionGain=0.01, velocityGain=1.0, force=self.MAX_FORCE)
-				#-y-math.pi /2
+
 	def euc_dist(self, posA, posB):
 		dist = 0.
 		for i in range(len(posA)):
