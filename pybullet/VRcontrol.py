@@ -143,14 +143,16 @@ class KukaDoubleArmVR(KukaArmVR):
 					kuka_gripper = gripperMap[e[0]]
 					kuka = kukaMap[e[0]]			
 
-					# Add sliders for gripper joints
+					#@TO-DO: Add slider for the grippers
 					if e[self.BUTTONS][33] & self.p.VR_BUTTON_WAS_TRIGGERED:
 						for i in range(self.p.getNumJoints(kuka_gripper)):
-							self.p.setJointMotorControl2(kuka_gripper, i, self.p.VELOCITY_CONTROL, targetVelocity=5, force=50)
+							self.p.setJointMotorControl2(kuka_gripper, i, self.p.POSITION_CONTROL, 
+								targetPosition=self.KUKA_GRIPPER_CLOZ_POS[i], force=50)
 
 					if e[self.BUTTONS][33] & self.p.VR_BUTTON_WAS_RELEASED:	
 						for i in range(self.p.getNumJoints(kuka_gripper)):
-							self.p.setJointMotorControl2(kuka_gripper, i, self.p.VELOCITY_CONTROL, targetVelocity=-5, force=50)
+							self.p.setJointMotorControl2(kuka_gripper, i, self.p.POSITION_CONTROL, 
+								targetPosition=self.KUKA_GRIPPER_REST_POS[i], force=50)		#TO-DO: Modify this
 
 					sq_len = self.euc_dist(self.p.getLinkState(kuka, 6)[0], e[1])
 					# print(sq_len)
@@ -237,7 +239,9 @@ class PR2GripperVR(BulletPhysicsVR):
 			# ctrlLog = self.p.startStateLogging(self.p.STATE_LOGGING_VR_CONTROLLERS, 
 			# 	file + '_ctrl')
 			logIds = [bodyLog]
+			pr2_release_pos = [ 0.550569, 0.000000, 0.549657, 0.000000 ]
 
+			pr2_trigger_pos = [0.04305865, 0, 0.04305865, 0]
 			while True:
 
 				events = self.p.getVREvents()
@@ -248,11 +252,13 @@ class PR2GripperVR(BulletPhysicsVR):
 
 					if e[self.BUTTONS][33] & self.p.VR_BUTTON_WAS_TRIGGERED:
 						for i in range(self.p.getNumJoints(self.pr2_gripper)):
-							self.p.setJointMotorControl2(self.pr2_gripper, i, self.p.POSITION_CONTROL, targetPosition=0, force=50)
+							self.p.setJointMotorControl2(self.pr2_gripper, i, self.p.POSITION_CONTROL, 
+								targetPosition=pr2_trigger_pos[i], targetVelocity=0, positionGain=0.05, velocityGain=1.0, force=50)
 
 					if e[self.BUTTONS][33] & self.p.VR_BUTTON_WAS_RELEASED:	
 						for i in range(self.p.getNumJoints(self.pr2_gripper)):
-							self.p.setJointMotorControl2(self.pr2_gripper, i, self.p.POSITION_CONTROL, targetPosition=1, force=50)
+							self.p.setJointMotorControl2(self.pr2_gripper, i, self.p.POSITION_CONTROL, 
+								targetPosition=pr2_release_pos[i], targetVelocity=0, positionGain=0.05, velocityGain=1.0, force=50)
 
 					if (e[self.BUTTONS][1] & self.p.VR_BUTTON_WAS_TRIGGERED):
 						self.p.addUserDebugText('One Item Inserted', (1.7, 0, 1), (255, 0, 0), 12, 10)
@@ -322,8 +328,21 @@ class DemoVR(BulletPhysicsVR):
 			while True:
 				self._check_task()
 
+				pr2states = [self.p.getJointState(2, i)[0] for i in range(self.p.getNumJoints(2))]
+				
+				pr2vel = [self.p.getJointState(2, i)[1] for i in range(self.p.getNumJoints(2))]
+				pr2f = [self.p.getJointState(2, i)[3] for i in range(self.p.getNumJoints(2))]
+				
+				wsgstates = [self.p.getJointState(7, i)[0] for i in range(self.p.getNumJoints(7))]
+				
+
 				events = self.p.getVREvents()
 				for e in (events):
+					print(e[3])
+					print('pr2', pr2states)
+					print('pr2vel', pr2vel)
+					print('pr2f', pr2f)
+					print('wsg', wsgstates)
 					if (e[self.BUTTONS][1] & self.p.VR_BUTTON_WAS_TRIGGERED):
 						self.p.addUserDebugText('One Task Completed', (1.7, 0, 1), (255, 0, 0), 12, 10)
 
