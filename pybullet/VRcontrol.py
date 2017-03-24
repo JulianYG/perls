@@ -88,8 +88,9 @@ class KukaSingleArmVR(KukaArmVR):
 		while load_status == 0:
 			load_status = self.setup(1)
 		# Setup the camera 
-		self.p.resetDebugVisualizerCamera(self.FOCAL_LENGTH, self.YAW, 
-			self.PITCH, self.FOCAL_POINT)
+		self.p.resetDebugVisualizerCamera(cameraDistance=self.FOCAL_LENGTH, 
+			cameraYaw=self.YAW, cameraPitch=self.PITCH, 
+			cameraTargetPosition=self.FOCAL_POINT)
 
 		log = self.parse_log('generic.' + file, verbose=True)
 		self.replay_log(log)
@@ -129,6 +130,8 @@ class KukaDoubleArmVR(KukaArmVR):
 			bodyLog = self.p.startStateLogging(self.p.STATE_LOGGING_GENERIC_ROBOT,
 				'../examples/pybullet/generic.' + file)
 
+			# Now we can do self.p.STATE_LOGGING_VIDEO_MP4
+
 			# ctrlLog = self.p.startStateLogging(self.p.STATE_LOGGING_VR_CONTROLLERS, 
 			# 	file + '_ctrl')
 			logIds = [bodyLog]
@@ -137,9 +140,9 @@ class KukaDoubleArmVR(KukaArmVR):
 
 				events = self.p.getVREvents()
 				for e in (events):
+
 					# If the user think one task is completed, 
 					# he/she will push the menu button
-					# controller_pos, controller_orien = e
 					kuka_gripper = gripperMap[e[0]]
 					kuka = kukaMap[e[0]]			
 
@@ -152,19 +155,18 @@ class KukaDoubleArmVR(KukaArmVR):
 					if e[self.BUTTONS][33] & self.p.VR_BUTTON_WAS_RELEASED:	
 						for i in range(self.p.getNumJoints(kuka_gripper)):
 							self.p.setJointMotorControl2(kuka_gripper, i, self.p.POSITION_CONTROL, 
-								targetPosition=self.KUKA_GRIPPER_REST_POS[i], force=50)		#TO-DO: Modify this
+								targetPosition=self.KUKA_GRIPPER_REST_POS[i], force=50)		
+					#TO-DO: Modify this
 
 					sq_len = self.euc_dist(self.p.getLinkState(kuka, 6)[0], e[1])
 
 					# Allows robot arm control by VR controllers
 					if sq_len < self.THRESHOLD * self.THRESHOLD:
-						# print(self.p.getEulerFromQuaternion(self.p.getLinkState(kuka, 5)[1])[1], 'y')
+
 						current_x = self.p.getEulerFromQuaternion(self.p.getLinkState(kuka, 6)[1])[0]
 						current_y = self.p.getEulerFromQuaternion(self.p.getLinkState(kuka, 5)[1])[1]
-						#  current_y, current_z = 
-						# and abs(self.p.getLinkState(kuka, 6)[1] - ) < math.pi / 6
 						ctrl_x, ctrl_y, _ = self.p.getEulerFromQuaternion(e[self.ORIENTATION])
-						print (abs(current_x - ctrl_x), abs(current_y - ctrl_y))
+						# print (abs(current_x - ctrl_x), abs(current_y - ctrl_y))
 						# if abs(current_y - ctrl_y) < math.pi / 4:
 
 						self.engage(kuka, e, fixed=False)
@@ -173,8 +175,8 @@ class KukaDoubleArmVR(KukaArmVR):
 
 					# Add user interaction for task completion
 					if (e[self.BUTTONS][1] & self.p.VR_BUTTON_WAS_TRIGGERED):
-							# self.p.resetSimulation()
-							# self.p.removeAllUserDebugItems()
+						# self.p.resetSimulation()
+						# self.p.removeAllUserDebugItems()
 						self.p.addUserDebugText('good job!', (1.7, 0, 1), (255, 0, 0), 12, 10)
 						# Can add line for mark here
 						# so that in saved csv file, we know when one task is complete		
@@ -187,8 +189,9 @@ class KukaDoubleArmVR(KukaArmVR):
 		while load_status == 0:
 			load_status = self.setup(1)
 		# Setup the camera 
-		self.p.resetDebugVisualizerCamera(self.FOCAL_LENGTH, self.YAW, 
-			self.PITCH, self.FOCAL_POINT)
+		self.p.resetDebugVisualizerCamera(cameraDistance=self.FOCAL_LENGTH, 
+			cameraYaw=self.YAW, cameraPitch=self.PITCH, 
+			cameraTargetPosition=self.FOCAL_POINT)
 
 		log = self.parse_log('generic.' + file, verbose=True)
 		self.replay_log(log, delay=0.00045)
@@ -281,8 +284,9 @@ class PR2GripperVR(BulletPhysicsVR):
 		while load_status == 0:
 			load_status = self.setup(1)
 		# Setup the camera 
-		self.p.resetDebugVisualizerCamera(self.FOCAL_LENGTH, self.YAW, 
-			self.PITCH, self.FOCAL_POINT)
+		self.p.resetDebugVisualizerCamera(cameraDistance=self.FOCAL_LENGTH, 
+			cameraYaw=self.YAW, cameraPitch=self.PITCH, 
+			cameraTargetPosition=self.FOCAL_POINT)
 
 		log = self.parse_log('generic.' + file, verbose=True)
 		self.replay_log(log, delay=1e-9)
@@ -425,8 +429,9 @@ class DemoVR(BulletPhysicsVR):
 			self.p.loadURDF(*obj)
 
 		# Setup the camera 
-		self.p.resetDebugVisualizerCamera(self.FOCAL_LENGTH, self.YAW, 
-			self.PITCH, self.FOCAL_POINT)
+		self.p.resetDebugVisualizerCamera(cameraDistance=self.FOCAL_LENGTH, 
+			cameraYaw=self.YAW, cameraPitch=self.PITCH, 
+			cameraTargetPosition=self.FOCAL_POINT)
 
 		log = self.parse_log('generic.' + file, verbose=False)
 		self.replay_log(log, delay=1e-9)

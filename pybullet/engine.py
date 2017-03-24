@@ -1,6 +1,6 @@
 import pybullet as p
 from VRcontrol import *
-# from render import generate_trajectory
+import os, sys, getopt
 
 repo = {}
 # Indicate the indices of the objects that need to be tracked in the first entry
@@ -25,10 +25,59 @@ repo['ball'] = [("sphere_small.urdf",0.80000,-0.200000,0.699990,0.000000,0.0,0.0
 		# ,
 		# ("tray/tray_textured2.urdf", 0.94, -0.11, 0.6, 0, 0, 0, 1)]
 
-kukaSimulator = KukaDoubleArmVR(p, repo['ball'])
-kukaSimulator.set_camera_view(-.4, -.2, 1, 0, -90, 120, 1)
+def execute(s, m):
 
-kukaSimulator.record('try', saveVideo=0)
+	if s == 'kuka1':
+		simulator = KukaSingleArmVR(p, repo['ball'])
+	elif s == 'kuka2':
+		simulator = KukaDoubleArmVR(p, repo['ball'])
+	# elif s == 'pr2':
+	elif s == 'grasp':
+		simulator = DemoVR(p, repo['ball'])
+	else:
+		raise NotImplementedError('Invalid input: Simulator type not recognized.')
+
+	simulator.set_camera_view(.8, -.2, 1, 0, -90, 120, 1)
+
+	if m == 'record':
+		simulator.record(s)
+	elif m == 'replay':
+		if os.path.isfile('./generic.' + s):
+			simulator.replay(s)
+		else:
+			raise IOError('Record file not found.')
+	else:
+		raise NotImplementedError('Invalid input: Mode not recognized.')
+
+def usage():
+	print('Usage: python engine.py -s <simulator> -m <mode>')
+	print('Please specify the simulator and user mode')
+
+def main(argv):
+	simulator = 'double'
+	mode = 'record'
+	try:
+		opts, args = getopt.getopt(argv, 'hs:m:', ['help', 'simulator=', 'mode='])
+	except getopt.GetoptError:
+		usage()
+		sys.exit(2)
+	for opt, arg in opts:
+		if opt == '-h':
+			usage()
+			sys.exit(0)
+		elif opt in ('-s', '--simulator'):
+			simulator = arg
+		elif opt in ('-m', '--mode'):
+			mode = arg
+	execute(simulator, mode)
+
+if __name__ == '__main__':
+	main(sys.argv[1:])
+
+# kukaSimulator = KukaDoubleArmVR(p, repo['ball'])
+# kukaSimulator.set_camera_view(-.4, -.2, 1, 0, -90, 120, 1)
+
+# kukaSimulator.record('try', saveVideo=0)
 # kukaSimulator.replay('try')
 
 # graspSimulator = PR2GripperVR(p, repo['ball'])
