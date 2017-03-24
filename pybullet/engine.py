@@ -50,8 +50,8 @@ def execute(s, m):
 		raise NotImplementedError('Invalid input: Mode not recognized.')
 
 def usage():
-	print('Usage: python engine.py -s <simulator> -m <mode>')
 	print('Please specify the simulator and user mode')
+	print('Usage: python engine.py -s <simulator> -m <mode>')
 
 def main(argv):
 	simulator = 'double'
@@ -62,7 +62,7 @@ def main(argv):
 		usage()
 		sys.exit(2)
 	for opt, arg in opts:
-		if opt == '-h':
+		if opt in ('-h', '--help'):
 			usage()
 			sys.exit(0)
 		elif opt in ('-s', '--simulator'):
