@@ -47,7 +47,8 @@ class KukaSingleArmVR(KukaArmVR):
 						# Only attach when sticked around the eef center
 						for contact_point in touch:
 							if self.euc_dist(eef_pos, contact_point[5]) < 0.01 and contact_point[2] not in range(3):
-								cId = self.p.createConstraint(self.kuka, 6, contact_point[2], -1, self.p.JOINT_FIXED, [0, 0, 0], [0, 0, 0.05], [0, 0, 0])
+								cId = self.p.createConstraint(self.kuka, 6, contact_point[2], -1, 
+									self.p.JOINT_FIXED, [0, 0, 0], [0, 0, 0.05], [0, 0, 0])
 								
 					if e[self.BUTTONS][33] & self.p.VR_BUTTON_IS_DOWN:
 						if cId:
@@ -146,7 +147,7 @@ class KukaDoubleArmVR(KukaArmVR):
 					kuka_gripper = gripperMap[e[0]]
 					kuka = kukaMap[e[0]]			
 
-					#@TO-DO: Add slider for the grippers
+					#TODO: Add slider for the grippers
 					if e[self.BUTTONS][33] & self.p.VR_BUTTON_WAS_TRIGGERED:
 						for i in range(self.p.getNumJoints(kuka_gripper)):
 							self.p.setJointMotorControl2(kuka_gripper, i, self.p.POSITION_CONTROL, 
@@ -156,8 +157,8 @@ class KukaDoubleArmVR(KukaArmVR):
 						for i in range(self.p.getNumJoints(kuka_gripper)):
 							self.p.setJointMotorControl2(kuka_gripper, i, self.p.POSITION_CONTROL, 
 								targetPosition=self.KUKA_GRIPPER_REST_POS[i], force=50)		
-					#TO-DO: Modify this
-
+					
+					#TODO: Modify this
 					sq_len = self.euc_dist(self.p.getLinkState(kuka, 6)[0], e[1])
 
 					# Allows robot arm control by VR controllers
@@ -306,7 +307,9 @@ class DemoVR(BulletPhysicsVR):
 		self.completed_task = {}
 		self.obj_cnt = 0
 		self.container = 19	# Hard coded Amazon design contest bookshelf
-		self.boxes = None
+
+		self.boxes = {}
+		# self.boxes = None
 
 	def create_scene(self, flag):
 		"""
@@ -323,7 +326,10 @@ class DemoVR(BulletPhysicsVR):
 		self.obj_cnt = self.p.getNumBodies()
 		if flag:
 			for obj in self.task:
-				self.p.loadURDF(*obj)
+				iD = self.p.loadURDF(*obj)
+				self.p.addUserDebugText(str(iD - self.obj_cnt), 
+					self.p.getBasePositionAndOrientation(iD)[0], textSize=8, lifeTime=0)
+		#TODO: add labels
 		self._load_boxes(numOfBoxes=9)
 
 	def record(self, file):
@@ -448,14 +454,25 @@ class DemoVR(BulletPhysicsVR):
 				# base = self.p.getBasePositionAndOrientation(self.container)[0]
 				obj_pos = self.p.getBasePositionAndOrientation(obj)[0]
 				# shape_dim = self.p.getVisualShapeData(self.container)[0][3]
-				# bound = (base, shape_dim)
+				bound = self.boxes[obj - self.obj_cnt]
 
-				if self._fit_boundary(obj_pos, obj, self.boxes[obj - self.obj_cnt]):
-					self.completed_task[obj] = True
-					self.p.addUserDebugText('Finished', obj_pos, [255, 0, 0], lifeTime=5.)
-
-	def _fit_routine(self, obj, obj_pos, boundary):
-		pass
+				if self._fit_boundary(obj_pos, obj, bound):
+					self.p.addUserDebugText('Finished', obj_pos, [1, 0, 0], lifeTime=5.)
+					self._fit_routine(obj_pos, obj, bound)
+					
+	def _fit_routine(self, obj_pos, obj, boundary):
+		self.complete_task[obj] = True
+		# Change color
+		for line, vertex in self.boxes[boundary]:
+			self.p.removeUserDebugItem(line)
+			self.p.addUserDebugLine(vertex[0], vertex[1], lineColorRGB=(0, 1, 0), lifeTime=0)
+		# Hardcoded fact
+		tableID = 14
+		tablePosition = self.p.getBasePositionAndOrientation(tableID)[0]
+		relPosition = [obj_pos[i] - tablePosition[i] for i in range(3)]
+		# Add constraint
+		self.p.createConstraint(tableID, 0, obj, 0, self.p.JOINT_POINT2POINT, [0, 0, 0], 
+			relPosition, [0, 0, 0])
 
 	def _fit_boundary(self, position, obj, boundary):
 
@@ -464,13 +481,13 @@ class DemoVR(BulletPhysicsVR):
 			and obj in table_top
 		# all([(boundary[0][i] - boundary[1][i] / 2) <= position[i]\
 		# 	<= (boundary[0][i] + boundary[1][i] / 2)  for i in range(2)])
-
 			
-	def _load_boxes(self, startPos=(1.0, -0.7), numOfBoxes=3, size=0.07, interval=0.01, height=0.63):
+	def _load_boxes(self, startPos=(1.0, -0.7), numOfBoxes=3, size=0.07, interval=0.01, 
+		height=0.63, color=(1, 0, 0)):
 		"""
 		Currently display the box shapes on the table surface
 		"""
-		self.boxes = [0] * numOfBoxes
+		# self.boxes = [0] * numOfBoxes
 		for i in range(numOfBoxes):
 			a_i_x = startPos[0] + i * (size + interval)
 			a_i_y = startPos[1] 
@@ -478,23 +495,31 @@ class DemoVR(BulletPhysicsVR):
 			b_i_y = startPos[1] + size
 			self.boxes[i] = (((a_i_x, a_i_y), (b_i_x, b_i_y)))
 
-		def construct_box(diag_a, diag_b):
-
+		# def construct_box(diag_a, diag_b):
+		def construct_box(box_num):
+			diag_a, diag_b = self.boxes[box_num]
 			ax, ay = diag_a
 			bx, by = diag_b
 			v_a = (ax, ay, height)
 			v_b = (bx, ay, height)
 			v_c = (bx, by, height)
 			v_d = (ax, by, height)
-			color = (255, 0, 0)
-			t = 0
-			self.p.addUserDebugLine(v_a, v_b, lineColorRGB=color, lifeTime=t)
-			self.p.addUserDebugLine(v_b, v_c, lineColorRGB=color, lifeTime=t)
-			self.p.addUserDebugLine(v_c, v_d, lineColorRGB=color, lifeTime=t)
-			self.p.addUserDebugLine(v_d, v_a, lineColorRGB=color, lifeTime=t)
-
-		for box in self.boxes:
-			construct_box(*box)
+			a = self.p.addUserDebugLine(v_a, v_b, lineColorRGB=color, lifeTime=0)
+			b = self.p.addUserDebugLine(v_b, v_c, lineColorRGB=color, lifeTime=0)
+			c = self.p.addUserDebugLine(v_c, v_d, lineColorRGB=color, lifeTime=0)
+			d = self.p.addUserDebugLine(v_d, v_a, lineColorRGB=color, lifeTime=0)
+			# Label the box
+			self.p.addUserDebugText(str(box_num), ((ax + bx) / 2., (ay + by) / 2., height), 
+				textSize=8, lifeTime=0)
+			# Keep track of the box region
+			self.boxes[box_num] = (
+								   (a, (v_a, v_b)), 
+								   (b, (v_b, v_c)),
+								   (c, (v_c, v_d)),
+								   (d, (v_d, v_a))
+								  )
+		for k in self.boxes.keys():
+			construct_box(k)
 
 
 
