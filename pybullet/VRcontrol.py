@@ -12,7 +12,7 @@ class KukaSingleArmVR(KukaArmVR):
 	"""
 	def __init__(self, pybullet, task):
 
-		super().__init__(pybullet, task)
+		super(KukaSingleArmVR, self).__init__(pybullet, task)
 		self.kuka = -2
 		
 	def record(self, file):
@@ -111,7 +111,7 @@ class KukaDoubleArmVR(KukaArmVR):
 	# This one try out the new loggingState method
 	def __init__(self, pybullet, task):
 
-		super().__init__(pybullet, task)
+		super(KukaDoubleArmVR, self).__init__(pybullet, task)
 		self.kuka_arms = []
 		self.kuka_grippers = []
 		self.kuka_constraints = []
@@ -225,7 +225,7 @@ class PR2GripperVR(BulletPhysicsVR):
 
 	def __init__(self, pybullet, task):
 
-		super().__init__(pybullet, task)
+		super(PR2GripperVR, self).__init__(pybullet, task)
 		self.pr2_gripper = 0
 		self.pr2_cid = 0
 
@@ -301,7 +301,7 @@ class DemoVR(BulletPhysicsVR):
 	# Still use current logging by myself to record grasp events
 	def __init__(self, pybullet, task):
 
-		super().__init__(pybullet, task)
+		super(DemoVR, self).__init__(pybullet, task)
 		self.pr2_gripper = 2
 		self.completed_task = {}
 		self.obj_cnt = 0
@@ -453,6 +453,9 @@ class DemoVR(BulletPhysicsVR):
 				if self._fit_boundary(obj_pos, obj, self.boxes[obj - self.obj_cnt]):
 					self.completed_task[obj] = True
 					self.p.addUserDebugText('Finished', obj_pos, [255, 0, 0], lifeTime=5.)
+
+	def _fit_routine(self, obj, obj_pos, boundary):
+		pass
 
 	def _fit_boundary(self, position, obj, boundary):
 

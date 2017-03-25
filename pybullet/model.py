@@ -196,7 +196,7 @@ class KukaArmVR(BulletPhysicsVR):
 
 	def __init__(self, pybullet, task):
 
-		super().__init__(pybullet, task)
+		super(KukaArmVR, self).__init__(pybullet, task)
 
 		# Set boundaries on kuka arm
 		self.LOWER_LIMITS = [-.967, -2.0, -2.96, 0.19, -2.96, -2.09, -3.05]
