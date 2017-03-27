@@ -33,11 +33,10 @@ class SingleKukaVR(KukaArmVR):
 				# 	file + '_ctrl')
 
 			logIds = [bodyLog]
-
 			cId = None
 			while True:
-				events = self.p.getVREvents()
 
+				events = self.p.getVREvents()
 				for e in (events):
 					# If the user think one task is completed, 
 					# he/she will push the menu button
@@ -46,7 +45,7 @@ class SingleKukaVR(KukaArmVR):
 					if not cId:		
 						# If detected contact points
 						touch = self.p.getContactPoints(self.kuka)
-						
+				
 						# Only attach when sticked around the eef center
 						for contact_point in touch:
 							if self.euc_dist(eef_pos, contact_point[5]) < 0.01 and contact_point[2] not in range(3):
@@ -58,9 +57,8 @@ class SingleKukaVR(KukaArmVR):
 							self.p.removeConstraint(cId)
 						cId = None
 
-					sq_len = self.euc_dist(eef_pos, e[1])
-
 					# Allows robot arm control by VR controllers
+					sq_len = self.euc_dist(eef_pos, e[1])		
 					if sq_len < self.THRESHOLD * self.THRESHOLD:
 						# eef_pos = self.p.getBasePositionAndOrientation()
 						target_plane_pos = (e[1][0], e[1][1], 1.23)
@@ -311,15 +309,12 @@ class PR2GripperVR(BulletPhysicsVR):
 		table_top = [i[2] for i in self.p.getContactPoints(14)]	# hardcoded table
 		return boundary[0][0] < position[0] < boundary[1][0] and boundary[0][1] < position[1] < boundary[1][1]\
 			and obj in table_top
-		# all([(boundary[0][i] - boundary[1][i] / 2) <= position[i]\
-		# 	<= (boundary[0][i] + boundary[1][i] / 2)  for i in range(2)])
 			
 	def _load_boxes(self, startPos=(1.0, -0.7), numOfBoxes=3, size=0.07, interval=0.01, 
 		height=0.63, color=(1, 0, 0)):
 		"""
 		Currently display the box shapes on the table surface
 		"""
-		# self.boxes = [0] * numOfBoxes
 		for i in range(numOfBoxes):
 			a_i_x = startPos[0] + i * (size + interval)
 			a_i_y = startPos[1] 
@@ -327,7 +322,6 @@ class PR2GripperVR(BulletPhysicsVR):
 			b_i_y = startPos[1] + size
 			self.boxes[i] = (((a_i_x, a_i_y), (b_i_x, b_i_y)))
 
-		# def construct_box(diag_a, diag_b):
 		def construct_box(box_num):
 			diag_a, diag_b = self.boxes[box_num]
 			ax, ay = diag_a
@@ -375,15 +369,16 @@ class DemoVR(BulletPhysicsVR):
 				load_status = self.p.connect(self.p.SHARED_MEMORY)
 			else:
 				load_status = self.p.connect(self.p.GUI)
-		# self.p.resetSimulation()       # Comment out the reset simulation to provide entire control and access to obj info...
+
 		self.p.setGravity(0, 0, -9.81)
-		self.obj_cnt = self.p.getNumBodies()
+
 		if flag:
+			self.obj_cnt = self.p.getNumBodies()
 			for obj in self.task:
 				iD = self.p.loadURDF(*obj)
 				self.p.addUserDebugText(str(iD - self.obj_cnt), 
 					self.p.getBasePositionAndOrientation(iD)[0], textSize=8, lifeTime=0)
-		#TODO: add labels
+		#TODO: add labels for loaded objects
 		self._load_boxes(numOfBoxes=9)
 
 	def record(self, file, video=False):
@@ -402,19 +397,18 @@ class DemoVR(BulletPhysicsVR):
 				# 	file + '_ctrl')
 
 			logIds = [bodyLog]
-
 			while True:
 				self._check_task()
 
-				wsgstates = [self.p.getJointState(7, i)[0] for i in range(self.p.getNumJoints(7))]
+				# wsgstates = [self.p.getJointState(7, i)[0] for i in range(self.p.getNumJoints(7))]
 				
-				events = self.p.getVREvents()
-				for e in (events):
+				# events = self.p.getVREvents()
+				# for e in (events):
 
-					print('wsg', wsgstates)
+				# 	print('wsg', wsgstates)
 
-					if (e[self.BUTTONS][1] & self.p.VR_BUTTON_WAS_TRIGGERED):
-						self.p.addUserDebugText('One Task Completed', (1.7, 0, 1), (255, 0, 0), 12, 10)
+				# 	if (e[self.BUTTONS][1] & self.p.VR_BUTTON_WAS_TRIGGERED):
+				# 		self.p.addUserDebugText('One Task Completed', (1.7, 0, 1), (255, 0, 0), 12, 10)
 
 		except KeyboardInterrupt:
 			self.quit(logIds)
@@ -422,8 +416,6 @@ class DemoVR(BulletPhysicsVR):
 	def replay(self, file, delay=1e-9):
 		self.create_scene(0)
 		self.p.setRealTimeSimulation(0)
-
-
 
 		# Sorry, but must follow the same order of initialization as in compiled executable demo
 		objects = [self.p.loadURDF("plane.urdf", 0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,1.000000)]
@@ -492,7 +484,9 @@ class DemoVR(BulletPhysicsVR):
 			cameraTargetPosition=self.FOCAL_POINT)
 
 		log = self.parse_log('generic.' + file, verbose=False)
-		self.replay_log(log, delay=1e-9)
+		# print(log)
+		print(self.p.getNumBodies())
+		self.replay_log(log, delay=delay)
 		self.quit([])
 
 	def _check_task(self):
