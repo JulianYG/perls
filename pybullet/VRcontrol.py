@@ -6,31 +6,34 @@ import csv
 import numpy as np
 from model import *
 
-class KukaSingleArmVR(KukaArmVR):
+class SingleKukaVR(KukaArmVR):
 	"""
 	An easier task without grasping
 	"""
 	def __init__(self, pybullet, task):
 
-		super(KukaSingleArmVR, self).__init__(pybullet, task)
+		super(SingleKukaVR, self).__init__(pybullet, task)
 		self.kuka = -2
 		
-	def record(self, file):
+	def record(self, file, video=False):
 		load_status = 0
 		while load_status == 0:
 			self.p.connect(self.p.SHARED_MEMORY)
 			load_status = self.setup(0)
 		try:
-			
-			# Record everything
-			bodyLog = self.p.startStateLogging(self.p.STATE_LOGGING_GENERIC_ROBOT,
-				'../examples/pybullet/generic.' + file)
-
-			# # May not needed anymore; benchmark all events during replay is also possible
-			# ctrlLog = self.p.startStateLogging(self.p.STATE_LOGGING_VR_CONTROLLERS, 
-			# 	file + '_ctrl')
+			if video:
+				# Does logging only need to be called once with SharedMemory? 
+				bodylog = self.p.startStateLogging(self.p.STATE_LOGGING_VIDEO_MP4, 
+					'../examples/pybullet/' + file + '.mp4')
+			else:
+				# Record everything
+				bodyLog = self.p.startStateLogging(self.p.STATE_LOGGING_GENERIC_ROBOT,
+					'../examples/pybullet/generic.' + file)
+				# ctrlLog = self.p.startStateLogging(self.p.STATE_LOGGING_VR_CONTROLLERS, 
+				# 	file + '_ctrl')
 
 			logIds = [bodyLog]
+
 			cId = None
 			while True:
 				events = self.p.getVREvents()
@@ -83,22 +86,6 @@ class KukaSingleArmVR(KukaArmVR):
 		except KeyboardInterrupt:
 			self.quit(logIds)
 
-	def replay(self, file, saveVideo=0):
-		
-		load_status = 0
-		while load_status == 0:
-			load_status = self.setup(1)
-		# Setup the camera 
-		self.p.resetDebugVisualizerCamera(cameraDistance=self.FOCAL_LENGTH, 
-			cameraYaw=self.YAW, cameraPitch=self.PITCH, 
-			cameraTargetPosition=self.FOCAL_POINT)
-
-		log = self.parse_log('generic.' + file, verbose=True)
-		self.replay_log(log)
-		# 		if saveVideo:
-		# 			self.video_capture()
-		self.quit([])
-
 	def _setup_robot(self):
 		# Only load a kuka arm, no need for gripper this time
 		self.kuka = self.p.loadURDF("kuka_iiwa/model_vr_limits.urdf", 
@@ -107,17 +94,17 @@ class KukaSingleArmVR(KukaArmVR):
 		self.reset_kuka(self.kuka)
 
 
-class KukaDoubleArmVR(KukaArmVR):
+class DoubleKukaVR(KukaArmVR):
 
 	# This one try out the new loggingState method
 	def __init__(self, pybullet, task):
 
-		super(KukaDoubleArmVR, self).__init__(pybullet, task)
+		super(DoubleKukaVR, self).__init__(pybullet, task)
 		self.kuka_arms = []
 		self.kuka_grippers = []
 		self.kuka_constraints = []
 
-	def record(self, file, saveVideo=0):
+	def record(self, file, video=False):
 		load_status = 0
 		while load_status == 0:
 			self.p.connect(self.p.SHARED_MEMORY)
@@ -127,14 +114,17 @@ class KukaDoubleArmVR(KukaArmVR):
 			gripperMap = dict(zip(self.controllers, self.kuka_grippers))
 			kukaMap = dict(zip(self.controllers, self.kuka_arms))
 			
-			# Record everything
-			bodyLog = self.p.startStateLogging(self.p.STATE_LOGGING_GENERIC_ROBOT,
-				'../examples/pybullet/generic.' + file)
+			if video:
+				# Does logging only need to be called once with SharedMemory? 
+				bodylog = self.p.startStateLogging(self.p.STATE_LOGGING_VIDEO_MP4, 
+					'../examples/pybullet/' + file + '.mp4')
+			else:
+				# Record everything
+				bodyLog = self.p.startStateLogging(self.p.STATE_LOGGING_GENERIC_ROBOT,
+					'../examples/pybullet/generic.' + file)
+				# ctrlLog = self.p.startStateLogging(self.p.STATE_LOGGING_VR_CONTROLLERS, 
+				# 	file + '_ctrl')
 
-			# Now we can do self.p.STATE_LOGGING_VIDEO_MP4
-
-			# ctrlLog = self.p.startStateLogging(self.p.STATE_LOGGING_VR_CONTROLLERS, 
-			# 	file + '_ctrl')
 			logIds = [bodyLog]
 
 			while True:
@@ -185,22 +175,6 @@ class KukaDoubleArmVR(KukaArmVR):
 		except KeyboardInterrupt:
 			self.quit(logIds)
 
-	def replay(self, file, saveVideo=0):
-		load_status = 0
-		while load_status == 0:
-			load_status = self.setup(1)
-		# Setup the camera 
-		self.p.resetDebugVisualizerCamera(cameraDistance=self.FOCAL_LENGTH, 
-			cameraYaw=self.YAW, cameraPitch=self.PITCH, 
-			cameraTargetPosition=self.FOCAL_POINT)
-
-		log = self.parse_log('generic.' + file, verbose=True)
-		self.replay_log(log, delay=0.00045)
-
-		# 		if saveVideo:
-		# 			self.video_capture()
-		self.quit([])
-
 	def _setup_robot(self):
 		pos = [0.3, -0.5]		# Original y-coord for the robot arms
 		# Gripper ID to kuka arm ID
@@ -220,7 +194,7 @@ class KukaDoubleArmVR(KukaArmVR):
 		for kuka, kuka_gripper in zip(self.kuka_arms, self.kuka_grippers):
 			self.kuka_constraints.append(self.p.createConstraint(kuka,
 				6, kuka_gripper, 0, self.p.JOINT_FIXED, [0,0,0], [0,0,0.05], [0,0,0], parentFrameOrientation=[0, 0, 0, 1]))
-			
+
 
 class PR2GripperVR(BulletPhysicsVR):
 
@@ -229,6 +203,10 @@ class PR2GripperVR(BulletPhysicsVR):
 		super(PR2GripperVR, self).__init__(pybullet, task)
 		self.pr2_gripper = 0
 		self.pr2_cid = 0
+		self.gripper_max_joint = 0.550569
+		self.completed_task = {}
+		self.obj_cnt = 0
+		self.boxes = {}
 
 	def create_scene(self):
 		"""
@@ -237,41 +215,64 @@ class PR2GripperVR(BulletPhysicsVR):
 		self.p.resetSimulation()
 		self.p.setGravity(0, 0, -9.81)
 		self.load_default_env()
+		self.obj_cnt = self.p.getNumBodies()
 
-	def record(self, file):
+		#TODO: think about extracting this bounding box out to avoid repeating code if 
+		# this gripper works, abandon demoVR
+		# Use loadArm=True/False for demoVR load_default_env 
+		for obj in self.task:
+			iD = self.p.loadURDF(*obj)
+			self.p.addUserDebugText(str(iD - self.obj_cnt), 
+				self.p.getBasePositionAndOrientation(iD)[0], textSize=8, lifeTime=0)
+		#TODO: add labels
+		self._load_boxes(numOfBoxes=9)
+
+	def record(self, file, video=False):
 
 		load_status = 0
 		while load_status == 0:
 			self.p.connect(self.p.SHARED_MEMORY)
 			load_status = self.setup(0)
 		try:
-			# Record everything
-			bodyLog = self.p.startStateLogging(self.p.STATE_LOGGING_GENERIC_ROBOT,
-				'../examples/pybullet/generic.' + file)
+			if video:
+				# Does logging only need to be called once with SharedMemory? 
+				bodylog = self.p.startStateLogging(self.p.STATE_LOGGING_VIDEO_MP4, 
+					'../examples/pybullet/' + file + '.mp4')
+			else:
+				# Record everything
+				bodyLog = self.p.startStateLogging(self.p.STATE_LOGGING_GENERIC_ROBOT,
+					'../examples/pybullet/generic.' + file)
+				# ctrlLog = self.p.startStateLogging(self.p.STATE_LOGGING_VR_CONTROLLERS, 
+				# 	file + '_ctrl')
 
-			# ctrlLog = self.p.startStateLogging(self.p.STATE_LOGGING_VR_CONTROLLERS, 
-			# 	file + '_ctrl')
 			logIds = [bodyLog]
-			pr2_release_pos = [ 0.550569, 0.000000, 0.549657, 0.000000 ]
 
-			pr2_trigger_pos = [0.04305865, 0, 0.04305865, 0]
+			# pr2_release_pos = [ 0.550569, 0.000000, 0.549657, 0.000000 ]
+			# pr2_trigger_pos = [0.04305865, 0, 0.04305865, 0]
+			
 			while True:
 
 				events = self.p.getVREvents()
 				for e in (events):
 
 					# PR2 gripper follows VR controller				
-					self.p.changeConstraint(self.pr2_cid, e[1], e[self.ORIENTATION], maxForce=1000)	
+					self.p.changeConstraint(self.pr2_cid, e[1], e[self.ORIENTATION], maxForce=500)	
 
-					if e[self.BUTTONS][33] & self.p.VR_BUTTON_WAS_TRIGGERED:
-						for i in range(self.p.getNumJoints(self.pr2_gripper)):
-							self.p.setJointMotorControl2(self.pr2_gripper, i, self.p.POSITION_CONTROL, 
-								targetPosition=pr2_trigger_pos[i], targetVelocity=0, positionGain=0.05, velocityGain=1.0, force=50)
+					# if e[self.BUTTONS][33] & self.p.VR_BUTTON_WAS_TRIGGERED:
+					# 	for i in range(self.p.getNumJoints(self.pr2_gripper)):
+					# 		self.p.setJointMotorControl2(self.pr2_gripper, i, self.p.POSITION_CONTROL, 
+					# 			targetPosition=pr2_trigger_pos[i], targetVelocity=0, positionGain=0.05, velocityGain=1.0, force=50)
 
-					if e[self.BUTTONS][33] & self.p.VR_BUTTON_WAS_RELEASED:	
-						for i in range(self.p.getNumJoints(self.pr2_gripper)):
-							self.p.setJointMotorControl2(self.pr2_gripper, i, self.p.POSITION_CONTROL, 
-								targetPosition=pr2_release_pos[i], targetVelocity=0, positionGain=0.05, velocityGain=1.0, force=50)
+					# if e[self.BUTTONS][33] & self.p.VR_BUTTON_WAS_RELEASED:	
+					# 	for i in range(self.p.getNumJoints(self.pr2_gripper)):
+					# 		self.p.setJointMotorControl2(self.pr2_gripper, i, self.p.POSITION_CONTROL, 
+					# 			targetPosition=pr2_release_pos[i], targetVelocity=0, positionGain=0.05, velocityGain=1.0, force=50)
+
+					# Setup gliders
+					self.p.setJointMotorControl2(self.pr2_gripper, 0, self.p.POSITION_CONTROL, 
+						targetPosition=self.gripper_max_joint * (1 - e[3]), force=5.0)
+					self.p.setJointMotorControl2(self.pr2_gripper, 2, self.p.POSITION_CONTROL, 
+						targetPosition=self.gripper_max_joint * (1 - e[3]), force=5.0)
 
 					if (e[self.BUTTONS][1] & self.p.VR_BUTTON_WAS_TRIGGERED):
 						self.p.addUserDebugText('One Item Inserted', (1.7, 0, 1), (255, 0, 0), 12, 10)
@@ -279,22 +280,78 @@ class PR2GripperVR(BulletPhysicsVR):
 		except KeyboardInterrupt:
 			self.quit(logIds)
 
-	def replay(self, file, saveVideo=0):
+	def _check_task(self):
+		# Only check boundaries for objects in task
+		for obj in range(self.obj_cnt, self.p.getNumBodies()):
+			if obj not in self.completed_task:
 
-		load_status = 0
-		while load_status == 0:
-			load_status = self.setup(1)
-		# Setup the camera 
-		self.p.resetDebugVisualizerCamera(cameraDistance=self.FOCAL_LENGTH, 
-			cameraYaw=self.YAW, cameraPitch=self.PITCH, 
-			cameraTargetPosition=self.FOCAL_POINT)
+				obj_pos = self.p.getBasePositionAndOrientation(obj)[0]
+				bound = self.boxes[obj - self.obj_cnt]
 
-		log = self.parse_log('generic.' + file, verbose=True)
-		self.replay_log(log, delay=1e-9)
+				if self._fit_boundary(obj_pos, obj, bound):
+					self.p.addUserDebugText('Finished', obj_pos, [1, 0, 0], lifeTime=5.)
+					self._fit_routine(obj_pos, obj, bound)
+					
+	def _fit_routine(self, obj_pos, obj, boundary):
+		self.complete_task[obj] = True
+		# Change color
+		for line, vertex in self.boxes[boundary]:
+			self.p.removeUserDebugItem(line)
+			self.p.addUserDebugLine(vertex[0], vertex[1], lineColorRGB=(0, 1, 0), lifeTime=0)
+		# Hardcoded fact
+		tableID = 14
+		tablePosition = self.p.getBasePositionAndOrientation(tableID)[0]
+		relPosition = [obj_pos[i] - tablePosition[i] for i in range(3)]
+		# Add constraint
+		self.p.createConstraint(tableID, 0, obj, 0, self.p.JOINT_POINT2POINT, [0, 0, 0], 
+			relPosition, [0, 0, 0])
 
-		# 		if saveVideo:
-		# 			self.video_capture()
-		self.quit([])
+	def _fit_boundary(self, position, obj, boundary):
+
+		table_top = [i[2] for i in self.p.getContactPoints(14)]	# hardcoded table
+		return boundary[0][0] < position[0] < boundary[1][0] and boundary[0][1] < position[1] < boundary[1][1]\
+			and obj in table_top
+		# all([(boundary[0][i] - boundary[1][i] / 2) <= position[i]\
+		# 	<= (boundary[0][i] + boundary[1][i] / 2)  for i in range(2)])
+			
+	def _load_boxes(self, startPos=(1.0, -0.7), numOfBoxes=3, size=0.07, interval=0.01, 
+		height=0.63, color=(1, 0, 0)):
+		"""
+		Currently display the box shapes on the table surface
+		"""
+		# self.boxes = [0] * numOfBoxes
+		for i in range(numOfBoxes):
+			a_i_x = startPos[0] + i * (size + interval)
+			a_i_y = startPos[1] 
+			b_i_x = startPos[0] + i * (size + interval) + size
+			b_i_y = startPos[1] + size
+			self.boxes[i] = (((a_i_x, a_i_y), (b_i_x, b_i_y)))
+
+		# def construct_box(diag_a, diag_b):
+		def construct_box(box_num):
+			diag_a, diag_b = self.boxes[box_num]
+			ax, ay = diag_a
+			bx, by = diag_b
+			v_a = (ax, ay, height)
+			v_b = (bx, ay, height)
+			v_c = (bx, by, height)
+			v_d = (ax, by, height)
+			a = self.p.addUserDebugLine(v_a, v_b, lineColorRGB=color, lifeTime=0)
+			b = self.p.addUserDebugLine(v_b, v_c, lineColorRGB=color, lifeTime=0)
+			c = self.p.addUserDebugLine(v_c, v_d, lineColorRGB=color, lifeTime=0)
+			d = self.p.addUserDebugLine(v_d, v_a, lineColorRGB=color, lifeTime=0)
+			# Label the box
+			self.p.addUserDebugText(str(box_num), ((ax + bx) / 2., (ay + by) / 2., height), 
+				textSize=8, lifeTime=0)
+			# Keep track of the box region
+			self.boxes[box_num] = (
+								   (a, (v_a, v_b)), 
+								   (b, (v_b, v_c)),
+								   (c, (v_c, v_d)),
+								   (d, (v_d, v_a))
+								  )
+		for k in self.boxes.keys():
+			construct_box(k)
 
 
 class DemoVR(BulletPhysicsVR):
@@ -306,10 +363,7 @@ class DemoVR(BulletPhysicsVR):
 		self.pr2_gripper = 2
 		self.completed_task = {}
 		self.obj_cnt = 0
-		self.container = 19	# Hard coded Amazon design contest bookshelf
-
 		self.boxes = {}
-		# self.boxes = None
 
 	def create_scene(self, flag):
 		"""
@@ -332,45 +386,44 @@ class DemoVR(BulletPhysicsVR):
 		#TODO: add labels
 		self._load_boxes(numOfBoxes=9)
 
-	def record(self, file):
+	def record(self, file, video=False):
 
 		self.create_scene(1)
 		try:
-			# Record everything
-			bodyLog = self.p.startStateLogging(self.p.STATE_LOGGING_GENERIC_ROBOT,
-				'../examples/pybullet/generic.' + file)
+			if video:
+				# Does logging only need to be called once with SharedMemory? 
+				bodylog = self.p.startStateLogging(self.p.STATE_LOGGING_VIDEO_MP4, 
+					'../examples/pybullet/' + file + '.mp4')
+			else:
+				# Record everything
+				bodyLog = self.p.startStateLogging(self.p.STATE_LOGGING_GENERIC_ROBOT,
+					'../examples/pybullet/generic.' + file)
+				# ctrlLog = self.p.startStateLogging(self.p.STATE_LOGGING_VR_CONTROLLERS, 
+				# 	file + '_ctrl')
 
-			# ctrlLog = self.p.startStateLogging(self.p.STATE_LOGGING_VR_CONTROLLERS, 
-			# 	file + '_ctrl')
 			logIds = [bodyLog]
 
 			while True:
 				self._check_task()
 
-				pr2states = [self.p.getJointState(2, i)[0] for i in range(self.p.getNumJoints(2))]
-				
-				pr2vel = [self.p.getJointState(2, i)[1] for i in range(self.p.getNumJoints(2))]
-				pr2f = [self.p.getJointState(2, i)[3] for i in range(self.p.getNumJoints(2))]
-				
 				wsgstates = [self.p.getJointState(7, i)[0] for i in range(self.p.getNumJoints(7))]
 				
-
 				events = self.p.getVREvents()
 				for e in (events):
-					print(e[3])
-					print('pr2', pr2states)
-					print('pr2vel', pr2vel)
-					print('pr2f', pr2f)
+
 					print('wsg', wsgstates)
+
 					if (e[self.BUTTONS][1] & self.p.VR_BUTTON_WAS_TRIGGERED):
 						self.p.addUserDebugText('One Task Completed', (1.7, 0, 1), (255, 0, 0), 12, 10)
 
 		except KeyboardInterrupt:
 			self.quit(logIds)
 
-	def replay(self, file, saveVideo=0):
+	def replay(self, file, delay=1e-9):
 		self.create_scene(0)
 		self.p.setRealTimeSimulation(0)
+
+
 
 		# Sorry, but must follow the same order of initialization as in compiled executable demo
 		objects = [self.p.loadURDF("plane.urdf", 0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,1.000000)]
@@ -414,8 +467,7 @@ class DemoVR(BulletPhysicsVR):
 		objects = [self.p.loadURDF("sphere_small.urdf", 0.850000,-0.400000,0.700000,0.000000,0.000000,0.707107,0.707107)]
 		objects = [self.p.loadURDF("duck_vhacd.urdf", 0.850000,-0.400000,0.900000,0.000000,0.000000,0.707107,0.707107)]
 		objects = self.p.loadSDF("kiva_shelf/model.sdf")
-		self.container = objects[0]
-		self.p.resetBasePositionAndOrientation(self.container,[0.000000,1.000000,1.204500],[0.000000,0.000000,0.000000,1.000000])
+		self.p.resetBasePositionAndOrientation(objects[0],[0.000000,1.000000,1.204500],[0.000000,0.000000,0.000000,1.000000])
 		objects = [self.p.loadURDF("teddy_vhacd.urdf", -0.100000,0.600000,0.850000,0.000000,0.000000,0.000000,1.000000)]
 		objects = [self.p.loadURDF("sphere_small.urdf", -0.100000,0.955006,1.169706,0.633232,-0.000000,-0.000000,0.773962)]
 		objects = [self.p.loadURDF("cube_small.urdf", 0.300000,0.600000,0.850000,0.000000,0.000000,0.000000,1.000000)]
@@ -441,9 +493,6 @@ class DemoVR(BulletPhysicsVR):
 
 		log = self.parse_log('generic.' + file, verbose=False)
 		self.replay_log(log, delay=1e-9)
-			
-				# if saveVideo:
-				# 	self.video_capture()
 		self.quit([])
 
 	def _check_task(self):
@@ -451,9 +500,7 @@ class DemoVR(BulletPhysicsVR):
 		for obj in range(self.obj_cnt, self.p.getNumBodies()):
 			if obj not in self.completed_task:
 
-				# base = self.p.getBasePositionAndOrientation(self.container)[0]
 				obj_pos = self.p.getBasePositionAndOrientation(obj)[0]
-				# shape_dim = self.p.getVisualShapeData(self.container)[0][3]
 				bound = self.boxes[obj - self.obj_cnt]
 
 				if self._fit_boundary(obj_pos, obj, bound):

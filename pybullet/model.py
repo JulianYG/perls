@@ -57,11 +57,21 @@ class BulletPhysicsVR(object):
 	def create_scene(self):
 		raise NotImplementedError("Each VR Setup must re-implement this method.")
 
-	def record(self, file):
+	def record(self, file, video=False):
 		raise NotImplementedError("Each VR Setup must re-implement this method.")
 
-	def replay(self, file, saveVideo=0):
-		raise NotImplementedError("Each VR Setup must re-implement this method.")
+	def replay(self, file, delay=0.0001):
+		load_status = 0
+		while load_status == 0:
+			load_status = self.setup(1)
+		# Setup the camera 
+		self.p.resetDebugVisualizerCamera(cameraDistance=self.FOCAL_LENGTH, 
+			cameraYaw=self.YAW, cameraPitch=self.PITCH, 
+			cameraTargetPosition=self.FOCAL_POINT)
+
+		log = self.parse_log('generic.' + file, verbose=True)
+		self.replay_log(log, delay=delay)
+		self.quit([])
 
 	def set_camera_view(self, targetPosX, targetPosY, targetPosZ, roll, pitch, yaw, dist):
 		"""
@@ -147,7 +157,7 @@ class BulletPhysicsVR(object):
 				self.p.stopStateLogging(Id)
 		else:
 			fp.close()
-			
+
 		self.p.resetSimulation()
 		self.p.disconnect()
 
