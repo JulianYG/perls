@@ -41,7 +41,9 @@ This readme file is composed by two parts. First part is instructions on using t
 
 ## Demo instructions
 
-Usage: `python engine.py -s <simulator> -m <mode> -v <video> -d <delay> -t <task>`
+Usage:
+
+`python engine.py -s <simulator> -m <mode> -v <video> -d <delay> -t <task>`
 
 There are currently four types of simulator executable from engine.py. kukaSimulator has two kaka arms with 6DOF VR controller mapping, which aims to simulate the motion control of human arms. The graspSimulator is deprecated. The demoSimulator is used for grasping task data collection, and the simSimulator is a single kaka arm without gripper; instead it’s equipped with a magnetic end effector, which is able to attach objects from contact.
 
@@ -63,8 +65,11 @@ KukaArmVR -> KukaSingleArmVR, KukaDoubleArmVR
 BulletPhysicsVR -> PR2GripperVR, DemoVR
 
 BulletPhysicsVR callable methods:
+
 `replay(file, delay)`
+
 `record(file, video)`
+
 `set_camera_view(focusX, focusY, focusZ, roll, pitch, yaw, focal_len)`
 
 Features on demoSimulator: change the boundary from red to green after placing the item inside; add constraint to the items inside boundary; add explicit labels on the items and boundary lines.
