@@ -1,16 +1,16 @@
 ## File Structure
 
-URDF & SDF files: `$bullet\data`
+- URDF & SDF files: `$bullet\data`
 
-Docs: `$bullet\docs`
+- Docs: `$bullet\docs`
 
-Demo projects: `$bullet\build3\vs2010`
+- Demo projects: `$bullet\build3\vs2010`
 
-Import filters: `$bullet\examples`
+- Import filters: `$bullet\examples`
 
-Executables (built demo projects): `$bullet\bin`
+- Executables (built demo projects): `$bullet\bin`
 
-Pybullet DLL: `~\AppData\Local\Programs\Python\Python36-32\DLLs\pybullet.pyd`
+- Pybullet DLL: `~\AppData\Local\Programs\Python\Python36-32\DLLs\pybullet.pyd`
 
 ## Visual Studio
 
@@ -27,19 +27,19 @@ TODO: Object tracking coordinates maybe in `stepSimulation()`
 
 ## Pybullet
 
-###Installation: 
+### Installation: 
 [Using Pybullet](http://bulletphysics.org/mediawiki-1.5.8/index.php/Using_pybullet)
 
 There are 3 modes of pybullet physics servers, GUI, Shared_Memory, and UDP server. Shared_Memory is the one we are using for SteamVR. To connect with pybullet, under `$bullet\examples\pybullet`, import pybullet and type `p.disconnect()` to reset all previous connections. Run App_SharedMemoryPhysics_VR demo under `$bullet\bin` (recommended),  and call `p.connect(p.SHARED_MEMORY)` to connect. If VR executable is not running, there will be a connection failure. Use pybullet API to manipulate.
 
 You can connect to the VR app using pybullet to add robots from URDF or SDF files, joint actuator/motor control etc.
 
-###Setup:
+### Setup:
 Currently modifying `App_SharedMemoryPhysics_VR` project under `0_Bullet3Solution` to setup our own environment. Shared memory is defined. Controller buttons behavior: `pr2_gripper (bodyID = 0)`? Only need to define ground plane and gripper behavior in cpp files. The rest can be added through pybullet, as demonstrated in Desktop python script.
 
-This readme file is composed by two parts. First part is instructions on using the built VR environment, and the second part is documentation on three relevant scripts: model.py, VRcontrol.py, and engine.py.
+This readme file is composed by two parts. First part is instructions on using the built VR environment, and the second part is documentation on three relevant scripts: `model.py`, `VRcontrol.py`, and `engine.py`.
 
-##Demo instructions
+## Demo instructions
 
 Usage: `python engine.py -s <simulator> -m <mode> -v <video> -d <delay> -t <task>`
 
@@ -50,11 +50,12 @@ To use the simulators, first initialize by calling their constructors as in the 
 General operations: trigger for closing grippers, touch pad for engaging arms.
 
 Notes:
-1. For demoSimulator, the AppsSharedMemoryVR.exe VR interface must be closed and reopened for every different record. Other simulators will automatically reset the scene with ctrl+C.
-2. For kukaSimulator, two controllers need to be both turned on before running engine.py. Hold the circle button in the center to engage the arms, release for disengage. 
-3. For all other simulators, it is suggested to just keep one controller turned on, in order to avoid the interference from the idle controller to the arm.
 
-###Code instructions
+- For demoSimulator, the AppsSharedMemoryVR.exe VR interface must be closed and reopened for every different record. Other simulators will automatically reset the scene with ctrl+C.
+- For kukaSimulator, two controllers need to be both turned on before running engine.py. Hold the circle button in the center to engage the arms, release for disengage. 
+- For all other simulators, it is suggested to just keep one controller turned on, in order to avoid the interference from the idle controller to the arm.
+
+### Code instructions
 
 The file `model.py` has the abstract classes `BulletPhysicsVR` and `KukaArmVR` for all VR simulators. Class hierarchy: 
 BulletPhysicsVR -> KukaArmVR 
@@ -68,5 +69,6 @@ BulletPhysicsVR callable methods:
 
 Features on demoSimulator: change the boundary from red to green after placing the item inside; add constraint to the items inside boundary; add explicit labels on the items and boundary lines.
 
-###TODO: Fix Sawyer IK, try new PR2 simulator, fix grasp replay.
+### TODO
+Fix Sawyer IK, try new PR2 simulator, fix grasp replay.
 
