@@ -376,9 +376,11 @@ class DemoVR(BulletPhysicsVR):
 			self.obj_cnt = self.p.getNumBodies()
 			for obj in self.task:
 				iD = self.p.loadURDF(*obj)
-				self.p.addUserDebugText(str(iD - self.obj_cnt), 
-					self.p.getBasePositionAndOrientation(iD)[0], textSize=8, lifeTime=0)
-		#TODO: add labels for loaded objects
+
+				#TODO: better way to add labels for loaded objects
+				# self.p.addUserDebugText(str(iD - self.obj_cnt), 
+				# 	self.p.getBasePositionAndOrientation(iD)[0], textSize=8, lifeTime=0)
+
 		self._load_boxes(numOfBoxes=9)
 
 	def record(self, file, video=False):
@@ -484,8 +486,7 @@ class DemoVR(BulletPhysicsVR):
 			cameraTargetPosition=self.FOCAL_POINT)
 
 		log = self.parse_log('generic.' + file, verbose=False)
-		# print(log)
-		print(self.p.getNumBodies())
+
 		self.replay_log(log, delay=delay)
 		self.quit([])
 
@@ -502,9 +503,9 @@ class DemoVR(BulletPhysicsVR):
 					self._fit_routine(obj_pos, obj, bound)
 					
 	def _fit_routine(self, obj_pos, obj, boundary):
-		self.complete_task[obj] = True
+		# self.complete_task[obj] = True
 		# Change color
-		for line, vertex in self.boxes[boundary]:
+		for line, vertex in boundary:
 			self.p.removeUserDebugItem(line)
 			self.p.addUserDebugLine(vertex[0], vertex[1], lineColorRGB=(0, 1, 0), lifeTime=0)
 		# Hardcoded fact
@@ -512,23 +513,25 @@ class DemoVR(BulletPhysicsVR):
 		tablePosition = self.p.getBasePositionAndOrientation(tableID)[0]
 		relPosition = [obj_pos[i] - tablePosition[i] for i in range(3)]
 		# Add constraint
-		self.p.createConstraint(tableID, 0, obj, 0, self.p.JOINT_POINT2POINT, [0, 0, 0], 
-			relPosition, [0, 0, 0])
+		# print(tablePosition)
+		self.p.createConstraint(-1, -1, obj, -1, self.p.JOINT_FIXED, [0, 0, 0], 
+			 obj_pos, [0, 0, 0])
 
 	def _fit_boundary(self, position, obj, boundary):
 
 		table_top = [i[2] for i in self.p.getContactPoints(14)]	# hardcoded table
-		return boundary[0][0] < position[0] < boundary[1][0] and boundary[0][1] < position[1] < boundary[1][1]\
-			and obj in table_top
+		# print(position, 'pos')
+		# print (boundary, 'bod')
+		return boundary[0][1][0][0] < position[0] < boundary[0][1][1][0] and \
+			boundary[0][1][1][1] < position[1] < boundary[2][1][1][1] and obj in table_top
 		# all([(boundary[0][i] - boundary[1][i] / 2) <= position[i]\
 		# 	<= (boundary[0][i] + boundary[1][i] / 2)  for i in range(2)])
 			
-	def _load_boxes(self, startPos=(1.0, -0.7), numOfBoxes=3, size=0.07, interval=0.01, 
+	def _load_boxes(self, startPos=(0.6, -0.7), numOfBoxes=3, size=0.07, interval=0.01, 
 		height=0.63, color=(1, 0, 0)):
 		"""
 		Currently display the box shapes on the table surface
 		"""
-		# self.boxes = [0] * numOfBoxes
 		for i in range(numOfBoxes):
 			a_i_x = startPos[0] + i * (size + interval)
 			a_i_y = startPos[1] 
@@ -536,7 +539,6 @@ class DemoVR(BulletPhysicsVR):
 			b_i_y = startPos[1] + size
 			self.boxes[i] = (((a_i_x, a_i_y), (b_i_x, b_i_y)))
 
-		# def construct_box(diag_a, diag_b):
 		def construct_box(box_num):
 			diag_a, diag_b = self.boxes[box_num]
 			ax, ay = diag_a
@@ -549,9 +551,11 @@ class DemoVR(BulletPhysicsVR):
 			b = self.p.addUserDebugLine(v_b, v_c, lineColorRGB=color, lifeTime=0)
 			c = self.p.addUserDebugLine(v_c, v_d, lineColorRGB=color, lifeTime=0)
 			d = self.p.addUserDebugLine(v_d, v_a, lineColorRGB=color, lifeTime=0)
-			# Label the box
-			self.p.addUserDebugText(str(box_num), ((ax + bx) / 2., (ay + by) / 2., height), 
-				textSize=8, lifeTime=0)
+
+			#TODO: better way to Label the box
+			# self.p.addUserDebugText(str(box_num), ((ax + bx) / 2., (ay + by) / 2., height), 
+			# 	textSize=8, lifeTime=0)
+
 			# Keep track of the box region
 			self.boxes[box_num] = (
 								   (a, (v_a, v_b)), 
