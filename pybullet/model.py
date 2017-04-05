@@ -3,7 +3,7 @@ import math
 import time
 import numpy as np
 
-class BulletPhysicsVR(object):
+class BulletVR(object):
 
 	def __init__(self, pybullet, task):
 		"""
@@ -202,11 +202,11 @@ class BulletPhysicsVR(object):
 		self.p.loadURDF("table_square/table_square.urdf", -1.000000,0.000000,0.000000,0.000000,0.000000,0.000000,1.000000)
 
 
-class KukaArmVR(BulletPhysicsVR):
+class KukaVR(BulletVR):
 
 	def __init__(self, pybullet, task):
 
-		super(KukaArmVR, self).__init__(pybullet, task)
+		super(KukaVR, self).__init__(pybullet, task)
 
 		# Set boundaries on kuka arm
 		self.LOWER_LIMITS = [-.967, -2.0, -2.96, 0.19, -2.96, -2.09, -3.05]

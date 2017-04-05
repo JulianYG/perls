@@ -6,7 +6,7 @@ import csv
 import numpy as np
 from model import *
 
-class SingleKukaVR(KukaArmVR):
+class SingleKukaVR(KukaVR):
 	"""
 	An easier task without grasping
 	"""
@@ -92,7 +92,7 @@ class SingleKukaVR(KukaArmVR):
 		self.reset_kuka(self.kuka)
 
 
-class DoubleKukaVR(KukaArmVR):
+class DoubleKukaVR(KukaVR):
 
 	# This one try out the new loggingState method
 	def __init__(self, pybullet, task):
@@ -194,7 +194,7 @@ class DoubleKukaVR(KukaArmVR):
 				6, kuka_gripper, 0, self.p.JOINT_FIXED, [0,0,0], [0,0,0.05], [0,0,0], parentFrameOrientation=[0, 0, 0, 1]))
 
 
-class PR2GripperVR(BulletPhysicsVR):
+class PR2GripperVR(BulletVR):
 
 	def __init__(self, pybullet, task):
 
@@ -348,7 +348,7 @@ class PR2GripperVR(BulletPhysicsVR):
 			construct_box(k)
 
 
-class DemoVR(BulletPhysicsVR):
+class DemoVR(BulletVR):
 
 	# Still use current logging by myself to record grasp events
 	def __init__(self, pybullet, task):
