@@ -21,6 +21,7 @@ def execute(*args):
 	else:
 		raise NotImplementedError('Invalid input: Simulator type not recognized.')
 
+	# Default view point setting
 	simulator.set_camera_view(.8, -.2, 1, 0, -90, 120, 1)
 
 	if m == 'record':
