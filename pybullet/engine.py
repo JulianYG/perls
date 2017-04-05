@@ -35,7 +35,7 @@ def execute(*args):
 
 def usage():
 	print('Please specify at least the simulator and user mode. Default task: ball')
-	print('Usage: python engine.py -s <simulator> -m <mode> -v <video> -d <delay> -t <task>')
+	print('Usage: python engine.py -s [simulator] -m [mode] -v <video> -d [delay] -t [task]')
 
 def main(argv):
 	simulator = None
