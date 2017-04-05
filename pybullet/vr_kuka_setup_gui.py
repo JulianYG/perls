@@ -1,11 +1,10 @@
 import pybullet as p
-import math
+import math, os
 p.connect(p.GUI)
 
 p.setInternalSimFlags(0)
 
 p.resetSimulation()
-
 objects = [p.loadURDF("plane.urdf", 0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,1.000000)]
 objects = [p.loadURDF("samurai.urdf", 0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,1.000000)]
 objects = [p.loadURDF("pr2_gripper.urdf", 0.500000,0.300006,0.700000,-0.000000,-0.000000,-0.000031,1.000000)]
