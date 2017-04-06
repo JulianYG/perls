@@ -1,1 +1,0 @@
-__all__ = ['vr_demo', 'vr_gripper', 'vr_kuka_arm1', 'vr_kuka_arm2']

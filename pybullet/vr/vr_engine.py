@@ -1,5 +1,6 @@
 import pybullet as p
-from bullet import *
+from bullet.models import *
+from bullet.vr_simulator import Simulator
 import os, sys, getopt
 from os.path import join as pjoin
 import json
@@ -13,24 +14,28 @@ def execute(*args):
 	s, m, v, d, t = args
 	fn = s + '_' + t
 	if s == 'kuka1':
-		simulator = vr_kuka_arm1.SingleKukaVR(p, repo[t])
+		model = kuka.Kuka([0.4], fixed=True)
+
 	elif s == 'kuka2':
-		simulator = vr_kuka_arm2.DoubleKukaVR(p, repo[t])
-	# elif s == 'pr2':
-	elif s == 'grasp':
-		simulator = vr_demo.DemoVR(p, repo[t])
+		model = kuka.Kuka([0.3, 0.5])
+
 	elif s == 'pr2':
-		simulator = vr_gripper.PR2GripperVR(p, repo[t])
+		model = pr2.PR2(collab=True)
+
 	else:
 		raise NotImplementedError('Invalid input: Simulator type not recognized.')
+	simulator = Simulator(model)
+	
 
 	# Default view point setting
 	simulator.set_camera_view(.8, -.2, 1, 0, -90, 120, 1)
 
 	if m == 'record':
+		simulator.load_task(repo[t], 0)
 		simulator.record(fn, v)
 	elif m == 'replay':
 		if os.path.isfile(pjoin(RECORD_LOG_DIR, 'generic.' + fn)):
+			simulator.load_task(repo[t], 1)
 			simulator.replay(fn, d)
 		else:
 			raise IOError('Record file not found.')
