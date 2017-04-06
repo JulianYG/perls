@@ -1,5 +1,5 @@
 import struct
-import time
+import time, os
 import numpy as np
 from os.path import join as pjoin
 
@@ -29,8 +29,8 @@ class BulletVR(object):
 		self.hand = False
 		self.VR_HAND_ID = None
 
-		self.VIDEO_DIR = './data/video'
-		self.RECORD_LOG_DIR = './data/record'
+		self.VIDEO_DIR = pjoin(os.getcwd(), 'data', 'video')
+		self.RECORD_LOG_DIR = pjoin(os.getcwd(), 'data', 'record')
 
 	def setup(self, flag):
 		"""

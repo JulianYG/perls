@@ -1,6 +1,6 @@
 import struct
 import math
-from vr_physics import BulletVR
+from bullet.core.vr_physics import BulletVR
 
 class KukaVR(BulletVR):
 

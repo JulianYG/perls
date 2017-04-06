@@ -1,5 +1,5 @@
 from os.path import join as pjoin
-from core.vr_physics import BulletVR
+from bullet.core.vr_physics import BulletVR
 
 
 class DemoVR(BulletVR):
@@ -41,30 +41,21 @@ class DemoVR(BulletVR):
 
 		self.create_scene(1)
 		try:
+			logIds = []
 			if video:
 				# Does logging only need to be called once with SharedMemory? 
-				bodylog = self.p.startStateLogging(self.p.STATE_LOGGING_VIDEO_MP4, 
-					pjoin(self.VIDEO_DIR, file + '.mp4'))
+				logIds.append(self.p.startStateLogging(self.p.STATE_LOGGING_VIDEO_MP4, 
+					pjoin(self.VIDEO_DIR, file + '.mp4')))
+
 			else:
 				# Record everything
-				bodyLog = self.p.startStateLogging(self.p.STATE_LOGGING_GENERIC_ROBOT,
-					pjoin(self.RECORD_LOG_DIR, 'generic.' + file))
+				logIds.append(self.p.startStateLogging(self.p.STATE_LOGGING_GENERIC_ROBOT,
+					pjoin(self.RECORD_LOG_DIR, 'generic.' + file)))
 				# ctrlLog = self.p.startStateLogging(self.p.STATE_LOGGING_VR_CONTROLLERS, 
 				# 	file + '_ctrl')
-
-			logIds = [bodyLog]
+			
 			while True:
 				self._check_task()
-
-				# wsgstates = [self.p.getJointState(7, i)[0] for i in range(self.p.getNumJoints(7))]
-				
-				# events = self.p.getVREvents()
-				# for e in (events):
-
-				# 	print('wsg', wsgstates)
-
-				# 	if (e[self.BUTTONS][1] & self.p.VR_BUTTON_WAS_TRIGGERED):
-				# 		self.p.addUserDebugText('One Task Completed', (1.7, 0, 1), (255, 0, 0), 12, 10)
 
 		except KeyboardInterrupt:
 			self.quit(logIds)

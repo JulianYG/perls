@@ -1,5 +1,5 @@
 from os.path import join as pjoin
-from core.vr_physics import BulletVR
+from bullet.core.vr_physics import BulletVR
 
 class PR2GripperVR(BulletVR):
 
@@ -41,40 +41,31 @@ class PR2GripperVR(BulletVR):
 		while load_status == 0:
 			self.p.connect(self.p.SHARED_MEMORY)
 			load_status = self.setup(0)
+		logIds = []
 		try:
 			if video:
 				# Does logging only need to be called once with SharedMemory? 
-				bodylog = self.p.startStateLogging(self.p.STATE_LOGGING_VIDEO_MP4, 
-					pjoin(self.VIDEO_DIR, file + '.mp4'))
+				logIds.append(self.p.startStateLogging(self.p.STATE_LOGGING_VIDEO_MP4, 
+					pjoin(self.VIDEO_DIR, file + '.mp4')))
+
 			else:
 				# Record everything
-				bodyLog = self.p.startStateLogging(self.p.STATE_LOGGING_GENERIC_ROBOT,
-					pjoin(self.RECORD_LOG_DIR, 'generic.' + file))
+				logIds.append(self.p.startStateLogging(self.p.STATE_LOGGING_GENERIC_ROBOT,
+					pjoin(self.RECORD_LOG_DIR, 'generic.' + file)))
 				# ctrlLog = self.p.startStateLogging(self.p.STATE_LOGGING_VR_CONTROLLERS, 
 				# 	file + '_ctrl')
-
-			logIds = [bodyLog]
-
-			# pr2_release_pos = [ 0.550569, 0.000000, 0.549657, 0.000000 ]
-			# pr2_trigger_pos = [0.04305865, 0, 0.04305865, 0]
 			
 			while True:
 
 				events = self.p.getVREvents()
 				for e in (events):
 
+					# Only use one controller
+					if e[0] == self.controllers[1]:
+						break
+
 					# PR2 gripper follows VR controller				
 					self.p.changeConstraint(self.pr2_cid, e[1], e[self.ORIENTATION], maxForce=500)	
-
-					# if e[self.BUTTONS][33] & self.p.VR_BUTTON_WAS_TRIGGERED:
-					# 	for i in range(self.p.getNumJoints(self.pr2_gripper)):
-					# 		self.p.setJointMotorControl2(self.pr2_gripper, i, self.p.POSITION_CONTROL, 
-					# 			targetPosition=pr2_trigger_pos[i], targetVelocity=0, positionGain=0.05, velocityGain=1.0, force=50)
-
-					# if e[self.BUTTONS][33] & self.p.VR_BUTTON_WAS_RELEASED:	
-					# 	for i in range(self.p.getNumJoints(self.pr2_gripper)):
-					# 		self.p.setJointMotorControl2(self.pr2_gripper, i, self.p.POSITION_CONTROL, 
-					# 			targetPosition=pr2_release_pos[i], targetVelocity=0, positionGain=0.05, velocityGain=1.0, force=50)
 
 					# Setup gliders
 					self.p.setJointMotorControl2(self.pr2_gripper, 0, self.p.POSITION_CONTROL, 

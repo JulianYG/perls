@@ -1,5 +1,5 @@
 from os.path import join as pjoin
-from core.vr_kuka import KukaVR
+from bullet.core.vr_kuka import KukaVR
 
 class DoubleKukaVR(KukaVR):
 	
@@ -21,19 +21,17 @@ class DoubleKukaVR(KukaVR):
 		try:
 			gripperMap = dict(zip(self.controllers, self.kuka_grippers))
 			kukaMap = dict(zip(self.controllers, self.kuka_arms))
-			
+			logIds = []
 			if video:
 				# Does logging only need to be called once with SharedMemory? 
-				bodylog = self.p.startStateLogging(self.p.STATE_LOGGING_VIDEO_MP4, 
-					pjoin(self.VIDEO_DIR, file + '.mp4'))
+				logIds.append(self.p.startStateLogging(self.p.STATE_LOGGING_VIDEO_MP4, 
+					pjoin(self.VIDEO_DIR, file + '.mp4')))
 			else:
 				# Record everything
-				bodyLog = self.p.startStateLogging(self.p.STATE_LOGGING_GENERIC_ROBOT,
-					pjoin(self.RECORD_LOG_DIR, 'generic.' + file))
+				logIds.append(self.p.startStateLogging(self.p.STATE_LOGGING_GENERIC_ROBOT,
+					pjoin(self.RECORD_LOG_DIR, 'generic.' + file)))
 				# ctrlLog = self.p.startStateLogging(self.p.STATE_LOGGING_VR_CONTROLLERS, 
 				# 	file + '_ctrl')
-
-			logIds = [bodyLog]
 
 			while True:
 
