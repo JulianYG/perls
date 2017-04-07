@@ -5,7 +5,7 @@ class Scene(object):
 	"""
 	The basic scene setup in VR 
 	"""
-	def __init__(self):
+	def __init__(self, enableForceSensor):
 		"""
 		Other subclasses may re-implement the constructor
 		"""		
@@ -19,6 +19,8 @@ class Scene(object):
 		self.constraints = []
 		self.arms = []
 		self.VR_HAND_ID = None
+
+		self.has_force_sensor = enableForceSensor
 
 	def reset(self, flag):
 		"""
@@ -46,8 +48,20 @@ class Scene(object):
 	def create_scene(self):
 		raise NotImplementedError("Each VR Setup must re-implement this method.")
 
-	def move(self, event, ctrl_map):
+	def control(self, event, ctrl_map):
 		raise NotImplementedError("Each VR Setup must re-implement this method.")
+
+	def get_arm_ids(self):
+		return self.arms
+
+	def set_time_step(self, time_step):
+		p.setTimeStep(time_step)
+
+	def step_simulation(self, time_step):
+		p.stepSimulation()
+
+	def set_force_sensor(self):
+		self.has_force_sensor = True
 
 	def create_control_mappings(self):
 		control_map = {}

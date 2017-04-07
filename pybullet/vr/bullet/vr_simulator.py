@@ -47,9 +47,9 @@ class Simulator(object):
 					if skip_flag:
 						if e[0] == self._model.controllers[1]:
 							break
-						self._model.move(e, self._control_map)
+						self._model.control(e, self._control_map)
 					else:
-						self._model.move(e, self._control_map)
+						self._model.control(e, self._control_map)
 
 		except KeyboardInterrupt:
 			self.quit(logIds)
