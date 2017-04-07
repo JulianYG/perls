@@ -1,5 +1,5 @@
 import pybullet as p
-from physics import Scene
+from bullet.models.core.physics import Scene
 
 
 class Robot(Scene):
@@ -10,7 +10,6 @@ class Robot(Scene):
 		self.THRESHOLD = 1.3
 		self.MAX_FORCE = 500
 		self.pos = []
-		self.arms = []
 
 	def create_scene(self):
 		"""
@@ -78,7 +77,7 @@ class Robot(Scene):
 			if self.FIX:
 				self._ik_helper(robot, targetPos, (0, 1, 0, 0), self.FIX)
 			else:
-				self._ik_helper(robot, targetPos, controller_orn)
+				self._ik_helper(robot, targetPos, controller_orn, self.FIX)
 
 	def _disengage(self, robot, controller_event):
 

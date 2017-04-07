@@ -17,6 +17,7 @@ class Scene(object):
 		self.hand = False
 		self.grippers = []
 		self.constraints = []
+		self.arms = []
 		self.VR_HAND_ID = None
 
 	def reset(self, flag):
@@ -58,6 +59,9 @@ class Scene(object):
 			control_map['constraint'] = dict(zip(self.controllers, self.constraints))
 		return control_map
 
+	def is_unicontrol(self):
+		return len(self.controllers) > max(len(self.grippers), len(self.arms), len(self.constraints))
+
 	def load_task(self, task):
 		# May implement differently in grasping task for labels
 		for obj in task:
@@ -85,20 +89,11 @@ class Scene(object):
 		p.loadURDF("cube_small.urdf", 0.950000,-0.100000,0.700000,0.000000,0.000000,0.707107,0.707107)
 		p.loadURDF("sphere_small.urdf", 0.850000,-0.400000,0.700000,0.000000,0.000000,0.707107,0.707107)
 		p.loadURDF("duck_vhacd.urdf", 0.850000,-0.400000,0.900000,0.000000,0.000000,0.707107,0.707107)
-		p.loadURDF("teddy_vhacd.urdf", -0.100000,0.600000,0.850000,0.000000,0.000000,0.000000,1.000000)
-		p.loadURDF("sphere_small.urdf", -0.100000,0.955006,1.169706,0.633232,-0.000000,-0.000000,0.773962)
-		p.loadURDF("cube_small.urdf", 0.300000,0.600000,0.850000,0.000000,0.000000,0.000000,1.000000)
+		p.loadURDF("teddy_vhacd.urdf", -0.100000,-2.200000,0.850000,0.000000,0.000000,0.000000,1.000000)
+		p.loadURDF("sphere_small.urdf", -0.100000,-2.255006,1.169706,0.633232,-0.000000,-0.000000,0.773962)
+		p.loadURDF("cube_small.urdf", 0.300000,-2.100000,0.850000,0.000000,0.000000,0.000000,1.000000)
 		p.loadURDF("table_square/table_square.urdf", -1.000000,0.000000,0.000000,0.000000,0.000000,0.000000,1.000000)
 		shelf = p.loadSDF("kiva_shelf/model.sdf")[0]
 		p.resetBasePositionAndOrientation(shelf, [-0.700000,-2.200000,1.204500],[0.000000,0.000000,0.000000,1.000000])
-		p.loadURDF("table/table.urdf", 1.000000,-0.200000,0.000000,0.000000,0.000000,0.707107,0.707107)
-		p.loadURDF("teddy_vhacd.urdf", 1.050000,-0.500000,0.700000,0.000000,0.000000,0.707107,0.707107)
-		p.loadURDF("cube_small.urdf", 0.950000,-0.100000,0.700000,0.000000,0.000000,0.707107,0.707107)
-		p.loadURDF("sphere_small.urdf", 0.850000,-0.400000,0.700000,0.000000,0.000000,0.707107,0.707107)
-		p.loadURDF("duck_vhacd.urdf", 0.850000,-0.400000,0.900000,0.000000,0.000000,0.707107,0.707107)
-		p.loadURDF("teddy_vhacd.urdf", -0.100000,0.600000,0.850000,0.000000,0.000000,0.000000,1.000000)
-		p.loadURDF("sphere_small.urdf", -0.100000,0.955006,1.169706,0.633232,-0.000000,-0.000000,0.773962)
-		p.loadURDF("cube_small.urdf", 0.300000,0.600000,0.850000,0.000000,0.000000,0.000000,1.000000)
-		p.loadURDF("table_square/table_square.urdf", -1.000000,0.000000,0.000000,0.000000,0.000000,0.000000,1.000000)
 		p.setGravity(0, 0, -9.81)
 

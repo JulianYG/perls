@@ -1,4 +1,3 @@
-import pybullet as p
 from bullet.models import *
 from bullet.vr_simulator import Simulator
 import os, sys, getopt
@@ -17,16 +16,15 @@ def execute(*args):
 		model = kuka.Kuka([0.4], fixed=True)
 
 	elif s == 'kuka2':
-		model = kuka.Kuka([0.3, 0.5])
+		model = kuka.Kuka([0.3, -0.5])
 
 	elif s == 'pr2':
-		model = pr2.PR2(collab=True)
+		model = pr2.PR2(True)
 
 	else:
 		raise NotImplementedError('Invalid input: Simulator type not recognized.')
 	simulator = Simulator(model)
 	
-
 	# Default view point setting
 	simulator.set_camera_view(.8, -.2, 1, 0, -90, 120, 1)
 

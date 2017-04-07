@@ -42,8 +42,14 @@ class Simulator(object):
 				# 	file + '_ctrl')
 			while True:
 				events = p.getVREvents()
+				skip_flag = self._model.is_unicontrol()
 				for e in (events):
-					self._model.move(e, self._control_map)
+					if skip_flag:
+						if e[0] == self._model.controllers[1]:
+							break
+						self._model.move(e, self._control_map)
+					else:
+						self._model.move(e, self._control_map)
 
 		except KeyboardInterrupt:
 			self.quit(logIds)

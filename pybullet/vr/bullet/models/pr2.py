@@ -1,9 +1,9 @@
 import pybullet as p
-from core.physics import Scene
+from bullet.models.core.physics import Scene
 
 class PR2(Scene):
 
-	def __init__(self, collab=True):
+	def __init__(self, collab=False):
 
 		super(PR2, self).__init__()
 		self.gripper_max_joint = 0.550569
@@ -34,7 +34,7 @@ class PR2(Scene):
 		# self._load_boxes(numOfBoxes=9)
 
 	def move(self, event, ctrl_map):
-
+		
 		ctrl_id = event[0]
 		constraint_id = ctrl_map['constraint'][ctrl_id]
 		gripper_id = ctrl_map['gripper'][ctrl_id]
@@ -44,9 +44,9 @@ class PR2(Scene):
 
 		# Setup gliders
 		p.setJointMotorControl2(gripper_id, 0, p.POSITION_CONTROL, 
-			targetPosition=self.gripper_max_joint * (1 - event[3]), force=50)
+			targetPosition=self.gripper_max_joint * (1 - event[3]), force=5.0)
 		p.setJointMotorControl2(gripper_id, 2, p.POSITION_CONTROL, 
-			targetPosition=self.gripper_max_joint * (1 - event[3]), force=50)
+			targetPosition=self.gripper_max_joint * (1 - event[3]), force=5.0)
 
 		if (event[self.BUTTONS][1] & p.VR_BUTTON_WAS_TRIGGERED):
 			p.addUserDebugText('One Item Inserted', (1.7, 0, 1), (255, 0, 0), 12, 10)
