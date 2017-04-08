@@ -14,11 +14,13 @@ def execute(*args):
 	fn = '_'.join([s, m, t])
 	if m == 'kuka':
 		# Change Fixed to True for keyboard
-		model = kuka.Kuka([0.3, -0.5], fixed=False, enableForceSensor=False)  
+		model = kuka.Kuka([0.3, -0.5], fixed=False, enableForceSensor=False)
+	elif m == 'sawyer':
+		model = sawyer.Sawyer([0.0], fixed=True, enableForceSensor=False)
 	elif m == 'pr2':
 		model = pr2.PR2([0.3, -0.5], enableForceSensor=False)
 	else:
-		raise NotImplementedError('Invalid input: Model type not recognized.')
+		raise NotImplementedError('Invalid input: Model not recognized.')
 	
 	if s == 'vr':
 		simulator = vr_simulator.VRSimulator(model)

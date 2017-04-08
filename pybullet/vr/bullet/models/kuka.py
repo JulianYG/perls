@@ -14,12 +14,21 @@ class Kuka(Robot):
 		self.JOINT_RANGE = [5.8, 4, 5.8, 4, 5.8, 4, 6]
 		self.REST_POSE = [0, 0, 0, math.pi / 2, 0, -math.pi * 0.66, 0]
 		self.JOINT_DAMP = [.1, .1, .1, .1, .1, .1, .1]
-		self.REST_JOINT_POS = [-0., -0., 0., 1.570793, 0., -1.036725, 0.000001]
 		self.GRIPPER_REST_POS = [0., -0.011130, -0.206421, 0.205143, -0.009999, 0., -0.010055, 0.]
 		self.GRIPPER_CLOZ_POS = [0.0, -0.047564246423083795, 0.6855956234759611, 
 			-0.7479294372303137, 0.05054599996976922, 0.0, 0.049838105678835724, 0.0]
 		self.THRESHOLD = 1.3
 		self.MAX_FORCE = 500
+
+	def setup_scene(self, task):
+		"""
+		Basic scene needed for running tasks
+		"""
+		self.load_basic_env()
+		for obj in task:
+			p.loadURDF(*obj)
+		self.obj_cnt = p.getNumBodies()
+		p.setGravity(0, 0, -9.81)
 
 	def reach(self, arm_id, eef_pos, eef_orien, fixed):
 

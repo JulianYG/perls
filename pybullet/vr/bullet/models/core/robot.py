@@ -11,14 +11,7 @@ class Robot(Scene):
 		self.pos = pos
 
 	def setup_scene(self, task):
-		"""
-		Basic scene needed for running tasks
-		"""
-		self.load_basic_env()
-		for obj in task:
-			p.loadURDF(*obj)
-		self.obj_cnt = p.getNumBodies()
-		p.setGravity(0, 0, -9.81)
+		raise NotImplementedError('Each robot class should implement this method.')
 
 	def get_robot_states(self):
 		states = []

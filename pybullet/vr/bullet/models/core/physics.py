@@ -97,6 +97,9 @@ class Scene(object):
 	def redundant_control(self):
 		return len(self.controllers) > max(len(self.grippers), len(self.arms), len(self.constraints))
 
+	def load_min_env(self):
+		p.loadURDF("plane.urdf",0,0,0,0,0,0,1)
+
 	def load_basic_env(self):
 
 		p.loadURDF("plane.urdf",0,0,0,0,0,0,1)
