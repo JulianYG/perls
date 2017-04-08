@@ -33,18 +33,23 @@ class Robot(Scene):
 		# Return data points and label
 		return states, self.arms
 
-	def get_link_pos(self, link_idx):
+	def get_link_info(self, link_idx):
 
-		link_pos = []
+		link_pose = []
 		for arm in self.arms:
 			if isinstance(link_idx, list):
-				link_pos.append([p.getLinkState(arm, i, 1)[0] + \
-					p.getLinkState(arm, i, 1)[-2] for i in link_idx])
+				link_pose.append([(p.getLinkState(arm, i)[0],
+					p.getLinkState(arm, i)[1], p.getLinkState(arm, i, 
+					1)[-2]) for i in link_idx])
+			elif link_idx == -1:
+				eef_idx = p.getNumJoints(arm) - 1
+				link_pose.append((p.getLinkState(arm, eef_idx)[0],
+					p.getLinkState(arm, eef_idx, 1)[-2]))
 			else:
-				link_pos.append(p.getLinkState(arm, link_idx, 1)[0] + \
-					p.getLinkState(arm, link_idx, 1)[-2])
+				link_pose.append((p.getLinkState(arm, link_idx)[0],
+					p.getLinkState(arm, link_idx, 1)[-2]))
 
-		return link_pos
+		return link_pose
 
 	def control(self, event, ctrl_map):
 
@@ -55,21 +60,24 @@ class Robot(Scene):
 
 		self.grasp(gripper_id, event)
 
-		sq_len = self._get_distance(p.getLinkState(arm_id, eef_id)[0], event[1])
-
-		# Allows robot arm control by VR controllers
-		if sq_len < self.THRESHOLD * self.THRESHOLD:
-			self._engage(arm_id, event)
-		else:
-			self._disengage(arm_id, event)
-
+		#TODO: make this as another function (mark event)
 		# Add user interaction for task completion
 		if (event[self.BUTTONS][1] & p.VR_BUTTON_WAS_TRIGGERED):
 			# p.resetSimulation()
 			# p.removeAllUserDebugItems()
 			p.addUserDebugText('good job!', (1.7, 0, 1), (255, 0, 0), 12, 10)
 			# Can add line for mark here
-			# so that in saved csv file, we know when one task is complete		
+			# so that in saved csv file, we know when one task is complete	
+
+		sq_len = self._get_distance(p.getLinkState(arm_id, eef_id)[0], event[1])
+
+		# Allows robot arm control by VR controllers
+		if sq_len < self.THRESHOLD * self.THRESHOLD:
+			self._engage(arm_id, event)
+			return 0
+		else:
+			self._disengage(arm_id, event)
+			return -1
 
 	def set_robot_pos(self, arm_ids, vals, ctrl_type='pos'):
 
@@ -93,54 +101,20 @@ class Robot(Scene):
 		if controller_event[self.BUTTONS][33] & p.VR_BUTTON_WAS_TRIGGERED:
 			for i in range(p.getNumJoints(gripper)):
 				p.setJointMotorControl2(gripper, i, p.POSITION_CONTROL, 
-					targetPosition=self.KUKA_GRIPPER_CLOZ_POS[i], force=50)
+					targetPosition=self.GRIPPER_CLOZ_POS[i], force=50)
 
 		if controller_event[self.BUTTONS][33] & p.VR_BUTTON_WAS_RELEASED:	
 			for i in range(p.getNumJoints(gripper)):
 				p.setJointMotorControl2(gripper, i, p.POSITION_CONTROL, 
-					targetPosition=self.KUKA_GRIPPER_REST_POS[i], force=50)	
+					targetPosition=self.GRIPPER_REST_POS[i], force=50)	
 
 	def reach(self, arm_id, eef_pos, eef_orien, fixed):
+		raise NotImplementedError('Each robot class should implement this method.')
 
-		if fixed:
-			joint_pos = p.calculateInverseKinematics(arm_id, 6, eef_pos, eef_orien, 
-				lowerLimits=self.LOWER_LIMITS, upperLimits=self.UPPER_LIMITS, 
-				jointRanges=self.JOINT_RANGE, restPoses=self.REST_POSE, jointDamping=self.JOINT_DAMP)
-			for i in range(len(joint_pos)):
-				p.setJointMotorControl2(arm_id, i, p.POSITION_CONTROL, 
-					targetPosition=joint_pos[i], targetVelocity=0, positionGain=0.05, velocityGain=1.0, force=self.MAX_FORCE)
-		else:
-			joint_pos = p.calculateInverseKinematics(arm_id, 6, eef_pos, 
-				lowerLimits=self.LOWER_LIMITS, upperLimits=self.UPPER_LIMITS, 
-				jointRanges=self.JOINT_RANGE, restPoses=self.REST_POSE, jointDamping=self.JOINT_DAMP)
-			# Only need links 1- 5, no need for joint 4-6 with pure position IK
-			for i in range(len(joint_pos) - 3):
-				p.setJointMotorControl2(arm_id, i, p.POSITION_CONTROL, 
-					targetPosition=joint_pos[i], targetVelocity=0, positionGain=0.05, velocityGain=1.0, force=self.MAX_FORCE)
-			
-			x, y, z = p.getEulerFromQuaternion(eef_orien)
+	def add_marker(self, arm_id, color):
+		#TODO
+		pass
 
-			#TO-DO: add wait till fit
-
-			# Link 4 needs protection
-			if self.LOWER_LIMITS[6] < x < self.UPPER_LIMITS[6]:	# JOInt limits!!
-				p.setJointMotorControl2(arm_id, 6, p.POSITION_CONTROL, 
-					targetPosition=x, targetVelocity=0, positionGain=0.02, velocityGain=1, force=self.MAX_FORCE)
-			else:
-				p.addUserDebugText('Warning: you are flipping arm link 6', p.getLinkState(arm_id, 0)[0], 
-					textColorRGB=(255, 0, 0), lifeTime=1.5)
-				p.setJointMotorControl2(arm_id, 6, p.POSITION_CONTROL, 
-					targetPosition=joint_pos[6], targetVelocity=0, positionGain=0.01, velocityGain=1.0, force=self.MAX_FORCE)
-
-			if self.LOWER_LIMITS[5] < y < self.UPPER_LIMITS[5]:
-				p.setJointMotorControl2(arm_id, 5, p.POSITION_CONTROL, 
-					targetPosition=-y, targetVelocity=0, positionGain=0.03, velocityGain=1.0, force=self.MAX_FORCE)
-			else:
-				p.addUserDebugText('Warning: you are flipping arm link 5', p.getLinkState(arm_id, 1)[0], 
-					textColorRGB=(255, 0, 0), lifeTime=1.5)
-				p.setJointMotorControl2(arm_id, 5, p.POSITION_CONTROL, 
-					targetPosition=joint_pos[5], targetVelocity=0, positionGain=0.01, velocityGain=1.0, force=self.MAX_FORCE)	
-	
 	def _get_distance(self, posA, posB):
 		dist = 0.
 		for i in range(len(posA)):
@@ -163,9 +137,10 @@ class Robot(Scene):
 
 		if controller_event[self.BUTTONS][32] & p.VR_BUTTON_IS_DOWN:
 			for jointIndex in range(p.getNumJoints(robot)):
-				# p.resetJointState(robot, jointIndex, self.REST_JOINT_POS[jointIndex])
 				p.setJointMotorControl2(robot, jointIndex, p.POSITION_CONTROL, 
-					self.REST_JOINT_POS[jointIndex], 0)
+					targetPosition=self.REST_JOINT_POS[jointIndex], 
+					targetVelocity=0, positionGain=0.03, velocityGain=1,
+					force=self.MAX_FORCE)
 
 	def _reset_robot(self, robot):
 		for jointIndex in range(p.getNumJoints(robot)):
@@ -175,7 +150,7 @@ class Robot(Scene):
 
 	def _reset_robot_gripper(self, robot_gripper):
 		for jointIndex in range(p.getNumJoints(robot_gripper)):
-			p.resetJointState(robot_gripper, jointIndex, self.KUKA_GRIPPER_REST_POS[jointIndex])
+			p.resetJointState(robot_gripper, jointIndex, self.GRIPPER_REST_POS[jointIndex])
 			p.setJointMotorControl2(robot_gripper, jointIndex, 
-				p.POSITION_CONTROL, self.KUKA_GRIPPER_REST_POS[jointIndex], 0)
+				p.POSITION_CONTROL, self.GRIPPER_REST_POS[jointIndex], 0)
 

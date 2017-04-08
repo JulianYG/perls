@@ -16,11 +16,52 @@ class Kuka(Robot):
 		self.REST_POSE = [0, 0, 0, math.pi / 2, 0, -math.pi * 0.66, 0]
 		self.JOINT_DAMP = [.1, .1, .1, .1, .1, .1, .1]
 		self.REST_JOINT_POS = [-0., -0., 0., 1.570793, 0., -1.036725, 0.000001]
-		self.KUKA_GRIPPER_REST_POS = [0., -0.011130, -0.206421, 0.205143, -0.009999, 0., -0.010055, 0.]
-		self.KUKA_GRIPPER_CLOZ_POS = [0.0, -0.047564246423083795, 0.6855956234759611, 
+		self.GRIPPER_REST_POS = [0., -0.011130, -0.206421, 0.205143, -0.009999, 0., -0.010055, 0.]
+		self.GRIPPER_CLOZ_POS = [0.0, -0.047564246423083795, 0.6855956234759611, 
 			-0.7479294372303137, 0.05054599996976922, 0.0, 0.049838105678835724, 0.0]
 		self.THRESHOLD = 1.3
 		self.MAX_FORCE = 500
+
+	def reach(self, arm_id, eef_pos, eef_orien, fixed):
+
+		if fixed:
+			joint_pos = p.calculateInverseKinematics(arm_id, 6, eef_pos, eef_orien, 
+				lowerLimits=self.LOWER_LIMITS, upperLimits=self.UPPER_LIMITS, 
+				jointRanges=self.JOINT_RANGE, restPoses=self.REST_POSE, jointDamping=self.JOINT_DAMP)
+			for i in range(len(joint_pos)):
+				p.setJointMotorControl2(arm_id, i, p.POSITION_CONTROL, 
+					targetPosition=joint_pos[i], targetVelocity=0, positionGain=0.05, velocityGain=1.0, force=self.MAX_FORCE)
+		else:
+			joint_pos = p.calculateInverseKinematics(arm_id, 6, eef_pos, 
+				lowerLimits=self.LOWER_LIMITS, upperLimits=self.UPPER_LIMITS, 
+				jointRanges=self.JOINT_RANGE, restPoses=self.REST_POSE, jointDamping=self.JOINT_DAMP)
+			# Only need links 1- 5, no need for joint 4-6 with pure position IK
+			for i in range(len(joint_pos) - 3):
+				p.setJointMotorControl2(arm_id, i, p.POSITION_CONTROL, 
+					targetPosition=joint_pos[i], targetVelocity=0, positionGain=0.05, velocityGain=1.0, force=self.MAX_FORCE)
+			
+			x, y, z = p.getEulerFromQuaternion(eef_orien)
+
+			#TO-DO: add wait till fit
+
+			# Link 4 needs protection
+			if self.LOWER_LIMITS[6] < x < self.UPPER_LIMITS[6]:	# JOInt limits!!
+				p.setJointMotorControl2(arm_id, 6, p.POSITION_CONTROL, 
+					targetPosition=x, targetVelocity=0, positionGain=0.02, velocityGain=1, force=self.MAX_FORCE)
+			else:
+				p.addUserDebugText('Warning: you are flipping arm link 6', p.getLinkState(arm_id, 0)[0], 
+					textColorRGB=(255, 0, 0), lifeTime=1.5)
+				p.setJointMotorControl2(arm_id, 6, p.POSITION_CONTROL, 
+					targetPosition=joint_pos[6], targetVelocity=0, positionGain=0.01, velocityGain=1.0, force=self.MAX_FORCE)
+
+			if self.LOWER_LIMITS[5] < y < self.UPPER_LIMITS[5]:
+				p.setJointMotorControl2(arm_id, 5, p.POSITION_CONTROL, 
+					targetPosition=-y, targetVelocity=0, positionGain=0.03, velocityGain=1.0, force=self.MAX_FORCE)
+			else:
+				p.addUserDebugText('Warning: you are flipping arm link 5', p.getLinkState(arm_id, 1)[0], 
+					textColorRGB=(255, 0, 0), lifeTime=1.5)
+				p.setJointMotorControl2(arm_id, 5, p.POSITION_CONTROL, 
+					targetPosition=joint_pos[5], targetVelocity=0, positionGain=0.01, velocityGain=1.0, force=self.MAX_FORCE)
 
 	def _load_robot(self, ypos):
 

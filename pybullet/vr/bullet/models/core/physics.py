@@ -20,20 +20,25 @@ class Scene(object):
 		self.arms = []
 		self.VR_HAND_ID = None
 
+		self.solo = None
 		self.has_force_sensor = enableForceSensor
 
-	def reset(self, flag):
+	def reset(self, replay, vr):
 		"""
 		Load task for both recording and replay
 		"""
 		try:
-			# Use GUI and turn off simulation for replay
-			if flag:
+			# Use GUI for replay or non-vr interface
+			if replay or not vr:
 				p.connect(p.GUI)
-				p.setRealTimeSimulation(0)
-				# In order to generate deterministic paths
 			else:
 				p.connect(p.SHARED_MEMORY)
+
+			# In order to avoid real time simulation in replay
+			# for deterministic paths
+			if replay:
+				p.setRealTimeSimulation(0)
+			else:
 				p.setRealTimeSimulation(1)
 			
 			p.setInternalSimFlags(0)
@@ -43,6 +48,7 @@ class Scene(object):
 			return 0
 		self.controllers = [e[0] for e in p.getVREvents()]
 		self.create_scene()
+		self.solo = len(self.arms) == 1 or len(self.rippers) == 1
 		return 1
 
 	def create_scene(self):
@@ -63,6 +69,9 @@ class Scene(object):
 	def set_force_sensor(self):
 		self.has_force_sensor = True
 
+	def set_virtual_controller(self, controllers):
+		self.controllers = controllers
+
 	def create_control_mappings(self):
 		control_map = {}
 		if self.grippers:
@@ -73,7 +82,7 @@ class Scene(object):
 			control_map['constraint'] = dict(zip(self.controllers, self.constraints))
 		return control_map
 
-	def is_unicontrol(self):
+	def redundant_control(self):
 		return len(self.controllers) > max(len(self.grippers), len(self.arms), len(self.constraints))
 
 	def load_task(self, task):
@@ -113,4 +122,3 @@ class Scene(object):
 
 
 
-		
