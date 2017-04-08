@@ -1,12 +1,12 @@
 import gym
 import numpy as np
-from bullet.env.kuka_bullet import KukaBulletEnv
+from bullet.env.robot_gym import RobotBulletEnv
 
 w = [0.3, 0.02, 0.02, 0.012]
 
 if __main__():
-
-	env = gym.make('KukaBulletEnv-v0')
+	final_pos = [0.4, 1.5, 0.8]
+	env = gym.make('RobotBulletEnv-v0', Kuka([-0.1], fixed=True), final_pos)
 
 	for _ in range(1):
 		observation = env.reset()

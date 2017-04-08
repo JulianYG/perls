@@ -1,7 +1,6 @@
 import pybullet as p
 from bullet.models.core.physics import Scene
 
-
 class Robot(Scene):
 
 	def __init__(self, pos, enableForceSensor):
