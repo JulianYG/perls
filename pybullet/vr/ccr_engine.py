@@ -15,7 +15,7 @@ def execute(*args):
 	if m == 'kuka1':
 		model = kuka.Kuka([0.4], fixed=True)
 	elif m == 'kuka2':
-		model = kuka.Kuka([0.3, -0.5])
+		model = kuka.Kuka([0.3, -0.5], False)  # Change to True for keyboard
 	elif m == 'pr2':
 		model = pr2.PR2(True)
 	else:

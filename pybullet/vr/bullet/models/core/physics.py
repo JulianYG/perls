@@ -48,7 +48,7 @@ class Scene(object):
 			return 0
 		self.controllers = [e[0] for e in p.getVREvents()]
 		self.create_scene()
-		self.solo = len(self.arms) == 1 or len(self.rippers) == 1
+		self.solo = len(self.arms) == 1 or len(self.grippers) == 1
 		return 1
 
 	def create_scene(self):

@@ -122,7 +122,6 @@ class Robot(Scene):
 		return dist
 
 	def _engage(self, robot, controller_event):
-
 		controller_pos = controller_event[1]
 		controller_orn = controller_event[self.ORIENTATION]
 		targetPos = controller_pos

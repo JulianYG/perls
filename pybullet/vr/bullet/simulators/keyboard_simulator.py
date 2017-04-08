@@ -35,16 +35,16 @@ class KeyboardSimulator(Simulator):
 				# 	file + '_ctrl')
 			pos = [list(i[0]) for i in self.link_info]
 
-			pseudo_event = {}
+			pseudo_event = {0: 0}
 			while True:
 				events = p.getKeyboardEvents()
-				
+
 				for e in events:
-					
-					if self._model.solo or (e == 49 and (events[e] == p.KEY_IS_DOWN)):
-						pseudo_event[0] = 0
-					elif e == 50 and (events[e] == p.KEY_IS_DOWN):
-						pseudo_event[0] = 1
+					if not self._model.solo:
+						if e == 49 and (events[e] == p.KEY_IS_DOWN):
+							pseudo_event[0] = 0
+						elif e == 50 and (events[e] == p.KEY_IS_DOWN):
+							pseudo_event[0] = 1
 
 					# eef_pos_x, eef_pos_y, eef_pos_z = pos[pseudo_event[0]]
 					# Can add orn too: self.link_info[ps_e[0]][1]
@@ -52,23 +52,26 @@ class KeyboardSimulator(Simulator):
 					pseudo_event[2] = (0, 1, 0, 0)
 					pseudo_event[6] = {32: 1, 33: 0, 1: 0}
 
-					if e == p.B3G_F2 and (events[e] == p.KEY_IS_DOWN):
-						pos[pseudo_event[0]][0] += 0.01
+					if 120 in events and (events[120] == p.KEY_IS_DOWN):
+						if e == 65297 and (events[e] == p.KEY_IS_DOWN):
+							pos[pseudo_event[0]][0] += 0.01
+						
+						elif e == 65298 and (events[e] == p.KEY_IS_DOWN):
+							pos[pseudo_event[0]][0] -= 0.01
 
-					if e == p.B3G_F3 and (events[e] == p.KEY_IS_DOWN):
-						pos[pseudo_event[0]][0] -= 0.01
+					if 121 in events and (events[121] == p.KEY_IS_DOWN):
+						if e == 65296 and (events[e] == p.KEY_IS_DOWN):
+							pos[pseudo_event[0]][1] += 0.01
+						if e == 65295 and (events[e] == p.KEY_IS_DOWN):
+							pos[pseudo_event[0]][1] -= 0.01	
 
-					if e == p.B3G_F4 and (events[e] == p.KEY_IS_DOWN):
-						pos[pseudo_event[0]][1] += 0.01
+					if 122 in events and (events[122] == p.KEY_IS_DOWN):
+						if e == 65297 and (events[e] == p.KEY_IS_DOWN):
+							pos[pseudo_event[0]][2] += 0.01 		
+						if e == 65298 and (events[e] == p.KEY_IS_DOWN):
+							pos[pseudo_event[0]][2] -= 0.01
 
-					if e == p.B3G_F5 and (events[e] == p.KEY_IS_DOWN):
-						pos[pseudo_event[0]][1] -= 0.01	
-
-					if e == p.B3G_F6 and (events[e] == p.KEY_IS_DOWN):
-						pos[pseudo_event[0]][2] += 0.01 		
-
-					if e == p.B3G_F7 and (events[e] == p.KEY_IS_DOWN):
-						pos[pseudo_event[0]][2] -= 0.01
+					# Add rotation
 
 					#TODO: add gripper control, etc
 					pseudo_event[1] = pos[pseudo_event[0]]
