@@ -139,7 +139,7 @@ while True:
 			p.setJointMotorControl2(kuka, jointIndex, p.POSITION_CONTROL, 
 				targetPosition=joint_pos[jointIndex], targetVelocity=0, positionGain=0.03,
 					velocityGain=1.0, force=MAX_FORCE)
-		time.sleep(0.01)
+		time.sleep(0.015)
 
 
 

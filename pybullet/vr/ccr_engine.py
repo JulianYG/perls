@@ -12,12 +12,11 @@ def execute(*args):
 		repo = json.loads(f.read())
 	s, m, j, v, d, t = args
 	fn = '_'.join([s, m, t])
-	if m == 'kuka1':
-		model = kuka.Kuka([0.4], fixed=True)
-	elif m == 'kuka2':
-		model = kuka.Kuka([0.3, -0.5], False)  # Change to True for keyboard
+	if m == 'kuka':
+		# Change Fixed to True for keyboard
+		model = kuka.Kuka([0.3, -0.5], fixed=False, enableForceSensor=False)  
 	elif m == 'pr2':
-		model = pr2.PR2(True)
+		model = pr2.PR2([0.3, -0.5], enableForceSensor=False)
 	else:
 		raise NotImplementedError('Invalid input: Model type not recognized.')
 	
@@ -32,11 +31,11 @@ def execute(*args):
 	simulator.set_camera_view(.8, -.2, 1, 0, -90, 120, 1)
 
 	if j == 'record':
-		simulator.load_task(repo[t], 0)
+		simulator.setup(repo[t], 0)
 		simulator.record(fn, v)
 	elif j == 'replay':
 		if os.path.isfile(pjoin(RECORD_LOG_DIR, 'generic.' + fn)):
-			simulator.load_task(repo[t], 1)
+			simulator.setup(repo[t], 1)
 			simulator.replay(fn, d)
 		else:
 			raise IOError('Record file not found.')

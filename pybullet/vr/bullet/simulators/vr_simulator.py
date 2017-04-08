@@ -10,10 +10,10 @@ class VRSimulator(Simulator):
 		# Default settings for camera
 		super(VRSimulator, self).__init__(model)
 
-	def load_task(self, task, flag):
+	def setup(self, task, flag):
 		if not self._model.reset(flag, 1):
 			raise Exception('Cannot detect running VR application. Please try again.')
-		self._model.load_task(task)
+		self._model.setup_scene(task)
 		self._control_map = self._model.create_control_mappings()
 
 	def record(self, file, video=False):

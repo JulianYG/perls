@@ -10,12 +10,11 @@ class KeyboardSimulator(Simulator):
 		# Default settings for camera
 		super(KeyboardSimulator, self).__init__(model)
 
-	def load_task(self, task, flag):
+	def setup(self, task, flag):
 		if not self._model.reset(flag, 0):
 			raise Exception('Cannot create pybullet GUI instance. Please try again.')
-		self._model.load_task(task)
-		self.link_info = self._model.get_link_info(-1)
-
+		self._model.setup_scene(task)
+		self.link_info = self._model.get_tool_info(-1)
 		# Set same number of controllers as number of arms/grippers
 		self._model.set_virtual_controller(range(len(self.link_info)))
 		self._control_map = self._model.create_control_mappings()
@@ -53,10 +52,10 @@ class KeyboardSimulator(Simulator):
 					pseudo_event[6] = {32: 1, 33: 0, 1: 0}
 
 					if 120 in events and (events[120] == p.KEY_IS_DOWN):
-						if e == 65297 and (events[e] == p.KEY_IS_DOWN):
+						if e == 65298 and (events[e] == p.KEY_IS_DOWN):
 							pos[pseudo_event[0]][0] += 0.01
 						
-						elif e == 65298 and (events[e] == p.KEY_IS_DOWN):
+						elif e == 65297 and (events[e] == p.KEY_IS_DOWN):
 							pos[pseudo_event[0]][0] -= 0.01
 
 					if 121 in events and (events[121] == p.KEY_IS_DOWN):
@@ -73,12 +72,14 @@ class KeyboardSimulator(Simulator):
 
 					# Add rotation
 
-					#TODO: add gripper control, etc
+					#TODO: add gripper control for event[3], use space bar
+
+					pseudo_event[3] = 0.0
 					pseudo_event[1] = pos[pseudo_event[0]]
 
 					# If disengaged, reset position
 					if self._model.control(pseudo_event, self._control_map)	< 0:
-						pos = [list(i[0]) for i in self._model.get_link_info(-1)]			
+						pos = [list(i[0]) for i in self._model.get_tool_info(-1)]			
 				
 				time.sleep(0.01)			
 

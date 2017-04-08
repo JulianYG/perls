@@ -52,7 +52,7 @@ class KukaBulletEnv(gym.Env):
 	        or theta < -self.x_dot_threshold \
 	        or theta > self.x_dot_threshold
 
-	    eef_pos, eef_orn, eef_vel = self.kuka_env.get_link_info(6)
+	    eef_pos, eef_orn, eef_vel = self.kuka_env.get_tool_info(6)
 
 	    reward = 1.0 / np.sum((np.array(eef_pos) - ) ** 2)
 

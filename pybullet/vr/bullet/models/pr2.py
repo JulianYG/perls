@@ -3,25 +3,24 @@ from bullet.models.core.physics import Scene
 
 class PR2(Scene):
 
-	def __init__(self, collab=False):
+	def __init__(self, pos, enableForceSensor=False):
 
-		super(PR2, self).__init__()
+		super(PR2, self).__init__(enableForceSensor, pos)
 		self.gripper_max_joint = 0.550569
+		self.THRESHOLD = 1.0
 		self.completed_task = {}
 		self.boxes = {}
-		self.collab = collab
 
-	def create_scene(self):
+	def setup_scene(self, task):
 		"""
 		Basic scene needed for running tasks
 		"""
-		p.resetSimulation()
 		self.load_default_env()
-		self._load_pr2()
-		# Load another one if using collaboration
-		if self.collab:
-			self._load_pr2()
-		
+		for obj in task:
+			p.loadURDF(*obj)
+		self.obj_cnt = p.getNumBodies()
+		p.setGravity(0, 0, -9.81)
+
 		#TODO: think about extracting this bounding box out to avoid repeating code if 
 		# this gripper works, abandon demoVR
 		# Use loadArm=True/False for demoVR load_default_env 
@@ -32,40 +31,71 @@ class PR2(Scene):
 		# #TODO: add labels
 		# self._load_boxes(numOfBoxes=9)
 
+	def get_tool_info(self, pr2_id):
+		"""
+		Instead of link velocity, returns gripper joint status for pr2
+		"""
+		if isinstance(pr2_id, list):
+			pr2_pose = [(list(p.getBasePositionAndOrientation(pr2)[0]),
+				list(p.getBasePositionAndOrientation(pr2)[1]),
+				list(p.getLinkState(pr2, 0)[0])) for pr2 in pr2_id]
+		elif pr2_id == -1:
+			pr2_pose = [(list(p.getBasePositionAndOrientation(pr2)[0]),
+				list(p.getBasePositionAndOrientation(pr2)[1]),
+				list(p.getLinkState(pr2, 0)[0])) for pr2 in self.grippers]
+		else:
+			pr2_pose = [(list(p.getBasePositionAndOrientation(pr2_id)[0]),
+				list(p.getBasePositionAndOrientation(pr2_id)[1]), 
+				list(p.getLinkState(pr2_id, 0)[0]))]
+		return pr2_pose
+
+	def get_tool_control_deviation(self, gripper_id, pos):
+		pr2_pos = self.get_tool_info(gripper_id)[0][0]
+		dist = 0.
+		for i in range(len(pos)):
+			dist += (pos[i] - pr2_pos[i]) ** 2
+		return dist
+
 	def control(self, event, ctrl_map):
-		
+		"""
+		Handles one gripper at a time
+		"""
 		ctrl_id = event[0]
 		constraint_id = ctrl_map['constraint'][ctrl_id]
 		gripper_id = ctrl_map['gripper'][ctrl_id]
 
-		# PR2 gripper follows VR controller				
-		p.changeConstraint(constraint_id, event[1], event[self.ORIENTATION], maxForce=500)	
+		# PR2 gripper follows VR controller, or keyboard			
+		p.changeConstraint(constraint_id, event[1], event[self.ORIENTATION],
+		 	maxForce=self.MAX_FORCE)	
 
 		# Setup gliders
+		analog_slide = self.gripper_max_joint * (1 - event[3])
 		p.setJointMotorControl2(gripper_id, 0, p.POSITION_CONTROL, 
-			targetPosition=self.gripper_max_joint * (1 - event[3]), force=5.0)
+			targetPosition=analog_slide, force=5.0)
 		p.setJointMotorControl2(gripper_id, 2, p.POSITION_CONTROL, 
-			targetPosition=self.gripper_max_joint * (1 - event[3]), force=5.0)
+			targetPosition=analog_slide, force=5.0)
 
 		if (event[self.BUTTONS][1] & p.VR_BUTTON_WAS_TRIGGERED):
 			p.addUserDebugText('One Item Inserted', (1.7, 0, 1), (255, 0, 0), 12, 10)
+		
+		return 0 if self.get_tool_control_deviation(gripper_id, 
+			event[1]) <= self.THRESHOLD * self.THRESHOLD else -1
 
-	def _load_pr2(self):
+	def _load_tools(self, pos):
 
-		pr2_gripper = p.loadURDF("pr2_gripper.urdf", 0.500000,0.300006,0.700000,
-			-0.000000,-0.000000,-0.000031,1.000000)
+		for ypos in pos:
+			pr2_gripper = p.loadURDF("pr2_gripper.urdf", [0.5, ypos, 0.7], [0, 0, 0, 1])
+			# Setup the pr2_gripper
+			jointPositions = [0.550569, 0.000000, 0.549657, 0.000000]
+			for jointIndex in range(p.getNumJoints(pr2_gripper)):
+				p.resetJointState(pr2_gripper, jointIndex,jointPositions[jointIndex])
 
-		# Setup the pr2_gripper
-		jointPositions = [0.550569, 0.000000, 0.549657, 0.000000]
-		for jointIndex in range(p.getNumJoints(pr2_gripper)):
-			p.resetJointState(pr2_gripper, jointIndex,jointPositions[jointIndex])
+			# Use -1 for the base, constrained within controller
+			pr2_cid = p.createConstraint(pr2_gripper, -1, -1, -1, p.JOINT_FIXED,
+				[0, 0, 0], [0.2, 0, 0], [0.500000, ypos, 0.700000])
 
-		# Use -1 for the base, constrained within controller
-		pr2_cid = p.createConstraint(pr2_gripper,-1,-1,-1, p.JOINT_FIXED,
-			[0,0,0],[0.2,0,0],[0.500000,0.300006,0.700000])
-
-		self.grippers.append(pr2_gripper)
-		self.constraints.append(pr2_cid)
+			self.grippers.append(pr2_gripper)
+			self.constraints.append(pr2_cid)
 
 	def _check_task(self):
 		# Only check boundaries for objects in task

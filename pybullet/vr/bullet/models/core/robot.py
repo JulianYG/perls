@@ -4,23 +4,21 @@ from bullet.models.core.physics import Scene
 
 class Robot(Scene):
 
-	def __init__(self, enableForceSensor):
+	def __init__(self, pos, enableForceSensor):
 
-		super(Robot, self).__init__(enableForceSensor)
+		super(Robot, self).__init__(enableForceSensor, pos)
 		self.THRESHOLD = 1.3
-		self.MAX_FORCE = 500
-		self.pos = []
+		self.pos = pos
 
-	def create_scene(self):
+	def setup_scene(self, task):
 		"""
 		Basic scene needed for running tasks
 		"""
-		p.resetSimulation()
 		self.load_basic_env()
-		self._load_robot(self.pos)
-
-	def _load_robot(self, ypos):
-		raise NotImplementedError("Each VR Robot Setup must re-implement this method.")
+		for obj in task:
+			p.loadURDF(*obj)
+		self.obj_cnt = p.getNumBodies()
+		p.setGravity(0, 0, -9.81)
 
 	def get_robot_states(self):
 		states = []
@@ -33,31 +31,38 @@ class Robot(Scene):
 		# Return data points and label
 		return states, self.arms
 
-	def get_link_info(self, link_idx):
-
+	def get_tool_info(self, link_idx):
+		"""
+		Returns pos, orn, link_velocity
+		"""
 		link_pose = []
 		for arm in self.arms:
 			if isinstance(link_idx, list):
 				link_pose.append([(p.getLinkState(arm, i)[0],
-					p.getLinkState(arm, i)[1], p.getLinkState(arm, i, 
-					1)[-2]) for i in link_idx])
+				   p.getLinkState(arm, i)[1], 
+				   p.getLinkState(arm, i, 1)[-2]) for i in link_idx])
 			elif link_idx == -1:
 				eef_idx = p.getNumJoints(arm) - 1
 				link_pose.append((p.getLinkState(arm, eef_idx)[0],
+					p.getLinkState(arm, eef_idx)[1], 
 					p.getLinkState(arm, eef_idx, 1)[-2]))
 			else:
 				link_pose.append((p.getLinkState(arm, link_idx)[0],
+					p.getLinkState(arm, link_idx)[1],
 					p.getLinkState(arm, link_idx, 1)[-2]))
 
 		return link_pose
+
+	def get_tool_control_deviation(self, arm_id, pos):
+		eef_id = p.getNumJoints(arm_id) - 1
+		return self._get_distance(p.getLinkState(arm_id, eef_id)[0], pos)
 
 	def control(self, event, ctrl_map):
 
 		ctrl_id = event[0]
 		arm_id = ctrl_map['arm'][ctrl_id]
 		gripper_id = ctrl_map['gripper'][ctrl_id]
-		eef_id = p.getNumJoints(arm_id) - 1
-
+		
 		self.grasp(gripper_id, event)
 
 		#TODO: make this as another function (mark event)
@@ -69,7 +74,7 @@ class Robot(Scene):
 			# Can add line for mark here
 			# so that in saved csv file, we know when one task is complete	
 
-		sq_len = self._get_distance(p.getLinkState(arm_id, eef_id)[0], event[1])
+		sq_len = self.get_tool_control_deviation(arm_id, event[1])
 
 		# Allows robot arm control by VR controllers
 		if sq_len < self.THRESHOLD * self.THRESHOLD:

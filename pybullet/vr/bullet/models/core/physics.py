@@ -5,7 +5,7 @@ class Scene(object):
 	"""
 	The basic scene setup in VR 
 	"""
-	def __init__(self, enableForceSensor):
+	def __init__(self, enableForceSensor, pos):
 		"""
 		Other subclasses may re-implement the constructor
 		"""		
@@ -17,11 +17,13 @@ class Scene(object):
 		self.hand = False
 		self.grippers = []
 		self.constraints = []
+		self.pos = pos
 		self.arms = []
 		self.VR_HAND_ID = None
 
 		self.solo = None
 		self.has_force_sensor = enableForceSensor
+		self.MAX_FORCE = 500
 
 	def reset(self, replay, vr):
 		"""
@@ -43,19 +45,29 @@ class Scene(object):
 			
 			p.setInternalSimFlags(0)
 			# convenient for video recording
-		
 		except p.error:
 			return 0
+			
 		self.controllers = [e[0] for e in p.getVREvents()]
-		self.create_scene()
+		self.setup_tools()
 		self.solo = len(self.arms) == 1 or len(self.grippers) == 1
 		return 1
 
-	def create_scene(self):
-		raise NotImplementedError("Each VR Setup must re-implement this method.")
+	def setup_tools(self):
+		p.resetSimulation()
+		self._load_tools(self.pos)
+		
+	def setup_scene(self, task):
+		raise NotImplementedError("Each VR model must re-implement this method.")
 
 	def control(self, event, ctrl_map):
-		raise NotImplementedError("Each VR Setup must re-implement this method.")
+		raise NotImplementedError("Each VR model must re-implement this method.")
+
+	def get_tool_info(self, tool):
+		raise NotImplementedError("Each VR model must re-implement this method.")
+
+	def get_tool_control_deviation(self, tool, control):
+		raise NotImplementedError("Each VR model must re-implement this method.")
 
 	def get_arm_ids(self):
 		return self.arms
@@ -85,18 +97,10 @@ class Scene(object):
 	def redundant_control(self):
 		return len(self.controllers) > max(len(self.grippers), len(self.arms), len(self.constraints))
 
-	def load_task(self, task):
-		# May implement differently in grasping task for labels
-		for obj in task:
-			p.loadURDF(*obj)
-		self.obj_cnt = p.getNumBodies()
-
 	def load_basic_env(self):
 
-		p.setGravity(0, 0, -9.81)
 		p.loadURDF("plane.urdf",0,0,0,0,0,0,1)
 		p.loadURDF("table/table.urdf", 1.1, -0.2, 0., 0., 0., 0.707107, 0.707107)
-
 
 	def load_default_env(self):
 
@@ -118,7 +122,9 @@ class Scene(object):
 		p.loadURDF("table_square/table_square.urdf", -1.000000,0.000000,0.000000,0.000000,0.000000,0.000000,1.000000)
 		shelf = p.loadSDF("kiva_shelf/model.sdf")[0]
 		p.resetBasePositionAndOrientation(shelf, [-0.700000,-2.200000,1.204500],[0.000000,0.000000,0.000000,1.000000])
-		p.setGravity(0, 0, -9.81)
+
+	def _load_tools(self, pos):
+		raise NotImplementedError("Each VR model must re-implement this method.")
 
 
 

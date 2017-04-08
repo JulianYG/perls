@@ -6,9 +6,8 @@ class Kuka(Robot):
 
 	def __init__(self, pos, fixed=False, enableForceSensor=False):
 		# Pos: Original y-coord for the robot arms  e.g., [0.3, -0.5]
-		super(Kuka, self).__init__(enableForceSensor)
+		super(Kuka, self).__init__(pos, enableForceSensor)
 		self.FIX = fixed
-		self.pos = pos
 		# Set boundaries on kuka arm
 		self.LOWER_LIMITS = [-.967, -2.0, -2.96, 0.19, -2.96, -2.09, -3.05]
 		self.UPPER_LIMITS = [.96, 2.0, 2.96, 2.29, 2.96, 2.09, 3.05]
@@ -63,13 +62,13 @@ class Kuka(Robot):
 				p.setJointMotorControl2(arm_id, 5, p.POSITION_CONTROL, 
 					targetPosition=joint_pos[5], targetVelocity=0, positionGain=0.01, velocityGain=1.0, force=self.MAX_FORCE)
 
-	def _load_robot(self, ypos):
+	def _load_tools(self, ypos):
 
 		# Gripper ID to arm ID
 		for y_coord in ypos:
 			self.arms.append(p.loadURDF('kuka_iiwa/model_vr_limits.urdf', 1.4, y_coord, 0.6, 0, 0, 0, 1))
 			self.grippers.append(p.loadSDF('gripper/wsg50_one_motor_gripper_new_free_base.sdf')[0])
-		
+
 		# Setup initial conditions for both arms
 		for arm in self.arms:
 			self._reset_robot(arm)
