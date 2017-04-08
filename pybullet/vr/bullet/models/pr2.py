@@ -22,7 +22,6 @@ class PR2(Scene):
 		if self.collab:
 			self._load_pr2()
 		
-
 		#TODO: think about extracting this bounding box out to avoid repeating code if 
 		# this gripper works, abandon demoVR
 		# Use loadArm=True/False for demoVR load_default_env 
@@ -33,7 +32,7 @@ class PR2(Scene):
 		# #TODO: add labels
 		# self._load_boxes(numOfBoxes=9)
 
-	def move(self, event, ctrl_map):
+	def control(self, event, ctrl_map):
 		
 		ctrl_id = event[0]
 		constraint_id = ctrl_map['constraint'][ctrl_id]
@@ -136,7 +135,6 @@ class PR2(Scene):
 								  )
 		for k in self.boxes.keys():
 			construct_box(k)
-
 
 
 
