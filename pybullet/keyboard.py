@@ -1,5 +1,5 @@
 import pybullet as p
-import math
+import math, time
 
 #p.connect(p.UDP,"192.168.86.100")
 p.connect(p.GUI)
@@ -67,7 +67,10 @@ objects = p.loadSDF("kiva_shelf/model.sdf")
 ob = objects[0]
 p.resetBasePositionAndOrientation(ob,[0.000000,1.000000,1.204500],[0.000000,0.000000,0.000000,1.000000])
 objects = [p.loadURDF("teddy_vhacd.urdf", -0.100000,0.600000,0.850000,0.000000,0.000000,0.000000,1.000000)]
-objects = [p.loadURDF("sphere_small.urdf", -0.100000,0.955006,1.169706,0.633232,-0.000000,-0.000000,0.773962)]
+ball = p.loadURDF("sphere_small.urdf", -0.100000,0.955006,1.169706,0.633232,-0.000000,-0.000000,0.773962)
+
+ball_cid = p.createConstraint(ball,-1,-1,-1,p.JOINT_FIXED,[0,0,0],[0.2,0,0],[0.500000,0.300006,0.700000])
+
 objects = [p.loadURDF("cube_small.urdf", 0.300000,0.600000,0.850000,0.000000,0.000000,0.000000,1.000000)]
 objects = [p.loadURDF("table_square/table_square.urdf", -1.000000,0.000000,0.000000,0.000000,0.000000,0.000000,1.000000)]
 ob = objects[0]
@@ -84,6 +87,8 @@ for jointIndex in range (p.getNumJoints(ob)):
 p.setGravity(0,0,-10)
 
 p.setRealTimeSimulation(1)
+
+eef_pos_x, eef_pos_y, eef_pos_z = p.getLinkState(kuka, 6)[0]
 
 while True:
 
@@ -102,75 +107,39 @@ while True:
 	# 		for i in range(p.getNumJoints(kuka_gripper)):
 	# 			p.setJointMotorControl2(kuka_gripper, i, p.POSITION_CONTROL, targetPosition=KUKA_GRIPPER_REST_POS[i], force=50)
 
+	p.changeConstraint(ball_cid, (eef_pos_x, eef_pos_y, eef_pos_z), [0, 0, 0, 1])
+
 	for e in events:
+
 
 		# print(events[e], p.KEY_IS_DOWN)
 		if e == p.B3G_F2 and (events[e] == p.KEY_IS_DOWN):
-			eef_pos_x, eef_pos_y, eef_pos_z = p.getLinkState(kuka, 6)[0]
-			joint_pos = p.calculateInverseKinematics(kuka, 6, (eef_pos_x + 0.01, 
-				eef_pos_y, eef_pos_z), lowerLimits=LOWER_LIMITS, upperLimits=UPPER_LIMITS, 
-				jointRanges=JOINT_RANGE, restPoses=REST_POSE, jointDamping=JOINT_DAMP)
-
-			for jointIndex in range(p.getNumJoints(kuka)):
-				p.setJointMotorControl2(kuka, jointIndex, p.POSITION_CONTROL, 
-					targetPosition=joint_pos[jointIndex], targetVelocity=0, positionGain=0.03,
-					velocityGain=1.0, force=MAX_FORCE)
-
+			eef_pos_x += 0.01
+			
 		if e == p.B3G_F3 and (events[e] == p.KEY_IS_DOWN):
-			eef_pos_x, eef_pos_y, eef_pos_z = p.getLinkState(kuka, 6)[0]
-			joint_pos = p.calculateInverseKinematics(kuka, 6, (eef_pos_x - 0.01, 
-				eef_pos_y, eef_pos_z), lowerLimits=LOWER_LIMITS, upperLimits=UPPER_LIMITS, 
-				jointRanges=JOINT_RANGE, restPoses=REST_POSE, jointDamping=JOINT_DAMP)
-
-			for jointIndex in range(p.getNumJoints(kuka)):
-				p.setJointMotorControl2(kuka, jointIndex, p.POSITION_CONTROL, 
-					targetPosition=joint_pos[jointIndex], targetVelocity=0, positionGain=0.03,
-					velocityGain=1.0, force=MAX_FORCE)
+			eef_pos_x -= 0.01
 
 		if e == p.B3G_F4 and (events[e] == p.KEY_IS_DOWN):
-			eef_pos_x, eef_pos_y, eef_pos_z = p.getLinkState(kuka, 6)[0]
-			joint_pos = p.calculateInverseKinematics(kuka, 6, (eef_pos_x, 
-				eef_pos_y + 0.01, eef_pos_z), lowerLimits=LOWER_LIMITS, upperLimits=UPPER_LIMITS, 
-				jointRanges=JOINT_RANGE, restPoses=REST_POSE, jointDamping=JOINT_DAMP)
-
-			for jointIndex in range(p.getNumJoints(kuka)):
-				p.setJointMotorControl2(kuka, jointIndex, p.POSITION_CONTROL, 
-					targetPosition=joint_pos[jointIndex], targetVelocity=0, positionGain=0.03,
-					velocityGain=1.0, force=MAX_FORCE)
+			eef_pos_y += 0.01
 
 		if e == p.B3G_F5 and (events[e] == p.KEY_IS_DOWN):
-			eef_pos_x, eef_pos_y, eef_pos_z = p.getLinkState(kuka, 6)[0]
-			joint_pos = p.calculateInverseKinematics(kuka, 6, (eef_pos_x, 
-				eef_pos_y - 0.01, eef_pos_z), lowerLimits=LOWER_LIMITS, upperLimits=UPPER_LIMITS, 
-				jointRanges=JOINT_RANGE, restPoses=REST_POSE, jointDamping=JOINT_DAMP)
-
-			for jointIndex in range(p.getNumJoints(kuka)):
-				p.setJointMotorControl2(kuka, jointIndex, p.POSITION_CONTROL, 
-					targetPosition=joint_pos[jointIndex], targetVelocity=0, positionGain=0.03,
-					velocityGain=1.0, force=MAX_FORCE)
+			eef_pos_y -= 0.01	
 
 		if e == p.B3G_F6 and (events[e] == p.KEY_IS_DOWN):
-			eef_pos_x, eef_pos_y, eef_pos_z = p.getLinkState(kuka, 6)[0]
-			joint_pos = p.calculateInverseKinematics(kuka, 6, (eef_pos_x, 
-				eef_pos_y, eef_pos_z + 0.01), lowerLimits=LOWER_LIMITS, upperLimits=UPPER_LIMITS, 
-				jointRanges=JOINT_RANGE, restPoses=REST_POSE, jointDamping=JOINT_DAMP)
-
-			for jointIndex in range(p.getNumJoints(kuka)):
-				p.setJointMotorControl2(kuka, jointIndex, p.POSITION_CONTROL, 
-					targetPosition=joint_pos[jointIndex], targetVelocity=0, positionGain=0.03,
-					velocityGain=1.0, force=MAX_FORCE)
+			eef_pos_z += 0.01 		
 
 		if e == p.B3G_F7 and (events[e] == p.KEY_IS_DOWN):
-			eef_pos_x, eef_pos_y, eef_pos_z = p.getLinkState(kuka, 6)[0]
-			joint_pos = p.calculateInverseKinematics(kuka, 6, (eef_pos_z, 
-				eef_pos_y, eef_pos_z - 0.01), lowerLimits=LOWER_LIMITS, upperLimits=UPPER_LIMITS, 
+			eef_pos_z -= 0.01
+			
+		joint_pos = p.calculateInverseKinematics(kuka, 6, (eef_pos_x, 
+				eef_pos_y, eef_pos_z), (0, 1, 0, 0), lowerLimits=LOWER_LIMITS, upperLimits=UPPER_LIMITS, 
 				jointRanges=JOINT_RANGE, restPoses=REST_POSE, jointDamping=JOINT_DAMP)
 
-			for jointIndex in range(p.getNumJoints(kuka)):
-				p.setJointMotorControl2(kuka, jointIndex, p.POSITION_CONTROL, 
-					targetPosition=joint_pos[jointIndex], targetVelocity=0, positionGain=0.03,
+		for jointIndex in range(p.getNumJoints(kuka)):
+			p.setJointMotorControl2(kuka, jointIndex, p.POSITION_CONTROL, 
+				targetPosition=joint_pos[jointIndex], targetVelocity=0, positionGain=0.03,
 					velocityGain=1.0, force=MAX_FORCE)
-
+		time.sleep(0.01)
 
 
 

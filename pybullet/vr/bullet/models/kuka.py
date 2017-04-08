@@ -4,9 +4,9 @@ import pybullet as p
 
 class Kuka(Robot):
 
-	def __init__(self, pos, fixed=False, enableForceSensor=False):
+	def __init__(self, pos, fixed=False):
 		# Pos: Original y-coord for the robot arms  e.g., [0.3, -0.5]
-		super(Kuka, self).__init__(enableForceSensor)
+		super(Kuka, self).__init__()
 		self.FIX = fixed
 		self.pos = pos
 		# Set boundaries on kuka arm
