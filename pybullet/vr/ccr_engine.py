@@ -4,8 +4,8 @@ import os, sys, getopt
 from os.path import join as pjoin
 import json
 
-REPO_DIR = './data/task.json'
-RECORD_LOG_DIR = './data/record'
+REPO_DIR = '../data/task.json'
+RECORD_LOG_DIR = '../data/record'
 
 def execute(*args):
 	with open(REPO_DIR, 'r') as f:

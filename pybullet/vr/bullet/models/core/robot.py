@@ -134,15 +134,15 @@ class Robot(Scene):
 		if controller_event[self.BUTTONS][32] & p.VR_BUTTON_IS_DOWN:
 			for jointIndex in range(p.getNumJoints(robot)):
 				p.setJointMotorControl2(robot, jointIndex, p.POSITION_CONTROL, 
-					targetPosition=self.REST_JOINT_POS[jointIndex], 
+					targetPosition=self.REST_POSE[jointIndex], 
 					targetVelocity=0, positionGain=0.03, velocityGain=1,
 					force=self.MAX_FORCE)
 
 	def _reset_robot(self, robot):
 		for jointIndex in range(p.getNumJoints(robot)):
-			p.resetJointState(robot, jointIndex, self.REST_JOINT_POS[jointIndex])
+			p.resetJointState(robot, jointIndex, self.REST_POSE[jointIndex])
 			p.setJointMotorControl2(robot, jointIndex, p.POSITION_CONTROL, 
-				self.REST_JOINT_POS[jointIndex], 0)
+				self.REST_POSE[jointIndex], 0)
 
 	def _reset_robot_gripper(self, robot_gripper):
 		for jointIndex in range(p.getNumJoints(robot_gripper)):
