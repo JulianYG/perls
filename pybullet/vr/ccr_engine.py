@@ -14,7 +14,7 @@ def execute(*args):
 	fn = '_'.join([s, m, t])
 	if m == 'kuka':
 		# Change Fixed to True for keyboard
-		model = kuka.Kuka([0.3, -0.5], fixed=False, enableForceSensor=False)
+		model = kuka.Kuka([0.3, -0.5], fixed=True, enableForceSensor=False)
 	elif m == 'sawyer':
 		model = sawyer.Sawyer([0.0], fixed=True, enableForceSensor=False)
 	elif m == 'pr2':
