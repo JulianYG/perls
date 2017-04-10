@@ -17,8 +17,8 @@ class Simulator(object):
 		self.projectionMatrix = None
 
 		self._model = model
-		self.VIDEO_DIR = pjoin(os.getcwd(), '../', 'data', 'video')
-		self.RECORD_LOG_DIR = pjoin(os.getcwd(), '../', 'data', 'record')
+		self.VIDEO_DIR = pjoin(os.getcwd(), 'data', 'video')
+		self.RECORD_LOG_DIR = pjoin(os.getcwd(), 'data', 'record')
 
 	def load_task(self, task, flag):
 		raise NotImplementedError('Each simulator class must re-implement this method.')
