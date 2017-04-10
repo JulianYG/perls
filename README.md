@@ -10,7 +10,7 @@
 
 - Executables (built demo projects): `$bullet\bin`
 
-- Pybullet DLL: `~\AppData\Local\Programs\Python\Python36-32\DLLs\pybullet.pyd`
+- Pybullet DLL (Windows): `~$Python\DLLs\pybullet.pyd`
 
 ## Visual Studio
 
@@ -43,28 +43,26 @@ This readme file is composed by two parts. First part is instructions on using t
 
 Usage:
 
-`python engine.py -s <simulator> -m <mode> -v <video> -d <delay> -t <task>`
+`python engine.py -s <simulator> -m <model> -j <job> -v <video> -d <delay> -t <task>`
 
-There are currently four types of simulator executable from engine.py. kukaSimulator has two kaka arms with 6DOF VR controller mapping, which aims to simulate the motion control of human arms. The graspSimulator is deprecated. The demoSimulator is used for grasping task data collection, and the simSimulator is a single kaka arm without gripper; instead it’s equipped with a magnetic end effector, which is able to attach objects from contact.
+There are currently two types of simulator executable from `ccr_engine.py`, a keyboard simulator, interfacing with keyboard,  and a VR simulator, interfacing with SteamVR. We plan to add joystick or smartphone interfaced simulators soon.
 
-To use the simulators, first initialize by calling their constructors as in the script. The second input argument is the task input, represented by a list of object and pose tuples. To record, enter the name of file you want to save as in the record method. In bullet3/bin, execute the AppsSharedMemoryVR.exe, then call engine.py in command line. Press ctrl+C to stop recording. The record file will can be replayed using replay function. 
+To use the simulators, first initialize by calling their constructors as in the script. The second input argument is the task input, represented by a list of object and pose tuples. To record, enter the name of file you want to save as in the record method. In bullet3/bin, execute the AppsSharedMemoryVR.exe, then call ccr_engine.py in command line. Press ctrl+C to stop recording. The record file will can be replayed using replay function. 
+
+The simulators are executed upon models. Current models include pr2 gripper, and robot. Robot is an abstract class that are implemented as multiple concrete classes, such as kuka, sawyer, and baxter. The models are also used for the openAI gym implementation of pybullet, cascading the learning layer with physical layer.
 
 General operations: trigger for closing grippers, touch pad for engaging arms.
 
 Notes:
 
-- For demoSimulator, the AppsSharedMemoryVR.exe VR interface must be closed and reopened for every different record. Other simulators will automatically reset the scene with ctrl+C.
-- For kukaSimulator, two controllers need to be both turned on before running engine.py. Hold the circle button in the center to engage the arms, release for disengage. 
+- For VR Simulator, controllers cannot be turned on after running `ccr_engine.py`. Hold the circle button in the center to engage the arms, release for disengage. 
 - For all other simulators, it is suggested to just keep one controller turned on, in order to avoid the interference from the idle controller to the arm.
 
 ### Code instructions
 
-The file `model.py` has the abstract classes `BulletPhysicsVR` and `KukaArmVR` for all VR simulators. Class hierarchy: 
-BulletPhysicsVR -> KukaArmVR 
-KukaArmVR -> KukaSingleArmVR, KukaDoubleArmVR
-BulletPhysicsVR -> PR2GripperVR, DemoVR
+Read more about API docs in this Wiki.
 
-BulletPhysicsVR callable methods:
+Simulator callable methods:
 
 `replay(file, delay)`
 
@@ -72,8 +70,7 @@ BulletPhysicsVR callable methods:
 
 `set_camera_view(focusX, focusY, focusZ, roll, pitch, yaw, focal_len)`
 
-Features on demoSimulator: change the boundary from red to green after placing the item inside; add constraint to the items inside boundary; add explicit labels on the items and boundary lines.
 
 ### TODO
-Fix Sawyer IK, try new PR2 simulator, fix grasp replay.
+Fix Sawyer IK, optimize the sliding gripper joints, add Baxter IK.
 
