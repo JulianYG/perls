@@ -1,5 +1,6 @@
 from bullet.models import *
-from bullet.simulators import *
+from bullet.control import *
+from bullet.simulator import BulletSimulator
 import os, sys, getopt
 from os.path import join as pjoin
 import json
@@ -10,8 +11,8 @@ RECORD_LOG_DIR = './data/record'
 def execute(*args):
 	with open(REPO_DIR, 'r') as f:
 		repo = json.loads(f.read())
-	s, m, j, v, d, t = args
-	fn = '_'.join([s, m, t])
+	i, m, j, v, d, t, r = args
+	fn = '_'.join([i, m, t])
 	if m == 'kuka':
 		# Change Fixed to True for keyboard
 		model = kuka.Kuka([0.3, -0.5], fixed=True, enableForceSensor=False)
@@ -22,13 +23,15 @@ def execute(*args):
 	else:
 		raise NotImplementedError('Invalid input: Model not recognized.')
 	
-	if s == 'vr':
-		simulator = vr_simulator.VRSimulator(model)
-	elif s == 'keyboard':
-		simulator = keyboard_simulator.KeyboardSimulator(model)
+	if i == 'vr':
+		interface = vr_interface.IVR(r)
+	elif i == 'keyboard':
+		interface = keyboard_interface.IKeyboard(r)
 	else:
-		raise NotImplementedError('Non-supported simulator.')
+		raise NotImplementedError('Non-supported interface.')
 	
+	simulator = BulletSimulator(model, interface)
+
 	# Default view point setting
 	simulator.set_camera_view(.8, -.2, 1, 0, -90, 120, 1)
 
@@ -45,20 +48,21 @@ def execute(*args):
 		raise NotImplementedError('Invalid input: Job not recognized.')
 
 def usage():
-	print('Please specify at least the simulator, model and user job. Default task: ball')
-	print('Usage: python ccr_engine.py -s [simulator] -m [model] -j [job] -v <video> -d [delay] -t [task]')
+	print('Please specify at least the interface, model and user job. Default task: ball')
+	print('Usage: python ccr_engine.py -i [interface] -m [model] -j [job] -v <video> -d [delay] -t [task] -r <remote>')
 
 def main(argv):
-	simulator = None
+	interface = None
 	model = None
 	job = 'replay'
 	video = False
 	delay = 0.0005
 	task = 'ball'
+	remote = False
 
 	try:
-		opts, args = getopt.getopt(argv, 'hs:m:j:vd:t:', ['help', 
-			'simulator=', 'model=', 'job=', 'video','delay=', 'task='])
+		opts, args = getopt.getopt(argv, 'hi:m:j:vd:t:r', ['help', 
+			'interface=', 'model=', 'job=', 'video','delay=', 'task=', 'remote'])
 	except getopt.GetoptError:
 		usage()
 		sys.exit(2)
@@ -66,8 +70,8 @@ def main(argv):
 		if opt in ('-h', '--help'):
 			usage()
 			sys.exit(0)
-		elif opt in ('-s', '--simulator'):
-			simulator = arg
+		elif opt in ('-i', '--interface'):
+			interface = arg
 		elif opt in ('-m', '--model'):
 			model = arg
 		elif opt in ('-j', '--job'):
@@ -78,7 +82,9 @@ def main(argv):
 			delay = float(arg)
 		elif opt in ('-t', '--task'):
 			task = arg
-	execute(simulator, model, job, video, delay, task)
+		elif opt in ('-r', '--remote'):
+			remote = True
+	execute(interface, model, job, video, delay, task, remote)
 
 if __name__ == '__main__':
 	main(sys.argv[1:])

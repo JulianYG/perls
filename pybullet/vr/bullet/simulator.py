@@ -1,11 +1,10 @@
-import time, os
 import pybullet as p
+import os, struct, time
 from os.path import join as pjoin
-import struct
 
-class Simulator(object):
+class BulletSimulator(object):
 
-	def __init__(self, model):
+	def __init__(self, model, interface):
 		# Default settings for camera
 		self.FOCAL_POINT = (0., 0., 0.)
 		self.YAW = 35.
@@ -16,15 +15,34 @@ class Simulator(object):
 		self.viewMatrix = None
 		self.projectionMatrix = None
 
+		self._interface = interface
 		self._model = model
 		self.VIDEO_DIR = pjoin(os.getcwd(), 'data', 'video')
 		self.RECORD_LOG_DIR = pjoin(os.getcwd(), 'data', 'record')
 
-	def load_task(self, task, flag):
-		raise NotImplementedError('Each simulator class must re-implement this method.')
+	def setup(self, task, flag):
+		if not self._model.reset(flag, 0):
+			raise Exception('Cannot create pybullet GUI instance. Please try again.')
+		self._model.setup_scene(task)
 
 	def record(self, file, video=False):
-		raise NotImplementedError('Each simulator class must re-implement this method.')
+		try:
+			logIds = []
+			if video:
+				# Does logging only need to be called once with SharedMemory? 
+				logIds.append(p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, 
+					pjoin(self.VIDEO_DIR, file + '.mp4')))
+			else:
+				# Record everything
+				logIds.append(p.startStateLogging(p.STATE_LOGGING_GENERIC_ROBOT,
+					pjoin(self.RECORD_LOG_DIR, 'generic.' + file)))
+				# ctrlLog = p.startStateLogging(p.STATE_LOGGING_VR_CONTROLLERS, 
+				# 	file + '_ctrl')
+
+			self._interface.communicate(p, self._model)
+
+		except KeyboardInterrupt:
+			self.quit(logIds)
 
 	def replay(self, file, delay=0.0001):
 		p.resetDebugVisualizerCamera(cameraDistance=self.FOCAL_LENGTH, 
@@ -46,16 +64,6 @@ class Simulator(object):
 		self.viewMatrix = p.computeViewMatrixFromYawPitchRoll((targetPosX, targetPosY, targetPosZ), 
 			dist, yaw, pitch, roll, self.UP_AX_IDX)
 		self.projectionMatrix = p.computeProjectionMatrixFOV(60, 600 / 540., .01, 1000.)
-
-	def video_capture(self):
-		"""
-		This is very, very slow at the moment
-		"""
-		img_arr = p.getCameraImage(600, 540, self.viewMatrix, self.projectionMatrix)
-		np_img = np.reshape(img_arr[2], (img_arr[1], img_arr[0], 4)) / 255.
-
-		plt.imshow(np_img)
-		plt.pause(0.001)
 
 	def parse_log(self, filename, verbose=True):
 
@@ -113,13 +121,13 @@ class Simulator(object):
 			time.sleep(delay)
 
 	def quit(self, fp): # logId
+
 		if isinstance(fp, list):
 			for Id in fp:
 				p.stopStateLogging(Id)
 		else:
 			fp.close()
-
+		self._interface.close_socket()
 		p.resetSimulation()
 		p.disconnect()
-
 
