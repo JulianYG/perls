@@ -22,7 +22,7 @@ class Server(object):
         # Add server socket to the list of readable connections
         self.CONNECTION_LIST.append(self.server_socket)
  
-        print "Keyboard server started on port " + str(self._PORT)
+        print("Keyboard server started on port " + str(self._PORT))
 
         self.read_sockets, self.write_sockets, self.error_sockets = \
             select.select(self.CONNECTION_LIST, [], [])
@@ -48,7 +48,7 @@ class Server(object):
                 # Handle the case in which there is a new connection recieved through self.server_socket
                 sockfd, self.addr = self.server_socket.accept()
                 self.CONNECTION_LIST.append(sockfd)
-                print "Client (%s, %s) connected" % self.addr
+                print("Client (%s, %s) connected" % self.addr)
                 self.broadcast_data(sockfd, "[%s:%s] Begins simulation \n" % self.addr)
                 self.connected_sock = sock
                 return 0
@@ -79,7 +79,7 @@ class Server(object):
                     events.append(e)
         except:
             self.broadcast_data(self.connected_sock, "Client (%s, %s) is offline" % self.addr)
-            print "Client (%s, %s) is offline" % self.addr
+            print("Client (%s, %s) is offline" % self.addr)
             self.connected_sock.close()
             # self.CONNECTION_LIST.remove(self.connected_sock)
             # continue
