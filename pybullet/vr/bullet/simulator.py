@@ -20,9 +20,12 @@ class BulletSimulator(object):
 		self.VIDEO_DIR = pjoin(os.getcwd(), 'data', 'video')
 		self.RECORD_LOG_DIR = pjoin(os.getcwd(), 'data', 'record')
 
-	def setup(self, task, flag):
-		if not self._model.reset(flag, 0):
-			raise Exception('Cannot create pybullet GUI instance. Please try again.')
+	def setup(self, task, flag, vr):
+		if not self._model.reset(flag, vr):
+			if vr:
+				raise Exception('Cannot detect running VR application. Please try again.')
+			else:
+				raise Exception('Cannot create pybullet GUI instance. Please try again.')
 		self._model.setup_scene(task)
 
 	def record(self, file, video=False):

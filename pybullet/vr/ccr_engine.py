@@ -25,8 +25,10 @@ def execute(*args):
 	
 	if i == 'vr':
 		interface = vr_interface.IVR(r)
+		vr = True
 	elif i == 'keyboard':
 		interface = keyboard_interface.IKeyboard(r)
+		vr = False
 	else:
 		raise NotImplementedError('Non-supported interface.')
 	
@@ -36,11 +38,11 @@ def execute(*args):
 	simulator.set_camera_view(.8, -.2, 1, 0, -90, 120, 1)
 
 	if j == 'record':
-		simulator.setup(repo[t], 0)
+		simulator.setup(repo[t], 0, vr)
 		simulator.record(fn, v)
 	elif j == 'replay':
 		if os.path.isfile(pjoin(RECORD_LOG_DIR, 'generic.' + fn)):
-			simulator.setup(repo[t], 1)
+			simulator.setup(repo[t], 1, vr)
 			simulator.replay(fn, d)
 		else:
 			raise IOError('Record file not found.')
