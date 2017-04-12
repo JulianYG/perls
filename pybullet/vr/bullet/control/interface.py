@@ -15,20 +15,20 @@ class CtrlInterface(object):
 	def remote_ctrl(self, flag):
 		self.remote = flag
 
-	def communicate(self, pybullet, model):
+	def communicate(self, model):
 		if self.remote:
-			self._remote_comm(pybullet, model)
+			self._remote_comm(model)
 		else:
-			self._local_comm(pybullet, model)
+			self._local_comm(model)
 
 	def close_socket(self):
 		if self.remote:
 			self.server.close()
 
-	def _remote_comm(self, pybullet, model):
+	def _remote_comm(self, model):
 		raise NotImplementedError('Each interface must re-implement this method.')
 
-	def _local_comm(self, pybullet, model):
+	def _local_comm(self, model):
 		raise NotImplementedError('Each interface must re-implement this method.')
 
 	

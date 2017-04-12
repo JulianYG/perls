@@ -22,10 +22,7 @@ class Server(object):
         # Add server socket to the list of readable connections
         self.CONNECTION_LIST.append(self.server_socket)
  
-        print("Keyboard server started on port " + str(self._PORT))
-
-        self.read_sockets, self.write_sockets, self.error_sockets = \
-            select.select(self.CONNECTION_LIST, [], [])
+        print "Keyboard server started on port " + str(self._PORT)
 
     #Function to broadcast chat messages to all connected clients
     def broadcast_data(self, sock, message):
@@ -41,48 +38,51 @@ class Server(object):
                     self.CONNECTION_LIST.remove(socket)
     
     def connect(self):
-
-        for sock in self.read_sockets:
+        read_sockets, _, _ = select.select(self.CONNECTION_LIST, [], [])
+        for sock in read_sockets:
             #New connection
             if sock == self.server_socket:
                 # Handle the case in which there is a new connection recieved through self.server_socket
                 sockfd, self.addr = self.server_socket.accept()
                 self.CONNECTION_LIST.append(sockfd)
-                print("Client (%s, %s) connected" % self.addr)
+                print "Client (%s, %s) connected" % self.addr
                 self.broadcast_data(sockfd, "[%s:%s] Begins simulation \n" % self.addr)
-                self.connected_sock = sock
                 return 0
         return -1
-
-    def poll_event(self):
-
-        events = []
         
+    def poll_event(self):
+        
+        events = []
+        read_sockets, _, _ = select.select(self.CONNECTION_LIST, [], [], 0)
         # Data recieved from client, process it
         # for sock in self.read_sockets:
 
-
-        try:
+        for sock in read_sockets:
+            try:
             #In Windows, sometimes when a TCP program closes abruptly,
             # a "Connection reset by peer" exception will be thrown
-            data = self.connected_sock.recv(self._RECV_BUFFER)
-            if data:
-                self.broadcast_data(self.connected_sock, 
-                    "\r" + '<' + str(self.connected_sock.getpeername()) + '> ' + data) 
-                key, status = data.split()
+                data = sock.recv(self._RECV_BUFFER)
+                print(data)
+                if data:
+                    self.broadcast_data(sock, 
+                        "\r" + '<' + str(sock.getpeername()) + '> ' + data) 
+                    key, status = data.split()
 
-                if status == 'pressed':
-                    #TODO: check this part
-                    print(key, status)
-                    e = {ord(key[-2]): 1}  # 1 KEY_IS_DOWN
-                    print('e?')
-                    events.append(e)
-        except:
-            self.broadcast_data(self.connected_sock, "Client (%s, %s) is offline" % self.addr)
-            print("Client (%s, %s) is offline" % self.addr)
-            self.connected_sock.close()
-            # self.CONNECTION_LIST.remove(self.connected_sock)
-            # continue
+                    if status == 'pressed':
+                        #TODO: check this part
+                        print(key, status)
+
+                        e = {ord(key[-2]): 1}  # 1 KEY_IS_DOWN
+                        events.append(e)
+                    elif status == 'released':
+                        e = {ord(key[-2]): 3}  # 3 KEY_IS_DOWN ??
+                        events.append(e)
+            except:
+                self.broadcast_data(sock, "Client (%s, %s) is offline" % self.addr)
+                print "Client (%s, %s) is offline" % self.addr
+                sock.close()
+                self.CONNECTION_LIST.remove(sock)
+                continue
 
         return events
 

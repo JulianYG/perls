@@ -42,7 +42,7 @@ class BulletSimulator(object):
 				# ctrlLog = p.startStateLogging(p.STATE_LOGGING_VR_CONTROLLERS, 
 				# 	file + '_ctrl')
 
-			self._interface.communicate(p, self._model)
+			self._interface.communicate(self._model)
 
 		except KeyboardInterrupt:
 			self.quit(logIds)

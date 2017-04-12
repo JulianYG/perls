@@ -1,4 +1,5 @@
 import time
+import pybullet as p
 from bullet.control.interface import CtrlInterface
 
 class IKeyboard(CtrlInterface):
@@ -7,7 +8,7 @@ class IKeyboard(CtrlInterface):
 		# Default settings for camera
 		super(IKeyboard, self).__init__(remote)
 
-	def _remote_comm(self, pybullet, model):
+	def _remote_comm(self, model):
 		
 		link_info = model.get_tool_info(-1)
 		# Set same number of controllers as number of arms/grippers
@@ -22,10 +23,10 @@ class IKeyboard(CtrlInterface):
 
 		while True:
 			e = self.server.poll_event()
-			self._event_handler(pybullet, e, model)
-			time.sleep(0.01)
+			self._event_handler(e, model)
+			# time.sleep(0.01)
 
-	def _local_comm(self, pybullet, model):
+	def _local_comm(self, model):
 		
 		link_info = model.get_tool_info(-1)
 		# Set same number of controllers as number of arms/grippers
@@ -36,13 +37,13 @@ class IKeyboard(CtrlInterface):
 		self.pseudo_event = {0: 0}
 
 		while True:
-			events = pybullet.getKeyboardEvents()
+			events = p.getKeyboardEvents()
 
-			self._event_handler(pybullet, events, model)	
+			self._event_handler(events, model)	
 			
 			time.sleep(0.01)
 
-	def _event_handler(self, p, events, model):
+	def _event_handler(self, events, model):
 
 		for e in (events):
 			if not model.solo:
