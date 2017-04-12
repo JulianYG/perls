@@ -22,7 +22,7 @@ class Server(object):
         # Add server socket to the list of readable connections
         self.CONNECTION_LIST.append(self.server_socket)
  
-        print "Keyboard server started on port " + str(self._PORT)
+        print("Keyboard server started on port " + str(self._PORT))
 
     #Function to broadcast chat messages to all connected clients
     def broadcast_data(self, sock, message):
@@ -30,9 +30,9 @@ class Server(object):
         for socket in self.CONNECTION_LIST:
             if socket != self.server_socket:
             #if socket != self.server_socket and socket != sock :
-                try :
+                try:
                     socket.send(message)
-                except :
+                except:
                     # broken socket connection may be, chat client pressed ctrl+c for example
                     socket.close()
                     self.CONNECTION_LIST.remove(socket)
@@ -45,7 +45,7 @@ class Server(object):
                 # Handle the case in which there is a new connection recieved through self.server_socket
                 sockfd, self.addr = self.server_socket.accept()
                 self.CONNECTION_LIST.append(sockfd)
-                print "Client (%s, %s) connected" % self.addr
+                print("Client (%s, %s) connected" % self.addr)
                 self.broadcast_data(sockfd, "[%s:%s] Begins simulation \n" % self.addr)
                 return 0
         return -1
@@ -79,7 +79,7 @@ class Server(object):
                         events.append(e)
             except:
                 self.broadcast_data(sock, "Client (%s, %s) is offline" % self.addr)
-                print "Client (%s, %s) is offline" % self.addr
+                print("Client (%s, %s) is offline" % self.addr)
                 sock.close()
                 self.CONNECTION_LIST.remove(sock)
                 continue
