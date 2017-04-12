@@ -126,6 +126,13 @@ class Scene(object):
 		shelf = p.loadSDF("kiva_shelf/model.sdf")[0]
 		p.resetBasePositionAndOrientation(shelf, [-0.700000,-2.200000,1.204500],[0.000000,0.000000,0.000000,1.000000])
 
+	def _load_task(self, task):
+		for obj_pose in task:
+			if len(obj_pose) == 1:
+				p.loadSDF(obj_pose[0])
+			else:
+				p.loadURDF(*obj_pose)
+
 	def _load_tools(self, pos):
 		raise NotImplementedError("Each VR model must re-implement this method.")
 

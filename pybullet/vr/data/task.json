@@ -35,5 +35,9 @@
 		["shape_sorter/p7.urdf", 0.75, -0.12, 0.7, 0, 0, 0, 1],
 		["shape_sorter/p8.urdf", 0.73, -0.22, 0.7, 0, 0, 0, 1],
 		["shape_sorter/p9.urdf", 0.71, -0.32, 0.7, 0, 0, 0, 1]
+	],
+	"kitchen":
+	[
+		["kitchens/1.sdf"]
 	]
 }

@@ -16,8 +16,7 @@ class PR2(Scene):
 		Basic scene needed for running tasks
 		"""
 		self.load_default_env()
-		for obj in task:
-			p.loadURDF(*obj)
+		self._load_task(task)
 		self.obj_cnt = p.getNumBodies()
 		p.setGravity(0, 0, -9.81)
 
