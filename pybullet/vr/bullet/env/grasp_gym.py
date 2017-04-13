@@ -35,6 +35,7 @@ class GraspBulletEnv(Env):
 		self.model.setup_scene(task)
 		self.tools = self.model.get_tool_ids()
 		self.force_sensor = self.model.has_force_sensor
+		return self._observe(self.model)[0]
 
 	def _step(self, action):
 		self.model.step_simulation()
