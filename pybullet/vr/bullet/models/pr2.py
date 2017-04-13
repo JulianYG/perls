@@ -1,11 +1,11 @@
 import pybullet as p
-from bullet.models.core.physics import Scene
+from bullet.models.core.tool import Tool
 
-class PR2(Scene):
+class PR2(Tool):
 
 	def __init__(self, pos, enableForceSensor=False):
 
-		super(PR2, self).__init__(enableForceSensor, pos)
+		super(PR2, self).__init__(pos, enableForceSensor)
 		self.gripper_max_joint = 0.550569
 		self.THRESHOLD = 1.0
 		self.completed_task = {}
@@ -30,7 +30,18 @@ class PR2(Scene):
 		# #TODO: add labels
 		# self._load_boxes(numOfBoxes=9)
 
-	def get_tool_info(self, pr2_id):
+	def get_tool_joint_states(self):
+		states = []
+		for gripper in self.grippers:
+			joints = range(p.getNumJoints(gripper))
+			joint_state = [p.getJointState(i)[:2] for i in joints]
+			if self.has_force_sensor:
+				joint_state += [p.getJointState(i)[2] for i in joints]
+			states.append(joint_state)
+		# Return data points and label
+		return states, self.grippers
+
+	def get_tool_link_states(self, pr2_id):
 		"""
 		Instead of link velocity, returns gripper joint status for pr2
 		"""
@@ -48,13 +59,6 @@ class PR2(Scene):
 				list(p.getLinkState(pr2_id, 0)[0]))]
 		return pr2_pose
 
-	def get_tool_control_deviation(self, gripper_id, pos):
-		pr2_pos = self.get_tool_info(gripper_id)[0][0]
-		dist = 0.
-		for i in range(len(pos)):
-			dist += (pos[i] - pr2_pos[i]) ** 2
-		return dist
-
 	def control(self, event, ctrl_map):
 		"""
 		Handles one gripper at a time
@@ -63,22 +67,28 @@ class PR2(Scene):
 		constraint_id = ctrl_map['constraint'][ctrl_id]
 		gripper_id = ctrl_map['gripper'][ctrl_id]
 
-		# PR2 gripper follows VR controller, or keyboard			
-		p.changeConstraint(constraint_id, event[1], event[self.ORIENTATION],
-		 	maxForce=self.MAX_FORCE)	
+		self.reach(constraint_id, event[1], event[self.ORIENTATION], fixed=False)
+		self.grasp(gripper_id, event)
 
-		# Setup gliders
-		analog_slide = self.gripper_max_joint * (1 - event[3])
-		p.setJointMotorControl2(gripper_id, 0, p.POSITION_CONTROL, 
-			targetPosition=analog_slide, force=5.0)
-		p.setJointMotorControl2(gripper_id, 2, p.POSITION_CONTROL, 
-			targetPosition=analog_slide, force=5.0)
-
+		# addMark()
 		if (event[self.BUTTONS][1] & p.VR_BUTTON_WAS_TRIGGERED):
 			p.addUserDebugText('One Item Inserted', (1.7, 0, 1), (255, 0, 0), 12, 10)
 		
 		return 0 if self.get_tool_control_deviation(gripper_id, 
 			event[1]) <= self.THRESHOLD * self.THRESHOLD else -1
+
+	def reach(self, tool_id, eef_pos, eef_orien, fixed):
+		# PR2 gripper follows VR controller, or keyboard			
+		p.changeConstraint(tool_id, eef_pos, eef_orien,
+		 	maxForce=self.MAX_FORCE)
+
+	def grasp(self, gripper, event):
+		# Setup gliders
+		analog_slide = self.gripper_max_joint * (1 - event[3])
+		p.setJointMotorControl2(gripper, 0, p.POSITION_CONTROL, 
+			targetPosition=analog_slide, force=5.0)
+		p.setJointMotorControl2(gripper, 2, p.POSITION_CONTROL, 
+			targetPosition=analog_slide, force=5.0)
 
 	def _load_tools(self, pos):
 

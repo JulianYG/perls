@@ -1,5 +1,5 @@
 import math
-from bullet.models.core.robot import Robot
+from bullet.models.robot import Robot
 import pybullet as p
 
 class Kuka(Robot):

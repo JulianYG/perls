@@ -1,7 +1,4 @@
-import time, os
 from bullet.control.remote import server
-from os.path import join as pjoin
-import struct
 
 class CtrlInterface(object):
 

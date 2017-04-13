@@ -10,7 +10,7 @@ class IKeyboard(CtrlInterface):
 
 	def _remote_comm(self, model):
 		
-		link_info = model.get_tool_info(-1)
+		link_info = model.get_tool_link_states(-1)
 		# Set same number of controllers as number of arms/grippers
 		model.set_virtual_controller(range(len(link_info)))
 		self.control_map = model.create_control_mappings()
@@ -28,7 +28,7 @@ class IKeyboard(CtrlInterface):
 
 	def _local_comm(self, model):
 		
-		link_info = model.get_tool_info(-1)
+		link_info = model.get_tool_link_states(-1)
 		# Set same number of controllers as number of arms/grippers
 		model.set_virtual_controller(range(len(link_info)))
 		self.control_map = model.create_control_mappings()
@@ -86,6 +86,6 @@ class IKeyboard(CtrlInterface):
 
 			# If disengaged, reset position
 			if model.control(self.pseudo_event, self.control_map) < 0:
-				self.pos = [list(i[0]) for i in model.get_tool_info(-1)]	
+				self.pos = [list(i[0]) for i in model.get_tool_link_states(-1)]	
 
 

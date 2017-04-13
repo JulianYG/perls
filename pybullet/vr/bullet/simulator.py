@@ -1,5 +1,7 @@
 import pybullet as p
 import os, struct, time
+from datetime import datetime
+from time import strftime
 from os.path import join as pjoin
 
 class BulletSimulator(object):
@@ -18,7 +20,10 @@ class BulletSimulator(object):
 		self._interface = interface
 		self._model = model
 		self.VIDEO_DIR = pjoin(os.getcwd(), 'data', 'video')
-		self.RECORD_LOG_DIR = pjoin(os.getcwd(), 'data', 'record')
+		self.TRAJECTORY_LOG_DIR = pjoin(os.getcwd(), 'data', 'record', 'trajectory')
+		self.CONTROL_LOG_DIR = pjoin(os.getcwd(), 'data', 'record', 'control')
+		self.CONTACT_LOG_DIR = pjoin(os.getcwd(), 'data', 'record', 'contact')
+
 
 	def setup(self, task, flag, vr):
 		if not self._model.reset(flag, vr):
@@ -29,6 +34,7 @@ class BulletSimulator(object):
 		self._model.setup_scene(task)
 
 	def record(self, file, video=False):
+		file += '_' + datetime.now().strftime('%m-%d-%H:%M:%S')
 		try:
 			logIds = []
 			if video:
@@ -38,9 +44,11 @@ class BulletSimulator(object):
 			else:
 				# Record everything
 				logIds.append(p.startStateLogging(p.STATE_LOGGING_GENERIC_ROBOT,
-					pjoin(self.RECORD_LOG_DIR, 'generic.' + file)))
-				# ctrlLog = p.startStateLogging(p.STATE_LOGGING_VR_CONTROLLERS, 
-				# 	file + '_ctrl')
+					pjoin(self.TRAJECTORY_LOG_DIR, 'traj.' + file)))
+				logIds.append(p.startStateLogging(p.STATE_LOGGING_VR_CONTROLLERS, 
+					pjoin(self.CONTROL_LOG_DIR, 'ctrl.' + file)))
+				logIds.append(p.startStateLogging(p.STATE_LOGGING_CONTACT_POINTS,
+					pjoin(self.CONTACT_LOG_DIR, 'cont.' + file)))
 
 			self._interface.communicate(self._model)
 
@@ -51,7 +59,7 @@ class BulletSimulator(object):
 		p.resetDebugVisualizerCamera(cameraDistance=self.FOCAL_LENGTH, 
 			cameraYaw=self.YAW, cameraPitch=self.PITCH, 
 			cameraTargetPosition=self.FOCAL_POINT)
-		log = self.parse_log(pjoin(self.RECORD_LOG_DIR, 'generic.' + file), verbose=True)
+		log = self.parse_log(pjoin(self.TRAJECTORY_LOG_DIR, 'traj.' + file), verbose=True)
 		self.replay_log(log, delay=delay)
 		self.quit([])
 

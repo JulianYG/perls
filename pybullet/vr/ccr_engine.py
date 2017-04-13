@@ -6,7 +6,7 @@ from os.path import join as pjoin
 import json
 
 REPO_DIR = './data/task.json'
-RECORD_LOG_DIR = './data/record'
+RECORD_LOG_DIR = './data/record/trajectory'
 
 def execute(*args):
 	with open(REPO_DIR, 'r') as f:
@@ -41,7 +41,7 @@ def execute(*args):
 		simulator.setup(repo[t], 0, vr)
 		simulator.record(fn, v)
 	elif j == 'replay':
-		if os.path.isfile(pjoin(RECORD_LOG_DIR, 'generic.' + fn)):
+		if os.path.isfile(pjoin(RECORD_LOG_DIR, 'traj.' + fn)):
 			simulator.setup(repo[t], 1, vr)
 			simulator.replay(fn, d)
 		else:
