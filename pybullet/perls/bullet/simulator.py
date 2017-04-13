@@ -53,7 +53,10 @@ class BulletSimulator(object):
 			self._interface.communicate(self._model)
 
 		except KeyboardInterrupt:
-			self.quit(logIds)		
+			if record:
+				self.quit(logIds)
+			else:
+				self.quit([])		
 
 	def playback(self, file, delay=0.0001):
 		p.resetDebugVisualizerCamera(cameraDistance=self.FOCAL_LENGTH, 
