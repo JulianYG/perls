@@ -1,5 +1,4 @@
 import math
-from bullet.models.kuka import Kuka
 from gym import spaces, Env
 import numpy as np
 from gym.utils import seeding
@@ -15,21 +14,19 @@ class GraspBulletEnv(Env):
 	}
 
 	def __init__(self, model, task, reward, observ, step_func):
-		self.theta_threshold_radians = 0.01
-	    self.x_threshold = 0.24
 	    self.model = model
 	    self.goal = np.array(final_pos)
-		self._seed()
-		self._step_helper = step_func
-		self._observe = observ
-		self._reward = reward
+	    self._seed()
+	    self._step_helper = step_func
+	    self._observe = observ
+	    self._reward = reward
  
 	def _seed(self, seed=None):
-    	self.np_random, seed = seeding.np_random(seed)
-    	return [seed]
+		self.np_random, seed = seeding.np_random(seed)
+		return [seed]
 
-    def _configure(self, display=None):
-    	self.display = display
+	def _configure(self, display=None):
+		self.display = display
 
 	def _reset(self):
 		self.timeStep = 0.01
@@ -41,8 +38,10 @@ class GraspBulletEnv(Env):
 
 	def _step(self, action):
 		self.model.step_simulation()
-
 		done = self._step_helper(self.model)
+		reward = self._reward(self.model)
+		observe, info = self._observe(self.model)
+		return observe, reward, done, info
 
 	    # self.state, _ = np.array(self.model.get_tool_states())
 
@@ -59,9 +58,4 @@ class GraspBulletEnv(Env):
 	    #     or theta > self.x_dot_threshold
 
 	    # eef_pos, eef_orn, eef_vel = self.model.get_tool_link_states(6)
-
-	    reward = self._reward(self.model) #1.0 / np.sum((np.array(eef_pos) - self.goal) ** 2)
-	    observe = self._observe(self.model)
-	    return observe, reward, done, {}	# info
-
-
+	    

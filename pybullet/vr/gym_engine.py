@@ -14,7 +14,7 @@ def step():
 	# Make use of self.model
 	pass
 
-if __main__():
+def __main__():
 	# Example initialization of feature dimensions
 	feat_dim = (20, 10)
 	weights = np.random.random(feat_dimension)
