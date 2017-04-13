@@ -24,7 +24,6 @@ class BulletSimulator(object):
 		self.CONTROL_LOG_DIR = pjoin(os.getcwd(), 'data', 'record', 'control')
 		self.CONTACT_LOG_DIR = pjoin(os.getcwd(), 'data', 'record', 'contact')
 
-
 	def setup(self, task, flag, vr):
 		if not self._model.reset(flag, vr):
 			if vr:

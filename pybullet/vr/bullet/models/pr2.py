@@ -1,5 +1,6 @@
 import pybullet as p
 from bullet.models.core.tool import Tool
+import numpy as np
 
 class PR2(Tool):
 
@@ -16,8 +17,9 @@ class PR2(Tool):
 		Basic scene needed for running tasks
 		"""
 		self.load_default_env()
+		self.side_obj_cnt = p.getNumBodies()
 		self._load_task(task)
-		self.obj_cnt = p.getNumBodies()
+		self.env_obj = range(p.getNumBodies(), self.side_obj_cnt)
 		p.setGravity(0, 0, -9.81)
 
 		#TODO: think about extracting this bounding box out to avoid repeating code if 
@@ -30,42 +32,26 @@ class PR2(Tool):
 		# #TODO: add labels
 		# self._load_boxes(numOfBoxes=9)
 
-	def get_tool_joint_states(self):
-		states = []
-		for gripper in self.grippers:
-			joints = range(p.getNumJoints(gripper))
-			joint_state = [p.getJointState(i)[:2] for i in joints]
-			if self.has_force_sensor:
-				joint_state += [p.getJointState(i)[2] for i in joints]
-			states.append(joint_state)
-		# Return data points and label
-		return states, self.grippers
+	def get_tool_ids(self):
+		return self.grippers
 
-	def get_tool_link_states(self, pr2_id):
-		"""
-		Instead of link velocity, returns gripper joint status for pr2
-		"""
-		if isinstance(pr2_id, list):
-			pr2_pose = [(list(p.getBasePositionAndOrientation(pr2)[0]),
-				list(p.getBasePositionAndOrientation(pr2)[1]),
-				list(p.getLinkState(pr2, 0)[0])) for pr2 in pr2_id]
-		elif pr2_id == -1:
-			pr2_pose = [(list(p.getBasePositionAndOrientation(pr2)[0]),
-				list(p.getBasePositionAndOrientation(pr2)[1]),
-				list(p.getLinkState(pr2, 0)[0])) for pr2 in self.grippers]
+	def get_tool_pose(self, tool_id, velocity=0):
+		state = p.getBasePositionAndOrientation(tool_id)
+		if velocity:
+			lin_vel, ang_vel = p.getBaseVelocity(tool_id)
+			return np.array([list(state[0]), 
+				list(state[1])] + [lin_vel, ang_vel])
 		else:
-			pr2_pose = [(list(p.getBasePositionAndOrientation(pr2_id)[0]),
-				list(p.getBasePositionAndOrientation(pr2_id)[1]), 
-				list(p.getLinkState(pr2_id, 0)[0]))]
-		return pr2_pose
+			state = p.getLinkState(tool_id, p.getNumJoints(tool_id) - 1)
+			return np.array([list(state[0]), list(state[1])])
 
 	def control(self, event, ctrl_map):
 		"""
 		Handles one gripper at a time
 		"""
 		ctrl_id = event[0]
-		constraint_id = ctrl_map['constraint'][ctrl_id]
-		gripper_id = ctrl_map['gripper'][ctrl_id]
+		constraint_id = ctrl_map[Tool.CONSTRAINT][ctrl_id]
+		gripper_id = ctrl_map[Tool.GRIPPER][ctrl_id]
 
 		self.reach(constraint_id, event[1], event[self.ORIENTATION], fixed=False)
 		self.grasp(gripper_id, event)
@@ -78,7 +64,7 @@ class PR2(Tool):
 			event[1]) <= self.THRESHOLD * self.THRESHOLD else -1
 
 	def reach(self, tool_id, eef_pos, eef_orien, fixed):
-		# PR2 gripper follows VR controller, or keyboard			
+		# PR2 gripper follows VR controller, or keyboard		
 		p.changeConstraint(tool_id, eef_pos, eef_orien,
 		 	maxForce=self.MAX_FORCE)
 

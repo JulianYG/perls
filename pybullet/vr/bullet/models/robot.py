@@ -1,4 +1,5 @@
 import pybullet as p
+import numpy as np
 from bullet.models.core.tool import Tool
 
 class Robot(Tool):
@@ -9,48 +10,24 @@ class Robot(Tool):
 		self.THRESHOLD = 1.3
 		self.pos = pos
 
-	def get_tool_joint_states(self):
-		states = []
-		for arm in self.arms:
-			joints = range(p.getNumJoints(arm))
-			arm_state = [p.getJointState(i)[:2] for i in joints]
-			if self.has_force_sensor:
-				arm_state += [p.getJointState(i)[2] for i in joints]
-			states.append(arm_state)
-		# Return data points and label
-		return states, self.arms
+	def get_tool_ids(self):
+		return self.arms
 
-	def get_tool_link_states(self, link_idx):
-		"""
-		Returns pos, orn, link_velocity
-		"""
-		link_pose = []
-		for arm in self.arms:
-			if isinstance(link_idx, list):
-				link_pose.append([(p.getLinkState(arm, i)[0],
-				   p.getLinkState(arm, i)[1], 
-				   p.getLinkState(arm, i, 1)[-2]) for i in link_idx])
-			elif link_idx == -1:
-				eef_idx = p.getNumJoints(arm) - 1
-				link_pose.append((p.getLinkState(arm, eef_idx)[0],
-					p.getLinkState(arm, eef_idx)[1], 
-					p.getLinkState(arm, eef_idx, 1)[-2]))
-			else:
-				link_pose.append((p.getLinkState(arm, link_idx)[0],
-					p.getLinkState(arm, link_idx)[1],
-					p.getLinkState(arm, link_idx, 1)[-2]))
-
-		return link_pose
-
-	def get_tool_control_deviation(self, tool_id, pos):
-		eef_id = p.getNumJoints(tool_id) - 1
-		return self._get_distance(p.getLinkState(tool_id, eef_id)[0], pos)
+	def get_tool_pose(self, tool_id, velocity=0):
+		# End effector pose for robot
+		if velocity:
+			state = p.getLinkState(tool_id, p.getNumJoints(tool_id) - 1, 1)
+			return np.array([list(state[0]), 
+				list(state[1])] + [list(state[-2]), list(state[-1])])
+		else:
+			state = p.getLinkState(tool_id, p.getNumJoints(tool_id) - 1)
+			return np.array([list(state[0]), list(state[1])])
 
 	def control(self, event, ctrl_map):
 
 		ctrl_id = event[0]
-		arm_id = ctrl_map['arm'][ctrl_id]
-		gripper_id = ctrl_map['gripper'][ctrl_id]
+		arm_id = ctrl_map[Tool.ARM][ctrl_id]
+		gripper_id = ctrl_map[Tool.GRIPPER][ctrl_id]
 		
 		self.grasp(gripper_id, event)
 
@@ -117,4 +94,7 @@ class Robot(Tool):
 			p.resetJointState(robot_gripper, jointIndex, self.GRIPPER_REST_POS[jointIndex])
 			p.setJointMotorControl2(robot_gripper, jointIndex, 
 				p.POSITION_CONTROL, self.GRIPPER_REST_POS[jointIndex], 0)
+
+
+
 

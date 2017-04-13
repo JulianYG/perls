@@ -10,12 +10,12 @@ class IKeyboard(CtrlInterface):
 
 	def _remote_comm(self, model):
 		
-		link_info = model.get_tool_link_states(-1)
-		# Set same number of controllers as number of arms/grippers
-		model.set_virtual_controller(range(len(link_info)))
-		self.control_map = model.create_control_mappings()
+		tool = model.get_tool_ids()
+		self.pos = [model.get_tool_pose(t)[0] for t in tool]
 
-		self.pos = [list(i[0]) for i in link_info]
+		# Set same number of controllers as number of arms/grippers
+		model.set_virtual_controller(range(len(tool)))
+		self.control_map = model.create_control_mappings()
 		self.pseudo_event = {0: 0}
 
 		if self.server.connect() < 0:
@@ -28,23 +28,20 @@ class IKeyboard(CtrlInterface):
 
 	def _local_comm(self, model):
 		
-		link_info = model.get_tool_link_states(-1)
-		# Set same number of controllers as number of arms/grippers
-		model.set_virtual_controller(range(len(link_info)))
-		self.control_map = model.create_control_mappings()
+		tool = model.get_tool_ids()
+		self.pos = [model.get_tool_pose(t)[0] for t in tool]
 
-		self.pos = [list(i[0]) for i in link_info]
+		# Set same number of controllers as number of arms/grippers
+		model.set_virtual_controller(range(len(tool)))
+		self.control_map = model.create_control_mappings()
 		self.pseudo_event = {0: 0}
 
 		while True:
 			events = p.getKeyboardEvents()
-
 			self._event_handler(events, model)	
-			
 			time.sleep(0.01)
 
 	def _event_handler(self, events, model):
-
 		for e in (events):
 			if not model.solo:
 				if e == 49 and (events[e] == p.KEY_IS_DOWN):
@@ -86,6 +83,6 @@ class IKeyboard(CtrlInterface):
 
 			# If disengaged, reset position
 			if model.control(self.pseudo_event, self.control_map) < 0:
-				self.pos = [list(i[0]) for i in model.get_tool_link_states(-1)]	
-
+				self.pos = [model.get_tool_pose(t)[0] \
+					for t in model.get_tool_ids()]
 

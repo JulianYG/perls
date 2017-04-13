@@ -3,3 +3,6 @@
 .DS_Store
 *~
 *.pyc
+*/traj*
+*/cont*
+*/ctrl*

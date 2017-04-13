@@ -25,8 +25,9 @@ class Kuka(Robot):
 		Basic scene needed for running tasks
 		"""
 		self.load_basic_env()
+		self.side_obj_cnt = p.getNumBodies()
 		self._load_task(task)
-		self.obj_cnt = p.getNumBodies()
+		self.env_obj = range(p.getNumBodies(), self.side_obj_cnt)
 		p.setGravity(0, 0, -9.81)
 
 	def reach(self, arm_id, eef_pos, eef_orien, fixed):

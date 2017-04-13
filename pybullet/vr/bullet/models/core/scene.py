@@ -1,6 +1,5 @@
 import pybullet as p
 
-
 class Scene(object):
 	"""
 	The basic scene setup in VR 
@@ -12,13 +11,14 @@ class Scene(object):
 		self.BUTTONS = 6
 		self.ORIENTATION = 2
 		self.controllers = None
-		self.obj_cnt = 0
+		self.side_obj_cnt = 0
 
 		self.hand = False
 		self.grippers = []
 		self.constraints = []
 		self.pos = pos
 		self.arms = []
+		self.env_obj = []
 		self.VR_HAND_ID = None
 
 		self.solo = None
@@ -61,7 +61,7 @@ class Scene(object):
 		raise NotImplementedError("Each VR model must re-implement this method.")
 
 	def get_env(self):
-		pass
+		return self.env_obj
 
 	def set_time_step(self, time_step):
 		p.setRealTimeSimulation(0)
