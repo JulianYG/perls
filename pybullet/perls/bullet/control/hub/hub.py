@@ -12,7 +12,7 @@ class Hub(object):
 	def broadcast_msg(self, msg):
 		raise NotImplementedError('Each messager should re-implement this method')
 		
-	def read_msg(self, msg):
+	def read_msg(self):
 		raise NotImplementedError('Each messager should re-implement this method')
 
 	def connect(self):

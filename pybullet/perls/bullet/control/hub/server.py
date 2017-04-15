@@ -51,7 +51,7 @@ class Server(hub.Hub):
                 return 0
         return -1
         
-    def read_msg(self, msg):
+    def read_msg(self):
         
         events = []
         read_sockets, _, _ = select.select(self.CONNECTION_LIST, [], [], 0)

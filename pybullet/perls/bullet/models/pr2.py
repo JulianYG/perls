@@ -19,7 +19,7 @@ class PR2(Tool):
 		self.load_default_env()
 		self.side_obj_cnt = p.getNumBodies()
 		self._load_task(task)
-		self.env_obj = range(p.getNumBodies(), self.side_obj_cnt)
+		self.env_obj = range(self.side_obj_cnt, p.getNumBodies())
 		p.setGravity(0, 0, -9.81)
 
 		#TODO: think about extracting this bounding box out to avoid repeating code if 

@@ -27,7 +27,7 @@ class Kuka(Robot):
 		self.load_basic_env()
 		self.side_obj_cnt = p.getNumBodies()
 		self._load_task(task)
-		self.env_obj = range(p.getNumBodies(), self.side_obj_cnt)
+		self.env_obj = range(self.side_obj_cnt, p.getNumBodies())
 		p.setGravity(0, 0, -9.81)
 
 	def reach(self, arm_id, eef_pos, eef_orien, fixed):
