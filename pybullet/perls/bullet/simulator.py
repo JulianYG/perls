@@ -19,6 +19,7 @@ class BulletSimulator(object):
 		self.viewMatrix = None
 		self.projectionMatrix = None
 
+		self.logIds = []
 		self._interface = interface
 		self.model = model
 		self.VIDEO_DIR = pjoin(os.getcwd(), 'data', 'video')
@@ -38,27 +39,23 @@ class BulletSimulator(object):
 		try:
 			if record:
 				file += '_' + datetime.now().strftime('%m-%d-%H-%M-%S')
-				logIds = []
 				if video:
 					# Does logging only need to be called once with SharedMemory? 
-					logIds.append(p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, 
+					self.logIds.append(p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, 
 						pjoin(self.VIDEO_DIR, file + '.mp4')))
 				else:
 					# Record everything
-					logIds.append(p.startStateLogging(p.STATE_LOGGING_GENERIC_ROBOT,
+					self.logIds.append(p.startStateLogging(p.STATE_LOGGING_GENERIC_ROBOT,
 						pjoin(self.TRAJECTORY_LOG_DIR, 'traj.' + file)))
-					logIds.append(p.startStateLogging(p.STATE_LOGGING_VR_CONTROLLERS, 
+					self.logIds.append(p.startStateLogging(p.STATE_LOGGING_VR_CONTROLLERS, 
 						pjoin(self.CONTROL_LOG_DIR, 'ctrl.' + file)))
-					logIds.append(p.startStateLogging(p.STATE_LOGGING_CONTACT_POINTS,
+					self.logIds.append(p.startStateLogging(p.STATE_LOGGING_CONTACT_POINTS,
 						pjoin(self.CONTACT_LOG_DIR, 'cont.' + file)))
 
 			self._interface.communicate(self.model)
 
 		except KeyboardInterrupt:
-			if record:
-				self.quit(logIds)
-			else:
-				self.quit([])		
+			self.quit()		
 
 	def playback(self, file, delay=0.0001):
 		p.resetDebugVisualizerCamera(cameraDistance=self.FOCAL_LENGTH, 
@@ -66,7 +63,7 @@ class BulletSimulator(object):
 			cameraTargetPosition=self.FOCAL_POINT)
 		log = self.parse_log(pjoin(self.TRAJECTORY_LOG_DIR, 'traj.' + file), verbose=True)
 		self.replay_log(log, delay=delay)
-		self.quit([])
+		self.quit()
 
 	def set_camera_view(self, targetPosX, targetPosY, targetPosZ, roll, 
 		pitch, yaw, dist, width=600, height=540):
@@ -147,14 +144,15 @@ class BulletSimulator(object):
 					p.resetJointState(obj, i, record[qIndex - 7 + 17])
 			time.sleep(delay)
 
-	def quit(self, fp): # logId
-
-		if isinstance(fp, list):
-			for Id in fp:
+	def quit(self):
+		"""
+		Perform clean up before exit
+		"""
+		if self.logIds:
+			for Id in self.logIds:
 				p.stopStateLogging(Id)
-		else:
-			fp.close()
-		self._interface.close_socket()
+		if self._interface:
+			self._interface.close_socket()
 		p.resetSimulation()
 		p.disconnect()
 

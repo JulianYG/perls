@@ -1,7 +1,7 @@
 
 
 # Make use of self.model
-def step_helper(model, action):	
+def step_helper(model, action, *args):	
 	"""
 	User defined step_helper. Takes pybullet tool model and action,
 	returns tuple of observation, reward, done status, and info.
