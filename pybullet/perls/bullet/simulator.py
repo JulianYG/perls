@@ -1,7 +1,9 @@
 import pybullet as p
+import numpy as np
 import os, struct, time
 from datetime import datetime
 from time import strftime
+from matplotlib import pyplot as plt
 from os.path import join as pjoin
 
 class BulletSimulator(object):
@@ -18,19 +20,19 @@ class BulletSimulator(object):
 		self.projectionMatrix = None
 
 		self._interface = interface
-		self._model = model
+		self.model = model
 		self.VIDEO_DIR = pjoin(os.getcwd(), 'data', 'video')
 		self.TRAJECTORY_LOG_DIR = pjoin(os.getcwd(), 'data', 'record', 'trajectory')
 		self.CONTROL_LOG_DIR = pjoin(os.getcwd(), 'data', 'record', 'control')
 		self.CONTACT_LOG_DIR = pjoin(os.getcwd(), 'data', 'record', 'contact')
 
 	def setup(self, task, flag, vr):
-		if not self._model.reset(flag, vr):
+		if not self.model.reset(flag, vr):
 			if vr:
 				raise Exception('Cannot detect running VR application. Please try again.')
 			else:
 				raise Exception('Cannot create pybullet GUI instance. Please try again.')
-		self._model.setup_scene(task)
+		self.model.setup_scene(task)
 
 	def run(self, file='', record=False, video=False):
 		try:
@@ -50,7 +52,7 @@ class BulletSimulator(object):
 					logIds.append(p.startStateLogging(p.STATE_LOGGING_CONTACT_POINTS,
 						pjoin(self.CONTACT_LOG_DIR, 'cont.' + file)))
 
-			self._interface.communicate(self._model)
+			self._interface.communicate(self.model)
 
 		except KeyboardInterrupt:
 			if record:
@@ -66,13 +68,8 @@ class BulletSimulator(object):
 		self.replay_log(log, delay=delay)
 		self.quit([])
 
-	def get_model(self):
-		return self._model
-
-	def get_interface(self):
-		return self._interface
-
-	def set_camera_view(self, targetPosX, targetPosY, targetPosZ, roll, pitch, yaw, dist):
+	def set_camera_view(self, targetPosX, targetPosY, targetPosZ, roll, 
+		pitch, yaw, dist, width=600, height=540):
 		"""
 		Set the view of camera; typically egocentric, or oblique
 		"""
@@ -81,9 +78,19 @@ class BulletSimulator(object):
 		self.ROLL = roll
 		self.YAW = yaw
 		self.FOCAL_LENGTH = dist
+		self.image_width = width
+		self.image_height = height
 		self.viewMatrix = p.computeViewMatrixFromYawPitchRoll((targetPosX, targetPosY, targetPosZ), 
 			dist, yaw, pitch, roll, self.UP_AX_IDX)
-		self.projectionMatrix = p.computeProjectionMatrixFOV(60, 600 / 540., .01, 1000.)
+		self.projectionMatrix = p.computeProjectionMatrixFOV(60, float(width) / height, .01, 1000.)
+
+	def snapshot(self, show=False):
+		img_arr = p.getCameraImage(self.image_width, self.image_height, 
+			self.viewMatrix, self.projectionMatrix)
+		np_img = np.reshape(img_arr[2], (img_arr[1], img_arr[0], 4)) / 255.
+		if show:
+			plt.imshow(np_img)
+		return np_img
 
 	def parse_log(self, filename, verbose=True):
 
