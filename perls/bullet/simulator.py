@@ -28,6 +28,15 @@ class BulletSimulator(object):
 		self.CONTACT_LOG_DIR = pjoin(os.getcwd(), 'data', 'record', 'contact')
 
 	def setup(self, task, flag, vr):
+		if not os.path.exists(self.VIDEO_DIR):
+			os.makedirs(self.VIDEO_DIR)
+		if not os.path.exists(self.TRAJECTORY_LOG_DIR):
+			os.makedirs(self.TRAJECTORY_LOG_DIR)
+		if not os.path.exists(self.CONTROL_LOG_DIR):
+			os.makedirs(self.CONTROL_LOG_DIR)	
+		if not os.path.exists(self.CONTACT_LOG_DIR):
+			os.makedirs(self.CONTACT_LOG_DIR)
+			
 		if not self.model.reset(flag, vr):
 			if vr:
 				raise Exception('Cannot detect running VR application. Please try again.')
