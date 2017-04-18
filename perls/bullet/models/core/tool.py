@@ -127,7 +127,13 @@ class Tool(Scene):
 	def reach(self, tool_id, eef_pos, eef_orien, fixed, reset=False):
 		raise NotImplementedError('Each tool model must re-implement this method.')
 
-	def grasp(self, gripper, controller_event):
+	def slide_grasp(self, gripper, controller_event):
+		raise NotImplementedError('Each tool model must re-implement this method.')
+
+	def grip(self, gripper):
+		raise NotImplementedError('Each tool model must re-implement this method.')
+
+	def release(self, gripper):
 		raise NotImplementedError('Each tool model must re-implement this method.')
 
 	def get_tool_ids(self):

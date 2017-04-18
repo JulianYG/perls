@@ -29,7 +29,7 @@ class Robot(Tool):
 		arm_id = ctrl_map[Tool.ARM][ctrl_id]
 		gripper_id = ctrl_map[Tool.GRIPPER][ctrl_id]
 		
-		self.grasp(gripper_id, event)
+		self.slide_grasp(gripper_id, event)
 
 		#TODO: make this as another function (mark event)
 		# Add user interaction for task completion
@@ -50,15 +50,26 @@ class Robot(Tool):
 			self._disengage(arm_id, event)
 			return -1
 
-	def grasp(self, gripper, controller_event):
+	def grip(self, gripper):
+		for i in range(p.getNumJoints(gripper)):
+			p.setJointMotorControl2(gripper, i, p.POSITION_CONTROL, 
+				targetPosition=self.GRIPPER_CLOZ_POS[i], force=50)
+
+	def release(self, gripper):
+		for i in range(p.getNumJoints(gripper)):
+			p.setJointMotorControl2(gripper, i, p.POSITION_CONTROL, 
+				targetPosition=self.GRIPPER_REST_POS[i], force=50)
+
+	def slide_grasp(self, gripper, event):
 
 		#TODO: Add slider for the grippers
-		if controller_event[self.BUTTONS][33] & p.VR_BUTTON_WAS_TRIGGERED:
+		analog = event[3]
+		if event[self.BUTTONS][33] & p.VR_BUTTON_WAS_TRIGGERED:
 			for i in range(p.getNumJoints(gripper)):
 				p.setJointMotorControl2(gripper, i, p.POSITION_CONTROL, 
 					targetPosition=self.GRIPPER_CLOZ_POS[i], force=50)
 
-		if controller_event[self.BUTTONS][33] & p.VR_BUTTON_WAS_RELEASED:	
+		if event[self.BUTTONS][33] & p.VR_BUTTON_WAS_RELEASED:	
 			for i in range(p.getNumJoints(gripper)):
 				p.setJointMotorControl2(gripper, i, p.POSITION_CONTROL, 
 					targetPosition=self.GRIPPER_REST_POS[i], force=50)	

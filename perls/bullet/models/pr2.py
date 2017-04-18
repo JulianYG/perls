@@ -55,7 +55,7 @@ class PR2(Tool):
 		gripper_id = ctrl_map[Tool.GRIPPER][ctrl_id]
 
 		self.reach(constraint_id, event[1], event[self.ORIENTATION], fixed=False)
-		self.grasp(gripper_id, event)
+		self.slide_grasp(gripper_id, event)
 
 		# addMark()
 		if (event[self.BUTTONS][1] & p.VR_BUTTON_WAS_TRIGGERED):
@@ -69,7 +69,25 @@ class PR2(Tool):
 		p.changeConstraint(tool_id, eef_pos, eef_orien,
 		 	maxForce=self.MAX_FORCE)
 
-	def grasp(self, gripper, event):
+	def grip(self, gripper):
+		"""
+		A hard grip without analog slide.
+		"""
+		p.setJointMotorControl2(gripper, 0, p.POSITION_CONTROL, 
+			targetPosition=0, force=5.0)
+		p.setJointMotorControl2(gripper, 2, p.POSITION_CONTROL, 
+			targetPosition=0, force=5.0)
+
+	def release(self, gripper):
+		"""
+		A forced release without analog slide.
+		"""
+		p.setJointMotorControl2(gripper, 0, p.POSITION_CONTROL, 
+			targetPosition=self.gripper_max_joint, force=10)
+		p.setJointMotorControl2(gripper, 2, p.POSITION_CONTROL, 
+			targetPosition=self.gripper_max_joint, force=10)
+
+	def slide_grasp(self, gripper, event):
 		# Setup gliders
 		analog_slide = self.gripper_max_joint * (1 - event[3])
 		p.setJointMotorControl2(gripper, 0, p.POSITION_CONTROL, 

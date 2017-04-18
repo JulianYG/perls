@@ -76,8 +76,12 @@ class IKeyboard(CtrlInterface):
 					self.pos[self.pseudo_event[0]][2] -= 0.01
 
 			# Add rotation
-
 			#TODO: add gripper control for event[3], use space bar
+			if 99 in events and (events[99] == p.KEY_IS_DOWN):
+				model.grip(self.control_map[1][self.pseudo_event[0]])
+
+			if 114 in events and (events[114] == p.KEY_IS_DOWN):
+				model.release(self.control_map[1][self.pseudo_event[0]])
 
 			self.pseudo_event[3] = 0.0
 			self.pseudo_event[1] = self.pos[self.pseudo_event[0]]
