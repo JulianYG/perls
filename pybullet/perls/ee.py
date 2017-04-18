@@ -62,10 +62,13 @@ def execute(*args):
 		# One horizon
 		t = 0
 		while not done:
-			print(observation)
+			print(observation, 'observation')
 			# Define action here as well
-			action = module.predict(model, weights)
-			print(action)
+			# action = module.predict(model, weights)
+			action = ([observation[0][0], observation[0][1],
+				observation[0][2] + 0.1], observation[1])
+			print(action, 'action')
+			# break
 			observation, reward, done, info = env.step(action)
 			if done:
 				print("Episode finished after {} timesteps".format(t + 1))

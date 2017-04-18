@@ -8,14 +8,16 @@ def step_helper(model, action):
 	A high level pybullet wrapper for the gym step function
 	""" 
 	# Define initial state
-	if action == None:
-		return np.array([0.3, 0.1, .6]), np.array([0, 1, 0, 0])
 	kuka = model.get_tool_ids()[0]
+	if action == None:
+		return model.get_tool_pose(kuka), 1., False, {}
 
 	joint_states = np.array(model.get_tool_joint_states(kuka))
 	model.reach(kuka, action[0], action[1], fixed=True)
 
-	return model.get_tool_joint_states(kuka), 1., True, {}
+	# reached = True
+
+	return model.get_tool_pose(kuka), 1., False, {}
 
 def init_weights():
 	# just fit the shape
@@ -24,7 +26,7 @@ def init_weights():
 
 def predict(model, weights):
 	# Simple matmul
-
+	pos = []
 	# return np.array(model.get_tool_joint_states(kuka)).dot(weights)
-	return np.array([-0.2, 0.3, .9]), np.array([0, 1, 0, 0])
+	return np.array([0.83, -0.52, 1.2]), np.array([0, 1, 0, 0])
 
