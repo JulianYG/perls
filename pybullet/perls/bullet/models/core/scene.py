@@ -4,7 +4,7 @@ class Scene(object):
 	"""
 	The basic scene setup in VR 
 	"""
-	def __init__(self, enableForceSensor, pos):
+	def __init__(self):
 		"""
 		Other subclasses may re-implement the constructor
 		"""		
@@ -16,13 +16,11 @@ class Scene(object):
 		self.hand = False
 		self.grippers = []
 		self.constraints = []
-		self.pos = pos
 		self.arms = []
 		self.env_obj = []
 		self.VR_HAND_ID = None
 
 		self.solo = None
-		self.has_force_sensor = enableForceSensor
 		self.MAX_FORCE = 500
 
 	def reset(self, replay, vr):
@@ -48,15 +46,11 @@ class Scene(object):
 		except p.error:
 			return 0
 			
+		p.resetSimulation()
 		self.controllers = [e[0] for e in p.getVREvents()]
-		self.setup_tools()
 		self.solo = len(self.arms) == 1 or len(self.grippers) == 1
 		return 1
 
-	def setup_tools(self):
-		p.resetSimulation()
-		self._load_tools(self.pos)
-		
 	def setup_scene(self, task):
 		raise NotImplementedError("Each VR model must re-implement this method.")
 
@@ -67,7 +61,7 @@ class Scene(object):
 		p.setRealTimeSimulation(0)
 		p.setTimeStep(time_step)
 
-	def step_simulation(self, time_step):
+	def step_simulation(self):
 		p.stepSimulation()
 
 	def load_min_env(self):
@@ -105,9 +99,5 @@ class Scene(object):
 				p.loadSDF(obj_pose[0])
 			else:
 				p.loadURDF(*obj_pose)
-
-	def _load_tools(self, pos):
-		raise NotImplementedError("Each VR model must re-implement this method.")
-
 
 

@@ -4,7 +4,7 @@ import pybullet as p
 
 class Kuka(Robot):
 
-	def __init__(self, pos, fixed=False, enableForceSensor=False):
+	def __init__(self, pos, enableForceSensor=False, fixed=False):
 		# Pos: Original y-coord for the robot arms  e.g., [0.3, -0.5]
 		super(Kuka, self).__init__(pos, enableForceSensor)
 		self.FIX = fixed
@@ -25,6 +25,7 @@ class Kuka(Robot):
 		Basic scene needed for running tasks
 		"""
 		self.load_basic_env()
+		self._load_tools(self.pos)
 		self.side_obj_cnt = p.getNumBodies()
 		self._load_task(task)
 		self.env_obj = range(self.side_obj_cnt, p.getNumBodies())

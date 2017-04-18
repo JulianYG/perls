@@ -6,7 +6,7 @@ class Robot(Tool):
 
 	def __init__(self, pos, enableForceSensor):
 
-		super(Robot, self).__init__(enableForceSensor, pos)
+		super(Robot, self).__init__(pos, enableForceSensor)
 		self.THRESHOLD = 1.3
 		self.pos = pos
 

@@ -36,19 +36,15 @@ class GraspBulletEnv(Env):
 			img_array = self.simulator.snapshot(show=True)
 		return img_array
 
-	def _configure(self, display=None):
-		self.display = display
-
 	def _reset(self, time_step=0.01):
 		if not self.realTimeSimulation:
 			self.model.set_time_step(time_step)
 		self.tools = self.model.get_tool_ids()
-		self.force_sensor = self.model.has_force_sensor
 		return self._step_helper(self.model, None)[0]
 
 	def _step(self, action):
 		if not self.realTimeSimulation:
 			self.model.step_simulation()
-		observation, reward, done, info = self._step_helper(self.model, action, *args)
+		observation, reward, done, info = self._step_helper(self.model, action)
 		return observation, reward, done, info
 

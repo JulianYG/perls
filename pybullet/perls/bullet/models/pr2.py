@@ -17,6 +17,7 @@ class PR2(Tool):
 		Basic scene needed for running tasks
 		"""
 		self.load_default_env()
+		self._load_tools(self.pos)
 		self.side_obj_cnt = p.getNumBodies()
 		self._load_task(task)
 		self.env_obj = range(self.side_obj_cnt, p.getNumBodies())

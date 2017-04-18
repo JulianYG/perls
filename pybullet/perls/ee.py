@@ -60,6 +60,7 @@ def execute(*args):
 		done = False
 
 		# One horizon
+		t = 0
 		while not done:
 			print(observation)
 			# Define action here as well
@@ -69,8 +70,7 @@ def execute(*args):
 			if done:
 				print("Episode finished after {} timesteps".format(t + 1))
             	break
-
-            # env.render()
+            # t += 1
 
 def main(argv):
 

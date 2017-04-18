@@ -10,9 +10,10 @@ class Tool(Scene):
 
 	def __init__(self, pos, enableForceSensor):
 
-		super(Tool, self).__init__(enableForceSensor, pos)
+		super(Tool, self).__init__()
 		self.THRESHOLD = 1.3
 		self.pos = pos
+		self.has_force_sensor = enableForceSensor
 
 	def add_marker(self, event, tool_id, color=[255,0,0]):
 		#TODO
@@ -63,10 +64,11 @@ class Tool(Scene):
 		"""
 		Given (tool, joint) index tuple, return given joint 
 		state of given tool.
+		Return tuples of (Position, Velocity, and reaction forces) if sensor activated
 		"""
 		joint_state = p.getJointState(tool_joint_idx[0], tool_joint_idx[1])
 		if self.has_force_sensor:
-			return np.array([joint_state[0], joint_state[1], joint_state[2]])
+			return (joint_state[0], joint_state[1], joint_state[2])
 		return np.array([joint_state[0], joint_state[1]])
 
 	def get_tool_joint_states(self, tool_idx):
@@ -74,12 +76,12 @@ class Tool(Scene):
 		Given tool index, return all joint states of that tool
 		"""	
 		if isinstance(tool_idx, list):
-			joint_states = [[self.get_tool_joint_state((t, 
-				i)) for i in range(p.getNumJoints(t))] for t in tool_idx]
+			joint_states = np.array([[self.get_tool_joint_state((t, 
+				i)) for i in range(p.getNumJoints(t))] for t in tool_idx])
 		else:
-			link_states = [self.get_tool_joint_state((tool_idx, 
+			joint_states = [self.get_tool_joint_state((tool_idx, 
 				i)) for i in range(p.getNumJoints(tool_idx))]
-		return np.array(joint_states)
+		return joint_states
 
 	def get_tool_link_state(self, tool_link_idx):
 		"""
@@ -91,7 +93,7 @@ class Tool(Scene):
 			tool_link_idx = (tool_link_idx[0], 
 				p.getNumJoints(tool_link_idx[0]) - 1)
 		link_state = p.getLinkState(tool_link_idx[0], tool_link_idx[1], 1)
-		return np.array([link_state[0], link_state[1], link_state[-2]])
+		return [link_state[0], link_state[1], link_state[-2]]
 
 	def get_tool_link_states(self, tool_idx):
 		"""
@@ -103,10 +105,9 @@ class Tool(Scene):
 			link_states = [[self.get_tool_link_state((t, 
 				i)) for i in range(p.getNumJoints(t))] for t in tool_idx]
 		else:
-			print(tool_idx)
 			link_states = [self.get_tool_link_state((tool_idx, 
 				i)) for i in range(p.getNumJoints(tool_idx))]
-		return np.array(link_states)
+		return link_states
 
 	def get_tool_poses(self, tool_ids, velocity=0):
 		return np.array([self.get_tool_pose(t, velocity) for t in tool_ids])

@@ -42,6 +42,7 @@ class IKeyboard(CtrlInterface):
 			time.sleep(0.01)
 
 	def _event_handler(self, events, model):
+
 		for e in (events):
 			if not model.solo:
 				if e == 49 and (events[e] == p.KEY_IS_DOWN):
