@@ -1,5 +1,5 @@
 import numpy as np
-
+import pybullet as p
 # Make use of self.model
 def step_helper(model, action):	
 	"""
@@ -10,7 +10,13 @@ def step_helper(model, action):
 	# Define initial state
 	kuka = model.get_tool_ids()[0]
 	if action == None:
-		return model.get_tool_pose(kuka), 1., False, {}
+		# b = p.loadURDF("sphere_small.urdf", p.getBasePositionAndOrientation(model.grippers[0])[0], 
+		# 	(0, 0, 0, 1))
+		# p.createConstraint(b, -1, -1, -1, p.JOINT_FIXED, [0, 0,0], [0,0,0],[0,0,1])
+		# c = p.loadURDF("sphere_small.urdf", (0.86, 0, 1.1164), 
+		# 	(0, 0, 0, 1))
+		# p.createConstraint(c, -1, -1, -1, p.JOINT_FIXED, [0, 0,0], [0,0,0],[0,0,1])
+		return ([0.8, 0.3, 1.2], (0, 1, 0, 0)), 1., False, {}
 
 	joint_states = np.array(model.get_tool_joint_states(kuka))
 	model.reach(kuka, action[0], action[1], fixed=True)
@@ -28,5 +34,5 @@ def predict(model, weights):
 	# Simple matmul
 	pos = []
 	# return np.array(model.get_tool_joint_states(kuka)).dot(weights)
-	return np.array([0.83, -0.52, 1.2]), np.array([0, 1, 0, 0])
+	return np.array([0.8, 0.3, 1.2]), np.array([0, 1, 0, 0])
 

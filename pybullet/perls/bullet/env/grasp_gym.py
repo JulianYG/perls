@@ -36,7 +36,7 @@ class GraspBulletEnv(Env):
 			img_array = self.simulator.snapshot(show=True)
 		return img_array
 
-	def _reset(self, time_step=0.01):
+	def _reset(self, time_step=0.001):
 		if not self.realTimeSimulation:
 			self.model.set_time_step(time_step)
 		self.tools = self.model.get_tool_ids()

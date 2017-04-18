@@ -62,14 +62,18 @@ def execute(*args):
 		# One horizon
 		t = 0
 		while not done:
-			print(observation, 'observation')
+			print('observation ****')
+			print(observation)
 			# Define action here as well
-			# action = module.predict(model, weights)
-			action = ([observation[0][0], observation[0][1],
-				observation[0][2] + 0.1], observation[1])
-			print(action, 'action')
+			action = module.predict(model, weights)
+			# action = ([observation[0][0], observation[0][1],
+			# 	observation[0][2] + 0.1], observation[1])
+			print('action ****')
+			print(action)
+
 			# break
 			observation, reward, done, info = env.step(action)
+			t += 1
 			if done:
 				print("Episode finished after {} timesteps".format(t + 1))
             	break
@@ -85,7 +89,8 @@ def main(argv):
 
 	try:
 		opts, args = getopt.getopt(argv, 'hn:m:rt:j:', ['help', 
-			'num_episodes=', 'model=', 'realTimeSimulation','task=', 'step_function='])
+			'num_episodes=', 'model=', 'realTimeSimulation', 
+			'task=', 'step_function='])
 	except getopt.GetoptError:
 		usage()
 		sys.exit(2)

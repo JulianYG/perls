@@ -21,7 +21,7 @@ class Robot(Tool):
 				list(state[1])] + [list(state[-2]), list(state[-1])])
 		else:
 			state = p.getLinkState(tool_id, p.getNumJoints(tool_id) - 1)
-			return np.array([list(state[0]), list(state[1])])
+			return [list(state[0]), list(state[1])]
 
 	def control(self, event, ctrl_map):
 

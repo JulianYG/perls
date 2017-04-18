@@ -44,6 +44,12 @@ class Kuka(Robot):
 			joint_pos = p.calculateInverseKinematics(arm_id, 6, eef_pos, 
 				lowerLimits=self.LOWER_LIMITS, upperLimits=self.UPPER_LIMITS, 
 				jointRanges=self.JOINT_RANGE, restPoses=self.REST_POSE, jointDamping=self.JOINT_DAMP)
+			if eef_orien == None:
+				for i in range(len(joint_pos)):
+					p.setJointMotorControl2(arm_id, i, p.POSITION_CONTROL, 
+						targetPosition=joint_pos[i], targetVelocity=0, positionGain=0.05, velocityGain=1.0, force=self.MAX_FORCE)
+				return
+
 			# Only need links 1- 5, no need for joint 4-6 with pure position IK
 			for i in range(len(joint_pos) - 3):
 				p.setJointMotorControl2(arm_id, i, p.POSITION_CONTROL, 
