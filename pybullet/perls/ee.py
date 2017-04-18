@@ -61,8 +61,7 @@ def execute(*args):
 
 		# One horizon
 		t = 0
-		# while not done:
-		while True:
+		while not done:
 			print('observation ****')
 			print(observation)
 			# Define action here as well

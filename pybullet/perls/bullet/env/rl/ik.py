@@ -10,12 +10,17 @@ def step_helper(model, action):
 	# Define initial state
 	kuka = model.get_tool_ids()[0]
 	if action == None:
-		return ([0.8, 0., 1.2], (0, 1, 0, 0)), 1., False, {}
+		return ([0.8, 0., 1.2], (0, 1, 0, 0)), 0., False, {}
 
 	joint_states = np.array(model.get_tool_joint_states(kuka))
 	model.reach(kuka, action[0], action[1], fixed=True, null_space=False)
+	
+	reached = False
+	eef_pos = model.get_tool_pose(kuka)[0]
+	if np.sum((np.array(action[0]) - np.array(eef_pos)) ** 2) < 8e-4:
+		reached = True
 
-	return model.get_tool_pose(kuka), 1., False, {}
+	return eef_pos, 1., reached, {}
 
 def init_weights():
 	# just fit the shape

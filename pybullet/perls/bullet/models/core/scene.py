@@ -11,13 +11,13 @@ class Scene(object):
 		self.BUTTONS = 6
 		self.ORIENTATION = 2
 		self.controllers = None
-		self.side_obj_cnt = 0
+		self.default_obj_cnt = 0
 
 		self.hand = False
 		self.grippers = []
 		self.constraints = []
 		self.arms = []
-		self.env_obj = []
+		self.loaded_obj = []
 		self.VR_HAND_ID = None
 
 		self.solo = None
@@ -54,8 +54,8 @@ class Scene(object):
 	def setup_scene(self, task):
 		raise NotImplementedError("Each VR model must re-implement this method.")
 
-	def get_env(self):
-		return self.env_obj
+	def get_loaded_obj(self):
+		return self.loaded_obj
 
 	def set_time_step(self, time_step):
 		p.setRealTimeSimulation(0)
