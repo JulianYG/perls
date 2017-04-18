@@ -44,7 +44,7 @@ def execute(*args):
 	register(
 	    id='GraspBulletEnv-v0',
 	    entry_point='bullet.env.grasp_gym:GraspBulletEnv',
-	    timestep_limit=1000,
+	    # timestep_limit=1000,
 	    reward_threshold=950.0,
 	    kwargs={'simulator': simulator, 'task': repo[t], 
 	    		'step_func': module.step_helper, 'realTime': r}
@@ -61,7 +61,8 @@ def execute(*args):
 
 		# One horizon
 		t = 0
-		while not done:
+		# while not done:
+		while True:
 			print('observation ****')
 			print(observation)
 			# Define action here as well
