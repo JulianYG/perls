@@ -63,13 +63,13 @@ class Robot(Tool):
 	def slide_grasp(self, gripper, event):
 
 		#TODO: Add slider for the grippers
-		analog = event[3] * 0.5
-		if event[self.BUTTONS][33] & p.VR_BUTTON_WAS_TRIGGERED or event[3]:
+		analog = event[3]
+		if event[self.BUTTONS][33] & p.VR_BUTTON_WAS_TRIGGERED:
 			for i in range(p.getNumJoints(gripper)):
 				p.setJointMotorControl2(gripper, i, p.POSITION_CONTROL, 
 					targetPosition=self.GRIPPER_CLOZ_POS[i], force=50)
 
-		if event[self.BUTTONS][33] & p.VR_BUTTON_WAS_RELEASED or not event[3]:	
+		if event[self.BUTTONS][33] & p.VR_BUTTON_WAS_RELEASED:	
 			for i in range(p.getNumJoints(gripper)):
 				p.setJointMotorControl2(gripper, i, p.POSITION_CONTROL, 
 					targetPosition=self.GRIPPER_REST_POS[i], force=50)	
