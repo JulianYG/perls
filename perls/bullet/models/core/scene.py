@@ -57,13 +57,6 @@ class Scene(object):
 	def get_loaded_obj(self):
 		return self.loaded_obj
 
-	def set_time_step(self, time_step):
-		p.setRealTimeSimulation(0)
-		p.setTimeStep(time_step)
-
-	def step_simulation(self):
-		p.stepSimulation()
-
 	def load_min_env(self):
 		p.loadURDF("plane.urdf",0,0,0,0,0,0,1)
 

@@ -10,14 +10,15 @@ def step_helper(model, action):
 	# Define initial state
 	kuka = model.get_tool_ids()[0]
 	if action == None:
-		return ([0.8, 0., 1.2], (0, 1, 0, 0)), 0., False, {}
+		return ([0.8, 0., 1.], (0, 1, 0, 0)), 0., False, {}
 
 	joint_states = np.array(model.get_tool_joint_states(kuka))
-	model.reach(kuka, action[0], action[1], fixed=True, null_space=False)
+	model.reach(kuka, action[0], action[1], fixed=True, null_space=False, expedite=True)
 	
 	reached = False
 	eef_pos = model.get_tool_pose(kuka)[0]
-	if np.sum((np.array(action[0]) - np.array(eef_pos)) ** 2) < 8e-4:
+	if np.sqrt(np.sum((np.array(action[0])[:2] - np.array(eef_pos)[:2]) ** 2)) < 1e-6 and\
+		abs(action[0][2] - eef_pos[2]) < 0.025:
 		reached = True
 
 	return eef_pos, 1., reached, {}
@@ -31,5 +32,5 @@ def predict(model, weights):
 	# Simple matmul
 	pos = []
 	# return np.array(model.get_tool_joint_states(kuka)).dot(weights)
-	return np.array([0.8, 0., 1.2]), np.array([0, 1, 0, 0])
+	return np.array([0.8, 0., 1.]), np.array([0, 1, 0, 0])
 

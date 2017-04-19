@@ -38,13 +38,13 @@ class GraspBulletEnv(Env):
 
 	def _reset(self, time_step=0.001):
 		if not self.realTimeSimulation:
-			self.model.set_time_step(time_step)
+			self.simulator.set_time_step(time_step)
 		self.tools = self.model.get_tool_ids()
 		return self._step_helper(self.model, None)[0]
 
 	def _step(self, action):
 		if not self.realTimeSimulation:
-			self.model.step_simulation()
+			self.simulator.step_simulation()
 		observation, reward, done, info = self._step_helper(self.model, action)
 		return observation, reward, done, info
 

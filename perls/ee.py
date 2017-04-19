@@ -54,9 +54,15 @@ def execute(*args):
 
 	weights = module.init_weights()
 
+	
+
 	for episode in range(n):
 
 		observation = env.reset()
+
+		for _ in xrange(100):
+			simulator.step_simulation()
+
 		done = False
 
 		# One horizon
@@ -70,7 +76,6 @@ def execute(*args):
 			# 	observation[0][2] + 0.1], observation[1])
 			print('action ****')
 			print(action)
-
 			# break
 			observation, reward, done, info = env.step(action)
 			t += 1

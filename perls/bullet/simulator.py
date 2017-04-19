@@ -165,3 +165,10 @@ class BulletSimulator(object):
 		p.resetSimulation()
 		p.disconnect()
 
+	def set_time_step(self, time_step):
+		p.setRealTimeSimulation(0)
+		p.setTimeStep(time_step)
+
+	def step_simulation(self):
+		p.stepSimulation()
+
