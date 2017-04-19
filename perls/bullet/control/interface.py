@@ -7,10 +7,10 @@ class CtrlInterface(object):
 	that connects inputs from elsewhere such as ROS / openAI to 
 	the pybullet node.
 	"""
-	def __init__(self, remote=False, buffer_size=4096, port=5000):
+	def __init__(self, host, remote=False, port=5000):
 		self.remote = remote
 		if self.remote:
-			self.server = server.Server(buffer_size, port)
+			self.server = server.RedisServer('172.24.68.111', port=6379)
 		else:
 			self.server = None
 
@@ -18,6 +18,7 @@ class CtrlInterface(object):
 		self.remote = flag
 
 	def communicate(self, model):
+		print(self.remote)
 		if self.remote:
 			self._remote_comm(model)
 		else:

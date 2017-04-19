@@ -1,8 +1,28 @@
 # Tcp Chat server
 # borrowed from http://www.binarytides.com/code-chat-application-server-client-sockets-python/
-
+import redis
 import socket, select
 from bullet.control.hub import hub
+
+class RedisServer(hub.Hub):
+
+    def __init__(self, host, port=6379, db=0):
+        terminal = redis.StrictRedis(host=host, port=6379, db=db)
+        self.p = terminal.pubsub()
+
+    def broadcast_msg(self, message):
+        pass
+
+    def read_msg(self):
+        return self.my_handler
+
+    def connect(self):
+        self.p.subscribe(**{'channel1': self.read_msg})
+        self.thread = self.p.run_in_thread(sleep_time=0.001)
+
+    def my_handler(self, msg):
+        data = msg['data']
+        return eval(data) 
 
 class Server(hub.Hub):
 

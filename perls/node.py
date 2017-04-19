@@ -53,7 +53,7 @@ def execute(*args):
 		interface = keyboard_interface.IKeyboard(r)
 		vr = False
 	elif i == 'cmd':
-		interface = cmd_interface.ICmd(r, s)
+		interface = cmd_interface.ICmd(s, remote=r)
 		vr = False
 	else:
 		raise NotImplementedError('Non-supported interface.')
@@ -72,7 +72,7 @@ def execute(*args):
 		else:
 			raise IOError('Record file not found.')
 	elif j == 'run':
-		simulator.setup(repo[t], 0, vr)
+		simulator.setup(repo[t], 0, False)
 		simulator.run()
 	else:
 		raise NotImplementedError('Invalid input: Job not recognized.')
@@ -94,7 +94,7 @@ def main(argv):
 	socket = None
 
 	try:
-		opts, args = getopt.getopt(argv, 'hi:m:j:vd:t:r:s:', ['help', 
+		opts, args = getopt.getopt(argv, 'hi:m:j:vd:t:rs:', ['help', 
 			'interface=', 'model=', 'job=', 'video','delay=', 'task=', 'remote', 'socket='])
 	except getopt.GetoptError:
 		usage()

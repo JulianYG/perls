@@ -60,7 +60,6 @@ class BulletSimulator(object):
 						pjoin(self.CONTROL_LOG_DIR, 'ctrl.' + file)))
 					self.logIds.append(p.startStateLogging(p.STATE_LOGGING_CONTACT_POINTS,
 						pjoin(self.CONTACT_LOG_DIR, 'cont.' + file)))
-
 			self._interface.communicate(self.model)
 
 		except KeyboardInterrupt:
