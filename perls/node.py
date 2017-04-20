@@ -51,6 +51,7 @@ def execute(*args):
 	fixed = _CONFIGS['fixed_gripper_orn']
 	force_sensor = _CONFIGS['enable_force_sensor']
 	init_pos = _CONFIGS['tool_positions']
+	camera_info = _CONFIGS['camera']
 
 	record_file = _CONFIGS['record_file_name']
 	replay_file = _CONFIGS['replay_file_name']
@@ -91,7 +92,7 @@ def execute(*args):
 		simulator.run(fn, True, video)
 	elif job == 'replay':
 		# Default view point setting
-		simulator.set_camera_view(.8, -.2, 1, 0, -90, 120, 1)
+		simulator.set_camera_view(*camera_info)
 		if os.path.isfile(pjoin(RECORD_LOG_DIR, replay_file)):
 			simulator.setup(repo[task], 1, vr)
 			simulator.playback(fn, delay)
@@ -110,7 +111,7 @@ def usage():
 
 def main(argv):
 
-	config = '1'
+	config = '1'	# default config
 	try:
 		opts, args = getopt.getopt(argv, 'hc:', ['help', 'config='])
 	except getopt.GetoptError:

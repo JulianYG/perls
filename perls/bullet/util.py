@@ -1,10 +1,8 @@
 import json
+import numpy as np
 
 def get_distance(posA, posB):
-	dist = 0.
-	for i in range(len(posA)):
-		dist += (posA[i] - posB[i]) ** 2
-	return dist
+	return np.sqrt(np.sum((np.array(posA) - np.array(posB)) ** 2))
 
 def read_config(config):
 	dic = {}

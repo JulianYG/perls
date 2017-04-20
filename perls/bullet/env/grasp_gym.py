@@ -13,12 +13,13 @@ class GraspBulletEnv(Env):
 		'video.frames_per_second': 50
 	}
 
-	def __init__(self, simulator, task, step_func, realTime=False):
+	def __init__(self, simulator, task, step_func, time_step, realTime=False):
 	    self.simulator = simulator
 	    self.model = simulator.model
 	    self.realTimeSimulation = realTime
 	    self._seed()
 	    self._step_helper = step_func
+	    self.time_step = time_step
 	    # Setup simulator but not running
 	    self.simulator.setup(task, 0, 0)
 
@@ -36,9 +37,9 @@ class GraspBulletEnv(Env):
 			img_array = self.simulator.snapshot(show=True)
 		return img_array
 
-	def _reset(self, time_step=0.001):
+	def _reset(self):
 		if not self.realTimeSimulation:
-			self.simulator.set_time_step(time_step)
+			self.simulator.set_time_step(self.time_step)
 		self.tools = self.model.get_tool_ids()
 		return self._step_helper(self.model, None)[0]
 

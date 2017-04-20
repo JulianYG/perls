@@ -40,10 +40,8 @@ class Robot(Tool):
 			# Can add line for mark here
 			# so that in saved csv file, we know when one task is complete	
 
-		sq_len = self.get_tool_control_deviation(arm_id, event[1])
-
 		# Allows robot arm control by VR controllers
-		if sq_len < self.THRESHOLD * self.THRESHOLD:
+		if self.get_tool_control_deviation(arm_id, event[1]) < self.THRESHOLD:
 			self._engage(arm_id, event)
 			return 0
 		else:
