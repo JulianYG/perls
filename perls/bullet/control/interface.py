@@ -18,7 +18,6 @@ class CtrlInterface(object):
 		self.remote = flag
 
 	def communicate(self, model):
-		print(self.remote)
 		if self.remote:
 			self._remote_comm(model)
 		else:

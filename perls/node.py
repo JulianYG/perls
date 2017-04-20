@@ -60,6 +60,9 @@ def execute(*args):
 	
 	simulator = BulletSimulator(model, interface)
 
+	if r and (j == 'record' or j == 'run'):
+		vr = False
+
 	if j == 'record':
 		simulator.setup(repo[t], 0, vr)
 		simulator.run(fn, True, v)
@@ -72,7 +75,7 @@ def execute(*args):
 		else:
 			raise IOError('Record file not found.')
 	elif j == 'run':
-		simulator.setup(repo[t], 0, False)
+		simulator.setup(repo[t], 0, vr)
 		simulator.run()
 	else:
 		raise NotImplementedError('Invalid input: Job not recognized.')

@@ -8,12 +8,14 @@ class IVR(CtrlInterface):
 		super(IVR, self).__init__(None, remote)
 
 	def _remote_comm(self, model):
+		tool = model.get_tool_ids()
+		model.set_virtual_controller([3, 4])
 		control_map = model.create_control_mappings()
 		self.server.connect()
 		while True:
 
 			events = self.server.read_msg()
-			print(events)
+
 			skip_flag = model.redundant_control()
 			for e in (events):
 				if skip_flag:
