@@ -4,6 +4,7 @@ from bullet.control import *
 from bullet.simulator import BulletSimulator
 import os, sys, getopt, json
 from os.path import join as pjoin
+import bullet.util as utils
 
 def build(model, task, socket, filename, record=True):
 	"""
@@ -29,76 +30,89 @@ def execute(*args):
 	Default load settings from command line execution. 
 	May need a configuration file for this purpose
 	"""
-	REPO_DIR = './data/task.json'
-	RECORD_LOG_DIR = './data/record/trajectory'
+	REPO_DIR = pjoin(os.getcwd(), 'data', 'task.json')
+	CONFIG_DIR = pjoin(os.getcwd(), 'configs', args[0] + '.json')
+	RECORD_LOG_DIR = pjoin(os.getcwd(), 'data', 'record', 'trajectory')
 
 	with open(REPO_DIR, 'r') as f:
 		repo = json.loads(f.read())
-	i, m, j, v, d, t, r, s = args
-	fn = '_'.join([i, m, t])
-	if m == 'kuka':
+
+	_CONFIGS = utils.read_config(CONFIG_DIR)
+
+	interface = _CONFIGS['interface']
+	model = _CONFIGS['model']
+	job = _CONFIGS['job']
+	video = _CONFIGS['video']
+	delay = _CONFIGS['delay']
+	task = _CONFIGS['task']
+	remote = _CONFIGS['remote']
+	host = _CONFIGS['host']
+	socket = _CONFIGS['socket']
+	fixed = _CONFIGS['fixed_gripper_orn']
+	force_sensor = _CONFIGS['enable_force_sensor']
+	init_pos = _CONFIGS['tool_positions']
+
+	record_file = _CONFIGS['record_file_name']
+	replay_file = _CONFIGS['replay_file_name']
+
+	fn = record_file
+	if not record_file:
+		fn = '_'.join([interface, model, task])
+
+	if model == 'kuka':
 		# Change Fixed to True for keyboard
-		model = kuka.Kuka([0.3, -0.5], fixed=True, enableForceSensor=False)
-	elif m == 'sawyer':
-		model = sawyer.Sawyer([0.0], fixed=True, enableForceSensor=False)
-	elif m == 'pr2':
-		model = pr2.PR2([0.3, -0.5], enableForceSensor=False)
+		model = kuka.Kuka(init_pos, fixed=fixed, enableForceSensor=force_sensor)
+	elif model == 'sawyer':
+		model = sawyer.Sawyer(init_pos, fixed=fixed, enableForceSensor=force_sensor)
+	elif model == 'pr2':
+		model = pr2.PR2(init_pos, enableForceSensor=force_sensor)
 	else:
 		raise NotImplementedError('Invalid input: Model not recognized.')
 	
-	if i == 'vr':
-		interface = vr_interface.IVR('172.24.68.111', r)
+	if interface == 'vr':
+		interface = vr_interface.IVR(host, remote)
 		vr = True
-	elif i == 'keyboard':
-		interface = keyboard_interface.IKeyboard(r)
+	elif interface == 'keyboard':
+		interface = keyboard_interface.IKeyboard(host, remote)
 		vr = False
-	elif i == 'cmd':
-		interface = cmd_interface.ICmd(s, remote=r)
+	elif interface == 'cmd':
+		interface = cmd_interface.ICmd(socket, remote=remote)
 		vr = False
 	else:
 		raise NotImplementedError('Non-supported interface.')
 	
 	simulator = BulletSimulator(model, interface)
 
-	if r and (j == 'record' or j == 'run'):
+	if remote and (job == 'record' or job == 'run'):
 		vr = False
 
-	if j == 'record':
-		simulator.setup(repo[t], 0, vr)
-		simulator.run(fn, True, v)
-	elif j == 'replay':
+	if job == 'record':
+		simulator.setup(repo[task], 0, vr)
+		simulator.run(fn, True, video)
+	elif job == 'replay':
 		# Default view point setting
 		simulator.set_camera_view(.8, -.2, 1, 0, -90, 120, 1)
-		if os.path.isfile(pjoin(RECORD_LOG_DIR, 'traj.' + fn)):
-			simulator.setup(repo[t], 1, vr)
-			simulator.playback(fn, d)
+		if os.path.isfile(pjoin(RECORD_LOG_DIR, replay_file)):
+			simulator.setup(repo[task], 1, vr)
+			simulator.playback(fn, delay)
 		else:
 			raise IOError('Record file not found.')
-	elif j == 'run':
-		simulator.setup(repo[t], 0, vr)
+	elif job == 'run':
+		simulator.setup(repo[task], 0, vr)
 		simulator.run()
 	else:
 		raise NotImplementedError('Invalid input: Job not recognized.')
 	return simulator
 
 def usage():
-	print('Please specify at least the interface, model and user job. Default task: ball')
-	print('Usage: python node.py -i [interface] -m [model] -j [job] -v <video> -d [delay] -t [task] -r <remote> -s <socket>')
+	print('Please specify the configuration file under ./configs. Default config: 1')
+	print('Usage: python node.py -c [config]')
 
 def main(argv):
 
-	interface = None
-	model = None
-	job = 'play'
-	video = False
-	delay = 0.0005
-	task = 'ball'
-	remote = False
-	socket = None
-
+	config = '1'
 	try:
-		opts, args = getopt.getopt(argv, 'hi:m:j:vd:t:rs:', ['help', 
-			'interface=', 'model=', 'job=', 'video','delay=', 'task=', 'remote', 'socket='])
+		opts, args = getopt.getopt(argv, 'hc:', ['help', 'config='])
 	except getopt.GetoptError:
 		usage()
 		sys.exit(2)
@@ -106,23 +120,12 @@ def main(argv):
 		if opt in ('-h', '--help'):
 			usage()
 			sys.exit(0)
-		elif opt in ('-i', '--interface'):
-			interface = arg
-		elif opt in ('-m', '--model'):
-			model = arg
-		elif opt in ('-j', '--job'):
-			job = arg
-		elif opt in ('-v', '--video'):
-			video = True
-		elif opt in ('-d', '--delay'):
-			delay = float(arg)
-		elif opt in ('-t', '--task'):
-			task = arg
-		elif opt in ('-r', '--remote'):
-			remote = True
-		elif opt in ('-s', '--socket'):
-			socket = arg
-	execute(interface, model, job, video, delay, task, remote, socket)
+		elif opt in ('-c', '--config'):
+			config = arg
+	execute(config)
 
 if __name__ == '__main__':
 	main(sys.argv[1:])
+
+
+

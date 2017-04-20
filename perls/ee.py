@@ -11,6 +11,7 @@ from bullet.env.grasp_gym import GraspBulletEnv
 from bullet.control import *
 from bullet.env.rl import *
 from gym.envs.registration import registry, register, make, spec
+import bullet.util as utils
 
 def execute(*args):
 

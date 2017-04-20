@@ -1,6 +1,7 @@
 import pybullet as p
 import numpy as np
 from bullet.models.core.scene import Scene
+import bullet.util as utils
 
 class Tool(Scene):
 
@@ -27,7 +28,7 @@ class Tool(Scene):
 
 	def get_tool_control_deviation(self, tool_id, pos):
 		eef_id = p.getNumJoints(tool_id) - 1
-		return self._get_distance(p.getLinkState(tool_id, eef_id)[0], pos)
+		return utils.get_distance(p.getLinkState(tool_id, eef_id)[0], pos)
 
 	def redundant_control(self):
 		return len(self.controllers) > max(len(self.grippers), 
@@ -111,12 +112,6 @@ class Tool(Scene):
 
 	def get_tool_poses(self, tool_ids, velocity=0):
 		return np.array([self.get_tool_pose(t, velocity) for t in tool_ids])
-
-	def _get_distance(self, posA, posB):
-		dist = 0.
-		for i in range(len(posA)):
-			dist += (posA[i] - posB[i]) ** 2
-		return dist
 
 	def setup_scene(self, task):
 		raise NotImplementedError('Each tool model must re-implement this method.')
