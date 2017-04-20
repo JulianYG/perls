@@ -3,9 +3,11 @@ import pybullet as p
 
 class IVR(CtrlInterface):
 
-	def __init__(self, remote):
+	# TODO: reset signal, pass controller IDs, add configuration file system
+
+	def __init__(self, host_addr, remote):
 		# Default settings for camera
-		super(IVR, self).__init__(None, remote)
+		super(IVR, self).__init__(host_addr, remote)
 
 	def _remote_comm(self, model):
 		tool = model.get_tool_ids()

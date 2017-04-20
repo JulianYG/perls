@@ -10,7 +10,7 @@ class CtrlInterface(object):
 	def __init__(self, host, remote=False, port=5000):
 		self.remote = remote
 		if self.remote:
-			self.server = server.RedisServer('172.24.68.111', port=6379)
+			self.server = server.RedisServer(host, port=6379)
 		else:
 			self.server = None
 

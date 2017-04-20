@@ -47,7 +47,7 @@ def execute(*args):
 		raise NotImplementedError('Invalid input: Model not recognized.')
 	
 	if i == 'vr':
-		interface = vr_interface.IVR(r)
+		interface = vr_interface.IVR('172.24.68.111', r)
 		vr = True
 	elif i == 'keyboard':
 		interface = keyboard_interface.IKeyboard(r)

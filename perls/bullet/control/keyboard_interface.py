@@ -4,9 +4,9 @@ from bullet.control.interface import CtrlInterface
 
 class IKeyboard(CtrlInterface):
 
-	def __init__(self, remote):
+	def __init__(self, host, remote):
 		# Default settings for camera
-		super(IKeyboard, self).__init__(remote)
+		super(IKeyboard, self).__init__(host, remote)
 
 	def _remote_comm(self, model):
 		
