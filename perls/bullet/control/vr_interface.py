@@ -34,7 +34,7 @@ class IVR(CtrlInterface):
 
 				msg = {}
 				for ID in range(p.getNumBodies()):
-					msg[ID] = p.getBasePositionAndOrientation(ID)[1:3]
+					msg[ID] = p.getBasePositionAndOrientation(ID)[:2]
 				self.server.broadcast_msg(msg)
 
 	def _local_comm(self, model):
