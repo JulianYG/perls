@@ -41,34 +41,35 @@ task = repo['ball']
 
 simulator = build(model, interface, task, 'filename', record=False, vr=True)
 
-simulator.run()
+simulator.run(remote_render=True)
 
-def cmd_handler(msg):
-	data = eval(msg)
 
-	if data == 0:
-		simulator.quit()
-	elif data == 1:
-		simulator.setup(task, 0, True)
-	else:
-		for obj, pose in data.items():
-			p.resetBasePositionAndOrientation(obj, pose)
+# def cmd_handler(msg):
+# 	data = eval(msg)
 
-r = redis.StrictRedis(host=host, port=6379, db=0)
-subscriber = r.pubsub()
+# 	if data == 0:
+# 		simulator.quit()
+# 	elif data == 1:
+# 		simulator.setup(task, 0, True)
+# 	else:
+# 		for obj, pose in data.items():
+# 			p.resetBasePositionAndOrientation(obj, pose)
 
-subscriber.subscribe(**{'client_channel': cmd_handler})
+# r = redis.StrictRedis(host=host, port=6379, db=0)
+# subscriber = r.pubsub()
 
-p.connect(p.SHARED_MEMORY)
-while True:
-	event = p.getVREvents()
+# subscriber.subscribe(**{'client_channel': cmd_handler})
 
-	for e in (event):
-		x = r.publish('server_channel', e)
+# p.connect(p.SHARED_MEMORY)
+# while True:
+# 	event = p.getVREvents()
 
-	time.sleep(0.001)
-		# iD = e[0]
-		# pos = e[1]
-		# orn = e[2]
+# 	for e in (event):
+# 		x = r.publish('server_channel', e)
+
+# 	time.sleep(0.001)
+# 		# iD = e[0]
+# 		# pos = e[1]
+# 		# orn = e[2]
 
 

@@ -26,11 +26,13 @@ class IVR(CtrlInterface):
 			if isinstance(packet, str) or isinstance(packet, bytes):
 				data = eval(packet)
 				if data == 0:
-					raise SystemExit('Remote client invoke shut down')
+					# raise SystemExit('Remote client invoke shut down')
+					pass
 				elif data == 1:
-					print('Remote client invode reset')
-					model.reset(0, vr)
-					p.setRealTimeSimulation(0)
+					# print('Remote client invode reset')
+					# model.reset(0, vr)
+					# p.setRealTimeSimulation(0)
+					pass
 				else:
 					for obj, pose in data.items():
 						if obj not in model.grippers:
@@ -39,7 +41,7 @@ class IVR(CtrlInterface):
 						else:
 							# Change the gripper constraint if obj is pr2 gripper
 							p.changeConstraint(control_map[2][revert_map[1][obj]], pose[0], pose[1], maxForce=500)
-
+							model.set_tool_states(obj, pose[2:])
 				# TODO: Handle constraints of grippers; 
 				# Handle joint states
 
@@ -50,8 +52,8 @@ class IVR(CtrlInterface):
 		while True:
 			events = p.getVREvents()
 			for e in (events):
-				r.publish('server_channel', e)
-				time.sleep(0.001)
+				self.server.terminal.publish('server_channel', e)
+			time.sleep(0.001)
 
 	def _remote_comm(self, model):
 		tool = model.get_tool_ids()
@@ -60,6 +62,8 @@ class IVR(CtrlInterface):
 		self.server.connect(model)
 
 		control_map = model.create_control_mappings()
+
+		revert_map = {key: {v: k for k, v in val.items()} for key, val in control_map.items()}
 
 		while True:
 			if model.controllers:
@@ -75,10 +79,15 @@ class IVR(CtrlInterface):
 					else:
 						model.control(e, control_map)
 
-
 				msg = {}
 				for ID in range(p.getNumBodies()):
+
+					# TODO: change hardcoded 1 to something generalized
 					msg[ID] = p.getBasePositionAndOrientation(ID)[:2]
+
+					if ID in revert_map[1]:
+						msg[ID] += [model.get_tool_joint_states(ID)]
+
 				self.server.broadcast_msg(msg)
 
 	def _local_comm(self, model):

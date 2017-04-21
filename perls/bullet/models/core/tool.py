@@ -46,18 +46,24 @@ class Tool(Scene):
 		return control_map
 
 	def set_tool_states(self, tool_ids, vals, ctrl_type='pos'):
+		# TODO: change 'pos' to 0 'vel' to 1 something like [jointIndex, motor.CTRLTYP]
+		if not isinstance(tool_ids, list):
+			tool_ids = [tool_ids]
+
+		if not isinstance(vals[0], list):
+			vals = [vals]
 
 		if ctrl_type == 'pos':
 			for tool_id, val in zip(tool_ids, vals):
 				for jointIndex in range(p.getNumJoints(tool_id)):
 					p.setJointMotorControl2(tool_id, jointIndex, p.POSITION_CONTROL,
-						targetPosition=pos[jointIndex], targetVelocity=0, positionGain=0.05, 
+						targetPosition=np.array(val)[jointIndex, 0], targetVelocity=0, positionGain=0.05, 
 						velocityGain=1.0, force=self.MAX_FORCE)
 		elif ctrl_type == 'vel':
 			for tool_id, val in zip(tool_ids, vals):
 				for jointIndex in range(p.getNumJoints(tool_id)):
 					p.setJointMotorControl2(tool_id, jointIndex, p.VELOCITY_CONTROL,
-						targetVelocity=val[jointIndex], force=self.MAX_FORCE)
+						targetVelocity=np.array(val)[jointIndex, 1], force=self.MAX_FORCE)
 		else:
 			raise NotImplementedError('Cannot recognize current control type: ' + ctrl_type)
 
@@ -70,7 +76,7 @@ class Tool(Scene):
 		joint_state = p.getJointState(tool_joint_idx[0], tool_joint_idx[1])
 		if self.has_force_sensor:
 			return (joint_state[0], joint_state[1], joint_state[2])
-		return np.array([joint_state[0], joint_state[1]])
+		return [joint_state[0], joint_state[1]]
 
 	def get_tool_joint_states(self, tool_idx):
 		"""

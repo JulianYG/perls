@@ -97,7 +97,7 @@ def execute(*args):
 
 	if remote and (job == 'record' or job == 'run'):
 		vr = False
-
+		
 	if job == 'record':
 		simulator.setup(repo[task], 0, vr)
 		simulator.run(fn, True, video)
@@ -111,7 +111,7 @@ def execute(*args):
 			raise IOError('Record file not found.')
 	elif job == 'run':
 		simulator.setup(repo[task], 0, vr)
-		simulator.run(remote_render=args[1])
+		simulator.run()
 	else:
 		raise NotImplementedError('Invalid input: Job not recognized.')
 	return simulator
@@ -126,7 +126,7 @@ def main(argv):
 	remote_render = False
 
 	try:
-		opts, args = getopt.getopt(argv, 'hc:r', ['help', 'config=', 'remote_render'])
+		opts, args = getopt.getopt(argv, 'hc:r', ['help', 'config='])
 	except getopt.GetoptError:
 		usage()
 		sys.exit(2)
@@ -136,8 +136,6 @@ def main(argv):
 			sys.exit(0)
 		elif opt in ('-c', '--config'):
 			config = arg
-		elif opt in ('-r', '--remote-render'):
-			remote_render = True
 	execute(config)
 
 if __name__ == '__main__':
