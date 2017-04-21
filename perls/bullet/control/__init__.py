@@ -1,1 +1,1 @@
-__all__ = ['keyboard_interface', 'vr_interface', 'cmd_interface', 'singleton_interface']
+__all__ = ['keyboard_interface', 'vr_interface', 'cmd_interface', 'singleton_interface', 'hub']

@@ -29,14 +29,15 @@ import json
 
 
 import pybullet as p
-host = '172.24.68.111'
+
+ip = '172.24.68.111'
 model = pr2.PR2([0.3, -0.5], enableForceSensor=False)
-interface = vr_interface.IVR(None, False)
+host = hub.redis_hub.RedisServer(ip)
+interface = vr_interface.IVR(host, False)
 
 REPO_DIR = pjoin(os.getcwd(), 'data', 'task.json')
 with open(REPO_DIR, 'r') as f:
 	repo = json.loads(f.read())
-
 task = repo['ball']
 
 simulator = build(model, interface, task, 'filename', record=False, vr=True)

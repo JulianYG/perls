@@ -13,12 +13,13 @@ class IVR(CtrlInterface):
 
 	def event_callback(self, model, task, vr):
 
-		if not self.server.connected:
-			self.server.connect(model)
+		# if not self.server.connected:
+		# 	self.server.connect(model)
 
-		model.reset(0, vr)
-		model.setup_scene(task)
+		# model.reset(0, vr)
+		# model.setup_scene(task)
 		# p.setRealTimeSimulation(0)
+		
 		control_map = model.create_control_mappings()
 
 		revert_map = {key: {v: k for k, v in val.items()} for key, val in control_map.items()}

@@ -21,6 +21,7 @@ class BulletSimulator(object):
 		self.projectionMatrix = None
 		self.vr = False
 		self.logIds = []
+		self.task = None
 		self._interface = interface
 		self.model = model
 		self.VIDEO_DIR = pjoin(os.getcwd(), 'data', 'video')

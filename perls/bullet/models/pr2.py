@@ -106,7 +106,7 @@ class PR2(Tool):
 
 			# Use -1 for the base, constrained within controller
 			pr2_cid = p.createConstraint(pr2_gripper, -1, -1, -1, p.JOINT_FIXED,
-				[0, 0, 0], [0.2, 0, 0], [0.500000, ypos, 0.700000])
+				[0, 0, 0], [0, 0, 0], [0.500000, ypos, 0.700000])
 
 			self.grippers.append(pr2_gripper)
 			self.constraints.append(pr2_cid)
