@@ -45,7 +45,7 @@ class BulletSimulator(object):
 				raise Exception('Cannot create pybullet GUI instance. Please try again.')
 		self.model.setup_scene(task)
 
-	def run(self, file='', record=False, video=False):
+	def run(self, file='', record=False, video=False, remote_render=False):
 		try:
 			if record:
 				file += '_' + datetime.now().strftime('%m-%d-%H-%M-%S')
@@ -61,16 +61,13 @@ class BulletSimulator(object):
 						pjoin(self.CONTROL_LOG_DIR, 'ctrl.' + file)))
 					self.logIds.append(p.startStateLogging(p.STATE_LOGGING_CONTACT_POINTS,
 						pjoin(self.CONTACT_LOG_DIR, 'cont.' + file)))
-			self._interface.communicate(self.model)
+			if remote_render:
+				self._interface.event_callback(self.model, self.vr)
+			else:
+				self._interface.communicate(self.model)
 
-		except KeyboardInterrupt:
-			self.quit()		
-
-	def render_feedback(self):
-		try:
-			self._interface.event_callback(self.model, self.vr)
 		except (KeyboardInterrupt, SystemExit) as e:
-			self.quit()
+			self.quit()		
 
 	def playback(self, file, delay=0.0001):
 		p.resetDebugVisualizerCamera(cameraDistance=self.FOCAL_LENGTH, 
