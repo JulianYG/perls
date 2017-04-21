@@ -18,7 +18,7 @@ class IKeyboard(CtrlInterface):
 		self.control_map = model.create_control_mappings()
 		self.pseudo_event = {0: 0}
 
-		if self.server.connect() < 0:
+		if self.server.connect(model) < 0:
 			raise Exception('Cannot connect to remote client.')
 
 		while True:

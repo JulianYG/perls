@@ -1,5 +1,5 @@
 from bullet.control.hub.hub import Hub
-from queue import Queue as q
+from Queue import Queue as q
 import redis
 
 class RedisServer(Hub):
@@ -16,16 +16,17 @@ class RedisServer(Hub):
 
     def broadcast_msg(self, message):
         self.terminal.publish('client_channel', message)
-
+        # pass
     def read_msg(self, *args):
         events = []
         if not self.event_queue.empty():
             events.append(self.event_queue.get())
         return events
 
-    def connect(self):
+    def connect(self, model):
+        self.model = model
         # How many channels do we have
-        self.pubsub.subscribe(**{'server_channel': self._RESET_HOOK})
+        self.pubsub.subscribe(**{'server_channel': self._event_handler})
 
         # Start another thread to listen for events
         self.thread = self.pubsub.run_in_thread(sleep_time=0.001)

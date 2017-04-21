@@ -14,7 +14,7 @@ class Hub(object):
 	def read_msg(self):
 		raise NotImplementedError('Each messager should re-implement this method')
 
-	def connect(self):
+	def connect(self, model):
 		raise NotImplementedError('Each messager should re-implement this method')
 
 	def close(self):

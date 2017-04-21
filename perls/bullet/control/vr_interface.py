@@ -11,9 +11,11 @@ class IVR(CtrlInterface):
 
 	def _remote_comm(self, model):
 		tool = model.get_tool_ids()
-		# model.set_virtual_controller([3, 4])
+		model.set_virtual_controller([3, 4])
+		
+		self.server.connect(model)
+
 		control_map = model.create_control_mappings()
-		self.server.connect()
 
 		while True:
 			if model.controllers:
@@ -28,7 +30,12 @@ class IVR(CtrlInterface):
 						model.control(e, control_map)
 					else:
 						model.control(e, control_map)
-				self.broadcast_msg(self.model)
+
+
+				msg = {}
+				for ID in range(p.getNumBodies()):
+					msg[ID] = p.getBasePositionAndOrientation(ID)[1:3]
+				self.server.broadcast_msg(msg)
 
 	def _local_comm(self, model):
 		control_map = model.create_control_mappings()
