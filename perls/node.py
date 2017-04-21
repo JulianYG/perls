@@ -13,10 +13,9 @@ def build(model, interface, task, filename, record=True, vr=False):
 	Example interfacing with ROS:
 	in ros_ctrl_IK.py:
 
-	socket = ros_sock(...)
 	kuka = kuka.Kuka()
 	task = repo['kitchen']
-	pybullet_simulator = node.build(kuka, task, socket, 'hi.bin')
+	pybullet_simulator = node.build(kuka, interface, task, 'hi.bin')
 	pybullet_simulator.record('path.bin')
 	...
 	"""
@@ -48,7 +47,6 @@ def execute(*args):
 	task = _CONFIGS['task']
 	remote = _CONFIGS['remote']
 	ip = _CONFIGS['server_ip']
-	socket = _CONFIGS['socket']
 	fixed = _CONFIGS['fixed_gripper_orn']
 	force_sensor = _CONFIGS['enable_force_sensor']
 	init_pos = _CONFIGS['tool_positions']
@@ -78,6 +76,8 @@ def execute(*args):
 			hub = redis_hub.RedisServer(ip, port=6379)
 		elif server == 'tcp':
 			hub = tcp_hub.Server(ip)
+		elif server == 'cmd':
+			raise NotImplementedError('Currently not implemented')
 		else:
 			raise NotImplementedError('Invalid input: Server not recognized.')
 
@@ -88,7 +88,7 @@ def execute(*args):
 		interface = keyboard_interface.IKeyboard(hub, remote)
 		vr = False
 	elif interface == 'cmd':	# Customized interface that takes any sort of command
-		interface = cmd_interface.ICmd(socket, remote)
+		interface = cmd_interface.ICmd(hub, remote)
 		vr = False
 	else:
 		raise NotImplementedError('Non-supported interface.')
