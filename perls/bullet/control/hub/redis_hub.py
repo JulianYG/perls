@@ -32,8 +32,6 @@ class RedisServer(Hub):
         self.thread = self.pubsub.run_in_thread(sleep_time=0.001)
 
         # Send reset and load env signal
-
-        Check if this is true
         if self.broadcast_msg(Hub._RESET_HOOK) > 0:
             self.connected = True
 
