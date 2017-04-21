@@ -39,7 +39,7 @@ def execute(*args):
 
 	_CONFIGS = utils.read_config(CONFIG_DIR)
 
-	interface = _CONFIGS['interface']
+	interface_type = _CONFIGS['interface']
 	model = _CONFIGS['model']
 	job = _CONFIGS['job']
 	video = _CONFIGS['video']
@@ -58,7 +58,7 @@ def execute(*args):
 
 	fn = record_file
 	if not record_file:
-		fn = '_'.join([interface, model, task])
+		fn = '_'.join([interface_type, model, task])
 
 	if model == 'kuka':
 		# Change Fixed to True for keyboard
@@ -81,13 +81,13 @@ def execute(*args):
 		else:
 			raise NotImplementedError('Invalid input: Server not recognized.')
 
-	if interface == 'vr':	# VR interface that takes VR events
+	if interface_type == 'vr':	# VR interface that takes VR events
 		interface = vr_interface.IVR(hub, remote)
 		vr = True
-	elif interface == 'keyboard':	# Keyboard interface that takes keyboard events
+	elif interface_type == 'keyboard':	# Keyboard interface that takes keyboard events
 		interface = keyboard_interface.IKeyboard(hub, remote)
 		vr = False
-	elif interface == 'cmd':	# Customized interface that takes any sort of command
+	elif interface_type == 'cmd':	# Customized interface that takes any sort of command
 		interface = cmd_interface.ICmd(hub, remote)
 		vr = False
 	else:
@@ -97,6 +97,9 @@ def execute(*args):
 
 	if remote and (job == 'record' or job == 'run'):
 		vr = False
+
+	if args[1] and interface_type == 'vr':
+		vr = True
 
 	if job == 'record':
 		simulator.setup(repo[task], 0, vr)
@@ -138,7 +141,7 @@ def main(argv):
 			config = arg
 		elif opt in ('-r', '--remote-render'):
 			remote_render = True
-	execute(config)
+	execute(config, remote_render)
 
 if __name__ == '__main__':
 	main(sys.argv[1:])
