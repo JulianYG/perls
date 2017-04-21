@@ -1,5 +1,5 @@
 from bullet.control.hub.hub import Hub
-from Queue import Queue as q
+from queue import Queue as q
 import redis
 
 class RedisServer(Hub):
