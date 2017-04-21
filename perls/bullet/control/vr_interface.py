@@ -11,12 +11,14 @@ class IVR(CtrlInterface):
 		# Default settings for camera
 		super(IVR, self).__init__(host, remote)
 
-	def event_callback(self, model, vr):
+	def event_callback(self, model, task, vr):
 
-		# if not self.server.connected:
-		# 	self.server.connect()
+		if not self.server.connected:
+			self.server.connect(model)
+
 		model.reset(0, vr)
-		p.setRealTimeSimulation(0)
+		model.setup_scene(task)
+		# p.setRealTimeSimulation(0)
 		control_map = model.create_control_mappings()
 
 		revert_map = {key: {v: k for k, v in val.items()} for key, val in control_map.items()}
@@ -33,12 +35,14 @@ class IVR(CtrlInterface):
 					# model.reset(0, vr)
 					# p.setRealTimeSimulation(0)
 					pass
+
 				else:
 					for obj, pose in data.items():
 						if obj not in model.grippers:
 
 							p.resetBasePositionAndOrientation(obj, pose[0], pose[1])
 						else:
+							print(revert_map, control_map)
 							# Change the gripper constraint if obj is pr2 gripper
 							p.changeConstraint(control_map[2][revert_map[1][obj]], pose[0], pose[1], maxForce=500)
 							model.set_tool_states(obj, pose[2:])
@@ -54,6 +58,7 @@ class IVR(CtrlInterface):
 			for e in (events):
 				self.server.terminal.publish('server_channel', e)
 			time.sleep(0.001)
+
 
 	def _remote_comm(self, model):
 		tool = model.get_tool_ids()

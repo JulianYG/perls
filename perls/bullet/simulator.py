@@ -38,6 +38,7 @@ class BulletSimulator(object):
 		if not os.path.exists(self.CONTACT_LOG_DIR):
 			os.makedirs(self.CONTACT_LOG_DIR)
 		self.vr = vr
+		self.task = task
 		if not self.model.reset(flag, vr):
 			if vr:
 				raise Exception('Cannot detect running VR application. Please try again.')
@@ -62,7 +63,7 @@ class BulletSimulator(object):
 					self.logIds.append(p.startStateLogging(p.STATE_LOGGING_CONTACT_POINTS,
 						pjoin(self.CONTACT_LOG_DIR, 'cont.' + file)))
 			if remote_render:
-				self._interface.event_callback(self.model, self.vr)
+				self._interface.event_callback(self.model, self.task, self.vr)
 			else:
 				self._interface.communicate(self.model)
 

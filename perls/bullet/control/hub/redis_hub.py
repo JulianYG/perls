@@ -1,5 +1,5 @@
 from bullet.control.hub.hub import Hub
-from Queue import Queue as q
+from queue import Queue as q
 import redis, sys
 
 class RedisServer(Hub):
@@ -15,7 +15,7 @@ class RedisServer(Hub):
         self.event_queue = q(buffer_size)
 
     def broadcast_msg(self, message):
-        self.terminal.publish('client_channel', message)
+        return self.terminal.publish('client_channel', message)
         # pass
     def read_msg(self, *args):
         events = []
