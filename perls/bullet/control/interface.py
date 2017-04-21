@@ -1,4 +1,4 @@
-from bullet.control.hub import server
+from bullet.control.hub import server_redis
 
 class CtrlInterface(object):
 	"""
@@ -7,15 +7,15 @@ class CtrlInterface(object):
 	that connects inputs from elsewhere such as ROS / openAI to 
 	the pybullet node.
 	"""
-	def __init__(self, host, remote=False, port=5000):
+	def __init__(self, host, remote):
 		self.remote = remote
-		if self.remote:
-			self.server = server.RedisServer(host, port=6379)
-		else:
-			self.server = None
+		self.server = host
 
-	def remote_ctrl(self, flag):
-		self.remote = flag
+	def start_remote_ctrl(self):
+		self.remote = True
+
+	def stop_remote_ctrl(self):
+		self.remote = False
 
 	def communicate(self, model):
 		if self.remote:

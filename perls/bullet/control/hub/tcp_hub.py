@@ -1,50 +1,13 @@
-# Tcp Chat server
-# borrowed from http://www.binarytides.com/code-chat-application-server-client-sockets-python/
+from bullet.control.hub.hub import Hub 
 import redis
 import socket, select
-from bullet.control.hub import hub
-from Queue import Queue as q
 
-class RedisServer(hub.Hub):
+class Server(Hub):
 
-    def __init__(self, host, buffer_size=4096, port=6379, db=0):
-        terminal = redis.StrictRedis(host=host, port=6379, db=db)
-        self.p = terminal.pubsub()
-        self.event_queue = q(buffer_size)
-
-    def broadcast_msg(self, message):
-        pass
-
-    def read_msg(self, *args):
-        events = []
-        if not self.event_queue.empty():
-            events.append(self.event_queue.get())
-
-        return events
-
-    def connect(self):
-        # How many channels do we have
-        self.p.subscribe(**{'channel1': self._event_handler})
-
-        # Start another thread to listen for events
-        self.thread = self.p.run_in_thread(sleep_time=0.001)
-
-    def _event_handler(self, msg):
-        data = msg['data']
-        if isinstance(data, str):
-            if not self.event_queue.full():
-                self.event_queue.put(eval(data))
-
-    def close(self):
-        # self.event_queue = q()
-        self.p.unsubscribe()
-
-class Server(hub.Hub):
-
-    def __init__(self, buffer_size, port_num):
+    def __init__(self, server_addr, buffer_size=4096, port=5000):
 
         self.CONNECTION_LIST = []
-        self.addr = None
+        self.addr = server_addr
 
         self._RECV_BUFFER = buffer_size # Advisable to keep it as an exponent of 2
         self._PORT = port_num

@@ -1,1 +1,1 @@
-__all__ = ['server', 'ros', 'gym']
+__all__ = ['tcp_hub', 'ros', 'gym', 'redis_hub']

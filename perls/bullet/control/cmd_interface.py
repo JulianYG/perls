@@ -2,9 +2,8 @@ from bullet.control.interface import CtrlInterface
 
 class ICmd(CtrlInterface):
 
-	def __init__(self, socket, remote=False):
-		# super(ICmd, self).__init__(host, remote)
-		self.socket = socket
+	def __init__(self, host, remote):
+		super(IVR, self).__init__(host, remote)
 
 	def _remote_comm(self, model):
 		pass
@@ -20,7 +19,7 @@ class ICmd(CtrlInterface):
 		self.pseudo_event = {0: 0}
 
 		while True:
-			events = self.socket.read_msg()
+			events = self.server.read_msg()
 
 			self._event_handler(events, model)	
 			

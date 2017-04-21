@@ -5,6 +5,7 @@ from bullet.simulator import BulletSimulator
 import os, sys, getopt, json
 from os.path import join as pjoin
 import bullet.util as utils
+from bullet.control.hub import *
 
 def build(model, task, socket, filename, record=True):
 	"""
@@ -46,12 +47,13 @@ def execute(*args):
 	delay = _CONFIGS['delay']
 	task = _CONFIGS['task']
 	remote = _CONFIGS['remote']
-	host = _CONFIGS['host']
+	ip = _CONFIGS['server_ip']
 	socket = _CONFIGS['socket']
 	fixed = _CONFIGS['fixed_gripper_orn']
 	force_sensor = _CONFIGS['enable_force_sensor']
 	init_pos = _CONFIGS['tool_positions']
 	camera_info = _CONFIGS['camera']
+	server = _CONFIGS['server']
 
 	record_file = _CONFIGS['record_file_name']
 	replay_file = _CONFIGS['replay_file_name']
@@ -70,14 +72,23 @@ def execute(*args):
 	else:
 		raise NotImplementedError('Invalid input: Model not recognized.')
 	
-	if interface == 'vr':
-		interface = vr_interface.IVR(host, remote)
+	hub = None
+	if remote:
+		if server == 'redis':
+			hub = redis_hub.RedisServer(ip, port=6379)
+		elif server == 'tcp':
+			hub = tcp_hub.Server(ip)
+		else:
+			raise NotImplementedError('Invalid input: Server not recognized.')
+
+	if interface == 'vr':	# VR interface that takes VR events
+		interface = vr_interface.IVR(hub, remote)
 		vr = True
-	elif interface == 'keyboard':
-		interface = keyboard_interface.IKeyboard(host, remote)
+	elif interface == 'keyboard':	# Keyboard interface that takes keyboard events
+		interface = keyboard_interface.IKeyboard(hub, remote)
 		vr = False
-	elif interface == 'cmd':
-		interface = cmd_interface.ICmd(socket, remote=remote)
+	elif interface == 'cmd':	# Customized interface that takes any sort of command
+		interface = cmd_interface.ICmd(socket, remote)
 		vr = False
 	else:
 		raise NotImplementedError('Non-supported interface.')

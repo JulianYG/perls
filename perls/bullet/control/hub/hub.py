@@ -5,9 +5,8 @@ such as openAI gym, or ROS command messages
 
 class Hub(object):
 
-	def __init__(self, server, terminal):
-		self.terminal = terminal
-		self.model = server
+	_SHUT_DOWN_HOOK = 0;
+	_RESET_HOOK = 1
 
 	def broadcast_msg(self, msg):
 		raise NotImplementedError('Each messager should re-implement this method')
