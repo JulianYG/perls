@@ -23,7 +23,7 @@ def build(model, interface, task, filename, record=True, vr=False):
 	simulator = BulletSimulator(model, interface)
 	simulator.setup(task, 0, vr)
 	if record:
-		simulator.run(filename, record=record)
+		simulator.run(file=filename, record=record)
 	return simulator
 
 def execute(*args):

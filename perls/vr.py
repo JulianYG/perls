@@ -3,6 +3,14 @@ import time
 import openvr
 import redis
 from node import build
+from bullet.models import *
+from bullet.control import *
+from bullet.simulator import BulletSimulator
+import os, sys, getopt, json
+from os.path import join as pjoin
+import bullet.util as utils
+from bullet.control.hub import *
+import json
 # openvr.init(openvr.VRApplication_Scene)
 
 # poses_t = openvr.TrackedDevicePose_t * openvr.k_unMaxTrackedDeviceCount
@@ -22,19 +30,29 @@ from node import build
 
 import pybullet as p
 host = '172.24.68.111'
+model = pr2.PR2([0.3, -0.5], enableForceSensor=False)
+interface = vr_interface.IVR(None, False)
 
-simulator = build(model, task, socket, filename, record=False)
+REPO_DIR = pjoin(os.getcwd(), 'data', 'task.json')
+with open(REPO_DIR, 'r') as f:
+	repo = json.loads(f.read())
+
+task = repo['ball']
+
+simulator = build(model, interface, task, 'filename', record=False, vr=True)
+
+simulator.run()
 
 def cmd_handler(msg):
 	data = eval(msg)
 
 	if data == 0:
-		shutdown
+		simulator.quit()
 	elif data == 1:
-		reset
+		simulator.setup(task, 0, True)
 	else:
-		pass
-
+		for obj, pose in data.items():
+			p.resetBasePositionAndOrientation(obj, pose)
 
 r = redis.StrictRedis(host=host, port=6379, db=0)
 subscriber = r.pubsub()
