@@ -19,7 +19,7 @@ class IVR(CtrlInterface):
 		# model.reset(0, vr)
 		# model.setup_scene(task)
 		# p.setRealTimeSimulation(0)
-		
+
 		control_map = model.create_control_mappings()
 
 		revert_map = {key: {v: k for k, v in val.items()} for key, val in control_map.items()}
@@ -36,14 +36,11 @@ class IVR(CtrlInterface):
 					# model.reset(0, vr)
 					# p.setRealTimeSimulation(0)
 					pass
-
 				else:
 					for obj, pose in data.items():
 						if obj not in model.grippers:
-
 							p.resetBasePositionAndOrientation(obj, pose[0], pose[1])
 						else:
-							print(revert_map, control_map)
 							# Change the gripper constraint if obj is pr2 gripper
 							p.changeConstraint(control_map[2][revert_map[1][obj]], pose[0], pose[1], maxForce=500)
 							model.set_tool_states(obj, pose[2:])
@@ -89,7 +86,7 @@ class IVR(CtrlInterface):
 				for ID in range(p.getNumBodies()):
 
 					# TODO: change hardcoded 1 to something generalized
-					msg[ID] = p.getBasePositionAndOrientation(ID)[:2]
+					msg[ID] = list(p.getBasePositionAndOrientation(ID)[:2])
 
 					if ID in revert_map[1]:
 						msg[ID] += [model.get_tool_joint_states(ID)]
