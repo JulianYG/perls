@@ -1,4 +1,4 @@
-from bullet.control.hub import server_redis
+from bullet.control.hub import *
 
 class CtrlInterface(object):
 	"""
