@@ -15,7 +15,8 @@ class IVR(CtrlInterface):
 
 		# if not self.server.connected:
 		# 	self.server.connect()
-
+		model.reset(0, vr)
+		p.setRealTimeSimulation(0)
 		control_map = model.create_control_mappings()
 
 		revert_map = {key: {v: k for k, v in val.items()} for key, val in control_map.items()}
@@ -29,6 +30,7 @@ class IVR(CtrlInterface):
 				elif data == 1:
 					print('Remote client invode reset')
 					model.reset(0, vr)
+					p.setRealTimeSimulation(0)
 				else:
 					for obj, pose in data.items():
 						if obj not in model.grippers:
