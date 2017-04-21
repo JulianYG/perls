@@ -23,6 +23,9 @@ class CtrlInterface(object):
 		else:
 			self._local_comm(model)
 
+	def event_callback(self, model):
+		raise NotImplementedError('Each interface must re-implement this method.')
+
 	def close_socket(self):
 		if self.remote:
 			self.server.close()

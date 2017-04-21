@@ -19,7 +19,7 @@ class BulletSimulator(object):
 		self.UP_AX_IDX = 2
 		self.viewMatrix = None
 		self.projectionMatrix = None
-
+		self.vr = False
 		self.logIds = []
 		self._interface = interface
 		self.model = model
@@ -37,7 +37,7 @@ class BulletSimulator(object):
 			os.makedirs(self.CONTROL_LOG_DIR)	
 		if not os.path.exists(self.CONTACT_LOG_DIR):
 			os.makedirs(self.CONTACT_LOG_DIR)
-			
+		self.vr = vr
 		if not self.model.reset(flag, vr):
 			if vr:
 				raise Exception('Cannot detect running VR application. Please try again.')
@@ -65,6 +65,12 @@ class BulletSimulator(object):
 
 		except KeyboardInterrupt:
 			self.quit()		
+
+	def render_feedback(self):
+		try:
+			self._interface.event_callback(self.model, self.vr)
+		except (KeyboardInterrupt, SystemExit) as e:
+			self.quit()
 
 	def playback(self, file, delay=0.0001):
 		p.resetDebugVisualizerCamera(cameraDistance=self.FOCAL_LENGTH, 
