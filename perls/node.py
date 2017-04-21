@@ -7,7 +7,7 @@ from os.path import join as pjoin
 import bullet.util as utils
 from bullet.control.hub import *
 
-def build(model, task, socket, filename, record=True):
+def build(model, interface, task, filename, record=True, vr=False):
 	"""
 	Models still exist in pybullet since they are only used in pybullet
 	Example interfacing with ROS:
@@ -20,8 +20,8 @@ def build(model, task, socket, filename, record=True):
 	pybullet_simulator.record('path.bin')
 	...
 	"""
-	simulator = BulletSimulator(model, cmd_interface.ICmd(False, socket))
-	simulator.setup(task, 0, False)
+	simulator = BulletSimulator(model, interface)
+	simulator.setup(task, 0, vr)
 	if record:
 		simulator.run(filename, record=record)
 	return simulator
