@@ -5,7 +5,7 @@ from bullet.simulator import BulletSimulator
 import os, sys, getopt, json
 from os.path import join as pjoin
 import bullet.util as utils
-from bullet.control.hub import *
+from bullet.control.sockets import *
 
 def render_simulator(model, interface, task, filename, record=True, vr=False):
 	"""
@@ -70,25 +70,25 @@ def execute(*args):
 	else:
 		raise NotImplementedError('Invalid input: Model not recognized.')
 	
-	hub = None
+	socket = None
 	if remote:
 		if server == 'redis':
-			hub = redis_hub.RedisServer(ip, port=6379)
+			socket = redis_socket.RedisSocket(ip, port=6379)
 		elif server == 'tcp':
-			hub = tcp_hub.Server(ip)
+			socket = tcp_socket.TCPSocket(ip)
 		elif server == 'cmd':
 			raise NotImplementedError('Currently not implemented')
 		else:
 			raise NotImplementedError('Invalid input: Server not recognized.')
 
 	if interface_type == 'vr':	# VR interface that takes VR events
-		interface = vr_interface.IVR(hub, remote)
+		interface = vr_interface.IVR(socket, remote)
 		vr = True
 	elif interface_type == 'keyboard':	# Keyboard interface that takes keyboard events
-		interface = keyboard_interface.IKeyboard(hub, remote)
+		interface = keyboard_interface.IKeyboard(socket, remote)
 		vr = False
 	elif interface_type == 'cmd':	# Customized interface that takes any sort of command
-		interface = cmd_interface.ICmd(hub, remote)
+		interface = cmd_interface.ICmd(socket, remote)
 		vr = False
 	else:
 		raise NotImplementedError('Non-supported interface.')

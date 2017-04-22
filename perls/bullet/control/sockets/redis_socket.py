@@ -3,7 +3,7 @@ from Queue import Queue as q
 import redis, sys
 from bullet.util import _START_HOOK, _SHUTDOWN_HOOK
 
-class RedisServer(Socket):
+class RedisSocket(Socket):
 
     def __init__(self, server_addr, buffer_size=4096, port=6379, db=0):
 

@@ -8,7 +8,7 @@ from bullet.simulator import BulletSimulator
 import os, sys, getopt, json
 from os.path import join as pjoin
 import bullet.util as utils
-from bullet.control.hub import *
+from bullet.control.sockets import *
 import json
 # openvr.init(openvr.VRApplication_Scene)
 

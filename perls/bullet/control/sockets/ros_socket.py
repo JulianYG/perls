@@ -1,6 +1,6 @@
 from bullet.control.sockets.sock import Socket 
 
-class RosHub(Socket):
+class RosSocket(Socket):
 
 	def __init__(self):
 		super(RosHub, self).__init__()
