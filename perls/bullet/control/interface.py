@@ -29,8 +29,8 @@ class CtrlInterface(object):
 
 	def event_callback(self, model, task, vr):
 
-		model.reset(0, vr)
-		model.setup_scene(task)
+		# model.reset(0, vr)
+		# model.setup_scene(task)
 
 		self.socket.connect_with_server()
 		# Reset server side simulation
