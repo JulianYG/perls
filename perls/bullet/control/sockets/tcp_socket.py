@@ -1,8 +1,11 @@
-from bullet.control.hub.hub import Hub 
+from bullet.control.sockets.sock import Socket 
 import redis
 import socket, select
 
-class Server(Hub):
+"""
+This class is deprecated
+"""
+class TCPSocket(Socket):
 
     def __init__(self, server_addr, buffer_size=4096, port=5000):
 

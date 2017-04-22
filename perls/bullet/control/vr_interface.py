@@ -16,13 +16,13 @@ class IVR(CtrlInterface):
 		tool = model.get_tool_ids()
 		model.set_virtual_controller([3, 4])
 		
-		self.server.connect(model)
+		self.socket.connect_with_client()
 
 		control_map, obj_map = model.create_control_mappings()
 
 		while True:
 			if model.controllers:
-				events = self.server.read_msg()
+				events = self.socket.listen_to_client()
 
 				if events == _RESET_HOOK:
 					p.resetSimulation()
@@ -60,7 +60,7 @@ class IVR(CtrlInterface):
 						if ID in obj_map[GRIPPER]:
 							msg[ID] += [model.get_tool_joint_states(ID)]
 
-				self.server.broadcast_msg(msg)
+				self.socket.broadcast_to_client(msg)
 
 	def _local_comm(self, model):
 		control_map, _ = model.create_control_mappings()

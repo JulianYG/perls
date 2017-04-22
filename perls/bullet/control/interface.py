@@ -12,7 +12,7 @@ class CtrlInterface(object):
 	"""
 	def __init__(self, host, remote):
 		self.remote = remote
-		self.server = host
+		self.socket = host
 
 	def start_remote_ctrl(self):
 		self.remote = True
@@ -32,58 +32,45 @@ class CtrlInterface(object):
 		model.setup_scene(task)
 
 		# Reset server side simulation
-		if self.server.broadcast_msg(_RESET_HOOK) > 0:
-			self.server.connected = True
-
-		control_map, obj_map = model.create_control_mappings()
-
-		def _cmd_handler(msg):
-
-			packet = msg['data']
-			if isinstance(packet, str) or isinstance(packet, bytes):
-				data = eval(packet)
-				if data == _SHUTDOWN_HOOK:
-					raise SystemExit('Server invokes shut down')
-				elif data == _START_HOOK:
-					print('Server is online')
-					# model.reset(0, vr)
-					# model.setup_scene(task)
-					# p.setRealTimeSimulation(0)
-				else:
-					for obj, pose in data.items():
-						if (obj not in model.grippers) and (obj not in model.arms):
-							p.resetBasePositionAndOrientation(obj, pose[0], pose[1])
-						else:
-							if obj in model.grippers:
-								# Check if this is pr2 instance by checking arms (pr2 does not contain arms)
-								if not model.arms:
-									# Change the gripper constraint if obj is pr2 gripper (move it)
-									p.changeConstraint(control_map[CONSTRAINT][obj_map[GRIPPER][obj]], 
-										pose[0], pose[1], maxForce=model.MAX_FORCE)
-
-								# If robot arm instance, just set gripper close/release
-								# The same thing for pr2 gripper
-								model.set_tool_states([obj], [pose[2]], POS_CTRL)
-								
-							if obj in model.arms:
-								model.set_tool_states([obj], [pose[2]], POS_CTRL)
-
-				# TODO: Handle constraints of grippers; 
-				# Handle joint states
-
-		self.server.pubsub.subscribe(**{'client_channel': _cmd_handler})
-		self.server.pubsub.run_in_thread(sleep_time=0.001)
+		
+		self.control_map, self.obj_map = model.create_control_mappings()
 
 		# Ctrl, running in different thread?
 		while True:
+			# Send to server
 			events = p.getVREvents()
 			for e in (events):
-				self.server.broadcast_msg(e)
+				self.socket.broadcast_to_server(e)
 			time.sleep(0.001)
+
+			# Receive and render from server
+			signal = self.socket.listen_to_server()
+			self._render_from_signal(model, signal)
 
 	def close_socket(self):
 		if self.remote:
-			self.server.close()
+			self.socket.close()
+
+	def _render_from_signal(self, model, signal):
+
+		for data in signal:
+			for obj, pose in data.items():
+	            if (obj not in model.grippers) and (obj not in model.arms):
+	                p.resetBasePositionAndOrientation(obj, pose[0], pose[1])
+	            else:
+	                if obj in model.grippers:
+	                    # Check if this is pr2 instance by checking arms (pr2 does not contain arms)
+	                    if not model.arms:
+	                        # Change the gripper constraint if obj is pr2 gripper (move it)
+	                        p.changeConstraint(self.control_map[CONSTRAINT][self.obj_map[GRIPPER][obj]], 
+	                            pose[0], pose[1], maxForce=model.MAX_FORCE)
+
+	                    # If robot arm instance, just set gripper close/release
+	                    # The same thing for pr2 gripper
+	                    model.set_tool_states([obj], [pose[2]], POS_CTRL)
+	                    
+	                if obj in model.arms:
+	                    model.set_tool_states([obj], [pose[2]], POS_CTRL)
 
 	def _remote_comm(self, model):
 		raise NotImplementedError('Each interface must re-implement this method.')
