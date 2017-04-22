@@ -19,8 +19,8 @@ def render_simulator(model, interface, task, filename, record=True, vr=False):
 	pybullet_simulator.record('path.bin')
 	...
 	"""
-	simulator = BulletSimulator(model, interface)
-	simulator.setup(task, 0, vr)
+	simulator = BulletSimulator(model, interface, task, vr)
+	simulator.setup(0)
 	if record:
 		simulator.run(file=filename, record=record)
 	return simulator
@@ -99,18 +99,15 @@ def execute(*args):
 	simulator = BulletSimulator(model, interface, repo[task], vr)
 
 	if job == 'record':
-		simulator.setup(0)
 		simulator.run(fn, True, video)
 	elif job == 'replay':
 		# Default view point setting
 		simulator.set_camera_view(*camera_info)
 		if os.path.isfile(pjoin(RECORD_LOG_DIR, replay_file)):
-			simulator.setup(1)
 			simulator.playback(fn, delay)
 		else:
 			raise IOError('Record file not found.')
 	elif job == 'run':
-		simulator.setup(0)
 		simulator.run()
 	else:
 		raise NotImplementedError('Invalid input: Job not recognized.')

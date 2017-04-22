@@ -46,6 +46,7 @@ class BulletSimulator(object):
 		self.model.setup_scene(self.task)
 
 	def run(self, file='', record=False, video=False, remote_render=False):
+		self.setup(0)
 		try:
 			if record:
 				file += '_' + datetime.now().strftime('%m-%d-%H-%M-%S')
@@ -70,6 +71,7 @@ class BulletSimulator(object):
 			self.quit()		
 
 	def playback(self, file, delay=0.0001):
+		self.setup(1)
 		p.resetDebugVisualizerCamera(cameraDistance=self.FOCAL_LENGTH, 
 			cameraYaw=self.YAW, cameraPitch=self.PITCH, 
 			cameraTargetPosition=self.FOCAL_POINT)
