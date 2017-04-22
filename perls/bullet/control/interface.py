@@ -55,22 +55,24 @@ class CtrlInterface(object):
 
 		for data in signal:
 			for obj, pose in data.items():
-	            if (obj not in model.grippers) and (obj not in model.arms):
-	                p.resetBasePositionAndOrientation(obj, pose[0], pose[1])
-	            else:
-	                if obj in model.grippers:
-	                    # Check if this is pr2 instance by checking arms (pr2 does not contain arms)
-	                    if not model.arms:
-	                        # Change the gripper constraint if obj is pr2 gripper (move it)
-	                        p.changeConstraint(self.control_map[CONSTRAINT][self.obj_map[GRIPPER][obj]], 
-	                            pose[0], pose[1], maxForce=model.MAX_FORCE)
+				if (obj not in model.grippers) and (obj not in model.arms):
+					p.resetBasePositionAndOrientation(obj, pose[0], pose[1])
+				else:
+					# Check if this is pr2 instance by checking arms (pr2 does not contain arms)
+					if obj in model.grippers:
+				
+						# Change the gripper constraint if obj is pr2 gripper (move it)
+						if not model.arms:
+							p.changeConstraint(self.control_map[CONSTRAINT][self.obj_map[GRIPPER][obj]], 
+	                        	pose[0], pose[1], maxForce=model.MAX_FORCE)
 
-	                    # If robot arm instance, just set gripper close/release
+						# If robot arm instance, just set gripper close/release
 	                    # The same thing for pr2 gripper
-	                    model.set_tool_states([obj], [pose[2]], POS_CTRL)
-	                    
-	                if obj in model.arms:
-	                    model.set_tool_states([obj], [pose[2]], POS_CTRL)
+						model.set_tool_states([obj], [pose[2]], POS_CTRL)
+
+					if obj in model.arms:
+
+						model.set_tool_states([obj], [pose[2]], POS_CTRL)
 
 	def _remote_comm(self, model):
 		raise NotImplementedError('Each interface must re-implement this method.')
