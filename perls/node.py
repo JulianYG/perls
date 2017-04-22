@@ -96,21 +96,21 @@ def execute(*args):
 	if remote and (job == 'record' or job == 'run'):
 		vr = False
 
-	simulator = BulletSimulator(model, interface, vr)
+	simulator = BulletSimulator(model, interface, repo[task], vr)
 
 	if job == 'record':
-		simulator.setup(repo[task], 0)
+		simulator.setup(0)
 		simulator.run(fn, True, video)
 	elif job == 'replay':
 		# Default view point setting
 		simulator.set_camera_view(*camera_info)
 		if os.path.isfile(pjoin(RECORD_LOG_DIR, replay_file)):
-			simulator.setup(repo[task], 1)
+			simulator.setup(1)
 			simulator.playback(fn, delay)
 		else:
 			raise IOError('Record file not found.')
 	elif job == 'run':
-		simulator.setup(repo[task], 0)
+		simulator.setup(0)
 		simulator.run()
 	else:
 		raise NotImplementedError('Invalid input: Job not recognized.')

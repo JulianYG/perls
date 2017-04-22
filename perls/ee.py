@@ -48,7 +48,7 @@ def execute(*args):
 
 	# Simulator is only used for rendering
 	# Since simulator is never run, it's ok to just pass None as interface
-	simulator = BulletSimulator(model, None)
+	simulator = BulletSimulator(model, None, repo[task])
 	simulator.set_camera_view(*camera_info)
 
 	register(
@@ -56,16 +56,13 @@ def execute(*args):
 	    entry_point='bullet.env.grasp_gym:GraspBulletEnv',
 	    # timestep_limit=1000,
 	    reward_threshold=950.0,
-	    kwargs={'simulator': simulator, 'task': repo[task], 
-	    		'step_func': module.step_helper, 'realTime': real_time,
-	    		'time_step': time_step}
+	    kwargs={'simulator': simulator, 'step_func': module.step_helper, 
+	    		'realTime': real_time, 'time_step': time_step}
 	)
 
 	env = gym.make('GraspBulletEnv-v0')
 
 	weights = module.init_weights()
-
-	
 
 	for episode in range(num_episodes):
 

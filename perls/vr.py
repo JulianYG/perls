@@ -39,7 +39,7 @@ with open(REPO_DIR, 'r') as f:
 	repo = json.loads(f.read())
 task = repo['ball']
 
-simulator = BulletSimulator(model, interface)
+simulator = BulletSimulator(model, interface, task, True)
 
 simulator.run(remote_render=True)
 
