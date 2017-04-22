@@ -32,11 +32,9 @@ class CtrlInterface(object):
 		# model.reset(0, vr)
 		# model.setup_scene(task)
 
-		self.socket.connect_with_server()
-		# Reset server side simulation
-		
 		self.control_map, self.obj_map = model.create_control_mappings()
-
+		self.socket.connect_with_server()
+		
 		# Ctrl, running in different thread?
 		while True:
 			# Send to server
@@ -62,7 +60,6 @@ class CtrlInterface(object):
 				else:
 					# Check if this is pr2 instance by checking arms (pr2 does not contain arms)
 					if obj in model.grippers:
-				
 						# Change the gripper constraint if obj is pr2 gripper (move it)
 						if not model.arms:
 							p.changeConstraint(self.control_map[CONSTRAINT][self.obj_map[GRIPPER][obj]], 
@@ -73,7 +70,6 @@ class CtrlInterface(object):
 						model.set_tool_states([obj], [pose[2]], POS_CTRL)
 
 					if obj in model.arms:
-
 						model.set_tool_states([obj], [pose[2]], POS_CTRL)
 
 	def _remote_comm(self, model):

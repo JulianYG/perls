@@ -29,24 +29,15 @@ class BulletSimulator(object):
 		self.CONTROL_LOG_DIR = pjoin(os.getcwd(), 'data', 'record', 'control')
 		self.CONTACT_LOG_DIR = pjoin(os.getcwd(), 'data', 'record', 'contact')
 
-	def setup(self, flag):
-		if not os.path.exists(self.VIDEO_DIR):
-			os.makedirs(self.VIDEO_DIR)
-		if not os.path.exists(self.TRAJECTORY_LOG_DIR):
-			os.makedirs(self.TRAJECTORY_LOG_DIR)
-		if not os.path.exists(self.CONTROL_LOG_DIR):
-			os.makedirs(self.CONTROL_LOG_DIR)	
-		if not os.path.exists(self.CONTACT_LOG_DIR):
-			os.makedirs(self.CONTACT_LOG_DIR)
-		if not self.model.reset(flag, self.vr):
-			if self.vr:
-				raise Exception('Cannot detect running VR application. Please try again.')
-			else:
-				raise Exception('Cannot create pybullet GUI instance. Please try again.')
-		self.model.setup_scene(self.task)
+	def set_time_step(self, time_step):
+		p.setRealTimeSimulation(0)
+		p.setTimeStep(time_step)
+
+	def step_simulation(self):
+		p.stepSimulation()
 
 	def run(self, file='', record=False, video=False, remote_render=False):
-		self.setup(0)
+		self._setup(0)
 		try:
 			if record:
 				file += '_' + datetime.now().strftime('%m-%d-%H-%M-%S')
@@ -71,7 +62,7 @@ class BulletSimulator(object):
 			self.quit()		
 
 	def playback(self, file, delay=0.0001):
-		self.setup(1)
+		self._setup(1)
 		p.resetDebugVisualizerCamera(cameraDistance=self.FOCAL_LENGTH, 
 			cameraYaw=self.YAW, cameraPitch=self.PITCH, 
 			cameraTargetPosition=self.FOCAL_POINT)
@@ -103,6 +94,18 @@ class BulletSimulator(object):
 			plt.imshow(np_img)
 		return np_img
 
+	def quit(self):
+		"""
+		Perform clean up before exit
+		"""
+		if self.logIds:
+			for Id in self.logIds:
+				p.stopStateLogging(Id)
+		if self._interface:
+			self._interface.close_socket()
+		p.resetSimulation()
+		p.disconnect()
+
 	def _replay(self, log, delay=0.0005):
 
 		for record in log:
@@ -119,22 +122,20 @@ class BulletSimulator(object):
 					p.resetJointState(obj, i, record[qIndex - 7 + 17])
 			time.sleep(delay)
 
-	def quit(self):
-		"""
-		Perform clean up before exit
-		"""
-		if self.logIds:
-			for Id in self.logIds:
-				p.stopStateLogging(Id)
-		if self._interface:
-			self._interface.close_socket()
-		p.resetSimulation()
-		p.disconnect()
+	def _setup(self, flag):
+		if not os.path.exists(self.VIDEO_DIR):
+			os.makedirs(self.VIDEO_DIR)
+		if not os.path.exists(self.TRAJECTORY_LOG_DIR):
+			os.makedirs(self.TRAJECTORY_LOG_DIR)
+		if not os.path.exists(self.CONTROL_LOG_DIR):
+			os.makedirs(self.CONTROL_LOG_DIR)	
+		if not os.path.exists(self.CONTACT_LOG_DIR):
+			os.makedirs(self.CONTACT_LOG_DIR)
+		if not self.model.reset(flag, self.vr):
+			if self.vr:
+				raise Exception('Cannot detect running VR application. Please try again.')
+			else:
+				raise Exception('Cannot create pybullet GUI instance. Please try again.')
+		self.model.setup_scene(self.task)
 
-	def set_time_step(self, time_step):
-		p.setRealTimeSimulation(0)
-		p.setTimeStep(time_step)
-
-	def step_simulation(self):
-		p.stepSimulation()
 

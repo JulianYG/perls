@@ -37,7 +37,6 @@ class RedisSocket(Socket):
 
     def connect_with_client(self):
 
-        # How many channels do we have
         self.pubsub.subscribe(**{'event_channel': self._client_event_handler})
 
         # Start thread
@@ -54,7 +53,6 @@ class RedisSocket(Socket):
     def connect_with_server(self):
 
         self.pubsub.subscribe(**{'signal_channel': self._server_event_handler})
-
         self.threads.append(self.pubsub.run_in_thread(sleep_time=0.001))
 
         print('Waiting for server\'s response...')
@@ -84,9 +82,6 @@ class RedisSocket(Socket):
                 raise SystemExit('Server invokes shut down')
             elif data == _START_HOOK:
                 print('Server is online')
-                # self.model.reset(0, vr)
-                # self.model.setup_scene(task)
-                # p.setRealTimeSimulation(0)
             else:
                 if not self.server_event_queue.full():
                     self.server_event_queue.put(data)
