@@ -32,7 +32,8 @@ class CtrlInterface(object):
 		model.setup_scene(task)
 
 		# Reset server side simulation
-		self.server.broadcast_msg(_RESET_HOOK)
+		if self.server.broadcast_msg(_RESET_HOOK) > 0:
+			self.server.connected = True
 
 		control_map, obj_map = model.create_control_mappings()
 

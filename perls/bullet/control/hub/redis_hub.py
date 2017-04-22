@@ -23,15 +23,16 @@ class RedisServer(Hub):
         return events
 
     def connect(self):
+
+        # Send reset and load env signal
+        if self.broadcast_msg(_START_HOOK) > 0:
+            self.connected = True
+
         # How many channels do we have
         self.pubsub.subscribe(**{'server_channel': self._event_handler})
 
         # Start another thread to listen for events
         self.thread = self.pubsub.run_in_thread(sleep_time=0.001)
-
-        # Send reset and load env signal
-        if self.broadcast_msg(_START_HOOK) > 0:
-            self.connected = True
 
     def _event_handler(self, msg):
         data = msg['data']
@@ -45,8 +46,9 @@ class RedisServer(Hub):
                 self.event_queue.put(eval(data))
 
     def close(self):
+        if self.connected:
+            self.broadcast_msg(_SHUTDOWN_HOOK)
+            self.pubsub.unsubscribe()
         self.connected = False
-        self.broadcast_msg(_SHUTDOWN_HOOK)
-        self.pubsub.unsubscribe()
 
 
