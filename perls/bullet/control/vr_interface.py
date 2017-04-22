@@ -95,8 +95,14 @@ class IVR(CtrlInterface):
 					# TODO: change hardcoded 1 to something generalized
 					msg[ID] = list(p.getBasePositionAndOrientation(ID)[:2])
 
-					if (ID in obj_map[GRIPPER]) or (ID in obj_map[ARM]):
-						msg[ID] += [model.get_tool_joint_states(ID)]
+					# If containing arms, send back arm and gripper info
+					# since each arm must have one gripper
+					if model.arms:
+						if ID in obj_map[ARM] or ID in obj_map[GRIPPER]:
+							msg[ID] += [model.get_tool_joint_states(ID)]
+					if model.grippers:
+						if ID in obj_map[GRIPPER]:
+							msg[ID] += [model.get_tool_joint_states(ID)]
 
 				self.server.broadcast_msg(msg)
 
