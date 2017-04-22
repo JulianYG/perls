@@ -1,7 +1,7 @@
-from bullet.control.hub import *
 import pybullet as p
 import time
-from bullet.util import *
+from bullet.util import _RESET_HOOK, _SHUTDOWN_HOOK, _START_HOOK
+from bullet.util import POS_CTRL, VEL_CTRL
 
 class CtrlInterface(object):
 	"""
@@ -50,20 +50,20 @@ class CtrlInterface(object):
 					# p.setRealTimeSimulation(0)
 				else:
 					for obj, pose in data.items():
-						if (obj not in model.grippers) or (obj not in  model.arms):
+						if (obj not in model.grippers) and (obj not in model.arms):
 							p.resetBasePositionAndOrientation(obj, pose[0], pose[1])
 						else:
 							if obj in model.grippers:
 								# Check if this is pr2 instance by checking arms (pr2 does not contain arms)
-								if model.arms:
-									# If robot arm instance, just set gripper close/release
-									model.set_tool_states([obj], [pose[2]], POS_CTRL)
-								else:
+								if not model.arms:
 									# Change the gripper constraint if obj is pr2 gripper (move it)
 									p.changeConstraint(control_map[CONSTRAINT][obj_map[GRIPPER][obj]], 
 										pose[0], pose[1], maxForce=model.MAX_FORCE)
-									model.set_tool_states([obj], [pose[2]], POS_CTRL)
-							
+
+								# If robot arm instance, just set gripper close/release
+								# The same thing for pr2 gripper
+								model.set_tool_states([obj], [pose[2]], POS_CTRL)
+								
 							if obj in model.arms:
 								model.set_tool_states([obj], [pose[2]], POS_CTRL)
 
