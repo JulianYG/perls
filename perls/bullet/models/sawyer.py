@@ -1,6 +1,7 @@
 import math
 from bullet.models.robot import Robot
 import pybullet as p
+from bullet.util import ARM, GRIPPER
 
 class Sawyer(Robot):
 

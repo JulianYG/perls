@@ -2,7 +2,7 @@ from bullet.control.interface import CtrlInterface
 import pybullet as p
 import time
 import redis
-from bullet.util import *
+from bullet.util import _RESET_HOOK
 
 class IVR(CtrlInterface):
 

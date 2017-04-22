@@ -1,7 +1,7 @@
 from bullet.control.hub.hub import Hub
 from queue import Queue as q
 import redis, sys
-from bullet.util import *
+from bullet.util import _START_HOOK, _SHUTDOWN_HOOK
 
 class RedisServer(Hub):
 

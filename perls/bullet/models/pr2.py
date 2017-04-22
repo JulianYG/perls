@@ -2,6 +2,7 @@ import pybullet as p
 from bullet.models.core.tool import Tool
 import numpy as np
 from bullet.util import *
+from bullet.util import CONSTRAINT, GRIPPER
 
 class PR2(Tool):
 

@@ -2,6 +2,7 @@ import pybullet as p
 import numpy as np
 from bullet.models.core.tool import Tool
 from bullet.util import *
+from bullet.util import ARM, GRIPPER
 
 class Robot(Tool):
 
