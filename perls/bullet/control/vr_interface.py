@@ -3,7 +3,7 @@ import pybullet as p
 import time
 import redis
 from bullet.util import ARM, GRIPPER
-from bullet.util import _RESET_HOOK, _SHUTDOWN_HOOK
+from bullet.util import _RESET_HOOK, _SHUTDOWN_HOOK, _START_HOOK
 
 class IVR(CtrlInterface):
 

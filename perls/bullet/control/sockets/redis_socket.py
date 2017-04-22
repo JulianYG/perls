@@ -11,7 +11,7 @@ class RedisSocket(Socket):
         self.ip = server_addr
         self.terminal = redis.StrictRedis(host=server_addr, port=6379, db=db)
         self.connected_with_server = False
-        self.connect_with_client = False
+        self.connected_with_client = False
         self.threads = []
         self.pubsub = self.terminal.pubsub()
         self.client_event_queue = q(buffer_size)
@@ -37,6 +37,12 @@ class RedisSocket(Socket):
 
     def connect_with_client(self):
 
+        # How many channels do we have
+        self.pubsub.subscribe(**{'event_channel': self._client_event_handler})
+
+        # Start thread
+        self.threads.append(self.pubsub.run_in_thread(sleep_time=0.001))
+
         # Send reset and load env signal
         print('Waiting for client\'s response...')
         while 1:
@@ -45,13 +51,11 @@ class RedisSocket(Socket):
                 self.connected_with_client = True
                 break
 
-        # How many channels do we have
-        self.pubsub.subscribe(**{'event_channel': self._client_event_handler})
-
-        # Start thread
-        self.threads.append(self.pubsub.run_in_thread(sleep_time=0.001))
-
     def connect_with_server(self):
+
+        self.pubsub.subscribe(**{'signal_channel': self._server_event_handler})
+
+        self.threads.append(self.pubsub.run_in_thread(sleep_time=0.001))
 
         print('Waiting for server\'s response...')
         while 1:
@@ -59,10 +63,6 @@ class RedisSocket(Socket):
                 print('Connected with server on {}'.format(self.ip))
                 self.connected_with_server = True
                 break
-
-        self.pubsub.subscribe(**{'signal_channel': self._server_event_handler})
-
-        self.threads.append(self.pubsub.run_in_thread(sleep_time=0.001))
 
     def _client_event_handler(self, msg):
         packet = msg['data']
