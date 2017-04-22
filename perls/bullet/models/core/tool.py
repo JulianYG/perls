@@ -1,13 +1,9 @@
 import pybullet as p
 import numpy as np
 from bullet.models.core.scene import Scene
-import bullet.util as utils
+from bullet.util import *
 
 class Tool(Scene):
-
-	ARM = 0
-	GRIPPER = 1
-	CONSTRAINT = 2
 
 	def __init__(self, pos, enableForceSensor):
 
@@ -28,24 +24,26 @@ class Tool(Scene):
 
 	def get_tool_control_deviation(self, tool_id, pos):
 		eef_id = p.getNumJoints(tool_id) - 1
-		return utils.get_distance(p.getLinkState(tool_id, eef_id)[0], pos)
+		return get_distance(p.getLinkState(tool_id, eef_id)[0], pos)
 
 	def redundant_control(self):
 		return len(self.controllers) > max(len(self.grippers), 
 			len(self.arms), len(self.constraints))
 
 	def create_control_mappings(self):
-		control_map = {}
-		if self.grippers:
-			control_map[self.GRIPPER] = dict(zip(self.controllers, self.grippers))
+		control_map, obj_map = {}, {}
 		if self.arms:
-			control_map[self.ARM] = dict(zip(self.controllers, self.arms))
+			control_map[ARM] = dict(zip(self.controllers, self.arms))
+			obj_map[ARM] = dict(zip(self.arm, self.controllers))
+		if self.grippers:
+			control_map[GRIPPER] = dict(zip(self.controllers, self.grippers))
+			obj_map[GRIPPER] = dict(zip(self.grippers, self.controllers))
 		if self.constraints:
-			control_map[self.CONSTRAINT] = dict(zip(self.controllers, 
+			control_map[CONSTRAINT] = dict(zip(self.controllers, 
 				self.constraints))
-		return control_map
+		return control_map, obj_map
 
-	def set_tool_states(self, tool_ids, vals, ctrl_type='pos'):
+	def set_tool_states(self, tool_ids, vals, ctrl=POS_CTRL):
 		# TODO: change 'pos' to 0 'vel' to 1 something like [jointIndex, motor.CTRLTYP]
 		if not isinstance(tool_ids, list):
 			tool_ids = [tool_ids]
@@ -53,20 +51,12 @@ class Tool(Scene):
 		if not isinstance(vals[0], list):
 			vals = [vals]
 
-		if ctrl_type == 'pos':
-			for tool_id, val in zip(tool_ids, vals):
-				for jointIndex in range(p.getNumJoints(tool_id)):
-					p.setJointMotorControl2(tool_id, jointIndex, p.POSITION_CONTROL,
-						targetPosition=np.array(val)[jointIndex, 0], targetVelocity=0, positionGain=0.05, 
-						velocityGain=1.0, force=self.MAX_FORCE)
-		elif ctrl_type == 'vel':
-			for tool_id, val in zip(tool_ids, vals):
-				for jointIndex in range(p.getNumJoints(tool_id)):
-					p.setJointMotorControl2(tool_id, jointIndex, p.VELOCITY_CONTROL,
-						targetVelocity=np.array(val)[jointIndex, 1], force=self.MAX_FORCE)
-		else:
-			raise NotImplementedError('Cannot recognize current control type: ' + ctrl_type)
-
+		for tool_id, val in zip(tool_ids, vals):
+			for jointIndex in range(p.getNumJoints(tool_id)):
+				p.setJointMotorControl2(tool_id, jointIndex, p.POSITION_CONTROL,
+					targetPosition=np.array(val)[jointIndex, ctrl], targetVelocity=0, 
+					positionGain=0.05, velocityGain=1.0, force=self.MAX_FORCE)
+	
 	def get_tool_joint_state(self, tool_joint_idx):
 		"""
 		Given (tool, joint) index tuple, return given joint 
@@ -125,7 +115,7 @@ class Tool(Scene):
 	def control(self, event, ctrl_map):
 		raise NotImplementedError("Each tool model must re-implement this method.")
 
-	def reach(self, tool_id, eef_pos, eef_orien, fixed, reset=False):
+	def reach(self, tool_id, eef_pos, eef_orien, fixed, expedite=False):
 		raise NotImplementedError('Each tool model must re-implement this method.')
 
 	def slide_grasp(self, gripper, controller_event):

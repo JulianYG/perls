@@ -1,6 +1,14 @@
 import json
 import numpy as np
 
+POS_CTRL = 0
+VEL_CTRL = 1
+TORQ_CTRL = 2
+
+ARM = 3
+GRIPPER = 4
+CONSTRAINT = 5
+
 def get_distance(posA, posB):
 	return np.sqrt(np.sum((np.array(posA) - np.array(posB)) ** 2))
 

@@ -7,7 +7,7 @@ from os.path import join as pjoin
 import bullet.util as utils
 from bullet.control.hub import *
 
-def build(model, interface, task, filename, record=True, vr=False):
+def render_simulator(model, interface, task, filename, record=True, vr=False):
 	"""
 	Models still exist in pybullet since they are only used in pybullet
 	Example interfacing with ROS:
@@ -15,7 +15,7 @@ def build(model, interface, task, filename, record=True, vr=False):
 
 	kuka = kuka.Kuka()
 	task = repo['kitchen']
-	pybullet_simulator = node.build(kuka, interface, task, 'hi.bin')
+	pybullet_simulator = node.render_simulator(kuka, interface, task, 'hi.bin')
 	pybullet_simulator.record('path.bin')
 	...
 	"""

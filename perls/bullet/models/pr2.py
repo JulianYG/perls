@@ -1,6 +1,7 @@
 import pybullet as p
 from bullet.models.core.tool import Tool
 import numpy as np
+from bullet.util import *
 
 class PR2(Tool):
 
@@ -51,8 +52,8 @@ class PR2(Tool):
 		Handles one gripper at a time
 		"""
 		ctrl_id = event[0]
-		constraint_id = ctrl_map[Tool.CONSTRAINT][ctrl_id]
-		gripper_id = ctrl_map[Tool.GRIPPER][ctrl_id]
+		constraint_id = ctrl_map[CONSTRAINT][ctrl_id]
+		gripper_id = ctrl_map[GRIPPER][ctrl_id]
 
 		self.reach(constraint_id, event[1], event[self.ORIENTATION], fixed=False)
 		self.slide_grasp(gripper_id, event)
@@ -64,7 +65,7 @@ class PR2(Tool):
 		return 0 if self.get_tool_control_deviation(gripper_id, 
 			event[1]) <= self.THRESHOLD * self.THRESHOLD else -1
 
-	def reach(self, tool_id, eef_pos, eef_orien, fixed):
+	def reach(self, tool_id, eef_pos, eef_orien, fixed, expedite=False):
 		# PR2 gripper follows VR controller, or keyboard		
 		p.changeConstraint(tool_id, eef_pos, eef_orien,
 		 	maxForce=self.MAX_FORCE)

@@ -1,6 +1,7 @@
 import pybullet as p
 import numpy as np
 from bullet.models.core.tool import Tool
+from bullet.util import *
 
 class Robot(Tool):
 
@@ -26,8 +27,8 @@ class Robot(Tool):
 	def control(self, event, ctrl_map):
 
 		ctrl_id = event[0]
-		arm_id = ctrl_map[Tool.ARM][ctrl_id]
-		gripper_id = ctrl_map[Tool.GRIPPER][ctrl_id]
+		arm_id = ctrl_map[ARM][ctrl_id]
+		gripper_id = ctrl_map[GRIPPER][ctrl_id]
 		
 		self.slide_grasp(gripper_id, event)
 

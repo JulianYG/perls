@@ -15,7 +15,9 @@ class IKeyboard(CtrlInterface):
 
 		# Set same number of controllers as number of arms/grippers
 		model.set_virtual_controller(range(len(tool)))
-		self.control_map = model.create_control_mappings()
+
+		# TODO: may need obj_map as well
+		self.control_map, _ = model.create_control_mappings()
 		self.pseudo_event = {0: 0}
 
 		if self.server.connect(model) < 0:
@@ -33,7 +35,7 @@ class IKeyboard(CtrlInterface):
 
 		# Set same number of controllers as number of arms/grippers
 		model.set_virtual_controller(range(len(tool)))
-		self.control_map = model.create_control_mappings()
+		self.control_map, _ = model.create_control_mappings()
 		self.pseudo_event = {0: 0}
 
 		while True:
