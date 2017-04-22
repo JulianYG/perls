@@ -9,7 +9,7 @@ import bullet.util as utils
 
 class BulletSimulator(object):
 
-	def __init__(self, model, interface):
+	def __init__(self, model, interface, vr):
 		# Default settings for camera
 		self.FOCAL_POINT = (0., 0., 0.)
 		self.YAW = 35.
@@ -19,7 +19,7 @@ class BulletSimulator(object):
 		self.UP_AX_IDX = 2
 		self.viewMatrix = None
 		self.projectionMatrix = None
-		self.vr = False
+		self.vr = vr
 		self.logIds = []
 		self.task = None
 		self._interface = interface
@@ -29,7 +29,7 @@ class BulletSimulator(object):
 		self.CONTROL_LOG_DIR = pjoin(os.getcwd(), 'data', 'record', 'control')
 		self.CONTACT_LOG_DIR = pjoin(os.getcwd(), 'data', 'record', 'contact')
 
-	def setup(self, task, flag, vr):
+	def setup(self, task, flag):
 		if not os.path.exists(self.VIDEO_DIR):
 			os.makedirs(self.VIDEO_DIR)
 		if not os.path.exists(self.TRAJECTORY_LOG_DIR):
@@ -38,10 +38,9 @@ class BulletSimulator(object):
 			os.makedirs(self.CONTROL_LOG_DIR)	
 		if not os.path.exists(self.CONTACT_LOG_DIR):
 			os.makedirs(self.CONTACT_LOG_DIR)
-		self.vr = vr
 		self.task = task
-		if not self.model.reset(flag, vr):
-			if vr:
+		if not self.model.reset(flag, self.vr):
+			if self.vr:
 				raise Exception('Cannot detect running VR application. Please try again.')
 			else:
 				raise Exception('Cannot create pybullet GUI instance. Please try again.')
