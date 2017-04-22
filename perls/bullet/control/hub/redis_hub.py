@@ -46,6 +46,7 @@ class RedisServer(Hub):
                 self.event_queue.put(eval(data))
 
     def close(self):
+        print('ha?', self.connected)
         if self.connected:
             self.broadcast_msg(_SHUTDOWN_HOOK)
             self.pubsub.unsubscribe()

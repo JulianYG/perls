@@ -2,7 +2,7 @@ from bullet.control.interface import CtrlInterface
 import pybullet as p
 import time
 import redis
-from bullet.util import _RESET_HOOK
+from bullet.util import _RESET_HOOK, _SHUTDOWN_HOOK
 
 class IVR(CtrlInterface):
 
@@ -26,6 +26,10 @@ class IVR(CtrlInterface):
 
 				if events == _RESET_HOOK:
 					p.resetSimulation()
+					continue
+
+				if events == _SHUTDOWN_HOOK:
+					print('VR Client quit')
 					continue
 
 				if isinstance(events, list):
