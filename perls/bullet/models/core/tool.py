@@ -34,7 +34,7 @@ class Tool(Scene):
 		control_map, obj_map = {}, {}
 		if self.arms:
 			control_map[ARM] = dict(zip(self.controllers, self.arms))
-			obj_map[ARM] = dict(zip(self.arm, self.controllers))
+			obj_map[ARM] = dict(zip(self.arms, self.controllers))
 		if self.grippers:
 			control_map[GRIPPER] = dict(zip(self.controllers, self.grippers))
 			obj_map[GRIPPER] = dict(zip(self.grippers, self.controllers))
@@ -48,7 +48,7 @@ class Tool(Scene):
 		if not isinstance(tool_ids, list):
 			tool_ids = [tool_ids]
 		assert len(tool_ids) == len(vals)
-		
+
 		for tool_id, val in zip(tool_ids, vals):
 			for jointIndex in range(p.getNumJoints(tool_id)):
 				p.setJointMotorControl2(tool_id, jointIndex, p.POSITION_CONTROL,
