@@ -11,7 +11,7 @@ class RosHub(Hub):
 	def read_msg(self):
 		raise NotImplementedError('Each messager should re-implement this method')
 
-	def connect(self, model):
+	def connect(self):
 		raise NotImplementedError('Each messager should re-implement this method')
 
 	def close(self):

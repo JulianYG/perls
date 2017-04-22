@@ -43,7 +43,6 @@ simulator = BulletSimulator(model, interface, task, True)
 
 simulator.run(remote_render=True)
 
-
 # def cmd_handler(msg):
 # 	data = eval(msg)
 

@@ -1,4 +1,7 @@
 from bullet.control.hub import *
+import pybullet as p
+import time
+from bullet.util import *
 
 class CtrlInterface(object):
 	"""
@@ -25,11 +28,11 @@ class CtrlInterface(object):
 
 	def event_callback(self, model, task, vr):
 
-		# if not self.server.connected:
-		# 	self.server.connect(model)
-
 		model.reset(0, vr)
 		model.setup_scene(task)
+
+		# Reset server side simulation
+		self.server.broadcast_msg(_RESET_HOOK)
 
 		control_map, obj_map = model.create_control_mappings()
 
@@ -38,14 +41,13 @@ class CtrlInterface(object):
 			packet = msg['data']
 			if isinstance(packet, str) or isinstance(packet, bytes):
 				data = eval(packet)
-				if data == 0:
-					# raise SystemExit('Remote client invoke shut down')
-					pass
-				elif data == 1:
-					# print('Remote client invode reset')
+				if data == _SHUTDOWN_HOOK:
+					raise SystemExit('Server invokes shut down')
+				elif data == _START_HOOK:
+					print('Server is online')
 					# model.reset(0, vr)
+					# model.setup_scene(task)
 					# p.setRealTimeSimulation(0)
-					pass
 				else:
 					for obj, pose in data.items():
 						if (obj not in model.grippers) or (obj not in  model.arms):
@@ -75,7 +77,7 @@ class CtrlInterface(object):
 		while True:
 			events = p.getVREvents()
 			for e in (events):
-				self.server.terminal.publish('server_channel', e)
+				self.server.broadcast_msg(e)
 			time.sleep(0.001)
 
 	def close_socket(self):

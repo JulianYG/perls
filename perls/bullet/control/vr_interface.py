@@ -24,6 +24,13 @@ class IVR(CtrlInterface):
 			if model.controllers:
 				events = self.server.read_msg()
 
+				if events == _RESET_HOOK:
+					p.resetSimulation()
+					continue
+
+				if isinstance(events, list):
+					model.set_virtual_controller(events)
+
 				skip_flag = model.redundant_control()
 
 				for e in (events):
