@@ -10,17 +10,18 @@ class RedisSocket(Socket):
         # Need to define terminal in each different hub implementation
         self.ip = server_addr
         self.terminal = redis.StrictRedis(host=server_addr, port=6379, db=db)
-        self.connected = False
+        self.connected_with_server = False
+        self.connect_with_client = False
         self.threads = []
         self.pubsub = self.terminal.pubsub()
         self.client_event_queue = q(buffer_size)
         self.server_event_queue = q(buffer_size)
 
     def broadcast_to_client(self, message):
-        return self.terminal.publish('server_channel', message)
+        return self.terminal.publish('signal_channel', message)
 
     def broadcast_to_server(self, message):
-        return self.terminal.publish('client_channel', message)
+        return self.terminal.publish('event_channel', message)
 
     def listen_to_client(self):
         events = []
@@ -40,12 +41,12 @@ class RedisSocket(Socket):
         print('Waiting for client\'s response...')
         while 1:
             if self.broadcast_to_client(_START_HOOK) > 0:
-            print('Connected with client.')
-            self.connected = True
-            break
+                print('Connected with client.')
+                self.connected_with_client = True
+                break
 
         # How many channels do we have
-        self.pubsub.subscribe(**{'client_channel': self._client_event_handler})
+        self.pubsub.subscribe(**{'event_channel': self._client_event_handler})
 
         # Start thread
         self.threads.append(self.pubsub.run_in_thread(sleep_time=0.001))
@@ -56,10 +57,10 @@ class RedisSocket(Socket):
         while 1:
             if self.broadcast_to_server(_RESET_HOOK) > 0:
                 print('Connected with server on {}'.format(self.ip))
-                self.connected = True
+                self.connected_with_server = True
                 break
 
-        self.pubsub.subscribe(**{'server_channel': self._server_event_handler})
+        self.pubsub.subscribe(**{'signal_channel': self._server_event_handler})
 
         self.threads.append(self.pubsub.run_in_thread(sleep_time=0.001))
 
@@ -91,11 +92,13 @@ class RedisSocket(Socket):
                     self.server_event_queue.put(data)
 
     def close(self):
-        if self.connected:
-            self.broadcast_msg(_SHUTDOWN_HOOK)
-            self.pubsub.unsubscribe()
-            for t in self.threads:
-                t.stop()
+        if self.connected_with_server:
+            self.broadcast_to_server(_SHUTDOWN_HOOK)
+        if self.connected_with_client:
+            self.broadcast_to_client(_SHUTDOWN_HOOK)
+        self.pubsub.unsubscribe()
+        for t in self.threads:
+            t.stop()
         self.connected = False
 
 
