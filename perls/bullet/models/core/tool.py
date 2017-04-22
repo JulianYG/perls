@@ -47,10 +47,8 @@ class Tool(Scene):
 		# TODO: change 'pos' to 0 'vel' to 1 something like [jointIndex, motor.CTRLTYP]
 		if not isinstance(tool_ids, list):
 			tool_ids = [tool_ids]
-
-		if not isinstance(vals[0], list):
-			vals = [vals]
-
+		assert len(tool_ids) == len(vals)
+		
 		for tool_id, val in zip(tool_ids, vals):
 			for jointIndex in range(p.getNumJoints(tool_id)):
 				p.setJointMotorControl2(tool_id, jointIndex, p.POSITION_CONTROL,

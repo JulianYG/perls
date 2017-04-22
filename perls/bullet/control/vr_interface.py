@@ -19,7 +19,6 @@ class IVR(CtrlInterface):
 
 		model.reset(0, vr)
 		model.setup_scene(task)
-		p.setRealTimeSimulation(0)
 
 		control_map, obj_map = model.create_control_mappings()
 
@@ -45,14 +44,14 @@ class IVR(CtrlInterface):
 								# Check if this is pr2 instance by checking arms (pr2 does not contain arms)
 								if model.arms:
 									# If robot arm instance, just set gripper close/release
-									model.set_tool_states(obj, pose[2], POS_CTRL)
+									model.set_tool_states([obj], [pose[2]], POS_CTRL)
 								else:
 									# Change the gripper constraint if obj is pr2 gripper (move it)
 									p.changeConstraint(control_map[CONSTRAINT][obj_map[GRIPPER][obj]], pose[0], pose[1], maxForce=500)
-									model.set_tool_states(obj, pose[2], POS_CTRL)
+									model.set_tool_states([obj], [pose[2]], POS_CTRL)
 							
 							if obj in model.arms:
-								model.set_tool_states(obj, pose[2], POS_CTRL)
+								model.set_tool_states([obj], [pose[2]], POS_CTRL)
 
 				# TODO: Handle constraints of grippers; 
 				# Handle joint states
