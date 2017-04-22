@@ -1,13 +1,14 @@
 from bullet.control.sockets.sock import Socket 
 from Queue import Queue as q
 import redis, sys
-from bullet.util import _START_HOOK, _SHUTDOWN_HOOK
+from bullet.util import _START_HOOK, _SHUTDOWN_HOOK, _RESET_HOOK
 
 class RedisSocket(Socket):
 
     def __init__(self, server_addr, buffer_size=4096, port=6379, db=0):
 
         # Need to define terminal in each different hub implementation
+        self.ip = server_addr
         self.terminal = redis.StrictRedis(host=server_addr, port=6379, db=db)
         self.connected = False
         self.threads = []
@@ -37,6 +38,7 @@ class RedisSocket(Socket):
 
         # Send reset and load env signal
         if self.broadcast_to_client(_START_HOOK) > 0:
+            print('Connected with client.')
             self.connected = True
 
         # How many channels do we have
@@ -48,6 +50,7 @@ class RedisSocket(Socket):
     def connect_with_server(self):
 
         if self.broadcast_to_server(_RESET_HOOK) > 0:
+            print('Connected with server on {}'.format(self.ip))
             self.connected = True
 
         self.pubsub.subscribe(**{'server_channel': self._server_event_handler})

@@ -31,6 +31,7 @@ class CtrlInterface(object):
 		model.reset(0, vr)
 		model.setup_scene(task)
 
+		self.socket.connect_with_server()
 		# Reset server side simulation
 		
 		self.control_map, self.obj_map = model.create_control_mappings()
