@@ -31,7 +31,7 @@ import pybullet as p
 
 ip = '172.24.68.111'
 model = pr2.PR2([0.3, -0.5], enableForceSensor=False)
-host = hub.redis_hub.RedisServer(ip)
+host = redis_socket.RedisSocket(ip)
 interface = vr_interface.IVR(host, False)
 
 REPO_DIR = pjoin(os.getcwd(), 'data', 'task.json')
