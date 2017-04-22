@@ -37,9 +37,12 @@ class RedisSocket(Socket):
     def connect_with_client(self):
 
         # Send reset and load env signal
-        if self.broadcast_to_client(_START_HOOK) > 0:
+        print('Waiting for client\'s response...')
+        while 1:
+            if self.broadcast_to_client(_START_HOOK) > 0:
             print('Connected with client.')
             self.connected = True
+            break
 
         # How many channels do we have
         self.pubsub.subscribe(**{'client_channel': self._client_event_handler})
@@ -49,9 +52,12 @@ class RedisSocket(Socket):
 
     def connect_with_server(self):
 
-        if self.broadcast_to_server(_RESET_HOOK) > 0:
-            print('Connected with server on {}'.format(self.ip))
-            self.connected = True
+        print('Waiting for server\'s response...')
+        while 1:
+            if self.broadcast_to_server(_RESET_HOOK) > 0:
+                print('Connected with server on {}'.format(self.ip))
+                self.connected = True
+                break
 
         self.pubsub.subscribe(**{'server_channel': self._server_event_handler})
 
