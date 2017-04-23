@@ -26,7 +26,7 @@ class IVR(CtrlInterface):
 				events = self.socket.listen_to_client()
 
 				if events == _RESET_HOOK:
-					p.resetSimulation()
+					# p.resetSimulation()
 					continue
 
 				if events == _SHUTDOWN_HOOK:
@@ -62,6 +62,7 @@ class IVR(CtrlInterface):
 							msg[ID] += [model.get_tool_joint_states(ID)]
 
 				self.socket.broadcast_to_client(msg)
+				print(msg)
 
 	def _local_comm(self, model):
 		control_map, _ = model.create_control_mappings()

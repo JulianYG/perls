@@ -25,13 +25,13 @@ class RedisSocket(Socket):
 
     def listen_to_client(self):
         events = []
-        if not self.client_event_queue.empty():
+        while not self.client_event_queue.empty():
             events.append(self.client_event_queue.get())
         return events
 
     def listen_to_server(self):
         events = []
-        if not self.server_event_queue.empty():
+        while not self.server_event_queue.empty():
             events.append(self.server_event_queue.get())
         return events
 
@@ -40,7 +40,8 @@ class RedisSocket(Socket):
         self.pubsub.subscribe(**{'event_channel': self._client_event_handler})
 
         # Start thread
-        self.threads.append(self.pubsub.run_in_thread(sleep_time=0.001))
+        client_thread = self.pubsub.run_in_thread(sleep_time=0.001)
+        self.threads.append(client_thread)
 
         # Send reset and load env signal
         print('Waiting for client\'s response...')
@@ -53,7 +54,9 @@ class RedisSocket(Socket):
     def connect_with_server(self):
 
         self.pubsub.subscribe(**{'signal_channel': self._server_event_handler})
-        self.threads.append(self.pubsub.run_in_thread(sleep_time=0.001))
+
+        server_thread = self.pubsub.run_in_thread(sleep_time=0.001)
+        self.threads.append(server_thread)
 
         print('Waiting for server\'s response...')
         while 1:
