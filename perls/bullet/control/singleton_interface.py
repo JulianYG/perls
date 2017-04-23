@@ -13,5 +13,8 @@ class ISingleton(CtrlInterface):
 	def _local_comm(self, model):
 		return
 
+	def event_callback(self, model, task):
+		return
+
 	
 

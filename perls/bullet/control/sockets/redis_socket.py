@@ -25,13 +25,14 @@ class RedisSocket(Socket):
 
     def listen_to_client(self):
         events = []
-        if not self.event_queue.empty():
+        # TODO: Check if / while, which one is better
+        while not self.event_queue.empty():
             events.append(self.event_queue.get())
         return events
 
     def listen_to_server(self):
         events = []
-        if not self.signal_queue.empty():
+        while not self.signal_queue.empty():
             events.append(self.signal_queue.get())
         return events
 
@@ -50,7 +51,6 @@ class RedisSocket(Socket):
                 print('Connected with client.')
                 self.connected_with_client = True
                 break
-
         return 0
 
     def connect_with_server(self):
@@ -65,16 +65,12 @@ class RedisSocket(Socket):
                 print('Connected with server on {}'.format(self.ip))
                 self.connected_with_server = True
                 break
+        return 0
 
     def _event_handler(self, msg):
         packet = msg['data']
         if isinstance(packet, str) or isinstance(packet, bytes):
             data = eval(packet)
-            # if isinstance(packet, list):
-            #     self.model.set_virtual_controller(packet)
-            # elif packet == _SHUTDOWN_HOOK:
-            #     sys.exit(0)
-            # else:
             if not self.event_queue.full():
                 self.event_queue.put(data)
 

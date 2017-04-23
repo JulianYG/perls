@@ -27,26 +27,6 @@ class CtrlInterface(object):
 		else:
 			self._local_comm(model)
 
-	def event_callback(self, model, task, vr):
-
-		# model.reset(0, vr)
-		# model.setup_scene(task)
-
-		self.control_map, self.obj_map = model.create_control_mappings()
-		self.socket.connect_with_server()
-		
-		# Ctrl, running in different thread?
-		while True:
-			# Send to server
-			events = p.getVREvents()
-			for e in (events):
-				self.socket.broadcast_to_server(e)
-			time.sleep(0.001)
-
-			# Receive and render from server
-			signal = self.socket.listen_to_server()
-			self._render_from_signal(model, signal)
-
 	def close_socket(self):
 		if self.remote:
 			self.socket.close()
@@ -72,11 +52,32 @@ class CtrlInterface(object):
 					if obj in model.arms:
 						model.set_tool_states([obj], [pose[2]], POS_CTRL)
 
+	def _msg_wrapper(self, model, obj_map):
+
+		# TODO: reserve case when force sensors are enabled (3 columns joint matrix)
+		msg = {}
+		for ID in range(p.getNumBodies()):
+			msg[ID] = list(p.getBasePositionAndOrientation(ID)[:2])
+			# If containing arms, send back arm and gripper info
+			# since each arm must have one gripper
+			if model.arms:
+				if ID in obj_map[ARM] or ID in obj_map[GRIPPER]:
+					msg[ID] += [model.get_tool_joint_states(ID)]
+			if model.grippers:
+				if ID in obj_map[GRIPPER]:
+					msg[ID] += [model.get_tool_joint_states(ID)]
+		return msg
+
 	def _remote_comm(self, model):
 		raise NotImplementedError('Each interface must re-implement this method.')
 
 	def _local_comm(self, model):
 		raise NotImplementedError('Each interface must re-implement this method.')
+
+	def event_callback(self, model, task):
+		raise NotImplementedError('Each interface must re-implement this method.')
+
+
 
 	
 

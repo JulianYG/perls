@@ -54,7 +54,7 @@ class BulletSimulator(object):
 					self.logIds.append(p.startStateLogging(p.STATE_LOGGING_CONTACT_POINTS,
 						pjoin(self.CONTACT_LOG_DIR, 'cont.' + file)))
 			if remote_render:
-				self._interface.event_callback(self.model, self.task, self.vr)
+				self._interface.event_callback(self.model, self.task)
 			else:
 				self._interface.communicate(self.model)
 

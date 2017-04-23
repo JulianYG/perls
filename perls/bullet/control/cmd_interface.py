@@ -1,9 +1,13 @@
 from bullet.control.interface import CtrlInterface
 
+
 class ICmd(CtrlInterface):
 
 	def __init__(self, host, remote):
 		super(IVR, self).__init__(host, remote)
+
+	def event_callback(self, model, task):
+		pass
 
 	def _remote_comm(self, model):
 		pass
