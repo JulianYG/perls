@@ -1,6 +1,6 @@
 import sys
 import time
-import openvr
+# import openvr
 import redis
 from bullet.models import *
 from bullet.control import *
@@ -32,7 +32,9 @@ import pybullet as p
 ip = '172.24.68.111'
 model = pr2.PR2([0.3, -0.5], enableForceSensor=False)
 host = redis_socket.RedisSocket(ip)
+
 interface = vr_interface.IVR(host, False)
+# interface = keyboard_interface.IKeyboard(host, False)
 
 REPO_DIR = pjoin(os.getcwd(), 'data', 'task.json')
 with open(REPO_DIR, 'r') as f:
@@ -40,6 +42,7 @@ with open(REPO_DIR, 'r') as f:
 task = repo['ball']
 
 simulator = BulletSimulator(model, interface, task, True)
+# simulator = BulletSimulator(model, interface, task, False)
 
 simulator.run(remote_render=True)
 

@@ -14,11 +14,9 @@ class IVR(CtrlInterface):
 		super(IVR, self).__init__(host, remote)
 
 	def _remote_comm(self, model):
-		tool = model.get_tool_ids()
-		model.set_virtual_controller([3, 4])
-		
-		self.socket.connect_with_client()
 
+		model.set_virtual_controller([3, 4])
+		self.socket.connect_with_client()
 		control_map, obj_map = model.create_control_mappings()
 
 		while True:
@@ -48,10 +46,7 @@ class IVR(CtrlInterface):
 
 				msg = {}
 				for ID in range(p.getNumBodies()):
-
-					# TODO: change hardcoded 1 to something generalized
 					msg[ID] = list(p.getBasePositionAndOrientation(ID)[:2])
-
 					# If containing arms, send back arm and gripper info
 					# since each arm must have one gripper
 					if model.arms:
