@@ -51,6 +51,8 @@ class RedisSocket(Socket):
                 self.connected_with_client = True
                 break
 
+        return 0
+
     def connect_with_server(self):
 
         self.pubsub.subscribe(**{'signal_channel': self._signal_handler})
