@@ -23,11 +23,11 @@ class IVR(CtrlInterface):
 			if model.controllers:
 				events = self.socket.listen_to_client()
 
-				if events == _RESET_HOOK:
-					p.resetSimulation()
+				if events == [_RESET_HOOK]:
+					# p.resetSimulation()
 					continue
 
-				if events == _SHUTDOWN_HOOK:
+				if events == [_SHUTDOWN_HOOK]:
 					print('VR Client quit')
 					continue
 
