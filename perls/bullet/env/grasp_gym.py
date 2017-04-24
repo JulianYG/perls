@@ -21,7 +21,7 @@ class GraspBulletEnv(Env):
 	    self._step_helper = step_func
 	    self.time_step = time_step
 	    # Setup simulator but not running
-	    self.simulator.setup(0)
+	    self.simulator._setup(0)
 
 	def _seed(self, seed=None):
 		self.np_random, seed = seeding.np_random(seed)

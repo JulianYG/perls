@@ -35,7 +35,6 @@ def execute(*args):
 	time_step = _CONFIGS['time_step']
 
 	module = eval(step_func)
-
 	if model == 'kuka':
 		# Change Fixed to True for keyboard
 		model = kuka.Kuka(init_pos, fixed=fixed, enableForceSensor=force_sensor)
