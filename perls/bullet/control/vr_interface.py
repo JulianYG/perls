@@ -14,7 +14,7 @@ class IVR(CtrlInterface):
 	def event_callback(self, model, task):
 
 		self.socket.connect_with_server()
-
+		control_map, obj_map = model.create_control_mappings()
 		# Let the socket know controller IDs
 		self.socket.broadcast_to_server(model.controllers)
 
