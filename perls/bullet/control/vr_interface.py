@@ -27,39 +27,40 @@ class IVR(CtrlInterface):
 
 			# Receive and render from server
 			signal = self.socket.listen_to_server()
-			self._render_from_signal(model, signal)
+			self._render_from_signal(model, control_map, obj_map, signal)
 
 	def _remote_comm(self, model):
 
-		# model.set_virtual_controller([3, 4])
-
 		self.socket.connect_with_client()
-		control_map, obj_map = model.create_control_mappings()
+
+		# First get the controller IDs
+		while not model.controllers:
+			events = self.socket.listen_to_client()
+			for e in events:
+				if isinstance(e, list):
+					model.set_virtual_controller(e)
+					control_map, obj_map = model.create_control_mappings()
+
 		skip_flag = model.redundant_control()
 
 		while True:
-			if model.controllers:
-				events = self.socket.listen_to_client()
-				for e in events:
-					# Hook handlers
-					if e is _RESET_HOOK:
-						# model.reset?
-						continue
+			events = self.socket.listen_to_client()
+			for e in events:
 
-					if e is _SHUTDOWN_HOOK:
-						print('VR Client quit')
-						continue
+				# Hook handlers
+				if e is _RESET_HOOK:
+					# model.reset?
+					continue
+				if e is _SHUTDOWN_HOOK:
+					print('VR Client quit')
+					continue
 
-					if isinstance(e, list):
-						model.set_virtual_controller(e)
-						continue
+				if skip_flag:
+					if e[0] == model.controllers[1]:
+						break
+				model.control(e, control_map)
 
-					if skip_flag:
-						if e[0] == model.controllers[1]:
-							break
-					model.control(e, control_map)
-
-				self.socket.broadcast_to_client(self._msg_wrapper(model, obj_map))
+			self.socket.broadcast_to_client(self._msg_wrapper(model, obj_map))
 
 	def _local_comm(self, model):
 		control_map, _ = model.create_control_mappings()

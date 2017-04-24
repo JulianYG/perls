@@ -31,7 +31,7 @@ class CtrlInterface(object):
 		if self.remote:
 			self.socket.close()
 
-	def _render_from_signal(self, model, signal):
+	def _render_from_signal(self, model, control_map, obj_map, signal):
 
 		for data in signal:
 			for obj, pose in data.items():
@@ -42,7 +42,7 @@ class CtrlInterface(object):
 					if obj in model.grippers:
 						# Change the gripper constraint if obj is pr2 gripper (move it)
 						if not model.arms:
-							p.changeConstraint(self.control_map[CONSTRAINT][self.obj_map[GRIPPER][obj]], 
+							p.changeConstraint(control_map[CONSTRAINT][obj_map[GRIPPER][obj]], 
 	                        	pose[0], pose[1], maxForce=model.MAX_FORCE)
 
 						# If robot arm instance, just set gripper close/release
