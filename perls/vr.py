@@ -12,6 +12,7 @@ import bullet.util as utils
 from bullet.control.hub import *
 import json
 # openvr.init(openvr.VRApplication_Scene)
+# test
 
 # poses_t = openvr.TrackedDevicePose_t * openvr.k_unMaxTrackedDeviceCount
 # poses = poses_t()
