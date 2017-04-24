@@ -31,10 +31,12 @@ import pybullet as p
 
 ip = '172.24.68.111'
 model = pr2.PR2([0.3, -0.5], enableForceSensor=False)
+# model = kuka.Kuka([0.3, -0.5], enableForceSensor=False)
+
 host = redis_socket.RedisSocket(ip)
 
-interface = vr_interface.IVR(host, False)
-# interface = keyboard_interface.IKeyboard(host, False)
+interface = vr_interface.IVR(host, True)
+# interface = keyboard_interface.IKeyboard(host, True)
 
 REPO_DIR = pjoin(os.getcwd(), 'data', 'task.json')
 with open(REPO_DIR, 'r') as f:

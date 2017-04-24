@@ -2,6 +2,7 @@ import time
 import pybullet as p
 from bullet.control.interface import CtrlInterface
 from bullet.util import GRIPPER
+from bullet.util import _RESET_HOOK, _SHUTDOWN_HOOK, _START_HOOK
 
 class IKeyboard(CtrlInterface):
 
@@ -36,35 +37,38 @@ class IKeyboard(CtrlInterface):
 	def _remote_comm(self, model):
 		
 		self.socket.connect_with_client()
+
+		model.set_virtual_controller(range(len(tool)))
 		control_map, obj_map = model.create_control_mappings()
 		tool = model.get_tool_ids()
+
 		self.pos = [model.get_tool_pose(t)[0] for t in tool]
 		pseudo_event = {0: 0}
 
 		## Set same number of controllers as number of arms/grippers
 		# model.set_virtual_controller(range(len(tool)))
 		while True:
-			if model.controllers:
-				events = self.socket.listen_to_client()
-				for e in events:
-					# Hook handlers
-					if e is _RESET_HOOK:
-						# model.reset?
-						continue
+			# if model.controllers:
+			events = self.socket.listen_to_client()
+			for e in events:
+				# Hook handlers
+				if e is _RESET_HOOK:
+					# model.reset?
+					continue
 
-					if e is _SHUTDOWN_HOOK:
-						print('VR Client quit')
-						continue
+				if e is _SHUTDOWN_HOOK:
+					print('VR Client quit')
+					continue
 
-					# Get the controller signal. Make sure server starts before client
-					if isinstance(e, list):
-						model.set_virtual_controller(e)
-						continue
+				# Get the controller signal. Make sure server starts before client
+				if isinstance(e, list):
+					model.set_virtual_controller(e)
+					continue
 
-					# The event dictionary sent
-					self._keyboard_event_handler(e, model, control_map, pseudo_event)
+				# The event dictionary sent
+				self._keyboard_event_handler(e, model, control_map, pseudo_event)
 
-				self.socket.broadcast_to_client(self._msg_wrapper(model, obj_map))
+			self.socket.broadcast_to_client(self._msg_wrapper(model, obj_map))
 
 	def _local_comm(self, model):
 		
