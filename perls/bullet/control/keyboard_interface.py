@@ -13,7 +13,7 @@ class IKeyboard(CtrlInterface):
 	def event_callback(self, model, task):
 
 		self.socket.connect_with_server()
-
+		control_map, obj_map = model.create_control_mappings()
 		# Let the socket know controller IDs
 		self.socket.broadcast_to_server(model.controllers)
 
@@ -24,7 +24,14 @@ class IKeyboard(CtrlInterface):
 
 			# Receive and render from server
 			signal = self.socket.listen_to_server()
-			self._render_from_signal(model, signal)
+			for s in signal:
+				if s is _SHUTDOWN_HOOK:
+					raise KeyboardInterrupt('Server invokes shutdown')
+					continue
+				if s is _START_HOOK:
+					print('Server is online')
+					continue
+				self._render_from_signal(model, control_map, obj_map, s)
 
 	def _remote_comm(self, model):
 		
@@ -89,6 +96,9 @@ class IKeyboard(CtrlInterface):
 			pseudo_event[2] = (0, 1, 0, 0)
 			pseudo_event[6] = {32: 1, 33: 0, 1: 0}
 
+			# x: 120  y: 121 z: 122
+			# up: 65298 down: 65297 left: 65295 right: 65296
+			# c: 99 r: 114
 			if 120 in events and (events[120] == p.KEY_IS_DOWN):
 				if e == 65298 and (events[e] == p.KEY_IS_DOWN):
 					self.pos[pseudo_event[0]][0] += 0.01
