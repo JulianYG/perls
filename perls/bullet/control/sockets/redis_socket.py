@@ -78,13 +78,8 @@ class RedisSocket(Socket):
         packet = msg['data']
         if isinstance(packet, str) or isinstance(packet, bytes):
             data = eval(packet)
-            if data == _SHUTDOWN_HOOK:
-                raise SystemExit('Server invokes shut down')
-            elif data == _START_HOOK:
-                print('Server is online')
-            else:
-                if not self.signal_queue.full():
-                    self.signal_queue.put(data)
+            if not self.signal_queue.full():
+                self.signal_queue.put(data)
 
     def disconnect(self):
         if self.connected_with_server:

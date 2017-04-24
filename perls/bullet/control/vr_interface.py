@@ -26,7 +26,14 @@ class IVR(CtrlInterface):
 
 			# Receive and render from server
 			signal = self.socket.listen_to_server()
-			self._render_from_signal(model, control_map, obj_map, signal)
+			for s in signal:
+				if s is _SHUTDOWN_HOOK:
+					raise KeyboardInterrupt('Server invokes shutdown')
+					continue
+				if s is _START_HOOK:
+					print('Server is online')
+					continue
+				self._render_from_signal(model, control_map, obj_map, s)
 
 	def _remote_comm(self, model):
 

@@ -33,24 +33,23 @@ class CtrlInterface(object):
 
 	def _render_from_signal(self, model, control_map, obj_map, signal):
 
-		for data in signal:
-			for obj, pose in data.items():
-				if (obj not in model.grippers) and (obj not in model.arms):
-					p.resetBasePositionAndOrientation(obj, pose[0], pose[1])
-				else:
-					# Check if this is pr2 instance by checking arms (pr2 does not contain arms)
-					if obj in model.grippers:
-						# Change the gripper constraint if obj is pr2 gripper (move it)
-						if not model.arms:
-							p.changeConstraint(control_map[CONSTRAINT][obj_map[GRIPPER][obj]], 
-	                        	pose[0], pose[1], maxForce=model.MAX_FORCE)
+		for obj, pose in signal.items():
+			if (obj not in model.grippers) and (obj not in model.arms):
+				p.resetBasePositionAndOrientation(obj, pose[0], pose[1])
+			else:
+				# Check if this is pr2 instance by checking arms (pr2 does not contain arms)
+				if obj in model.grippers:
+					# Change the gripper constraint if obj is pr2 gripper (move it)
+					if not model.arms:
+						p.changeConstraint(control_map[CONSTRAINT][obj_map[GRIPPER][obj]], 
+                        	pose[0], pose[1], maxForce=model.MAX_FORCE)
 
-						# If robot arm instance, just set gripper close/release
-	                    # The same thing for pr2 gripper
-						model.set_tool_states([obj], [pose[2]], POS_CTRL)
+					# If robot arm instance, just set gripper close/release
+                    # The same thing for pr2 gripper
+					model.set_tool_states([obj], [pose[2]], POS_CTRL)
 
-					if obj in model.arms:
-						model.set_tool_states([obj], [pose[2]], POS_CTRL)
+				if obj in model.arms:
+					model.set_tool_states([obj], [pose[2]], POS_CTRL)
 
 	def _msg_wrapper(self, model, obj_map):
 
