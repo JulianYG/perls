@@ -17,7 +17,6 @@ class IVR(CtrlInterface):
 		control_map, obj_map = model.create_control_mappings()
 		# Let the socket know controller IDs
 		self.socket.broadcast_to_server(model.controllers)
-
 		while True:
 			# Send to server
 			events = p.getVREvents()

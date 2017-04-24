@@ -102,7 +102,7 @@ class BulletSimulator(object):
 			for Id in self.logIds:
 				p.stopStateLogging(Id)
 		if self._interface:
-			self._interface.close_socket()
+			self._interface.close()
 		p.resetSimulation()
 		p.disconnect()
 

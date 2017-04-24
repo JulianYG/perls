@@ -27,9 +27,9 @@ class CtrlInterface(object):
 		else:
 			self._local_comm(model)
 
-	def close_socket(self):
+	def close(self):
 		if self.remote:
-			self.socket.close()
+			self.socket.disconnect()
 
 	def _render_from_signal(self, model, control_map, obj_map, signal):
 

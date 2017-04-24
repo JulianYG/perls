@@ -86,7 +86,7 @@ class RedisSocket(Socket):
                 if not self.signal_queue.full():
                     self.signal_queue.put(data)
 
-    def close(self):
+    def disconnect(self):
         if self.connected_with_server:
             self.broadcast_to_server(_SHUTDOWN_HOOK)
             self.connected_with_server = False
