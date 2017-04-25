@@ -85,7 +85,7 @@ class IKeyboard(CtrlInterface):
 		# Set same number of controllers as number of arms/grippers
 		model.set_virtual_controller(range(len(tool)))
 		control_map, _ = model.create_control_mappings()
-		pseudo_event = {0: 0}
+		pseudo_event = {0: 0, 3: 0.0}
 
 		while True:
 			events = p.getKeyboardEvents()
@@ -129,15 +129,17 @@ class IKeyboard(CtrlInterface):
 				if e == 65298 and (events[e] == p.KEY_IS_DOWN):
 					self.pos[pseudo_event[0]][2] -= 0.01
 
-			# Add rotation
-			#TODO: add gripper control for event[3], use space bar
+			# TODO: Add rotation
 			if 99 in events and (events[99] == p.KEY_IS_DOWN):
 				model.grip(control_map[GRIPPER][pseudo_event[0]])
+				pseudo_event[3] = 1.0
 
 			if 114 in events and (events[114] == p.KEY_IS_DOWN):
+				# This for robot gripper
 				model.release(control_map[GRIPPER][pseudo_event[0]])
+				# This for pr2
+				pseudo_event[3] = 0.0
 
-			pseudo_event[3] = 0.0
 			pseudo_event[1] = self.pos[pseudo_event[0]]
 
 			# If disengaged, reset position
