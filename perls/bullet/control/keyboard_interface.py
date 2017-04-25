@@ -14,6 +14,11 @@ class IKeyboard(CtrlInterface):
 	def client_communicate(self, model, task):
 
 		self.socket.connect_with_server()
+		
+		if not model.controllers:
+			tool = model.get_tool_ids()
+			model.set_virtual_controller(range(len(tool)))
+
 		control_map, obj_map = model.create_control_mappings()
 		# Let the socket know controller IDs
 		self.socket.broadcast_to_server(model.controllers)
@@ -33,6 +38,7 @@ class IKeyboard(CtrlInterface):
 					print('Server is online')
 					continue
 				self._render_from_signal(model, control_map, obj_map, s)
+			time.sleep(0.01)
 
 	def _remote_comm(self, model):
 		
@@ -53,6 +59,7 @@ class IKeyboard(CtrlInterface):
 				# Hook handlers
 				if e is _RESET_HOOK:
 					# model.reset?
+					print('VR Client connected. Initializing reset...')
 					continue
 
 				if e is _SHUTDOWN_HOOK:

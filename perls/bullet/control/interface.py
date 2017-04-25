@@ -60,11 +60,12 @@ class CtrlInterface(object):
 			# If containing arms, send back arm and gripper info
 			# since each arm must have one gripper
 			if model.arms:
+				# Use list to convert np.array cuz eval does not recognize array
 				if ID in obj_map[ARM] or ID in obj_map[GRIPPER]:
-					msg[ID] += [model.get_tool_joint_states(ID)[0][:, ctrl]]
+					msg[ID] += [list(model.get_tool_joint_states(ID)[0][:, ctrl])]
 			if model.grippers:
 				if ID in obj_map[GRIPPER]:
-					msg[ID] += [model.get_tool_joint_states(ID)[0][:, ctrl]]
+					msg[ID] += [list(model.get_tool_joint_states(ID)[0][:, ctrl])]
 		return msg
 
 	def _remote_comm(self, model):

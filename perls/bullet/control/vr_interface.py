@@ -22,7 +22,6 @@ class IVR(CtrlInterface):
 			events = p.getVREvents()
 			for e in (events):
 				self.socket.broadcast_to_server(e)
-			time.sleep(0.001)
 
 			# Receive and render from server
 			signal = self.socket.listen_to_server()
@@ -34,6 +33,7 @@ class IVR(CtrlInterface):
 					print('Server is online')
 					continue
 				self._render_from_signal(model, control_map, obj_map, s)
+			time.sleep(0.001)
 
 	def _remote_comm(self, model):
 
@@ -56,6 +56,7 @@ class IVR(CtrlInterface):
 				# Hook handlers
 				if e is _RESET_HOOK:
 					# model.reset?
+					print('VR Client connected. Initializing reset...')
 					continue
 				if e is _SHUTDOWN_HOOK:
 					print('VR Client quit')
