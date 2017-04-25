@@ -17,7 +17,7 @@ class IVR(CtrlInterface):
 		control_map, obj_map = model.create_control_mappings()
 
 		# Let the socket know controller IDs
-		self.socket.broadcast_to_server([_CTRL_HOOK, model.controllers])
+		self.socket.broadcast_to_server((_CTRL_HOOK, model.controllers))
 		while True:
 			# Send to server
 			events = p.getVREvents()
@@ -44,9 +44,10 @@ class IVR(CtrlInterface):
 		while not model.controllers:
 			events = self.socket.listen_to_client()
 			for e in events:
-				if e[0] is _CTRL_HOOK:
-					model.set_virtual_controller(e[1])
-					control_map, obj_map = model.create_control_mappings()
+				if isinstance(e, tuple):
+					if e[0] is _CTRL_HOOK:
+						model.set_virtual_controller(e[1])
+						control_map, obj_map = model.create_control_mappings()
 
 		skip_flag = model.redundant_control()
 
@@ -62,8 +63,9 @@ class IVR(CtrlInterface):
 				if e is _SHUTDOWN_HOOK:
 					print('VR Client quit')
 					continue
-				if e[0] is _CTRL_HOOK:
-					model.set_virtual_controller(e[1])
+				if isinstance(e, tuple):
+					if e[0] is _CTRL_HOOK:
+						model.set_virtual_controller(e[1])
 					continue
 				if skip_flag:
 					if e[0] == model.controllers[1]:
