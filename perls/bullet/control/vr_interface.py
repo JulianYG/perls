@@ -66,7 +66,7 @@ class IVR(CtrlInterface):
 				if isinstance(e, tuple):
 					if e[0] is _CTRL_HOOK:
 						model.set_virtual_controller(e[1])
-					continue
+						continue
 				if skip_flag:
 					if e[0] == model.controllers[1]:
 						break

@@ -50,7 +50,7 @@ class IKeyboard(CtrlInterface):
 		control_map, obj_map = model.create_control_mappings()
 
 		self.pos = [model.get_tool_pose(t)[0] for t in tool]
-		pseudo_event = {0: 0}
+		pseudo_event = {0: 0, 3: 0.0}
 
 		while True:
 			# if model.controllers:
@@ -70,7 +70,7 @@ class IKeyboard(CtrlInterface):
 				if isinstance(e, tuple):
 					if e[0] is _CTRL_HOOK:
 						model.set_virtual_controller(e[1])
-					continue
+						continue
 
 				# The event dictionary sent
 				self._keyboard_event_handler(e, model, control_map, pseudo_event)
