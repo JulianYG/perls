@@ -38,15 +38,10 @@ class IKeyboard(CtrlInterface):
 		
 		self.socket.connect_with_client()
 
-
 		tool = model.get_tool_ids()
-
 		model.set_virtual_controller(range(len(tool)))
 
-
-
 		control_map, obj_map = model.create_control_mappings()
-		tool = model.get_tool_ids()
 
 		self.pos = [model.get_tool_pose(t)[0] for t in tool]
 		pseudo_event = {0: 0}
