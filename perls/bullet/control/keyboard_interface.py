@@ -46,8 +46,6 @@ class IKeyboard(CtrlInterface):
 		self.pos = [model.get_tool_pose(t)[0] for t in tool]
 		pseudo_event = {0: 0}
 
-		## Set same number of controllers as number of arms/grippers
-		# model.set_virtual_controller(range(len(tool)))
 		while True:
 			# if model.controllers:
 			events = self.socket.listen_to_client()

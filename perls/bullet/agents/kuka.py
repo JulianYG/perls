@@ -32,6 +32,9 @@ class Kuka(Robot):
 		p.setGravity(0, 0, -9.81)
 
 	def reach(self, arm_id, eef_pos, eef_orien, fixed, null_space=True, expedite=False):
+		"""
+		Lowest level of implementation for faster operation
+		"""
 		pos_gain = 0.05
 		if expedite:
 			pos_gain = 0.5
@@ -42,6 +45,7 @@ class Kuka(Robot):
 					jointRanges=self.JOINT_RANGE, restPoses=self.REST_POSE, jointDamping=self.JOINT_DAMP)
 			else: 
 				joint_pos = p.calculateInverseKinematics(arm_id, 6, eef_pos, eef_orien)
+
 			for i in range(len(joint_pos)):
 				p.setJointMotorControl2(arm_id, i, p.POSITION_CONTROL, targetPosition=joint_pos[i], 
 					targetVelocity=0, positionGain=pos_gain, velocityGain=1.0, force=self.MAX_FORCE)

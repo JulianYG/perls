@@ -44,40 +44,77 @@ class Tool(Scene):
 				self.constraints))
 		return control_map, obj_map
 
-	def set_tool_states(self, tool_ids, vals, ctrl=POS_CTRL):
-		# TODO: change 'pos' to 0 'vel' to 1 something like [jointIndex, motor.CTRLTYP]
+	def set_tool_joint_states(self, tool_ids, vals, ctrl=POS_CTRL, **kwargs):
+		"""
+		Given (tool_id, joint_values) tuple, set the joints of tool with 
+		given values and specified control type. If the joint value is None,
+		the corresponding joint will remain previous state
+		"""
+		pd, vd, f = 0.05, 1.0, self.MAX_FORCE
 		if not isinstance(tool_ids, list):
 			tool_ids = [tool_ids]
-		assert len(tool_ids) == len(vals)
+		assert len(tool_ids) == len(vals), \
+			'Specified tool ids not matching given joint values'
 
-		for tool_id, val in zip(tool_ids, vals):
-			for jointIndex in range(p.getNumJoints(tool_id)):
-				p.setJointMotorControl2(tool_id, jointIndex, p.POSITION_CONTROL,
-					targetPosition=np.array(val)[jointIndex, ctrl], targetVelocity=0, 
-					positionGain=0.05, velocityGain=1.0, force=self.MAX_FORCE)
-	
+		if 'positionGain' in kwargs:
+			pd = kwargs['positionGain']
+		if 'velocityGain' in kwargs:
+			vd = kwargs['velocityGain']
+
+		for tool_id, value in zip(tool_ids, vals):
+			num_joints = p.getNumJoints(tool_id)
+			assert num_joints == len(value), \
+				'Given tool not having right number of joints as given values'
+
+			for jointIndex in range(num_joints):
+				if not value[jointIndex]:
+					continue
+				if ctrl is VEL_CTRL:
+					p.setJointMotorControl2(tool_id, jointIndex, ctrl, 
+						targetVelocity=value[jointIndex], 
+						positionGain=pd, velocityGain=vd, force=f)
+					continue
+				if ctrl is TORQ_CTRL:
+					p.setJointMotorControl2(tool_id, jointIndex, ctrl,
+						positionGain=pd, velocityGain=vd, 
+						force=value[jointIndex])
+					continue
+				p.setJointMotorControl2(tool_id, jointIndex, ctrl,
+					targetPosition=value[jointIndex], targetVelocity=0, 
+					positionGain=pd, velocityGain=vd, force=f)
+
 	def get_tool_joint_state(self, tool_joint_idx):
 		"""
-		Given (tool, joint) index tuple, return given joint 
+		Given (tool_id, joint) index tuple, return given joint 
 		state of given tool.
-		Return tuples of (Position, Velocity, and reaction forces) if sensor activated
+		Return tuples of ((Velocity, NaN, Position), Forces)
+		The NaN column is just used to match the convention of CTRL TYPE
+		If sensor not activated, the second item will always be list of six 0.0's
 		"""
 		joint_state = p.getJointState(tool_joint_idx[0], tool_joint_idx[1])
+		reaction_forces = [0.] * 6
 		if self.has_force_sensor:
-			return (joint_state[0], joint_state[1], joint_state[2])
-		return [joint_state[0], joint_state[1]]
+			reaction_forces = joint_state[2]
+		return [joint_state[1], 0, joint_state[0]], reaction_forces
 
 	def get_tool_joint_states(self, tool_idx):
 		"""
-		Given tool index, return all joint states of that tool
+		Given tool index, return a tuple of (joint states, reaction force) 
+		of that tool
+		Note it returns a tuple of joint states and reaction forces, 
+		where the second term is 0's when force sensor is not enabled
 		"""	
 		if isinstance(tool_idx, list):
-			joint_states = np.array([[self.get_tool_joint_state((t, 
-				i)) for i in range(p.getNumJoints(t))] for t in tool_idx])
+			joint_states = [[self.get_tool_joint_state((t, 
+				i))[0] for i in range(p.getNumJoints(t))] for t in tool_idx]
+			reaction_forces = [[self.get_tool_joint_state((t, 
+				i))[1] for i in range(p.getNumJoints(t))] for t in tool_idx]
 		else:
 			joint_states = [self.get_tool_joint_state((tool_idx, 
-				i)) for i in range(p.getNumJoints(tool_idx))]
-		return joint_states
+				i))[0] for i in range(p.getNumJoints(tool_idx))]
+			reaction_forces = [self.get_tool_joint_state((tool_idx, 
+				i))[1] for i in range(p.getNumJoints(tool_idx))]
+		return np.array(joint_states), np.array(reaction_forces)
 
 	def get_tool_link_state(self, tool_link_idx):
 		"""
@@ -89,6 +126,8 @@ class Tool(Scene):
 			tool_link_idx = (tool_link_idx[0], 
 				p.getNumJoints(tool_link_idx[0]) - 1)
 		link_state = p.getLinkState(tool_link_idx[0], tool_link_idx[1], 1)
+
+		# Cannot use np.array because pos(len 3) and orn(len 4) does not match
 		return [link_state[0], link_state[1], link_state[-2]]
 
 	def get_tool_link_states(self, tool_idx):
@@ -106,7 +145,7 @@ class Tool(Scene):
 		return link_states
 
 	def get_tool_poses(self, tool_ids, velocity=0):
-		return np.array([self.get_tool_pose(t, velocity) for t in tool_ids])
+		return [self.get_tool_pose(t, velocity) for t in tool_ids]
 
 	def setup_scene(self, task):
 		raise NotImplementedError('Each tool model must re-implement this method.')

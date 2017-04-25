@@ -46,12 +46,12 @@ class CtrlInterface(object):
 
 					# If robot arm instance, just set gripper close/release
                     # The same thing for pr2 gripper
-					model.set_tool_states([obj], [pose[2]], POS_CTRL)
+					model.set_tool_joint_states([obj], [pose[2]], POS_CTRL)
 
 				if obj in model.arms:
-					model.set_tool_states([obj], [pose[2]], POS_CTRL)
+					model.set_tool_joint_states([obj], [pose[2]], POS_CTRL)
 
-	def _msg_wrapper(self, model, obj_map):
+	def _msg_wrapper(self, model, obj_map, ctrl=POS_CTRL):
 
 		# TODO: reserve case when force sensors are enabled (3 columns joint matrix)
 		msg = {}
@@ -61,10 +61,10 @@ class CtrlInterface(object):
 			# since each arm must have one gripper
 			if model.arms:
 				if ID in obj_map[ARM] or ID in obj_map[GRIPPER]:
-					msg[ID] += [model.get_tool_joint_states(ID)]
+					msg[ID] += [model.get_tool_joint_states(ID)[0][:, ctrl]]
 			if model.grippers:
 				if ID in obj_map[GRIPPER]:
-					msg[ID] += [model.get_tool_joint_states(ID)]
+					msg[ID] += [model.get_tool_joint_states(ID)[0][:, ctrl]]
 		return msg
 
 	def _remote_comm(self, model):

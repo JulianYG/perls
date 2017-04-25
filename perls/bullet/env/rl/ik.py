@@ -14,7 +14,7 @@ def step_helper(model, action):
 	if action == None:
 		return ([0.8, 0., 1.], (0, 1, 0, 0)), 0., False, {}
 
-	joint_states = np.array(model.get_tool_joint_states(kuka))
+	joint_states = model.get_tool_joint_states(kuka)[0]
 	model.reach(kuka, action[0], action[1], fixed=True, null_space=False, expedite=True)
 	
 	reached = False

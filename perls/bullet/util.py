@@ -1,9 +1,9 @@
 import json
 import numpy as np
 
-POS_CTRL = 0
-VEL_CTRL = 1
-TORQ_CTRL = 2
+VEL_CTRL = 0
+TORQ_CTRL = 1
+POS_CTRL = 2
 
 ARM = 3
 GRIPPER = 4
