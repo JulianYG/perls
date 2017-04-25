@@ -2,7 +2,7 @@ import time
 import pybullet as p
 from bullet.control.interface import CtrlInterface
 from bullet.util import GRIPPER
-from bullet.util import _RESET_HOOK, _SHUTDOWN_HOOK, _START_HOOK
+from bullet.util import _RESET_HOOK, _SHUTDOWN_HOOK, _START_HOOK, _CTRL_HOOK
 
 class IKeyboard(CtrlInterface):
 
@@ -21,7 +21,7 @@ class IKeyboard(CtrlInterface):
 
 		control_map, obj_map = model.create_control_mappings()
 		# Let the socket know controller IDs
-		self.socket.broadcast_to_server(model.controllers)
+		self.socket.broadcast_to_server([_CTRL_HOOK, model.controllers])
 
 		while True:
 			# Send to server
@@ -67,8 +67,8 @@ class IKeyboard(CtrlInterface):
 					continue
 
 				# Get the controller signal. Make sure server starts before client
-				if isinstance(e, list):
-					model.set_virtual_controller(e)
+				if e[0] is _CTRL_HOOK:
+					model.set_virtual_controller(e[1])
 					continue
 
 				# The event dictionary sent

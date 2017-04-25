@@ -12,6 +12,7 @@ CONSTRAINT = 5
 _SHUTDOWN_HOOK = 6
 _RESET_HOOK = 7
 _START_HOOK = 8
+_CTRL_HOOK = 9
 
 def get_distance(posA, posB):
 	return np.sqrt(np.sum((np.array(posA) - np.array(posB)) ** 2))

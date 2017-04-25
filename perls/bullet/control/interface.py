@@ -1,6 +1,6 @@
 import pybullet as p
 import time
-from bullet.util import _RESET_HOOK, _SHUTDOWN_HOOK, _START_HOOK
+from bullet.util import _RESET_HOOK, _SHUTDOWN_HOOK, _START_HOOK, _CTRL_HOOK
 from bullet.util import POS_CTRL, VEL_CTRL
 from bullet.util import CONSTRAINT, GRIPPER, ARM
 
