@@ -11,7 +11,7 @@ class IKeyboard(CtrlInterface):
 		super(IKeyboard, self).__init__(host, remote)
 		self.pos = []
 
-	def event_callback(self, model, task):
+	def client_communicate(self, model, task):
 
 		self.socket.connect_with_server()
 		control_map, obj_map = model.create_control_mappings()

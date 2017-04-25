@@ -73,7 +73,7 @@ class CtrlInterface(object):
 	def _local_comm(self, model):
 		raise NotImplementedError('Each interface must re-implement this method.')
 
-	def event_callback(self, model, task):
+	def client_communicate(self, model, task):
 		raise NotImplementedError('Each interface must re-implement this method.')
 
 

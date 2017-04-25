@@ -13,7 +13,7 @@ class ISingleton(CtrlInterface):
 	def _local_comm(self, model):
 		return
 
-	def event_callback(self, model, task):
+	def client_communicate(self, model, task):
 		return
 
 	

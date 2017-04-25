@@ -1,6 +1,6 @@
 import pybullet as p
 import numpy as np
-from bullet.models.core.scene import Scene
+from bullet.agents.core.scene import Scene
 from bullet.util import *
 from bullet.util import ARM, GRIPPER, CONSTRAINT, POS_CTRL
 

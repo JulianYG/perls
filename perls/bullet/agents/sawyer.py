@@ -1,5 +1,5 @@
 import math
-from bullet.models.robot import Robot
+from bullet.agents.robot import Robot
 import pybullet as p
 from bullet.util import ARM, GRIPPER
 

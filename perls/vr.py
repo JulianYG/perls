@@ -2,7 +2,7 @@ import sys
 import time
 # import openvr
 import redis
-from bullet.models import *
+from bullet.agents import *
 from bullet.control import *
 from bullet.simulator import BulletSimulator
 import os, sys, getopt, json

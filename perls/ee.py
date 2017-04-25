@@ -5,7 +5,7 @@ import gym, bullet
 import sys, importlib
 import os, getopt, json
 import numpy as np
-from bullet.models import *
+from bullet.agents import *
 from bullet.simulator import BulletSimulator
 from bullet.env.grasp_gym import GraspBulletEnv
 from bullet.control import *
