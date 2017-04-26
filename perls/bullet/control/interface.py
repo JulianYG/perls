@@ -56,7 +56,6 @@ class CtrlInterface(object):
 
 	def _msg_wrapper(self, agent, obj_map, ctrl=POS_CTRL):
 
-		# TODO: reserve case when force sensors are enabled (3 columns joint matrix)
 		msg = {}
 		for ID in range(p.getNumBodies()):
 			msg[ID] = list(p.getBasePositionAndOrientation(ID)[:2])
@@ -77,6 +76,11 @@ class CtrlInterface(object):
 	def local_communicate(self, agent):
 		raise NotImplementedError('Each interface must re-implement this method.')
 
+	def _signal_wrapper(self, agent, obj_map, ctrl=POS_CTRL):
+		"""
+		TODO: send optical flow for streaming service
+		"""
+		pass
 
 
 	

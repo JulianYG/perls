@@ -136,13 +136,14 @@ class IKeyboard(CtrlInterface):
 
 			# TODO: Add rotation
 			if 99 in events and (events[99] == p.KEY_IS_DOWN):
+				# Using binary grippers for keyboard control
 				agent.grip(control_map[GRIPPER][pseudo_event[0]])
 				pseudo_event[3] = 1.0
 
 			if 114 in events and (events[114] == p.KEY_IS_DOWN):
-				# This for robot gripper
+				# This for binary robot gripper
 				agent.release(control_map[GRIPPER][pseudo_event[0]])
-				# This for pr2
+				# This for binary pr2 
 				pseudo_event[3] = 0.0
 
 			pseudo_event[1] = self.pos[pseudo_event[0]]
