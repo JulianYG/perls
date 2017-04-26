@@ -1,6 +1,6 @@
 {
 	"interface": "vr", 
-	"model": "kuka",
+	"model": "pr2",
 	"job": "run", 
 	"video": false, 
 	"delay": 0.0001, 
