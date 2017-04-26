@@ -96,13 +96,13 @@ class Robot(Tool):
 
 	def _reset_robot(self, robot):
 		for jointIndex in range(p.getNumJoints(robot)):
-			p.resetJointState(robot, jointIndex, self.REST_POSE[jointIndex])
+			# p.resetJointState(robot, jointIndex, self.REST_POSE[jointIndex])
 			p.setJointMotorControl2(robot, jointIndex, p.POSITION_CONTROL, 
 				self.REST_POSE[jointIndex], 0)
 
 	def _reset_robot_gripper(self, robot_gripper):
 		for jointIndex in range(p.getNumJoints(robot_gripper)):
-			p.resetJointState(robot_gripper, jointIndex, self.GRIPPER_REST_POS[jointIndex])
+			# p.resetJointState(robot_gripper, jointIndex, self.GRIPPER_REST_POS[jointIndex])
 			p.setJointMotorControl2(robot_gripper, jointIndex, 
 				p.POSITION_CONTROL, self.GRIPPER_REST_POS[jointIndex], 0)
 
