@@ -36,7 +36,7 @@ class IVR(CtrlInterface):
 				self._render_from_signal(model, control_map, obj_map, s)
 			time.sleep(0.001)
 
-	def _remote_comm(self, model):
+	def server_communicate(self, model, task):
 
 		self.socket.connect_with_client()
 
@@ -59,6 +59,7 @@ class IVR(CtrlInterface):
 				if e is _RESET_HOOK:
 					# model.reset?
 					print('VR Client connected. Initializing reset...')
+
 					continue
 				if e is _SHUTDOWN_HOOK:
 					print('VR Client quit')
@@ -75,7 +76,7 @@ class IVR(CtrlInterface):
 
 			self.socket.broadcast_to_client(self._msg_wrapper(model, obj_map))
 
-	def _local_comm(self, model):
+	def local_communicate(self, model):
 		control_map, _ = model.create_control_mappings()
 		while True:
 			events = p.getVREvents()

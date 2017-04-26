@@ -9,10 +9,10 @@ class ICmd(CtrlInterface):
 	def client_communicate(self, model, task):
 		pass
 
-	def _remote_comm(self, model):
+	def server_communicate(self, model):
 		pass
 
-	def _local_comm(self, model):
+	def local_communicate(self, model):
 
 		link_info = model.get_tool_link_states(-1)
 		# Set same number of controllers as number of arms/grippers
@@ -20,13 +20,12 @@ class ICmd(CtrlInterface):
 		self.control_map = model.create_control_mappings()
 
 		self.pos = [list(i[0]) for i in link_info]
-		self.pseudo_event = {0: 0}
+		self.pseudo_event = {0: 0, 3: 0.0}
 
 		while True:
-			events = self.server.read_msg()
 
-			self._event_handler(events, model)	
-			
+			events = self.server.read_msg()
+			self._event_handler(events, model)
 			time.sleep(0.01)
 
 			

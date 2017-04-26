@@ -40,7 +40,7 @@ class IKeyboard(CtrlInterface):
 				self._render_from_signal(model, control_map, obj_map, s)
 			time.sleep(0.01)
 
-	def _remote_comm(self, model):
+	def server_communicate(self, model, task):
 		
 		self.socket.connect_with_client()
 
@@ -77,7 +77,7 @@ class IKeyboard(CtrlInterface):
 
 			self.socket.broadcast_to_client(self._msg_wrapper(model, obj_map))
 
-	def _local_comm(self, model):
+	def local_communicate(self, model):
 		
 		tool = model.get_tool_ids()
 		self.pos = [model.get_tool_pose(t)[0] for t in tool]

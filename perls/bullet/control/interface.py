@@ -23,9 +23,12 @@ class CtrlInterface(object):
 
 	def communicate(self, model):
 		if self.remote:
-			self._remote_comm(model)
+			self.server_communicate(model)
 		else:
-			self._local_comm(model)
+			self.local_communicate(model)
+
+	def client_communicate(self, model, task):
+		raise NotImplementedError('Each interface must re-implement this method.')
 
 	def close(self):
 		if self.remote:
@@ -72,9 +75,6 @@ class CtrlInterface(object):
 		raise NotImplementedError('Each interface must re-implement this method.')
 
 	def _local_comm(self, model):
-		raise NotImplementedError('Each interface must re-implement this method.')
-
-	def client_communicate(self, model, task):
 		raise NotImplementedError('Each interface must re-implement this method.')
 
 
