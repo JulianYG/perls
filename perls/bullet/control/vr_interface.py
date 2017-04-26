@@ -54,11 +54,12 @@ class IVR(CtrlInterface):
 		while True:
 			events = self.socket.listen_to_client()
 			for e in events:
-
 				# Hook handlers
 				if e is _RESET_HOOK:
 					print('VR Client connected. Initializing reset...')
-					agent.reset(0, 0)
+					p.setInternalSimFlags(0)
+					p.resetSimulation()
+					agent.solo = len(agent.arms) == 1 or len(agent.grippers) == 1
 					agent.setup_scene(task)
 					continue
 				if e is _SHUTDOWN_HOOK:

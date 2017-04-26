@@ -50,6 +50,7 @@ class IKeyboard(CtrlInterface):
 		control_map, obj_map = agent.create_control_mappings()
 
 		self.pos = [agent.get_tool_pose(t)[0] for t in tool]
+
 		pseudo_event = {0: 0, 3: 0.0}
 
 		while True:
@@ -59,8 +60,11 @@ class IKeyboard(CtrlInterface):
 				# Hook handlers
 				if e is _RESET_HOOK:
 					print('VR Client connected. Initializing reset...')
-					agent.reset(0, 0)
+					p.setInternalSimFlags(0)
+					p.resetSimulation()
+					agent.solo = len(agent.arms) == 1 or len(agent.grippers) == 1
 					agent.setup_scene(task)
+					self.pos = [agent.get_tool_pose(t)[0] for t in tool]
 					continue
 
 				if e is _SHUTDOWN_HOOK:
