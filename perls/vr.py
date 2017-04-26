@@ -31,8 +31,8 @@ import json
 import pybullet as p
 
 ip = '172.24.68.111'
-model = pr2.PR2([0.3, -0.5], enableForceSensor=False)
-# model = kuka.Kuka([0.3, -0.5], enableForceSensor=False)
+agent = pr2.PR2([0.3, -0.5], enableForceSensor=False)
+# agent = kuka.Kuka([0.3, -0.5], enableForceSensor=False)
 
 host = redis_socket.RedisSocket(ip)
 
@@ -44,8 +44,8 @@ with open(REPO_DIR, 'r') as f:
 	repo = json.loads(f.read())
 task = repo['ball']
 
-simulator = BulletSimulator(model, interface, task, True)
-# simulator = BulletSimulator(model, interface, task, False)
+simulator = BulletSimulator(agent, interface, task, True)
+# simulator = BulletSimulator(agent, interface, task, False)
 
 simulator.run(remote_render=True)
 

@@ -7,7 +7,7 @@ from os.path import join as pjoin
 import bullet.util as utils
 from bullet.control.sockets import *
 
-def render_simulator(model, interface, task, filename, record=True, vr=False):
+def render_simulator(agent, interface, task, filename, record=True, vr=False):
 	"""
 	Models still exist in pybullet since they are only used in pybullet
 	Example interfacing with ROS:
@@ -19,7 +19,7 @@ def render_simulator(model, interface, task, filename, record=True, vr=False):
 	pybullet_simulator.record('path.bin')
 	...
 	"""
-	simulator = BulletSimulator(model, interface, task, vr)
+	simulator = BulletSimulator(agent, interface, task, vr)
 	simulator.setup(0)
 	if record:
 		simulator.run(file=filename, record=record)
@@ -40,7 +40,7 @@ def execute(*args):
 	_CONFIGS = utils.read_config(CONFIG_DIR)
 
 	interface_type = _CONFIGS['interface']
-	model = _CONFIGS['model']
+	agent = _CONFIGS['agent']
 	job = _CONFIGS['job']
 	video = _CONFIGS['video']
 	delay = _CONFIGS['delay']
@@ -58,15 +58,15 @@ def execute(*args):
 
 	fn = record_file
 	if not record_file:
-		fn = '_'.join([interface_type, model, task])
+		fn = '_'.join([interface_type, agent, task])
 
-	if model == 'kuka':
+	if agent == 'kuka':
 		# Change Fixed to True for keyboard
-		model = kuka.Kuka(init_pos, fixed=fixed, enableForceSensor=force_sensor)
-	elif model == 'sawyer':
-		model = sawyer.Sawyer(init_pos, fixed=fixed, enableForceSensor=force_sensor)
-	elif model == 'pr2':
-		model = pr2.PR2(init_pos, enableForceSensor=force_sensor)
+		agent = kuka.Kuka(init_pos, fixed=fixed, enableForceSensor=force_sensor)
+	elif agent == 'sawyer':
+		agent = sawyer.Sawyer(init_pos, fixed=fixed, enableForceSensor=force_sensor)
+	elif agent == 'pr2':
+		agent = pr2.PR2(init_pos, enableForceSensor=force_sensor)
 	else:
 		raise NotImplementedError('Invalid input: Model not recognized.')
 	
@@ -96,7 +96,7 @@ def execute(*args):
 	if remote and (job == 'record' or job == 'run'):
 		vr = False
 
-	simulator = BulletSimulator(model, interface, repo[task], vr)
+	simulator = BulletSimulator(agent, interface, repo[task], vr)
 
 	if job == 'record':
 		simulator.run(fn, True, video)

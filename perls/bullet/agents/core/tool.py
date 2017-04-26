@@ -148,31 +148,31 @@ class Tool(Scene):
 		return [self.get_tool_pose(t, velocity) for t in tool_ids]
 
 	def setup_scene(self, task):
-		raise NotImplementedError('Each tool model must re-implement this method.')
+		raise NotImplementedError('Each tool agent must re-implement this method.')
 
 	def control(self, event, ctrl_map):
-		raise NotImplementedError("Each tool model must re-implement this method.")
+		raise NotImplementedError("Each tool agent must re-implement this method.")
 
 	def reach(self, tool_id, eef_pos, eef_orien, fixed, expedite=False):
-		raise NotImplementedError('Each tool model must re-implement this method.')
+		raise NotImplementedError('Each tool agent must re-implement this method.')
 
 	def slide_grasp(self, gripper, controller_event):
-		raise NotImplementedError('Each tool model must re-implement this method.')
+		raise NotImplementedError('Each tool agent must re-implement this method.')
 
 	def grip(self, gripper):
-		raise NotImplementedError('Each tool model must re-implement this method.')
+		raise NotImplementedError('Each tool agent must re-implement this method.')
 
 	def release(self, gripper):
-		raise NotImplementedError('Each tool model must re-implement this method.')
+		raise NotImplementedError('Each tool agent must re-implement this method.')
 
 	def get_tool_ids(self):
-		raise NotImplementedError('Each tool model must re-implement this method.')
+		raise NotImplementedError('Each tool agent must re-implement this method.')
 
 	def get_tool_pose(self, tool_id, velocity=0):
-		raise NotImplementedError('Each tool model must re-implement this method.')
+		raise NotImplementedError('Each tool agent must re-implement this method.')
 
 	def _load_tools(self, pos):
-		raise NotImplementedError('Each tool model must re-implement this method.')
+		raise NotImplementedError('Each tool agent must re-implement this method.')
 
 
 	

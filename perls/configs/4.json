@@ -1,6 +1,6 @@
 {
 	"interface": "keyboard", 
-	"model": "pr2",
+	"agent": "pr2",
 	"job": "run", 
 	"video": false, 
 	"delay": 0.0001, 

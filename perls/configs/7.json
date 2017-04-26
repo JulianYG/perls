@@ -1,6 +1,6 @@
 {
 	"interface": "keyboard", 
-	"model": "kuka",
+	"agent": "kuka",
 	"job": "run", 
 	"video": false, 
 	"delay": 0.0001, 

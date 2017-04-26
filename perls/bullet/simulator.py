@@ -9,7 +9,7 @@ import bullet.util as utils
 
 class BulletSimulator(object):
 
-	def __init__(self, model, interface, task, vr=False):
+	def __init__(self, agent, interface, task, vr=False):
 		# Default settings for camera
 		self.FOCAL_POINT = (0., 0., 0.)
 		self.YAW = 35.
@@ -23,7 +23,7 @@ class BulletSimulator(object):
 		self.logIds = []
 		self.task = task
 		self._interface = interface
-		self.model = model
+		self.agent = agent
 		self.VIDEO_DIR = pjoin(os.getcwd(), 'data', 'video')
 		self.TRAJECTORY_LOG_DIR = pjoin(os.getcwd(), 'data', 'record', 'trajectory')
 		self.CONTROL_LOG_DIR = pjoin(os.getcwd(), 'data', 'record', 'control')
@@ -54,9 +54,9 @@ class BulletSimulator(object):
 					self.logIds.append(p.startStateLogging(p.STATE_LOGGING_CONTACT_POINTS,
 						pjoin(self.CONTACT_LOG_DIR, 'cont.' + file)))
 			if remote_render:
-				self._interface.client_communicate(self.model, self.task)
+				self._interface.client_communicate(self.agent, self.task)
 			else:
-				self._interface.communicate(self.model)
+				self._interface.communicate(self.agent, self.task)
 
 		except (KeyboardInterrupt, SystemExit) as e:
 			self.quit()		
@@ -131,11 +131,11 @@ class BulletSimulator(object):
 			os.makedirs(self.CONTROL_LOG_DIR)	
 		if not os.path.exists(self.CONTACT_LOG_DIR):
 			os.makedirs(self.CONTACT_LOG_DIR)
-		if not self.model.reset(flag, self.vr):
+		if not self.agent.reset(flag, self.vr):
 			if self.vr:
 				raise Exception('Cannot detect running VR application. Please try again.')
 			else:
 				raise Exception('Cannot create pybullet GUI instance. Please try again.')
-		self.model.setup_scene(self.task)
+		self.agent.setup_scene(self.task)
 
 

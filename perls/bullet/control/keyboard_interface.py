@@ -11,17 +11,17 @@ class IKeyboard(CtrlInterface):
 		super(IKeyboard, self).__init__(host, remote)
 		self.pos = []
 
-	def client_communicate(self, model, task):
+	def client_communicate(self, agent, task):
 
 		self.socket.connect_with_server()
 		
-		if not model.controllers:
-			tool = model.get_tool_ids()
-			model.set_virtual_controller(range(len(tool)))
+		if not agent.controllers:
+			tool = agent.get_tool_ids()
+			agent.set_virtual_controller(range(len(tool)))
 
-		control_map, obj_map = model.create_control_mappings()
+		control_map, obj_map = agent.create_control_mappings()
 		# Let the socket know controller IDs
-		self.socket.broadcast_to_server((_CTRL_HOOK, model.controllers))
+		self.socket.broadcast_to_server((_CTRL_HOOK, agent.controllers))
 
 		while True:
 			# Send to server
@@ -37,29 +37,30 @@ class IKeyboard(CtrlInterface):
 				if s is _START_HOOK:
 					print('Server is online')
 					continue
-				self._render_from_signal(model, control_map, obj_map, s)
+				self._render_from_signal(agent, control_map, obj_map, s)
 			time.sleep(0.01)
 
-	def server_communicate(self, model, task):
+	def server_communicate(self, agent, task):
 		
 		self.socket.connect_with_client()
 
-		tool = model.get_tool_ids()
-		model.set_virtual_controller(range(len(tool)))
+		tool = agent.get_tool_ids()
+		agent.set_virtual_controller(range(len(tool)))
 
-		control_map, obj_map = model.create_control_mappings()
+		control_map, obj_map = agent.create_control_mappings()
 
-		self.pos = [model.get_tool_pose(t)[0] for t in tool]
+		self.pos = [agent.get_tool_pose(t)[0] for t in tool]
 		pseudo_event = {0: 0, 3: 0.0}
 
 		while True:
-			# if model.controllers:
+			# if agent.controllers:
 			events = self.socket.listen_to_client()
 			for e in events:
 				# Hook handlers
 				if e is _RESET_HOOK:
-					# model.reset?
 					print('VR Client connected. Initializing reset...')
+					agent.reset(0, 0)
+					agent.setup_scene(task)
 					continue
 
 				if e is _SHUTDOWN_HOOK:
@@ -69,33 +70,33 @@ class IKeyboard(CtrlInterface):
 				# Get the controller signal. Make sure server starts before client
 				if isinstance(e, tuple):
 					if e[0] is _CTRL_HOOK:
-						model.set_virtual_controller(e[1])
+						agent.set_virtual_controller(e[1])
 						continue
 
 				# The event dictionary sent
-				self._keyboard_event_handler(e, model, control_map, pseudo_event)
+				self._keyboard_event_handler(e, agent, control_map, pseudo_event)
 
-			self.socket.broadcast_to_client(self._msg_wrapper(model, obj_map))
+			self.socket.broadcast_to_client(self._msg_wrapper(agent, obj_map))
 
-	def local_communicate(self, model):
+	def local_communicate(self, agent):
 		
-		tool = model.get_tool_ids()
-		self.pos = [model.get_tool_pose(t)[0] for t in tool]
+		tool = agent.get_tool_ids()
+		self.pos = [agent.get_tool_pose(t)[0] for t in tool]
 
 		# Set same number of controllers as number of arms/grippers
-		model.set_virtual_controller(range(len(tool)))
-		control_map, _ = model.create_control_mappings()
+		agent.set_virtual_controller(range(len(tool)))
+		control_map, _ = agent.create_control_mappings()
 		pseudo_event = {0: 0, 3: 0.0}
 
 		while True:
 			events = p.getKeyboardEvents()
-			self._keyboard_event_handler(events, model, control_map, pseudo_event)	
+			self._keyboard_event_handler(events, agent, control_map, pseudo_event)	
 			time.sleep(0.01)
 
-	def _keyboard_event_handler(self, events, model, control_map, pseudo_event):
+	def _keyboard_event_handler(self, events, agent, control_map, pseudo_event):
 
 		for e in (events):
-			if not model.solo:
+			if not agent.solo:
 				if e == 49 and (events[e] == p.KEY_IS_DOWN):
 					pseudo_event[0] = 0
 				elif e == 50 and (events[e] == p.KEY_IS_DOWN):
@@ -131,19 +132,19 @@ class IKeyboard(CtrlInterface):
 
 			# TODO: Add rotation
 			if 99 in events and (events[99] == p.KEY_IS_DOWN):
-				model.grip(control_map[GRIPPER][pseudo_event[0]])
+				agent.grip(control_map[GRIPPER][pseudo_event[0]])
 				pseudo_event[3] = 1.0
 
 			if 114 in events and (events[114] == p.KEY_IS_DOWN):
 				# This for robot gripper
-				model.release(control_map[GRIPPER][pseudo_event[0]])
+				agent.release(control_map[GRIPPER][pseudo_event[0]])
 				# This for pr2
 				pseudo_event[3] = 0.0
 
 			pseudo_event[1] = self.pos[pseudo_event[0]]
 
 			# If disengaged, reset position
-			if model.control(pseudo_event, control_map) < 0:
-				self.pos = [model.get_tool_pose(t)[0] \
-					for t in model.get_tool_ids()]
+			if agent.control(pseudo_event, control_map) < 0:
+				self.pos = [agent.get_tool_pose(t)[0] \
+					for t in agent.get_tool_ids()]
 

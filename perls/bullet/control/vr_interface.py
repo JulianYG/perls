@@ -11,13 +11,13 @@ class IVR(CtrlInterface):
 		# Default settings for camera
 		super(IVR, self).__init__(host, remote)
 
-	def client_communicate(self, model, task):
+	def client_communicate(self, agent, task):
 
 		self.socket.connect_with_server()
-		control_map, obj_map = model.create_control_mappings()
+		control_map, obj_map = agent.create_control_mappings()
 
 		# Let the socket know controller IDs
-		self.socket.broadcast_to_server((_CTRL_HOOK, model.controllers))
+		self.socket.broadcast_to_server((_CTRL_HOOK, agent.controllers))
 		while True:
 			# Send to server
 			events = p.getVREvents()
@@ -33,23 +33,23 @@ class IVR(CtrlInterface):
 				if s is _START_HOOK:
 					print('Server is online')
 					continue
-				self._render_from_signal(model, control_map, obj_map, s)
+				self._render_from_signal(agent, control_map, obj_map, s)
 			time.sleep(0.001)
 
-	def server_communicate(self, model, task):
+	def server_communicate(self, agent, task):
 
 		self.socket.connect_with_client()
 
 		# First get the controller IDs
-		while not model.controllers:
+		while not agent.controllers:
 			events = self.socket.listen_to_client()
 			for e in events:
 				if isinstance(e, tuple):
 					if e[0] is _CTRL_HOOK:
-						model.set_virtual_controller(e[1])
-						control_map, obj_map = model.create_control_mappings()
+						agent.set_virtual_controller(e[1])
+						control_map, obj_map = agent.create_control_mappings()
 
-		skip_flag = model.redundant_control()
+		skip_flag = agent.redundant_control()
 
 		while True:
 			events = self.socket.listen_to_client()
@@ -57,37 +57,37 @@ class IVR(CtrlInterface):
 
 				# Hook handlers
 				if e is _RESET_HOOK:
-					# model.reset?
 					print('VR Client connected. Initializing reset...')
-
+					agent.reset(0, 0)
+					agent.setup_scene(task)
 					continue
 				if e is _SHUTDOWN_HOOK:
 					print('VR Client quit')
 					continue
 				if isinstance(e, tuple):
 					if e[0] is _CTRL_HOOK:
-						model.set_virtual_controller(e[1])
-						print('Received VR controller IDs: {}'.format(model.controllers))
+						agent.set_virtual_controller(e[1])
+						print('Received VR controller IDs: {}'.format(agent.controllers))
 						continue
 				if skip_flag:
-					if e[0] == model.controllers[1]:
+					if e[0] == agent.controllers[1]:
 						break
-				model.control(e, control_map)
+				agent.control(e, control_map)
 
-			self.socket.broadcast_to_client(self._msg_wrapper(model, obj_map))
+			self.socket.broadcast_to_client(self._msg_wrapper(agent, obj_map))
 
-	def local_communicate(self, model):
-		control_map, _ = model.create_control_mappings()
+	def local_communicate(self, agent):
+		control_map, _ = agent.create_control_mappings()
 		while True:
 			events = p.getVREvents()
-			skip_flag = model.redundant_control()
+			skip_flag = agent.redundant_control()
 			for e in (events):
 				if skip_flag:
-					if e[0] == model.controllers[1]:
+					if e[0] == agent.controllers[1]:
 						break
-					model.control(e, control_map)
+					agent.control(e, control_map)
 				else:
-					model.control(e, control_map)
+					agent.control(e, control_map)
 
 	
 

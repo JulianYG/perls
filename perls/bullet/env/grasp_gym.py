@@ -15,7 +15,7 @@ class GraspBulletEnv(Env):
 
 	def __init__(self, simulator, step_func, time_step, realTime=False):
 	    self.simulator = simulator
-	    self.model = simulator.model
+	    self.agent = simulator.agent
 	    self.realTimeSimulation = realTime
 	    self._seed()
 	    self._step_helper = step_func
@@ -40,12 +40,12 @@ class GraspBulletEnv(Env):
 	def _reset(self):
 		if not self.realTimeSimulation:
 			self.simulator.set_time_step(self.time_step)
-		self.tools = self.model.get_tool_ids()
-		return self._step_helper(self.model, None)[0]
+		self.tools = self.agent.get_tool_ids()
+		return self._step_helper(self.agent, None)[0]
 
 	def _step(self, action):
 		if not self.realTimeSimulation:
 			self.simulator.step_simulation()
-		observation, reward, done, info = self._step_helper(self.model, action)
+		observation, reward, done, info = self._step_helper(self.agent, action)
 		return observation, reward, done, info
 
