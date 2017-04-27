@@ -76,21 +76,29 @@ class Kuka(Robot):
 			# Link 4 needs protection
 			if self.LOWER_LIMITS[6] < x < self.UPPER_LIMITS[6]:	# JOInt limits!!
 				p.setJointMotorControl2(arm_id, 6, p.POSITION_CONTROL, 
-					targetPosition=x, targetVelocity=0, positionGain=pos_gain, velocityGain=1.0, force=self.MAX_FORCE)
+					targetPosition=x, targetVelocity=0, positionGain=pos_gain, 
+					velocityGain=1.0, force=self.MAX_FORCE)
 			else:
-				p.addUserDebugText('Warning: you are flipping arm link 6', p.getLinkState(arm_id, 0)[0], 
+				p.addUserDebugText('Warning: you are flipping arm link 6', 
+					p.getLinkState(arm_id, 0)[0], 
 					textColorRGB=(255, 0, 0), lifeTime=1.5)
+
 				p.setJointMotorControl2(arm_id, 6, p.POSITION_CONTROL, 
-					targetPosition=joint_pos[6], targetVelocity=0, positionGain=pos_gain, velocityGain=1.0, force=self.MAX_FORCE)
+					targetPosition=joint_pos[6], targetVelocity=0, positionGain=pos_gain, 
+					velocityGain=1.0, force=self.MAX_FORCE)
 
 			if self.LOWER_LIMITS[5] < y < self.UPPER_LIMITS[5]:
 				p.setJointMotorControl2(arm_id, 5, p.POSITION_CONTROL, 
-					targetPosition=-y, targetVelocity=0, positionGain=pos_gain, velocityGain=1.0, force=self.MAX_FORCE)
+					targetPosition=-y, targetVelocity=0, positionGain=pos_gain, 
+					velocityGain=1.0, force=self.MAX_FORCE)
 			else:
-				p.addUserDebugText('Warning: you are flipping arm link 5', p.getLinkState(arm_id, 1)[0], 
+				p.addUserDebugText('Warning: you are flipping arm link 5', 
+					p.getLinkState(arm_id, 1)[0], 
 					textColorRGB=(255, 0, 0), lifeTime=1.5)
+				
 				p.setJointMotorControl2(arm_id, 5, p.POSITION_CONTROL, 
-					targetPosition=joint_pos[5], targetVelocity=0, positionGain=pos_gain, velocityGain=1.0, force=self.MAX_FORCE)
+					targetPosition=joint_pos[5], targetVelocity=0, positionGain=pos_gain, 
+					velocityGain=1.0, force=self.MAX_FORCE)
 
 	def _load_tools(self, ypos):
 

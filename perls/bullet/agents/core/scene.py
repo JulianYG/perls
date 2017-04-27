@@ -83,7 +83,7 @@ class Scene(object):
 		p.loadURDF("sphere_small.urdf", -0.100000,-2.255006,1.169706,0.633232,-0.000000,-0.000000,0.773962)
 		p.loadURDF("cube_small.urdf", 0.300000,-2.100000,0.850000,0.000000,0.000000,0.000000,1.000000)
 		p.loadURDF("table_square/table_square.urdf", -1.000000,0.000000,0.000000,0.000000,0.000000,0.000000,1.000000)
-		shelf = p.loadSDF("kiva_shelf/agent.sdf")[0]
+		shelf = p.loadSDF("kiva_shelf/model.sdf")[0]
 		p.resetBasePositionAndOrientation(shelf, [-0.700000,-2.200000,1.204500],[0.000000,0.000000,0.000000,1.000000])
 
 	def _load_task(self, task):

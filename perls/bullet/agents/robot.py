@@ -15,15 +15,10 @@ class Robot(Tool):
 	def get_tool_ids(self):
 		return self.arms
 
-	def get_tool_pose(self, tool_id, velocity=0):
+	def get_tool_pose(self, tool_id):
 		# End effector pose for robot
-		if velocity:
-			state = p.getLinkState(tool_id, p.getNumJoints(tool_id) - 1, 1)
-			return np.array([list(state[0]), 
-				list(state[1])] + [list(state[-2]), list(state[-1])])
-		else:
-			state = p.getLinkState(tool_id, p.getNumJoints(tool_id) - 1)
-			return [list(state[0]), list(state[1])]
+		# Returns linkWorldPos, linkWorldOrn
+		return self.get_tool_link_state((tool_id, -1))
 
 	def control(self, event, ctrl_map):
 

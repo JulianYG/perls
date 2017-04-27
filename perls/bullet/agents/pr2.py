@@ -38,15 +38,9 @@ class PR2(Tool):
 	def get_tool_ids(self):
 		return self.grippers
 
-	def get_tool_pose(self, tool_id, velocity=0):
-		state = p.getBasePositionAndOrientation(tool_id)
-		if velocity:
-			lin_vel, ang_vel = p.getBaseVelocity(tool_id)
-			return np.array([list(state[0]), 
-				list(state[1])] + [lin_vel, ang_vel])
-		else:
-			state = p.getLinkState(tool_id, p.getNumJoints(tool_id) - 1)
-			return np.array([list(state[0]), list(state[1])])
+	def get_tool_pose(self, tool_id):
+		state = p.getBasePositionAndOrientation(tool_id)	
+		return np.array([list(state[0]), list(p.getEulerFromQuaternion(state[1]))])
 
 	def control(self, event, ctrl_map):
 		"""

@@ -10,6 +10,7 @@ class Tool(Scene):
 
 		super(Tool, self).__init__()
 		self.THRESHOLD = 1.3
+		self.FIX = True
 		self.pos = pos
 		self.has_force_sensor = enableForceSensor
 
@@ -116,36 +117,48 @@ class Tool(Scene):
 				i))[1] for i in range(p.getNumJoints(tool_idx))]
 		return np.array(joint_states), np.array(reaction_forces)
 
-	def get_tool_link_state(self, tool_link_idx):
+	def get_tool_link_state(self, tool_link_idx, velocity=0):
 		"""
 		Returns pos, orn, link_velocity
 		Given (tool, joint) index tuple, return given link 
 		state of given tool. -1 indicates end effector
+		Returns linkWorldPos, linkWorldOrn (x,y,z) radians, linkWorldLinearVel, linkWorldAngularVel
+		# If velocity=0, the last two columns will be zeros
 		"""
 		if tool_link_idx[1] == -1:
 			tool_link_idx = (tool_link_idx[0], 
 				p.getNumJoints(tool_link_idx[0]) - 1)
-		link_state = p.getLinkState(tool_link_idx[0], tool_link_idx[1], 1)
+		if velocity:
+			link_state = p.getLinkState(tool_link_idx[0], tool_link_idx[1], 1)
+		else:
+			link_state = p.getLinkState(tool_link_idx[0], tool_link_idx[1], 0)
 
-		# Cannot use np.array because pos(len 3) and orn(len 4) does not match
-		return [link_state[0], link_state[1], link_state[-2]]
+		linear_vel = [0.] * 3
+		angular_vel = [0.] * 3
+		if velocity:
+			linear_vel = list(link_state[-2])
+			angular_vel = list(link_state[-1])
+		return np.array([list(link_state[0]), p.getEulerFromQuaternion(list(link_state[1])), 
+				linear_vel, angular_vel])
 
-	def get_tool_link_states(self, tool_idx):
+	def get_tool_link_states(self, tool_idx, velocity=0):
 		"""
+		TODO: Use GUIGUIGUI DIRECTDIRECT
+		Combining Keyboard & VR
+
 		Returns pos, orn, link_velocity
 		Given tool index, return all link states of given tool
-		-1 indicates end effector
-		"""
+		"""	
 		if isinstance(tool_idx, list):
-			link_states = [[self.get_tool_link_state((t, 
-				i)) for i in range(p.getNumJoints(t))] for t in tool_idx]
+			link_states = [[self.get_tool_link_state((t, i), 
+				velocity) for i in range(p.getNumJoints(t))] for t in tool_idx]
 		else:
-			link_states = [self.get_tool_link_state((tool_idx, 
-				i)) for i in range(p.getNumJoints(tool_idx))]
+			link_states = [self.get_tool_link_state((tool_idx, i), 
+				velocity) for i in range(p.getNumJoints(tool_idx))]
 		return link_states
 
-	def get_tool_poses(self, tool_ids, velocity=0):
-		return [self.get_tool_pose(t, velocity) for t in tool_ids]
+	def get_tool_poses(self, tool_ids):
+		return np.array([self.get_tool_pose(t) for t in tool_ids])
 
 	def setup_scene(self, task):
 		raise NotImplementedError('Each tool agent must re-implement this method.')
@@ -168,7 +181,7 @@ class Tool(Scene):
 	def get_tool_ids(self):
 		raise NotImplementedError('Each tool agent must re-implement this method.')
 
-	def get_tool_pose(self, tool_id, velocity=0):
+	def get_tool_pose(self, tool_id):
 		raise NotImplementedError('Each tool agent must re-implement this method.')
 
 	def _load_tools(self, pos):
