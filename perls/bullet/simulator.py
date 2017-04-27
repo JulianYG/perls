@@ -9,7 +9,7 @@ import bullet.util as utils
 
 class BulletSimulator(object):
 
-	def __init__(self, agent, interface, task, vr=False):
+	def __init__(self, agent, interface, task, scene, gui=True, vr=False):
 		# Default settings for camera
 		self.FOCAL_POINT = (0., 0., 0.)
 		self.YAW = 35.
@@ -20,8 +20,10 @@ class BulletSimulator(object):
 		self.viewMatrix = None
 		self.projectionMatrix = None
 		self.vr = vr
+		self.gui = gui
 		self.logIds = []
 		self.task = task
+		self.scene = scene
 		self._interface = interface
 		self.agent = agent
 		self.VIDEO_DIR = pjoin(os.getcwd(), 'data', 'video')
@@ -131,11 +133,31 @@ class BulletSimulator(object):
 			os.makedirs(self.CONTROL_LOG_DIR)	
 		if not os.path.exists(self.CONTACT_LOG_DIR):
 			os.makedirs(self.CONTACT_LOG_DIR)
-		if not self.agent.reset(flag, self.vr):
+		try:
+			# Use GUI for replay or non-vr interface
+			if flag or not self.vr:
+				if self.gui:
+					p.connect(p.GUI)
+				else:
+					p.connect(p.DIRECT)
+			else:
+				p.connect(p.SHARED_MEMORY)
+
+			# In order to avoid real time simulation in replay
+			# for deterministic paths
+			if flag:
+				p.setRealTimeSimulation(0)
+			else:
+				p.setRealTimeSimulation(1)
+			
+			p.setInternalSimFlags(0)
+			# convenient for video recording
+		except p.error:
 			if self.vr:
 				raise Exception('Cannot detect running VR application. Please try again.')
 			else:
 				raise Exception('Cannot create pybullet GUI instance. Please try again.')
-		self.agent.setup_scene(self.task)
+		p.resetSimulation()
+		self.agent.setup_scene(self.scene, self.task)
 
 

@@ -160,9 +160,6 @@ class Tool(Scene):
 	def get_tool_poses(self, tool_ids):
 		return np.array([self.get_tool_pose(t) for t in tool_ids])
 
-	def setup_scene(self, task):
-		raise NotImplementedError('Each tool agent must re-implement this method.')
-
 	def control(self, event, ctrl_map):
 		raise NotImplementedError("Each tool agent must re-implement this method.")
 

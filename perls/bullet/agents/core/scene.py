@@ -23,68 +23,37 @@ class Scene(object):
 		self.solo = None
 		self.MAX_FORCE = 500
 
-	def reset(self, replay, vr):
+	def init_control(self):
 		"""
 		Load task for both recording and replay
 		"""
-		try:
-			# Use GUI for replay or non-vr interface
-			if replay or not vr:
-				p.connect(p.GUI)
-			else:
-				p.connect(p.SHARED_MEMORY)
-
-			# In order to avoid real time simulation in replay
-			# for deterministic paths
-			if replay:
-				p.setRealTimeSimulation(0)
-			else:
-				p.setRealTimeSimulation(1)
-			
-			p.setInternalSimFlags(0)
-			# convenient for video recording
-		except p.error:
-			return 0
-			
-		p.resetSimulation()
 		self.controllers = [e[0] for e in p.getVREvents()]
 		self.solo = len(self.arms) == 1 or len(self.grippers) == 1
 		return 1
 
-	def setup_scene(self, task):
-		raise NotImplementedError("Each VR agent must re-implement this method.")
+	def setup_scene(self, scene, task):
+		self.init_control()
+		self._load_env(scene)
+		self._load_tools(self.pos)
+		self.default_obj_cnt = p.getNumBodies()
+		self._load_task(task)
+		self.loaded_obj = range(self.default_obj_cnt, p.getNumBodies())
+		p.setGravity(0, 0, -9.81)
 
 	def get_loaded_obj(self):
 		return self.loaded_obj
 
-	def load_min_env(self):
-		p.loadURDF("plane.urdf",0,0,0,0,0,0,1)
-
-	def load_basic_env(self):
-
-		p.loadURDF("plane.urdf",0,0,0,0,0,0,1)
-		p.loadURDF("table/table.urdf", 1.1, -0.2, 0., 0., 0., 0.707107, 0.707107)
-
-	def load_default_env(self):
-
-		p.loadURDF("plane.urdf", 0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,1.000000)
-		p.loadURDF("jenga/jenga.urdf", 1.300000,-0.700000,0.750000,0.000000,0.707107,0.000000,0.707107)
-		p.loadURDF("jenga/jenga.urdf", 1.200000,-0.700000,0.750000,0.000000,0.707107,0.000000,0.707107)
-		p.loadURDF("jenga/jenga.urdf", 1.100000,-0.700000,0.750000,0.000000,0.707107,0.000000,0.707107)
-		p.loadURDF("jenga/jenga.urdf", 1.000000,-0.700000,0.750000,0.000000,0.707107,0.000000,0.707107)
-		p.loadURDF("jenga/jenga.urdf", 0.900000,-0.700000,0.750000,0.000000,0.707107,0.000000,0.707107)
-		p.loadURDF("jenga/jenga.urdf", 0.800000,-0.700000,0.750000,0.000000,0.707107,0.000000,0.707107)
-		p.loadURDF("table/table.urdf", 1.000000,-0.200000,0.000000,0.000000,0.000000,0.707107,0.707107)
-		p.loadURDF("teddy_vhacd.urdf", 1.050000,-0.500000,0.700000,0.000000,0.000000,0.707107,0.707107)
-		p.loadURDF("cube_small.urdf", 0.950000,-0.100000,0.700000,0.000000,0.000000,0.707107,0.707107)
-		p.loadURDF("sphere_small.urdf", 0.850000,-0.400000,0.700000,0.000000,0.000000,0.707107,0.707107)
-		p.loadURDF("duck_vhacd.urdf", 0.850000,-0.400000,0.900000,0.000000,0.000000,0.707107,0.707107)
-		p.loadURDF("teddy_vhacd.urdf", -0.100000,-2.200000,0.850000,0.000000,0.000000,0.000000,1.000000)
-		p.loadURDF("sphere_small.urdf", -0.100000,-2.255006,1.169706,0.633232,-0.000000,-0.000000,0.773962)
-		p.loadURDF("cube_small.urdf", 0.300000,-2.100000,0.850000,0.000000,0.000000,0.000000,1.000000)
-		p.loadURDF("table_square/table_square.urdf", -1.000000,0.000000,0.000000,0.000000,0.000000,0.000000,1.000000)
-		shelf = p.loadSDF("kiva_shelf/model.sdf")[0]
-		p.resetBasePositionAndOrientation(shelf, [-0.700000,-2.200000,1.204500],[0.000000,0.000000,0.000000,1.000000])
+	def _load_env(self, env):
+		for obj_pose in env:
+			if len(obj_pose) == 3:
+				ob = p.loadSDF(obj_pose[0])[0]
+				p.resetBasePositionAndOrientation(ob, 
+					obj_pose[1], obj_pose[2])
+			else:
+				p.loadURDF(
+					obj_pose[0], obj_pose[1], 
+					obj_pose[2], useFixedBase=obj_pose[3]
+				)
 
 	def _load_task(self, task):
 		for obj_pose in task:

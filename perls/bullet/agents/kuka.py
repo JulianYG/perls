@@ -20,17 +20,6 @@ class Kuka(Robot):
 		self.THRESHOLD = 1.3
 		self.MAX_FORCE = 500
 
-	def setup_scene(self, task):
-		"""
-		Basic scene needed for running tasks
-		"""
-		self.load_basic_env()
-		self._load_tools(self.pos)
-		self.default_obj_cnt = p.getNumBodies()
-		self._load_task(task)
-		self.loaded_obj = range(self.default_obj_cnt, p.getNumBodies())
-		p.setGravity(0, 0, -9.81)
-
 	def reach(self, arm_id, eef_pos, eef_orien, fixed, null_space=True, expedite=False):
 		"""
 		Lowest level of implementation for faster operation

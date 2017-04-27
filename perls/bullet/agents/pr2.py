@@ -14,26 +14,15 @@ class PR2(Tool):
 		self.completed_task = {}
 		self.boxes = {}
 
-	def setup_scene(self, task):
-		"""
-		Basic scene needed for running tasks
-		"""
-		self.load_default_env()
-		self._load_tools(self.pos)
-		self.default_obj_cnt = p.getNumBodies()
-		self._load_task(task)
-		self.loaded_obj = range(self.default_obj_cnt, p.getNumBodies())
-		p.setGravity(0, 0, -9.81)
-
-		#TODO: think about extracting this bounding box out to avoid repeating code if 
-		# this gripper works, abandon demoVR
-		# Use loadArm=True/False for demoVR load_default_env 
-		# for obj in self.task:
-		# 	iD = p.loadURDF(*obj)
-		# 	p.addUserDebugText(str(iD - self.obj_cnt), 
-		# 		p.getBasePositionAndOrientation(iD)[0], textSize=8, lifeTime=0)
-		# #TODO: add labels
-		# self._load_boxes(numOfBoxes=9)
+	# 	#TODO: think about extracting this bounding box out to avoid repeating code if 
+	# 	# this gripper works, abandon demoVR
+	# 	# Use loadArm=True/False for demoVR load_default_env 
+	# 	# for obj in self.task:
+	# 	# 	iD = p.loadURDF(*obj)
+	# 	# 	p.addUserDebugText(str(iD - self.obj_cnt), 
+	# 	# 		p.getBasePositionAndOrientation(iD)[0], textSize=8, lifeTime=0)
+	# 	# #TODO: add labels
+	# 	# self._load_boxes(numOfBoxes=9)
 
 	def get_tool_ids(self):
 		return self.grippers

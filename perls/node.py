@@ -14,7 +14,7 @@ def render_simulator(agent, interface, task, filename, record=True, vr=False):
 	in ros_ctrl_IK.py:
 
 	kuka = kuka.Kuka()
-	task = repo['kitchen']
+	task = task_repo['kitchen']
 	pybullet_simulator = node.render_simulator(kuka, interface, task, 'hi.bin')
 	pybullet_simulator.record('path.bin')
 	...
@@ -30,12 +30,15 @@ def execute(*args):
 	Default load settings from command line execution. 
 	May need a configuration file for this purpose
 	"""
-	REPO_DIR = pjoin(os.getcwd(), 'data', 'task.json')
+	TASK_DIR = pjoin(os.getcwd(), 'data', 'task.json')
+	SCENE_DIR = pjoin(os.getcwd(), 'data', 'scene.json')
 	CONFIG_DIR = pjoin(os.getcwd(), 'configs', args[0] + '.json')
 	RECORD_LOG_DIR = pjoin(os.getcwd(), 'data', 'record', 'trajectory')
 
-	with open(REPO_DIR, 'r') as f:
-		repo = json.loads(f.read())
+	with open(TASK_DIR, 'r') as f:
+		task_repo = json.loads(f.read())
+	with open(SCENE_DIR, 'r') as f:
+		scene_repo = json.loads(f.read())
 
 	_CONFIGS = utils.read_config(CONFIG_DIR)
 
@@ -52,6 +55,8 @@ def execute(*args):
 	init_pos = _CONFIGS['tool_positions']
 	camera_info = _CONFIGS['camera']
 	server = _CONFIGS['server']
+	gui = _CONFIGS['gui']
+	scene = _CONFIGS['scene']
 
 	record_file = _CONFIGS['record_file_name']
 	replay_file = _CONFIGS['replay_file_name']
@@ -96,8 +101,9 @@ def execute(*args):
 	if remote and (job == 'record' or job == 'run'):
 		vr = False
 
-	simulator = BulletSimulator(agent, interface, repo[task], vr)
-
+	simulator = BulletSimulator(agent, interface, 
+								task_repo[task], scene_repo[scene],
+								gui=gui, vr=vr)
 	if job == 'record':
 		simulator.run(fn, True, video)
 	elif job == 'replay':

@@ -16,9 +16,12 @@ from os.path import join as pjoin
 
 def execute(*args):
 
-	REPO_DIR = pjoin(os.getcwd(), 'data', 'task.json')
-	with open(REPO_DIR, 'r') as f:
-			repo = json.loads(f.read())
+	TASK_DIR = pjoin(os.getcwd(), 'data', 'task.json')
+	SCENE_DIR = pjoin(os.getcwd(), 'data', 'scene.json')
+	with open(TASK_DIR, 'r') as f:
+		task_repo = json.loads(f.read())
+	with open(SCENE_DIR, 'r') as f:
+		scene_repo = json.loads(f.read())
 
 	CONFIG_DIR = pjoin(os.getcwd(), 'configs', args[0] + '.json')
 	_CONFIGS = utils.read_config(CONFIG_DIR)
@@ -33,6 +36,8 @@ def execute(*args):
 	init_pos = _CONFIGS['tool_positions']
 	camera_info = _CONFIGS['camera']
 	time_step = _CONFIGS['time_step']
+	gui = _CONFIGS['gui']
+	scene = _CONFIGS['scene']
 
 	module = eval(step_func)
 	if agent == 'kuka':
@@ -47,7 +52,7 @@ def execute(*args):
 
 	# Simulator is only used for rendering
 	# Since simulator is never run, it's ok to just pass None as interface
-	simulator = BulletSimulator(agent, None, repo[task])
+	simulator = BulletSimulator(agent, None, task_repo[task], scene_repo[scene], gui=gui)
 	simulator.set_camera_view(*camera_info)
 
 	register(
