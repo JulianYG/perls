@@ -70,6 +70,7 @@ class IKeyboard(CtrlInterface):
 					end_effector_poses = agent.get_tool_poses(tools)
 					self.pos = end_effector_poses[:, 0]
 					self.orn = end_effector_poses[:, 1]
+
 					continue
 
 				if e is _SHUTDOWN_HOOK:
