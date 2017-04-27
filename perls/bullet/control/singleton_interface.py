@@ -7,10 +7,10 @@ class ISingleton(CtrlInterface):
 	goes directly to the model, instead of through interface 
 	for comprehensive states control.
 	"""
-	def server_communicate(self, model, task):
+	def server_communicate(self, model, scene, task, gui=True):
 		return
 
-	def local_communicate(self, model):
+	def local_communicate(self, model, gui=True):
 		return
 
 	def client_communicate(self, model, task):

@@ -6,13 +6,13 @@ class ICmd(CtrlInterface):
 	def __init__(self, host, remote):
 		super(IVR, self).__init__(host, remote)
 
-	def client_communicate(self, agent, task):
+	def client_communicate(self, agent):
 		pass
 
-	def server_communicate(self, agent, task):
+	def server_communicate(self, agent, scene, task, gui=True):
 		pass
 
-	def local_communicate(self, agent):
+	def local_communicate(self, agent, gui=True):
 
 		link_info = agent.get_tool_link_states(-1)
 		# Set same number of controllers as number of arms/grippers

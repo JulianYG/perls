@@ -11,7 +11,7 @@ class IKeyboard(CtrlInterface):
 		super(IKeyboard, self).__init__(host, remote)
 		self.pos = []
 
-	def client_communicate(self, agent, task):
+	def client_communicate(self, agent):
 
 		self.socket.connect_with_server()
 		
@@ -40,7 +40,7 @@ class IKeyboard(CtrlInterface):
 				self._render_from_signal(agent, control_map, obj_map, s)
 			time.sleep(0.01)
 
-	def server_communicate(self, agent, task):
+	def server_communicate(self, agent, scene, task, gui=True):
 		
 		self.socket.connect_with_client()
 
@@ -62,10 +62,10 @@ class IKeyboard(CtrlInterface):
 				# Hook handlers
 				if e is _RESET_HOOK:
 					print('VR Client connected. Initializing reset...')
-					p.setInternalSimFlags(0)
+					# p.setInternalSimFlags(0)
 					p.resetSimulation()
 					agent.solo = len(agent.arms) == 1 or len(agent.grippers) == 1
-					agent.setup_scene(task)
+					agent.setup_scene(scene, task, gui)
 
 					end_effector_poses = agent.get_tool_poses(tools)
 					self.pos = end_effector_poses[:, 0]
@@ -84,10 +84,12 @@ class IKeyboard(CtrlInterface):
 
 				# The event dictionary sent
 				self._keyboard_event_handler(e, agent, control_map, pseudo_event)
+			if not gui:
+				p.stepSimulation()
 
 			self.socket.broadcast_to_client(self._msg_wrapper(agent, obj_map))
 
-	def local_communicate(self, agent):
+	def local_communicate(self, agent, gui=True):
 		
 		tools = agent.get_tool_ids()
 
@@ -103,6 +105,8 @@ class IKeyboard(CtrlInterface):
 		while True:
 			events = p.getKeyboardEvents()
 			self._keyboard_event_handler(events, agent, control_map, pseudo_event)	
+			if not gui:
+				p.stepSimulation()
 			time.sleep(0.01)
 
 	def _keyboard_event_handler(self, events, agent, control_map, pseudo_event):

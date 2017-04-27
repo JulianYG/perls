@@ -126,7 +126,6 @@ def usage():
 def main(argv):
 
 	config = '1'	# default config
-	remote_render = False
 
 	try:
 		opts, args = getopt.getopt(argv, 'hc:r', ['help', 'config='])

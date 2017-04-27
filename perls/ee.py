@@ -72,8 +72,8 @@ def execute(*args):
 
 		observation = env.reset()
 
-		for _ in xrange(100):
-			simulator.step_simulation()
+		# for _ in xrange(100):
+		# 	simulator.step_simulation()
 
 		done = False
 

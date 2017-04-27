@@ -11,7 +11,7 @@ class IVR(CtrlInterface):
 		# Default settings for camera
 		super(IVR, self).__init__(host, remote)
 
-	def client_communicate(self, agent, task):
+	def client_communicate(self, agent):
 
 		self.socket.connect_with_server()
 		control_map, obj_map = agent.create_control_mappings()
@@ -36,7 +36,7 @@ class IVR(CtrlInterface):
 				self._render_from_signal(agent, control_map, obj_map, s)
 			time.sleep(0.001)
 
-	def server_communicate(self, agent, task):
+	def server_communicate(self, agent, scene, task, gui=True):
 
 		self.socket.connect_with_client()
 
@@ -60,7 +60,7 @@ class IVR(CtrlInterface):
 					p.setInternalSimFlags(0)
 					p.resetSimulation()
 					agent.solo = len(agent.arms) == 1 or len(agent.grippers) == 1
-					agent.setup_scene(task)
+					agent.setup_scene(scene, task, gui)
 					continue
 				if e is _SHUTDOWN_HOOK:
 					print('VR Client quit')
@@ -74,10 +74,12 @@ class IVR(CtrlInterface):
 					if e[0] == agent.controllers[1]:
 						break
 				agent.control(e, control_map)
+			if not gui:
+				p.stepSimulation()
 
 			self.socket.broadcast_to_client(self._msg_wrapper(agent, obj_map))
 
-	def local_communicate(self, agent):
+	def local_communicate(self, agent, gui=True):
 		control_map, _ = agent.create_control_mappings()
 		while True:
 			events = p.getVREvents()
@@ -89,6 +91,8 @@ class IVR(CtrlInterface):
 					agent.control(e, control_map)
 				else:
 					agent.control(e, control_map)
+			if not gui:
+				p.stepSimulation()
 
 	
 

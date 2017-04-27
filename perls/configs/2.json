@@ -4,7 +4,7 @@
 	"job": "run", 
 	"video": false, 
 	"delay": 0.0001, 
-	"task": "ball", 
+	"task": "default", 
 	"scene": "default",
 	"remote": false, 
 	"fixed_gripper_orn": false,

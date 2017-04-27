@@ -31,7 +31,7 @@ class Scene(object):
 		self.solo = len(self.arms) == 1 or len(self.grippers) == 1
 		return 1
 
-	def setup_scene(self, scene, task):
+	def setup_scene(self, scene, task, gui=True):
 		self.init_control()
 		self._load_env(scene)
 		self._load_tools(self.pos)
@@ -39,6 +39,10 @@ class Scene(object):
 		self._load_task(task)
 		self.loaded_obj = range(self.default_obj_cnt, p.getNumBodies())
 		p.setGravity(0, 0, -9.81)
+
+		if not gui:
+			for _ in xrange(100):
+				p.stepSimulation()
 
 	def get_loaded_obj(self):
 		return self.loaded_obj

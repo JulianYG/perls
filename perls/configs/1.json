@@ -4,7 +4,7 @@
 	"job": "run", 
 	"video": false, 
 	"delay": 0.0001, 
-	"task": "ball", 
+	"task": "default", 
 	"scene": "default",
 	"remote": true, 
 	"fixed_gripper_orn": true,
@@ -14,7 +14,7 @@
 	"tool_positions": [0.3, -0.5],
 	"replay_file_name": null, 
 	"record_file_name": null,
-	"gui": true,
+	"gui": false,
 
 	"camera": [0.8, -0.2, 1, 0, -90, 120, 1, 600, 540],
 

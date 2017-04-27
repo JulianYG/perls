@@ -58,7 +58,7 @@ class BulletSimulator(object):
 			if remote_render:
 				self._interface.client_communicate(self.agent, self.task)
 			else:
-				self._interface.communicate(self.agent, self.task)
+				self._interface.communicate(self.agent, self.scene, self.task, self.gui)
 
 		except (KeyboardInterrupt, SystemExit) as e:
 			self.quit()		
@@ -158,6 +158,6 @@ class BulletSimulator(object):
 			else:
 				raise Exception('Cannot create pybullet GUI instance. Please try again.')
 		p.resetSimulation()
-		self.agent.setup_scene(self.scene, self.task)
+		self.agent.setup_scene(self.scene, self.task, self.gui)
 
 

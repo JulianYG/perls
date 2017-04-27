@@ -21,14 +21,20 @@ class CtrlInterface(object):
 	def stop_remote_ctrl(self):
 		self.remote = False
 
-	def communicate(self, agent, task):
-		if self.remote:
-			self.server_communicate(agent, task)
-		else:
-			self.local_communicate(agent)
-
-	def client_communicate(self, agent, task):
+	def client_communicate(self, agent):
 		raise NotImplementedError('Each interface must re-implement this method.')
+
+	def server_communicate(self, agent, scene, task, gui=True):
+		raise NotImplementedError('Each interface must re-implement this method.')
+
+	def local_communicate(self, agent, gui=True):
+		raise NotImplementedError('Each interface must re-implement this method.')
+
+	def communicate(self, agent, scene, task, gui):
+		if self.remote:
+			self.server_communicate(agent, scene, task, gui=gui)
+		else:
+			self.local_communicate(agent, gui=gui)
 
 	def close(self):
 		if self.remote:
@@ -70,11 +76,7 @@ class CtrlInterface(object):
 					msg[ID] += [list(agent.get_tool_joint_states(ID)[0][:, ctrl])]
 		return msg
 
-	def server_communicate(self, agent, task):
-		raise NotImplementedError('Each interface must re-implement this method.')
-
-	def local_communicate(self, agent):
-		raise NotImplementedError('Each interface must re-implement this method.')
+	
 
 	def _signal_wrapper(self, agent, obj_map, ctrl=POS_CTRL):
 		"""
@@ -84,4 +86,3 @@ class CtrlInterface(object):
 
 
 	
-
