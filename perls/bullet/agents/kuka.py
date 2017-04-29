@@ -1,6 +1,7 @@
 import math
-from bullet.agents.robot import Robot
+from bullet.agents.robot import *
 import pybullet as p
+from bullet.util import *
 
 class Kuka(Robot):
 
@@ -68,26 +69,26 @@ class Kuka(Robot):
 					targetPosition=x, targetVelocity=0, positionGain=pos_gain, 
 					velocityGain=1.0, force=self.MAX_FORCE)
 			else:
-				p.addUserDebugText('Warning: you are flipping arm link 6', 
-					p.getLinkState(arm_id, 0)[0], 
-					textColorRGB=(255, 0, 0), lifeTime=1.5)
-
 				p.setJointMotorControl2(arm_id, 6, p.POSITION_CONTROL, 
 					targetPosition=joint_pos[6], targetVelocity=0, positionGain=pos_gain, 
 					velocityGain=1.0, force=self.MAX_FORCE)
+
+				self.mark('Warning: you are flipping arm link 6', 
+					p.getLinkState(arm_id, 0)[0], time=1.5)
+				raise IllegalOperation(6)
 
 			if self.LOWER_LIMITS[5] < y < self.UPPER_LIMITS[5]:
 				p.setJointMotorControl2(arm_id, 5, p.POSITION_CONTROL, 
 					targetPosition=-y, targetVelocity=0, positionGain=pos_gain, 
 					velocityGain=1.0, force=self.MAX_FORCE)
 			else:
-				p.addUserDebugText('Warning: you are flipping arm link 5', 
-					p.getLinkState(arm_id, 1)[0], 
-					textColorRGB=(255, 0, 0), lifeTime=1.5)
-				
 				p.setJointMotorControl2(arm_id, 5, p.POSITION_CONTROL, 
 					targetPosition=joint_pos[5], targetVelocity=0, positionGain=pos_gain, 
 					velocityGain=1.0, force=self.MAX_FORCE)
+
+				self.mark('Warning: you are flipping arm link 5', 
+					p.getLinkState(arm_id, 1)[0], time=1.5)
+				raise IllegalOperation(5)
 
 	def _load_tools(self, ypos):
 

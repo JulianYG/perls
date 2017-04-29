@@ -41,10 +41,6 @@ class PR2(Tool):
 
 		self.reach(constraint_id, event[1], event[self.ORIENTATION], fixed=False)
 		self.slide_grasp(gripper_id, event)
-
-		# addMark()
-		if (event[self.BUTTONS][1] & p.VR_BUTTON_WAS_TRIGGERED):
-			p.addUserDebugText('One Item Inserted', (1.7, 0, 1), (255, 0, 0), 12, 10)
 		
 		return 0 if self.get_tool_control_deviation(gripper_id, 
 			event[1]) <= self.THRESHOLD * self.THRESHOLD else -1

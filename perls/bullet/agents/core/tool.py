@@ -2,7 +2,9 @@ import pybullet as p
 import numpy as np
 from bullet.agents.core.scene import Scene
 from bullet.util import *
-from bullet.util import ARM, GRIPPER, CONSTRAINT, POS_CTRL
+from bullet.util import ARM, GRIPPER, CONSTRAINT
+from bullet.util import VEL_CTRL, TORQ_CTRL, POS_CTRL
+# from bullet.util import IllegalOperation
 
 class Tool(Scene):
 
@@ -13,10 +15,6 @@ class Tool(Scene):
 		self.FIX = True
 		self.pos = pos
 		self.has_force_sensor = enableForceSensor
-
-	def add_marker(self, event, tool_id, color=[255,0,0]):
-		#TODO
-		pass
 
 	def set_force_sensor(self):
 		self.has_force_sensor = True

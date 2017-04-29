@@ -1,8 +1,9 @@
 import pybullet as p
 import numpy as np
-from bullet.agents.core.tool import Tool
+from bullet.agents.core.tool import *
 from bullet.util import *
 from bullet.util import ARM, GRIPPER
+# from util import IllegalOperation
 
 class Robot(Tool):
 
@@ -28,15 +29,6 @@ class Robot(Tool):
 		
 		self.slide_grasp(gripper_id, event)
 
-		#TODO: make this as another function (mark event)
-		# Add user interaction for task completion
-		if (event[self.BUTTONS][1] & p.VR_BUTTON_WAS_TRIGGERED):
-			# p.resetSimulation()
-			# p.removeAllUserDebugItems()
-			p.addUserDebugText('good job!', (1.7, 0, 1), (255, 0, 0), 12, 10)
-			# Can add line for mark here
-			# so that in saved csv file, we know when one task is complete	
-
 		# Allows robot arm control by VR controllers
 		if self.get_tool_control_deviation(arm_id, event[1]) < self.THRESHOLD:
 			self._engage(arm_id, event)
@@ -59,22 +51,22 @@ class Robot(Tool):
 
 		#TODO: Add slider for the grippers
 		analog = event[3]
-		if event[self.BUTTONS][33] & p.VR_BUTTON_WAS_TRIGGERED:
+		if event[6][33] & p.VR_BUTTON_WAS_TRIGGERED:
 			for i in range(p.getNumJoints(gripper)):
 				p.setJointMotorControl2(gripper, i, p.POSITION_CONTROL, 
 					targetPosition=self.GRIPPER_CLOZ_POS[i], force=50)
 
-		if event[self.BUTTONS][33] & p.VR_BUTTON_WAS_RELEASED:	
+		if event[6][33] & p.VR_BUTTON_WAS_RELEASED:	
 			for i in range(p.getNumJoints(gripper)):
 				p.setJointMotorControl2(gripper, i, p.POSITION_CONTROL, 
 					targetPosition=self.GRIPPER_REST_POS[i], force=50)	
 
 	def _engage(self, robot, controller_event):
 		controller_pos = controller_event[1]
-		controller_orn = controller_event[self.ORIENTATION]
+		controller_orn = controller_event[2]
 		targetPos = controller_pos
 		eef_orn = controller_orn
-		if controller_event[self.BUTTONS][32] & p.VR_BUTTON_IS_DOWN:
+		if controller_event[6][32] & p.VR_BUTTON_IS_DOWN:
 			if self.FIX:
 				self.reach(robot, targetPos, (0, 1, 0, 0), self.FIX)
 			else:
@@ -82,7 +74,7 @@ class Robot(Tool):
 
 	def _disengage(self, robot, controller_event):
 
-		if controller_event[self.BUTTONS][32] & p.VR_BUTTON_IS_DOWN:
+		if controller_event[6][32] & p.VR_BUTTON_IS_DOWN:
 			for jointIndex in range(p.getNumJoints(robot)):
 				p.setJointMotorControl2(robot, jointIndex, p.POSITION_CONTROL, 
 					targetPosition=self.REST_POSE[jointIndex], 

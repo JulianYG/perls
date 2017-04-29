@@ -1,8 +1,9 @@
 import pybullet as p
-import time
-from bullet.util import _RESET_HOOK, _SHUTDOWN_HOOK, _START_HOOK, _CTRL_HOOK
+import time, sys
+from bullet.util import _RESET_HOOK, _SHUTDOWN_HOOK, _START_HOOK, _CTRL_HOOK, _WARNING_HOOK
 from bullet.util import POS_CTRL, VEL_CTRL
 from bullet.util import CONSTRAINT, GRIPPER, ARM
+from bullet.util import *
 
 class CtrlInterface(object):
 	"""
@@ -14,6 +15,10 @@ class CtrlInterface(object):
 	def __init__(self, host, remote):
 		self.remote = remote
 		self.socket = host
+		self.BTTN = 6
+		self.ORTN = 2
+		self.POSN = 1
+		self.AAX = 3
 
 	def start_remote_ctrl(self):
 		self.remote = True
@@ -42,6 +47,7 @@ class CtrlInterface(object):
 
 	def _render_from_signal(self, agent, control_map, obj_map, signal):
 
+		# print(sys.getsizeof(signal), 'signal package size')
 		for obj, pose in signal.items():
 			if (obj not in agent.grippers) and (obj not in agent.arms):
 				p.resetBasePositionAndOrientation(obj, pose[0], pose[1])
@@ -60,6 +66,7 @@ class CtrlInterface(object):
 				if obj in agent.arms:
 					agent.set_tool_joint_states([obj], [pose[2]], POS_CTRL)
 
+
 	def _msg_wrapper(self, agent, obj_map, ctrl=POS_CTRL):
 
 		msg = {}
@@ -74,9 +81,9 @@ class CtrlInterface(object):
 			if agent.grippers:
 				if ID in obj_map[GRIPPER]:
 					msg[ID] += [list(agent.get_tool_joint_states(ID)[0][:, ctrl])]
-		return msg
 
-	
+		# print(sys.getsizeof(msg), 'message package size')
+		return msg
 
 	def _signal_wrapper(self, agent, obj_map, ctrl=POS_CTRL):
 		"""

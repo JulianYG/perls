@@ -1,9 +1,10 @@
-from bullet.control.interface import CtrlInterface
+from bullet.control.interface import *
 import pybullet as p
-import time
+import time, sys
 import redis
 from bullet.util import ARM, GRIPPER
-from bullet.util import _RESET_HOOK, _SHUTDOWN_HOOK, _START_HOOK, _CTRL_HOOK
+from bullet.util import _RESET_HOOK, _SHUTDOWN_HOOK, _START_HOOK, _CTRL_HOOK, _WARNING_HOOK
+from bullet.util import *
 
 class IVR(CtrlInterface):
 
@@ -33,6 +34,8 @@ class IVR(CtrlInterface):
 				if s is _START_HOOK:
 					print('Server is online')
 					continue
+				if isinstance(s, _WARNING_HOOK):
+					agent.mark(*_WARNING_HOOK.content)
 				self._render_from_signal(agent, control_map, obj_map, s)
 			time.sleep(0.001)
 
@@ -54,6 +57,9 @@ class IVR(CtrlInterface):
 		while True:
 			events = self.socket.listen_to_client()
 			for e in events:
+				if skip_flag:
+					if e[0] == agent.controllers[1]:
+						break
 				# Hook handlers
 				if e is _RESET_HOOK:
 					print('VR Client connected. Initializing reset...')
@@ -61,23 +67,50 @@ class IVR(CtrlInterface):
 					p.resetSimulation()
 					agent.solo = len(agent.arms) == 1 or len(agent.grippers) == 1
 					agent.setup_scene(scene, task, gui)
-					continue
-				if e is _SHUTDOWN_HOOK:
+				
+				elif e is _SHUTDOWN_HOOK:
 					print('VR Client quit')
-					continue
-				if isinstance(e, tuple):
+				
+				elif isinstance(e, tuple) and len(e) == 2:
 					if e[0] is _CTRL_HOOK:
 						agent.set_virtual_controller(e[1])
 						print('Received VR controller IDs: {}'.format(agent.controllers))
+
+				else:
+					# Add user interaction for task completion
+					# Can add line for mark here
+					# so that in saved csv file, we know when one task is complete	
+					if (e[self.BTTN][1] & p.VR_BUTTON_WAS_TRIGGERED):
+						print('User finished one task.')
+						self.socket.broadcast_to_client(
+							_WARNING_HOOK([
+								'Good job! You completed one piece of task',
+								(1.7, 0, 1), (255, 0, 0), 12, 5]
+								)
+							)
+					try:
+						agent.control(e, control_map)
+					except IllegalOperation as e:
+						print('Captured client\'s illegal operation. Notifying client')
+
+						self.socket.broadcast_to_client(
+							_WARNING_HOOK([
+								'Warning: you are flipping arm link {}'.format(e.link),
+								p.getLinkState(arm_id, 6 - e.link)[0], (255, 0, 0), 12, 1.5]
+								)
+							)
 						continue
-				if skip_flag:
-					if e[0] == agent.controllers[1]:
-						break
-				agent.control(e, control_map)
 			if not gui:
 				p.stepSimulation()
+		
 
-			self.socket.broadcast_to_client(self._msg_wrapper(agent, obj_map))
+			msg = self._msg_wrapper(agent, obj_map)
+			# time1 = time.time()
+			self.socket.broadcast_to_client(msg)
+			# ts = time.time() - time1
+			# dr = sys.getsizeof(msg) / ts
+			# print('wrapping and sending at rate {}bps'.format(dr))
+
 
 	def local_communicate(self, agent, gui=True):
 		control_map, _ = agent.create_control_mappings()
@@ -85,12 +118,15 @@ class IVR(CtrlInterface):
 			events = p.getVREvents()
 			skip_flag = agent.redundant_control()
 			for e in (events):
-				if skip_flag:
-					if e[0] == agent.controllers[1]:
-						break
-					agent.control(e, control_map)
-				else:
-					agent.control(e, control_map)
+				try:
+					if skip_flag:
+						if e[0] == agent.controllers[1]:
+							break
+						agent.control(e, control_map)
+					else:
+						agent.control(e, control_map)
+				except IllegalOperation:
+					continue
 			if not gui:
 				p.stepSimulation()
 

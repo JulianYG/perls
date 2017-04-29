@@ -14,6 +14,15 @@ _RESET_HOOK = 7
 _START_HOOK = 8
 _CTRL_HOOK = 9
 
+class IllegalOperation(Exception):
+	def __init__(self, link):
+		self.link = link
+
+
+class _WARNING_HOOK(object):
+	def __init__(self, c):
+		self.content = c
+
 def get_distance(posA, posB):
 	return np.sqrt(np.sum((np.array(posA) - np.array(posB)) ** 2))
 

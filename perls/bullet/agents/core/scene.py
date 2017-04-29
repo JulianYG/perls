@@ -8,8 +8,6 @@ class Scene(object):
 		"""
 		Other subclasses may re-implement the constructor
 		"""		
-		self.BUTTONS = 6
-		self.ORIENTATION = 2
 		self.controllers = None
 		self.default_obj_cnt = 0
 
@@ -43,6 +41,13 @@ class Scene(object):
 		if not gui:
 			for _ in xrange(100):
 				p.stepSimulation()
+
+
+	def mark(self, position, text, color=[255,0,0], font_size=12, time=10):
+		try:
+			p.addUserDebugText(text, position, color, font_size, time)
+		except Exception:
+			print(text)
 
 	def get_loaded_obj(self):
 		return self.loaded_obj
