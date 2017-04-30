@@ -24,7 +24,7 @@ class CtrlInterface(object):
 	def stop_remote_ctrl(self):
 		self.remote = False
 
-	def client_communicate(self, agent):
+	def client_communicate(self, agent, task):
 		raise NotImplementedError('Each interface must re-implement this method.')
 
 	def server_communicate(self, agent, scene, task, gui=True):

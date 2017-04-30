@@ -2,7 +2,7 @@ from bullet.interface.core import CtrlInterface
 import pybullet as p
 import time, sys
 import redis
-import numpy as np
+from numpy import array
 from bullet.utils.classes import *
 from bullet.utils.enum import *
 

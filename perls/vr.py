@@ -3,12 +3,12 @@ import time
 # import openvr
 import redis
 from bullet.agents import *
-from bullet.control import *
+from bullet.interface import *
 from bullet.simulator import BulletSimulator
 import os, sys, getopt, json
 from os.path import join as pjoin
-import bullet.util as utils
-from bullet.control.sockets import *
+import bullet.utils.helpers as utils
+from bullet.comm import *
 import json
 # openvr.init(openvr.VRApplication_Scene)
 # test
@@ -34,7 +34,7 @@ ip = '172.24.68.111'
 # agent = pr2.PR2([0.3, -0.5], enableForceSensor=False)
 agent = kuka.Kuka([0.3, -0.5], enableForceSensor=True)
 
-host = redis_socket.RedisSocket(ip)
+host = db.RedisComm(ip)
 
 interface = vr_interface.IVR(host, True)
 # interface = keyboard_interface.IKeyboard(host, True)
@@ -46,8 +46,8 @@ with open(TASK_DIR, 'r') as f:
 with open(SCENE_DIR, 'r') as f:
 	scene_repo = json.loads(f.read())
 
-scene = scene_repo['default']
-task = task_repo['default']
+scene = scene_repo['basic']
+task = task_repo['ball']
 
 
 simulator = BulletSimulator(agent, interface, task, scene, True, True)
