@@ -7,8 +7,6 @@ def execute(*args):
 
 	env = gym.make('bullet-v0')
 
-	weights = module.init_weights()
-
 	for episode in range(10000):
 
 		observation = env.reset()
@@ -19,10 +17,9 @@ def execute(*args):
 		while not done:
 			print('observation ****')
 			print(observation)
+			
 			# Define action here as well
-			action = module.predict(agent, weights)
-			# action = ([observation[0][0], observation[0][1],
-			# 	observation[0][2] + 0.1], observation[1])
+			action = ([0.8, 0, 1.0], (0, 1, 0, 0))
 			print('action ****')
 			print(action)
 			# break

@@ -16,10 +16,6 @@
 	"record_file_name": null,
 	"gui": true,
 
-	"camera": [0.8, -0.2, 1, 0, -90, 120, 1, 600, 540],
+	"camera": [0.8, -0.2, 1, 0, -90, 120, 1, 600, 540]
 
-	"num_episodes": 1000,
-	"real_time": false,
-	"step_function": "ik",
-	"time_step": 0.001
 }

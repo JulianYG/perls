@@ -24,14 +24,14 @@ def step_helper(agent, action):
 
 	return eef_pos, 1., reached, {}
 
-def init_weights():
-	# just fit the shape
-	# return np.random.random((2, 2))
-	return np.random.random((1, 3))
+# def init_weights():
+# 	# just fit the shape
+# 	# return np.random.random((2, 2))
+# 	return np.random.random((1, 3))
 
-def predict(agent, weights):
-	# Simple matmul
-	pos = []
-	# return np.array(agent.get_tool_joint_states(kuka)).dot(weights)
-	return np.array([0.8, 0., 1.]), np.array([0, 1, 0, 0])
+# def predict(agent, weights):
+# 	# Simple matmul
+# 	pos = []
+# 	# return np.array(agent.get_tool_joint_states(kuka)).dot(weights)
+# 	return np.array([0.8, 0., 1.]), np.array([0, 1, 0, 0])
 

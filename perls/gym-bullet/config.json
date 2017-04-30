@@ -4,9 +4,6 @@
 	"scene": "default",
 	"fixed_gripper_orn": true,
 
-	"server_ip": "172.24.68.111",
-	"server": "redis",
-
 	"enable_force_sensor": false,
 	"tool_positions": [0.3, -0.5],
 	"record_file_name": null,
