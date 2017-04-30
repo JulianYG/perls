@@ -1,4 +1,4 @@
-from bullet.control.interface import CtrlInterface
+from bullet.interface.core import CtrlInterface
 
 class ISingleton(CtrlInterface):
 	"""

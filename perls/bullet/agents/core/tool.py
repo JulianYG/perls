@@ -1,10 +1,8 @@
 import pybullet as p
 import numpy as np
 from bullet.agents.core.scene import Scene
-from bullet.util import *
-from bullet.util import ARM, GRIPPER, CONSTRAINT
-from bullet.util import VEL_CTRL, TORQ_CTRL, POS_CTRL
-# from bullet.util import IllegalOperation
+from bullet.utils.enum import *
+from bullet.utils.helpers import *
 
 class Tool(Scene):
 

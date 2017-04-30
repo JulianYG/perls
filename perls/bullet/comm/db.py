@@ -1,9 +1,9 @@
-from bullet.control.sockets.sock import Socket 
+from bullet.comm.core import Comm 
 from Queue import Queue as q
 import redis, sys
-from bullet.util import _START_HOOK, _SHUTDOWN_HOOK, _RESET_HOOK
+from bullet.utils.enum import *
 
-class RedisSocket(Socket):
+class RedisComm(Comm):
 
     def __init__(self, server_addr, buffer_size=4096, port=6379, db=0):
 
@@ -47,7 +47,7 @@ class RedisSocket(Socket):
         # Send reset and load env signal
         print('Waiting for client\'s response...')
         while 1:
-            if self.broadcast_to_client(_START_HOOK) > 0:
+            if self.broadcast_to_client(START_HOOK) > 0:
                 print('Connected with client.')
                 self.connected_with_client = True
                 break
@@ -61,7 +61,7 @@ class RedisSocket(Socket):
 
         print('Waiting for server\'s response...')
         while 1:
-            if self.broadcast_to_server(_RESET_HOOK) > 0:
+            if self.broadcast_to_server(RESET_HOOK) > 0:
                 print('Connected with server on {}'.format(self.ip))
                 self.connected_with_server = True
                 break
@@ -70,23 +70,21 @@ class RedisSocket(Socket):
     def _event_handler(self, msg):
         packet = msg['data']
         if isinstance(packet, str) or isinstance(packet, bytes):
-            data = eval(packet)
             if not self.event_queue.full():
-                self.event_queue.put(data)
+                self.event_queue.put(packet)
 
     def _signal_handler(self, msg):
         packet = msg['data']
         if isinstance(packet, str) or isinstance(packet, bytes):
-            data = eval(packet)
             if not self.signal_queue.full():
-                self.signal_queue.put(data)
+                self.signal_queue.put(packet)
 
     def disconnect(self):
         if self.connected_with_server:
-            self.broadcast_to_server(_SHUTDOWN_HOOK)
+            self.broadcast_to_server(SHUTDOWN_HOOK)
             self.connected_with_server = False
         if self.connected_with_client:
-            self.broadcast_to_client(_SHUTDOWN_HOOK)
+            self.broadcast_to_client(SHUTDOWN_HOOK)
             self.connected_with_client = False
         self.pubsub.unsubscribe()
         for t in self.threads:

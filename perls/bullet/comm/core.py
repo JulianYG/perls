@@ -3,7 +3,7 @@ Abstract class that connects pybullet with direct pose command input,
 such as openAI gym, or ROS command messages
 """
 
-class Socket(object):
+class Comm(object):
 
 	def broadcast_to_client(self, message):
 		raise NotImplementedError('Each messager should re-implement this method')

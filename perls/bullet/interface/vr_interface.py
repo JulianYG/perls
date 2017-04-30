@@ -1,10 +1,10 @@
-from bullet.control.interface import *
+from bullet.interface.core import CtrlInterface
 import pybullet as p
 import time, sys
 import redis
-from bullet.util import ARM, GRIPPER
-from bullet.util import _RESET_HOOK, _SHUTDOWN_HOOK, _START_HOOK, _CTRL_HOOK, _WARNING_HOOK
-from bullet.util import *
+import numpy as np
+from bullet.utils.classes import *
+from bullet.utils.enum import *
 
 class IVR(CtrlInterface):
 
@@ -18,7 +18,7 @@ class IVR(CtrlInterface):
 		control_map, obj_map = agent.create_control_mappings()
 
 		# Let the socket know controller IDs
-		self.socket.broadcast_to_server((_CTRL_HOOK, agent.controllers))
+		self.socket.broadcast_to_server((CTRL_HOOK, agent.controllers))
 		while True:
 			# Send to server
 			events = p.getVREvents()
@@ -28,14 +28,15 @@ class IVR(CtrlInterface):
 			# Receive and render from server
 			signal = self.socket.listen_to_server()
 			for s in signal:
-				if s is _SHUTDOWN_HOOK:
+				s = eval(s)
+				if s is SHUTDOWN_HOOK:
 					raise KeyboardInterrupt('Server invokes shutdown')
 					continue
-				if s is _START_HOOK:
+				if s is START_HOOK:
 					print('Server is online')
 					continue
-				if isinstance(s, _WARNING_HOOK):
-					agent.mark(*_WARNING_HOOK.content)
+				if isinstance(s, WARNING_HOOK):
+					agent.mark(*WARNING_HOOK.content)
 				self._render_from_signal(agent, control_map, obj_map, s)
 			time.sleep(0.001)
 
@@ -47,8 +48,9 @@ class IVR(CtrlInterface):
 		while not agent.controllers:
 			events = self.socket.listen_to_client()
 			for e in events:
+				e = eval(e)
 				if isinstance(e, tuple):
-					if e[0] is _CTRL_HOOK:
+					if e[0] is CTRL_HOOK:
 						agent.set_virtual_controller(e[1])
 						control_map, obj_map = agent.create_control_mappings()
 
@@ -57,22 +59,23 @@ class IVR(CtrlInterface):
 		while True:
 			events = self.socket.listen_to_client()
 			for e in events:
+				e = eval(e)
 				if skip_flag:
 					if e[0] == agent.controllers[1]:
 						break
 				# Hook handlers
-				if e is _RESET_HOOK:
+				if e is RESET_HOOK:
 					print('VR Client connected. Initializing reset...')
 					p.setInternalSimFlags(0)
 					p.resetSimulation()
 					agent.solo = len(agent.arms) == 1 or len(agent.grippers) == 1
 					agent.setup_scene(scene, task, gui)
 				
-				elif e is _SHUTDOWN_HOOK:
+				elif e is SHUTDOWN_HOOK:
 					print('VR Client quit')
 				
 				elif isinstance(e, tuple) and len(e) == 2:
-					if e[0] is _CTRL_HOOK:
+					if e[0] is CTRL_HOOK:
 						agent.set_virtual_controller(e[1])
 						print('Received VR controller IDs: {}'.format(agent.controllers))
 

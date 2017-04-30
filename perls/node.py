@@ -1,11 +1,10 @@
-import bullet
 from bullet.agents import *
-from bullet.control import *
+from bullet.interface import *
 from bullet.simulator import BulletSimulator
 import os, sys, getopt, json
 from os.path import join as pjoin
-import bullet.util as utils
-from bullet.control.sockets import *
+from bullet.utils import helpers as utils
+from bullet.comm import *
 
 def render_simulator(agent, interface, task, filename, record=True, vr=False):
 	"""
@@ -78,9 +77,9 @@ def execute(*args):
 	socket = None
 	if remote:
 		if server == 'redis':
-			socket = redis_socket.RedisSocket(ip, port=6379)
+			socket = db.RedisComm(ip, port=6379)
 		elif server == 'tcp':
-			socket = tcp_socket.TCPSocket(ip)
+			socket = tcp.TCPComm(ip)
 		elif server == 'cmd':
 			raise NotImplementedError('Currently not implemented')
 		else:

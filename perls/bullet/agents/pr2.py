@@ -1,8 +1,7 @@
 import pybullet as p
 from bullet.agents.core.tool import Tool
 import numpy as np
-from bullet.util import *
-from bullet.util import CONSTRAINT, GRIPPER
+from bullet.utils.enum import *
 
 class PR2(Tool):
 
@@ -39,7 +38,7 @@ class PR2(Tool):
 		constraint_id = ctrl_map[CONSTRAINT][ctrl_id]
 		gripper_id = ctrl_map[GRIPPER][ctrl_id]
 
-		self.reach(constraint_id, event[1], event[self.ORIENTATION], fixed=False)
+		self.reach(constraint_id, event[1], event[2], fixed=False)
 		self.slide_grasp(gripper_id, event)
 		
 		return 0 if self.get_tool_control_deviation(gripper_id, 
@@ -54,26 +53,26 @@ class PR2(Tool):
 		"""
 		A hard grip without analog slide.
 		"""
-		p.setJointMotorControl2(gripper, 0, p.POSITION_CONTROL, 
+		p.setJointMotorControl2(gripper, 0, POS_CTRL, 
 			targetPosition=0, force=5.0)
-		p.setJointMotorControl2(gripper, 2, p.POSITION_CONTROL, 
+		p.setJointMotorControl2(gripper, 2, POS_CTRL, 
 			targetPosition=0, force=5.0)
 
 	def release(self, gripper):
 		"""
 		A forced release without analog slide.
 		"""
-		p.setJointMotorControl2(gripper, 0, p.POSITION_CONTROL, 
+		p.setJointMotorControl2(gripper, 0, POS_CTRL, 
 			targetPosition=self.gripper_max_joint, force=10)
-		p.setJointMotorControl2(gripper, 2, p.POSITION_CONTROL, 
+		p.setJointMotorControl2(gripper, 2, POS_CTRL, 
 			targetPosition=self.gripper_max_joint, force=10)
 
 	def slide_grasp(self, gripper, event):
 		# Setup gliders
 		analog_slide = self.gripper_max_joint * (1 - event[3])
-		p.setJointMotorControl2(gripper, 0, p.POSITION_CONTROL, 
+		p.setJointMotorControl2(gripper, 0, POS_CTRL, 
 			targetPosition=analog_slide, force=5.0)
-		p.setJointMotorControl2(gripper, 2, p.POSITION_CONTROL, 
+		p.setJointMotorControl2(gripper, 2, POS_CTRL, 
 			targetPosition=analog_slide, force=5.0)
 
 	def _load_tools(self, pos):

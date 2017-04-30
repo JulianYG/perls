@@ -1,9 +1,7 @@
 import pybullet as p
 import time, sys
-from bullet.util import _RESET_HOOK, _SHUTDOWN_HOOK, _START_HOOK, _CTRL_HOOK, _WARNING_HOOK
-from bullet.util import POS_CTRL, VEL_CTRL
-from bullet.util import CONSTRAINT, GRIPPER, ARM
-from bullet.util import *
+from bullet.utils.classes import *
+from bullet.utils.enum import *
 
 class CtrlInterface(object):
 	"""
@@ -77,10 +75,11 @@ class CtrlInterface(object):
 			if agent.arms:
 				# Use list to convert np.array cuz eval does not recognize array
 				if ID in obj_map[ARM] or ID in obj_map[GRIPPER]:
-					msg[ID] += [list(agent.get_tool_joint_states(ID)[0][:, ctrl])]
+					# Sending over numpy array. Make sure the socket eval handles
+					msg[ID] += [agent.get_tool_joint_states(ID)[0][:, ctrl]]
 			if agent.grippers:
 				if ID in obj_map[GRIPPER]:
-					msg[ID] += [list(agent.get_tool_joint_states(ID)[0][:, ctrl])]
+					msg[ID] += [agent.get_tool_joint_states(ID)[0][:, ctrl]]
 
 		# print(sys.getsizeof(msg), 'message package size')
 		return msg

@@ -1,6 +1,5 @@
-import time
 import pybullet as p
-from bullet.control.interface import CtrlInterface
+from bullet.interface.core import CtrlInterface
 
 class IJoystick(CtrlInterface):
 

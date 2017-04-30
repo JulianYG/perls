@@ -1,28 +1,6 @@
 import json
 import numpy as np
 
-VEL_CTRL = 0
-TORQ_CTRL = 1
-POS_CTRL = 2
-
-ARM = 3
-GRIPPER = 4
-CONSTRAINT = 5
-
-_SHUTDOWN_HOOK = 6
-_RESET_HOOK = 7
-_START_HOOK = 8
-_CTRL_HOOK = 9
-
-class IllegalOperation(Exception):
-	def __init__(self, link):
-		self.link = link
-
-
-class _WARNING_HOOK(object):
-	def __init__(self, c):
-		self.content = c
-
 def get_distance(posA, posB):
 	return np.sqrt(np.sum((np.array(posA) - np.array(posB)) ** 2))
 
@@ -72,4 +50,3 @@ def parse_log(filename, verbose=True):
 		      	log.append(record)
 
 	  	return log
-

@@ -6,7 +6,7 @@
 	"delay": 0.0001, 
 	"task": "default", 
 	"scene": "default",
-	"remote": true, 
+	"remote": false, 
 	"fixed_gripper_orn": true,
 	"server_ip": "172.24.68.111",
 	"server": "redis",
@@ -14,7 +14,7 @@
 	"tool_positions": [0.3, -0.5],
 	"replay_file_name": null, 
 	"record_file_name": null,
-	"gui": false,
+	"gui": true,
 
 	"camera": [0.8, -0.2, 1, 0, -90, 120, 1, 600, 540],
 

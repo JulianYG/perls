@@ -1,9 +1,9 @@
-from bullet.control.sockets.sock import Socket 
+from bullet.comm.core import Comm
 
-class RosSocket(Socket):
+class RosComm(Comm):
 
 	def __init__(self):
-		super(RosHub, self).__init__()
+		super(RosComm, self).__init__()
 
 	def broadcast_to_client(self, message):
 		raise NotImplementedError('Each messager should re-implement this method')

@@ -5,7 +5,7 @@ from datetime import datetime
 from time import strftime
 from matplotlib import pyplot as plt
 from os.path import join as pjoin
-import bullet.util as utils
+from bullet.utils import helpers as utils
 
 class BulletSimulator(object):
 

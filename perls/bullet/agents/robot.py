@@ -1,9 +1,7 @@
 import pybullet as p
 import numpy as np
 from bullet.agents.core.tool import *
-from bullet.util import *
-from bullet.util import ARM, GRIPPER
-# from util import IllegalOperation
+from bullet.utils.enum import *
 
 class Robot(Tool):
 
@@ -39,12 +37,12 @@ class Robot(Tool):
 
 	def grip(self, gripper):
 		for i in range(p.getNumJoints(gripper)):
-			p.setJointMotorControl2(gripper, i, p.POSITION_CONTROL, 
+			p.setJointMotorControl2(gripper, i, POS_CTRL, 
 				targetPosition=self.GRIPPER_CLOZ_POS[i], force=50)
 
 	def release(self, gripper):
 		for i in range(p.getNumJoints(gripper)):
-			p.setJointMotorControl2(gripper, i, p.POSITION_CONTROL, 
+			p.setJointMotorControl2(gripper, i, POS_CTRL, 
 				targetPosition=self.GRIPPER_REST_POS[i], force=50)
 
 	def slide_grasp(self, gripper, event):
@@ -53,12 +51,12 @@ class Robot(Tool):
 		analog = event[3]
 		if event[6][33] & p.VR_BUTTON_WAS_TRIGGERED:
 			for i in range(p.getNumJoints(gripper)):
-				p.setJointMotorControl2(gripper, i, p.POSITION_CONTROL, 
+				p.setJointMotorControl2(gripper, i, POS_CTRL, 
 					targetPosition=self.GRIPPER_CLOZ_POS[i], force=50)
 
 		if event[6][33] & p.VR_BUTTON_WAS_RELEASED:	
 			for i in range(p.getNumJoints(gripper)):
-				p.setJointMotorControl2(gripper, i, p.POSITION_CONTROL, 
+				p.setJointMotorControl2(gripper, i, POS_CTRL, 
 					targetPosition=self.GRIPPER_REST_POS[i], force=50)	
 
 	def _engage(self, robot, controller_event):
@@ -76,7 +74,7 @@ class Robot(Tool):
 
 		if controller_event[6][32] & p.VR_BUTTON_IS_DOWN:
 			for jointIndex in range(p.getNumJoints(robot)):
-				p.setJointMotorControl2(robot, jointIndex, p.POSITION_CONTROL, 
+				p.setJointMotorControl2(robot, jointIndex, POS_CTRL, 
 					targetPosition=self.REST_POSE[jointIndex], 
 					targetVelocity=0, positionGain=0.03, velocityGain=1,
 					force=self.MAX_FORCE)
@@ -84,14 +82,14 @@ class Robot(Tool):
 	def _reset_robot(self, robot):
 		for jointIndex in range(p.getNumJoints(robot)):
 			# p.resetJointState(robot, jointIndex, self.REST_POSE[jointIndex])
-			p.setJointMotorControl2(robot, jointIndex, p.POSITION_CONTROL, 
+			p.setJointMotorControl2(robot, jointIndex, POS_CTRL, 
 				self.REST_POSE[jointIndex], 0)
 
 	def _reset_robot_gripper(self, robot_gripper):
 		for jointIndex in range(p.getNumJoints(robot_gripper)):
 			# p.resetJointState(robot_gripper, jointIndex, self.GRIPPER_REST_POS[jointIndex])
 			p.setJointMotorControl2(robot_gripper, jointIndex, 
-				p.POSITION_CONTROL, self.GRIPPER_REST_POS[jointIndex], 0)
+				POS_CTRL, self.GRIPPER_REST_POS[jointIndex], 0)
 
 
 

@@ -1,11 +1,10 @@
-from bullet.control.sockets.sock import Socket 
-import redis
+from bullet.comm.core import Comm
 import socket, select
 
 """
 This class is deprecated
 """
-class TCPSocket(Socket):
+class TCPComm(Comm):
 
     def __init__(self, server_addr, buffer_size=4096, port=5000):
 

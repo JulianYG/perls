@@ -1,7 +1,7 @@
-import math
+import numpy as np
 from bullet.agents.robot import Robot
 import pybullet as p
-from bullet.util import ARM, GRIPPER
+from bullet.utils.enum import *
 
 class Sawyer(Robot):
 
@@ -44,7 +44,7 @@ class Sawyer(Robot):
 		# 	# 	lowerLimits=self.LOWER_LIMITS, upperLimits=self.UPPER_LIMITS, 
 		# 	# 	jointRanges=self.JOINT_RANGE, restPoses=self.REST_POSE, jointDamping=self.JOINT_DAMP)
 		# 	for i in range(len(joint_pos)):
-		# 		p.setJointMotorControl2(arm_id, i, p.POSITION_CONTROL, 
+		# 		p.setJointMotorControl2(arm_id, i, POS_CTRL, 
 		# 			targetPosition=joint_pos[i], targetVelocity=0, positionGain=0.05, velocityGain=1.0, force=self.MAX_FORCE)
 		# else:
 		# 	# joint_pos = p.calculateInverseKinematics(arm_id, 6, eef_pos, 
@@ -53,7 +53,7 @@ class Sawyer(Robot):
 			
 		# 	# Only need links 1- 5, no need for joint 4-6 with pure position IK
 		# 	for i in range(len(joint_pos) - 3):
-		# 		p.setJointMotorControl2(arm_id, i, p.POSITION_CONTROL, 
+		# 		p.setJointMotorControl2(arm_id, i, POS_CTRL, 
 		# 			targetPosition=joint_pos[i], targetVelocity=0, positionGain=0.05, velocityGain=1.0, force=self.MAX_FORCE)
 			
 		# 	x, y, z = p.getEulerFromQuaternion(eef_orien)
@@ -62,21 +62,21 @@ class Sawyer(Robot):
 
 			# Link 4 needs protection
 			# if self.LOWER_LIMITS[6] < x < self.UPPER_LIMITS[6]:	# JOInt limits!!
-			# 	p.setJointMotorControl2(arm_id, 6, p.POSITION_CONTROL, 
+			# 	p.setJointMotorControl2(arm_id, 6, POS_CTRL, 
 			# 		targetPosition=x, targetVelocity=0, positionGain=0.02, velocityGain=1, force=self.MAX_FORCE)
 			# else:
 			# 	p.addUserDebugText('Warning: you are flipping arm link 6', p.getLinkState(arm_id, 0)[0], 
 			# 		textColorRGB=(255, 0, 0), lifeTime=1.5)
-			# 	p.setJointMotorControl2(arm_id, 6, p.POSITION_CONTROL, 
+			# 	p.setJointMotorControl2(arm_id, 6, POS_CTRL, 
 			# 		targetPosition=joint_pos[6], targetVelocity=0, positionGain=0.01, velocityGain=1.0, force=self.MAX_FORCE)
 
 			# if self.LOWER_LIMITS[5] < y < self.UPPER_LIMITS[5]:
-			# 	p.setJointMotorControl2(arm_id, 5, p.POSITION_CONTROL, 
+			# 	p.setJointMotorControl2(arm_id, 5, POS_CTRL, 
 			# 		targetPosition=-y, targetVelocity=0, positionGain=0.03, velocityGain=1.0, force=self.MAX_FORCE)
 			# else:
 			# 	p.addUserDebugText('Warning: you are flipping arm link 5', p.getLinkState(arm_id, 1)[0], 
 			# 		textColorRGB=(255, 0, 0), lifeTime=1.5)
-			# 	p.setJointMotorControl2(arm_id, 5, p.POSITION_CONTROL, 
+			# 	p.setJointMotorControl2(arm_id, 5, POS_CTRL, 
 			# 		targetPosition=joint_pos[5], targetVelocity=0, positionGain=0.01, velocityGain=1.0, force=self.MAX_FORCE)
 
 	def _load_tools(self, ypos):

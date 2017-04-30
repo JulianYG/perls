@@ -5,7 +5,7 @@
 	"video": false, 
 	"delay": 0.0001, 
 	"task": "default", 
-	"scene": "kitchen",
+	"scene": "basic",
 	"remote": true, 
 	"fixed_gripper_orn": true,
 	"server_ip": "172.24.68.111",

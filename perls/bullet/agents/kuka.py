@@ -1,7 +1,7 @@
-import math
+import numpy as np
 from bullet.agents.robot import *
 import pybullet as p
-from bullet.util import *
+from bullet.utils.enum import *
 
 class Kuka(Robot):
 
@@ -13,7 +13,7 @@ class Kuka(Robot):
 		self.LOWER_LIMITS = [-.967, -2.0, -2.96, 0.19, -2.96, -2.09, -3.05]
 		self.UPPER_LIMITS = [.96, 2.0, 2.96, 2.29, 2.96, 2.09, 3.05]
 		self.JOINT_RANGE = [5.8, 4, 5.8, 4, 5.8, 4, 6]
-		self.REST_POSE = [0, 0, 0, math.pi / 2, 0, -math.pi * 0.66, 0]
+		self.REST_POSE = [0, 0, 0, np.pi / 2, 0, -np.pi * 0.66, 0]
 		self.JOINT_DAMP = [.1, .1, .1, .1, .1, .1, .1]
 		self.GRIPPER_REST_POS = [0., -0.011130, -0.206421, 0.205143, -0.009999, 0., -0.010055, 0.]
 		self.GRIPPER_CLOZ_POS = [0.0, -0.047564246423083795, 0.6855956234759611, 
@@ -21,7 +21,8 @@ class Kuka(Robot):
 		self.THRESHOLD = 1.3
 		self.MAX_FORCE = 500
 
-	def reach(self, arm_id, eef_pos, eef_orien, fixed, null_space=True, expedite=False):
+	def reach(self, arm_id, eef_pos, eef_orien, fixed, ctrl=POS_CTRL, 
+			null_space=True, expedite=False):
 		"""
 		Lowest level of implementation for faster operation
 		"""
@@ -37,7 +38,7 @@ class Kuka(Robot):
 				joint_pos = p.calculateInverseKinematics(arm_id, 6, eef_pos, eef_orien)
 
 			for i in range(len(joint_pos)):
-				p.setJointMotorControl2(arm_id, i, p.POSITION_CONTROL, targetPosition=joint_pos[i], 
+				p.setJointMotorControl2(arm_id, i, ctrl, targetPosition=joint_pos[i], 
 					targetVelocity=0, positionGain=pos_gain, velocityGain=1.0, force=self.MAX_FORCE)
 		else:
 			if null_space:
@@ -48,14 +49,14 @@ class Kuka(Robot):
 				joint_pos = p.calculateInverseKinematics(arm_id, 6, eef_pos)
 			if eef_orien == None:
 				for i in range(len(joint_pos)):
-					p.setJointMotorControl2(arm_id, i, p.POSITION_CONTROL, 
+					p.setJointMotorControl2(arm_id, i, ctrl, 
 						targetPosition=joint_pos[i], targetVelocity=0, positionGain=pos_gain, 
 						velocityGain=1.0, force=self.MAX_FORCE)
 				return
 
 			# Only need links 1- 5, no need for joint 4-6 with pure position IK
 			for i in range(len(joint_pos) - 3):
-				p.setJointMotorControl2(arm_id, i, p.POSITION_CONTROL, 
+				p.setJointMotorControl2(arm_id, i, ctrl, 
 					targetPosition=joint_pos[i], targetVelocity=0, positionGain=pos_gain, velocityGain=1.0, 
 						force=self.MAX_FORCE)
 			
@@ -65,11 +66,11 @@ class Kuka(Robot):
 
 			# Link 4 needs protection
 			if self.LOWER_LIMITS[6] < x < self.UPPER_LIMITS[6]:	# JOInt limits!!
-				p.setJointMotorControl2(arm_id, 6, p.POSITION_CONTROL, 
+				p.setJointMotorControl2(arm_id, 6, ctrl, 
 					targetPosition=x, targetVelocity=0, positionGain=pos_gain, 
 					velocityGain=1.0, force=self.MAX_FORCE)
 			else:
-				p.setJointMotorControl2(arm_id, 6, p.POSITION_CONTROL, 
+				p.setJointMotorControl2(arm_id, 6, ctrl, 
 					targetPosition=joint_pos[6], targetVelocity=0, positionGain=pos_gain, 
 					velocityGain=1.0, force=self.MAX_FORCE)
 
@@ -78,11 +79,11 @@ class Kuka(Robot):
 				raise IllegalOperation(6)
 
 			if self.LOWER_LIMITS[5] < y < self.UPPER_LIMITS[5]:
-				p.setJointMotorControl2(arm_id, 5, p.POSITION_CONTROL, 
+				p.setJointMotorControl2(arm_id, 5, ctrl, 
 					targetPosition=-y, targetVelocity=0, positionGain=pos_gain, 
 					velocityGain=1.0, force=self.MAX_FORCE)
 			else:
-				p.setJointMotorControl2(arm_id, 5, p.POSITION_CONTROL, 
+				p.setJointMotorControl2(arm_id, 5, ctrl, 
 					targetPosition=joint_pos[5], targetVelocity=0, positionGain=pos_gain, 
 					velocityGain=1.0, force=self.MAX_FORCE)
 
