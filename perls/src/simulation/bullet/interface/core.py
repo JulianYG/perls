@@ -56,7 +56,7 @@ class CtrlInterface(object):
 		else:	
 			self._render_from_signal(agent, control_map, obj_map, signal)
 
-	def _event_loop(self, event, scene, agent, gui, skip=False):
+	def _event_loop(self, event, scene, task, agent, gui, skip=False):
 		if skip:
 			if event[0] == agent.controllers[1]:
 				return 0
