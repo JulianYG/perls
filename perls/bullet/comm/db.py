@@ -88,6 +88,6 @@ class RedisComm(Comm):
             self.connected_with_client = False
         for t in self.threads:
             t.stop()
-        self.pubsub.close()
+        self.pubsub.unsubscribe()
 
 
