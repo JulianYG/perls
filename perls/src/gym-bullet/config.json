@@ -1,7 +1,7 @@
 {
 	"agent": "kuka",
 	"task": "default", 
-	"scene": "default",
+	"scene": "basic",
 	"fixed_gripper_orn": true,
 
 	"enable_force_sensor": false,

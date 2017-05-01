@@ -29,10 +29,10 @@ def execute(*args):
 	Default load settings from command line execution. 
 	May need a configuration file for this purpose
 	"""
-	TASK_DIR = pjoin(os.getcwd(), 'data', 'task.json')
-	SCENE_DIR = pjoin(os.getcwd(), 'data', 'scene.json')
+	TASK_DIR = pjoin(os.getcwd(), 'configs', 'task.json')
+	SCENE_DIR = pjoin(os.getcwd(), 'configs', 'scene.json')
 	CONFIG_DIR = pjoin(os.getcwd(), 'configs', args[0] + '.json')
-	RECORD_LOG_DIR = pjoin(os.getcwd(), 'data', 'record', 'trajectory')
+	RECORD_LOG_DIR = pjoin(os.getcwd(), 'log', 'record', 'trajectory')
 
 	with open(TASK_DIR, 'r') as f:
 		task_repo = json.loads(f.read())

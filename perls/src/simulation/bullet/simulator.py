@@ -26,10 +26,10 @@ class BulletSimulator(object):
 		self.scene = scene
 		self._interface = interface
 		self.agent = agent
-		self.VIDEO_DIR = pjoin(os.getcwd(), 'data', 'video')
-		self.TRAJECTORY_LOG_DIR = pjoin(os.getcwd(), 'data', 'record', 'trajectory')
-		self.CONTROL_LOG_DIR = pjoin(os.getcwd(), 'data', 'record', 'control')
-		self.CONTACT_LOG_DIR = pjoin(os.getcwd(), 'data', 'record', 'contact')
+		self.VIDEO_DIR = pjoin(os.getcwd(), 'log', 'video')
+		self.TRAJECTORY_LOG_DIR = pjoin(os.getcwd(), 'log', 'record', 'trajectory')
+		self.CONTROL_LOG_DIR = pjoin(os.getcwd(), 'log', 'record', 'control')
+		self.CONTACT_LOG_DIR = pjoin(os.getcwd(), 'log', 'record', 'contact')
 
 	def set_time_step(self, time_step):
 		p.setRealTimeSimulation(0)
