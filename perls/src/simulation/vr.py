@@ -30,7 +30,8 @@ import json
 
 import pybullet as p
 
-ip = 'localhost'
+# ip = 'localhost'
+ip = '10.35.1.187'
 # ip = '172.24.68.111'
 # ip = '55.185.88.171'
 # agent = pr2.PR2([0.3, -0.5], enableForceSensor=False)

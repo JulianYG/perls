@@ -64,7 +64,7 @@ class IKeyboard(CtrlInterface):
 					self.pos = end_effector_poses[:, 0]
 					self.orn = [[0,0,0],[0,0,0]]
 					continue
-				if self._event_loop(e, agent, gui) < 0:
+				if self._event_loop(e, scene, agent, gui) < 0:
 					# The event dictionary sent
 					self._keyboard_event_handler(e, agent, control_map, pseudo_event)
 			if not gui:

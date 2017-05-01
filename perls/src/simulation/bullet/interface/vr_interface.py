@@ -28,6 +28,7 @@ class IVR(CtrlInterface):
 			# Receive and render from server
 			signal = self.socket.listen_to_server()
 			for s in signal:
+				s = eval(s)
 				self._signal_loop(s, agent, control_map, obj_map)
 
 			time.sleep(0.001)
@@ -52,7 +53,7 @@ class IVR(CtrlInterface):
 			events = self.socket.listen_to_client()
 			for event in events:
 				event = eval(event)
-				if self._event_loop(event, agent, gui, skip=skip_flag) < 0:
+				if self._event_loop(event, scene, agent, gui, skip=skip_flag) < 0:
 					try:
 						agent.control(event, control_map)
 					except IllegalOperation as e:
