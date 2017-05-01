@@ -39,7 +39,7 @@ class Scene(object):
 		p.setGravity(0, 0, -9.81)
 
 		if not gui:
-			for _ in xrange(100):
+			for _ in range(100):
 				p.stepSimulation()
 
 
