@@ -60,7 +60,7 @@ class Kuka(Robot):
 					targetPosition=joint_pos[i], targetVelocity=0, positionGain=pos_gain, velocityGain=1.0, 
 						force=self.MAX_FORCE)
 			
-			x, y, z = p.getEulerFromQuaternion(eef_orien)
+			x, y, _ = p.getEulerFromQuaternion(eef_orien)
 
 			#TO-DO: add wait till fit
 

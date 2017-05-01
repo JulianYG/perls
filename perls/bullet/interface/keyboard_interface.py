@@ -154,8 +154,8 @@ class IKeyboard(CtrlInterface):
 			# Update position
 			pseudo_event[1] = self.pos[pseudo_event[0]]
 			# Update orientation with limits
-			self.orn = [np.arcsin(np.sin(rad)) for rad in self.orn]
 
+			self.orn = [np.arcsin(np.sin(rad)) for rad in self.orn]
 			if not agent.FIX:
 				pseudo_event[2] = p.getQuaternionFromEuler(self.orn[pseudo_event[0]])
 
