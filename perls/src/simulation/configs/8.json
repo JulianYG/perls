@@ -14,7 +14,7 @@
 	"tool_positions": [0.3, -0.5],
 	"replay_file_name": null, 
 	"record_file_name": null,
-	"gui": false,
+	"gui": true,
 
 	"camera": [0.8, -0.2, 1, 0, -90, 120, 1, 600, 540]
 

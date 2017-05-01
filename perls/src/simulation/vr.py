@@ -41,8 +41,8 @@ host = db.RedisComm(ip)
 # interface = vr_interface.IVR(host, True)
 interface = keyboard_interface.IKeyboard(host, True)
 
-TASK_DIR = pjoin(os.getcwd(), 'data', 'task.json')
-SCENE_DIR = pjoin(os.getcwd(), 'data', 'scene.json')
+TASK_DIR = pjoin(os.getcwd(), 'configs', 'task.json')
+SCENE_DIR = pjoin(os.getcwd(), 'configs', 'scene.json')
 with open(TASK_DIR, 'r') as f:
 	task_repo = json.loads(f.read())
 with open(SCENE_DIR, 'r') as f:
