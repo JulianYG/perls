@@ -30,14 +30,16 @@ import json
 
 import pybullet as p
 
-ip = '172.24.68.111'
+ip = 'localhost'
+# ip = '172.24.68.111'
+# ip = '55.185.88.171'
 # agent = pr2.PR2([0.3, -0.5], enableForceSensor=False)
 agent = kuka.Kuka([0.3, -0.5], enableForceSensor=True)
 
 host = db.RedisComm(ip)
 
-interface = vr_interface.IVR(host, True)
-# interface = keyboard_interface.IKeyboard(host, True)
+# interface = vr_interface.IVR(host, True)
+interface = keyboard_interface.IKeyboard(host, True)
 
 TASK_DIR = pjoin(os.getcwd(), 'data', 'task.json')
 SCENE_DIR = pjoin(os.getcwd(), 'data', 'scene.json')
@@ -47,11 +49,11 @@ with open(SCENE_DIR, 'r') as f:
 	scene_repo = json.loads(f.read())
 
 scene = scene_repo['basic']
-task = task_repo['ball']
+task = task_repo['default']
 
 
-simulator = BulletSimulator(agent, interface, task, scene, True, True)
-# simulator = BulletSimulator(agent, interface, task, scene, True, False)
+# simulator = BulletSimulator(agent, interface, task, scene, True, True)
+simulator = BulletSimulator(agent, interface, task, scene, True, False)
 
 simulator.run(remote_render=True)
 

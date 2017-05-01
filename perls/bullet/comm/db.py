@@ -86,9 +86,8 @@ class RedisComm(Comm):
         if self.connected_with_client:
             self.broadcast_to_client(SHUTDOWN_HOOK)
             self.connected_with_client = False
-        self.pubsub.unsubscribe()
         for t in self.threads:
             t.stop()
-
+        self.pubsub.close()
 
 

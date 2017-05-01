@@ -1,9 +1,10 @@
 import time
+import numpy as np
 import pybullet as p
 from bullet.interface.core import CtrlInterface
-import numpy as np
 from bullet.utils.enum import *
 from bullet.utils.classes import *
+from numpy import array
 
 class IKeyboard(CtrlInterface):
 
@@ -26,23 +27,20 @@ class IKeyboard(CtrlInterface):
 
 		while True:
 			# Send to server
-			events = p.getKeyboardEvents()
-			self.socket.broadcast_to_server(events)
+			event = p.getKeyboardEvents()
+			# Make fake button events
+			event[6] = {1: 0}
+			self.socket.broadcast_to_server(event)
 
 			# Receive and render from server
 			signal = self.socket.listen_to_server()
 			for s in signal:
 				s = eval(s)
-				if s is SHUTDOWN_HOOK:
-					raise KeyboardInterrupt('Server invokes shutdown')
-					continue
-				if s is START_HOOK:
-					print('Server is online')
-					continue
-				self._render_from_signal(agent, control_map, obj_map, s)
+				self._signal_loop(s, agent, control_map, obj_map)
+
 			time.sleep(0.01)
 
-	def server_communicate(self, agent, scene, task, gui=True):
+	def server_communicate(self, agent, scene, task, gui=False):
 		
 		self.socket.connect_with_client()
 
@@ -53,41 +51,22 @@ class IKeyboard(CtrlInterface):
 
 		end_effector_poses = agent.get_tool_poses(tools)
 		self.pos = end_effector_poses[:, 0]
-		self.orn = end_effector_poses[:, 1]
-
-		pseudo_event = {0: 0, 3: 0.0}
+		self.orn = [[0,0,0],[0,0,0]]
+		pseudo_event = {0: 0, 3: 0.0, 6: {1: 0}}
 
 		while True:
 			# if agent.controllers:
 			events = self.socket.listen_to_client()
-			for e in events:
-				e = eval(e)
-				# Hook handlers
+			for event in events:
+				e = eval(event)
 				if e is RESET_HOOK:
-					print('VR Client connected. Initializing reset...')
-					# p.setInternalSimFlags(0)
-					p.resetSimulation()
-					agent.solo = len(agent.arms) == 1 or len(agent.grippers) == 1
-					agent.setup_scene(scene, task, gui)
-
 					end_effector_poses = agent.get_tool_poses(tools)
 					self.pos = end_effector_poses[:, 0]
-					self.orn = end_effector_poses[:, 1]
-
+					self.orn = [[0,0,0],[0,0,0]]
 					continue
-
-				if e is SHUTDOWN_HOOK:
-					print('VR Client quit')
-					continue
-
-				# Get the controller signal. Make sure server starts before client
-				if isinstance(e, tuple):
-					if e[0] is CTRL_HOOK:
-						agent.set_virtual_controller(e[1])
-						continue
-
-				# The event dictionary sent
-				self._keyboard_event_handler(e, agent, control_map, pseudo_event)
+				if self._event_loop(e, agent, gui) < 0:
+					# The event dictionary sent
+					self._keyboard_event_handler(e, agent, control_map, pseudo_event)
 			if not gui:
 				p.stepSimulation()
 
@@ -99,13 +78,11 @@ class IKeyboard(CtrlInterface):
 
 		end_effector_poses = agent.get_tool_poses(tools)
 		self.pos = end_effector_poses[:, 0]
-		self.orn = end_effector_poses[:, 1]
-
+		self.orn = [[0, 0, 0], [0, 0, 0]]
 		# Set same number of controllers as number of arms/grippers
 		agent.set_virtual_controller(range(len(tools)))
 		control_map, _ = agent.create_control_mappings()
 		pseudo_event = {0: 0, 3: 0.0}
-
 		while True:
 			events = p.getKeyboardEvents()
 			self._keyboard_event_handler(events, agent, control_map, pseudo_event)	
@@ -116,6 +93,8 @@ class IKeyboard(CtrlInterface):
 	def _keyboard_event_handler(self, events, agent, control_map, pseudo_event):
 
 		for e in (events):
+			if e not in HOT_KEYS:
+				continue
 			if not agent.solo:
 				if e == 49 and (events[e] == p.KEY_IS_DOWN):
 					pseudo_event[0] = 0
@@ -152,13 +131,13 @@ class IKeyboard(CtrlInterface):
 			# Orientation control
 			if 111 in events and (events[111] == p.KEY_IS_DOWN):
 				if e == 65297 and (events[e] == p.KEY_IS_DOWN):
-					self.orn[pseudo_event[0]][1] -= 0.1
+					self.orn[pseudo_event[0]][1] -= 0.005
 				if e == 65298 and (events[e] == p.KEY_IS_DOWN):
-					self.orn[pseudo_event[0]][1] += 0.1
+					self.orn[pseudo_event[0]][1] += 0.005
 				if e == 65295 and (events[e] == p.KEY_IS_DOWN):
-					self.orn[pseudo_event[0]][0] -= 0.1
+					self.orn[pseudo_event[0]][0] -= 0.005
 				if e == 65296 and (events[e] == p.KEY_IS_DOWN):
-					self.orn[pseudo_event[0]][0] += 0.1
+					self.orn[pseudo_event[0]][0] += 0.005
 
 			# Gripper control
 			if 99 in events and (events[99] == p.KEY_IS_DOWN):
@@ -174,14 +153,23 @@ class IKeyboard(CtrlInterface):
 
 			# Update position
 			pseudo_event[1] = self.pos[pseudo_event[0]]
-			# Update orientation
-			# print(self.orn[pseudo_event[0]])
+			# Update orientation with limits
+			self.orn = [np.arcsin(np.sin(rad)) for rad in self.orn]
+
 			if not agent.FIX:
 				pseudo_event[2] = p.getQuaternionFromEuler(self.orn[pseudo_event[0]])
 
 			# If disengaged, reset position
-			if agent.control(pseudo_event, control_map) < 0:
-				poses = agent.get_tool_poses(agent.get_tool_ids())
-				self.pos = poses[:, 0]
-				self.orn = poses[:, 1]
+			try:
+				if agent.control(pseudo_event, control_map) < 0:
+					poses = agent.get_tool_poses(agent.get_tool_ids())
+					self.pos = poses[:, 0]
+
+			except IllegalOperation as e:
+				if self.socket:
+					illegal_operation_handler(e, self.socket)
+				self.orn = [[0,0,0],[0,0,0]]
+				continue
+
+
 

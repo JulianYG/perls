@@ -2,6 +2,7 @@ import pybullet as p
 import time, sys
 from bullet.utils.classes import *
 from bullet.utils.enum import *
+from numpy import array
 
 class CtrlInterface(object):
 	"""
@@ -42,6 +43,46 @@ class CtrlInterface(object):
 	def close(self):
 		if self.remote:
 			self.socket.disconnect()
+
+	def _signal_loop(self, signal, agent, control_map, obj_map):
+
+		# s = eval(signal)
+		if signal is SHUTDOWN_HOOK:
+			raise KeyboardInterrupt('Server invokes shutdown')
+		elif signal is START_HOOK:
+			print('Server is online')
+		elif isinstance(signal, tuple) and signal[0] is WARNING_HOOK:
+			agent.mark(*signal[1])
+		else:	
+			self._render_from_signal(agent, control_map, obj_map, signal)
+
+	def _event_loop(self, event, agent, gui, skip=False):
+		if skip:
+			if event[0] == agent.controllers[1]:
+				return 0
+		# Hook handlers
+		if event is RESET_HOOK:
+			print('VR Client connected. Initializing reset...')
+			p.setInternalSimFlags(0)
+			p.resetSimulation()
+			agent.solo = len(agent.arms) == 1 or len(agent.grippers) == 1
+			agent.setup_scene(scene, task, gui)
+			return 0 
+		elif event is SHUTDOWN_HOOK:
+			print('VR Client quit')
+			return 0
+		elif isinstance(event, tuple) and len(event) == 2:
+			if event[0] is CTRL_HOOK:
+				agent.set_virtual_controller(event[1])
+				print('Received controller IDs: {}'.format(agent.controllers))
+			return 0
+		else:
+			# Add user interaction for task completion
+			# Can add line for mark here so that in saved csv file, 
+			# we know when one task is complete	
+			if (event[self.BTTN][1] & p.VR_BUTTON_WAS_TRIGGERED):
+				task_monitor_handler(self.socket)
+			return -1
 
 	def _render_from_signal(self, agent, control_map, obj_map, signal):
 

@@ -2,6 +2,7 @@ import numpy as np
 from bullet.agents.robot import *
 import pybullet as p
 from bullet.utils.enum import *
+from bullet.utils.classes import *
 
 class Kuka(Robot):
 
@@ -36,7 +37,6 @@ class Kuka(Robot):
 					jointRanges=self.JOINT_RANGE, restPoses=self.REST_POSE, jointDamping=self.JOINT_DAMP)
 			else: 
 				joint_pos = p.calculateInverseKinematics(arm_id, 6, eef_pos, eef_orien)
-
 			for i in range(len(joint_pos)):
 				p.setJointMotorControl2(arm_id, i, ctrl, targetPosition=joint_pos[i], 
 					targetVelocity=0, positionGain=pos_gain, velocityGain=1.0, force=self.MAX_FORCE)

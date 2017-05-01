@@ -43,7 +43,7 @@ class Scene(object):
 				p.stepSimulation()
 
 
-	def mark(self, position, text, color=[255,0,0], font_size=12, time=10):
+	def mark(self, text, position, color=[255,0,0], font_size=8, time=10):
 		try:
 			p.addUserDebugText(text, position, color, font_size, time)
 		except Exception:
