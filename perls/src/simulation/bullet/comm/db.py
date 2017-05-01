@@ -1,6 +1,9 @@
-from bullet.comm.core import Comm 
-from Queue import Queue as q
+from bullet.comm.core import Comm
 import redis, sys
+if sys.version[0] == '2':
+    from Queue import Queue as q
+else:
+    from queue import Queue as q
 from bullet.utils.enum import *
 
 class RedisComm(Comm):
