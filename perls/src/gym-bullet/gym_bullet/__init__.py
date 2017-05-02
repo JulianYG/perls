@@ -34,12 +34,13 @@ init_pos = _CONFIGS['tool_positions']
 camera_info = _CONFIGS['camera']
 time_step = _CONFIGS['time_step']
 gui = _CONFIGS['gui']
+record = _CONFIGS['record']
+video = _CONFIGS['video']
 scene = _CONFIGS['scene']
 step_limit = _CONFIGS['step_limit']
 reward_thresh = _CONFIGS['reward_thresh']
 
 module = eval(step_func)
-print(module, 'a' * 10)
 if agent == 'kuka':
 	# Change Fixed to True for keyboard
 	agent = kuka.Kuka(init_pos, fixed=fixed, enableForceSensor=force_sensor)
@@ -52,7 +53,9 @@ else:
 
 # Simulator is only used for rendering
 # Since simulator is never run, it's ok to just pass None as interface
-simulator = BulletSimulator(agent, None, task_repo[task], scene_repo[scene], gui=gui)
+simulator = BulletSimulator(agent, None, 
+	task_repo[task], scene_repo[scene], gui=gui,
+	log_dir=pjoin(os.getcwd(), 'monitor'))
 simulator.set_camera_view(*camera_info)
 
 register(
@@ -61,7 +64,8 @@ register(
 	timestep_limit=step_limit,
 	reward_threshold=reward_thresh,
 	kwargs={'simulator': simulator, 'step_func': module.step_helper, 
-			'realTime': real_time, 'time_step': time_step}
+			'realTime': real_time, 'time_step': time_step,
+			'record': record, 'video': video}
 )
 
 

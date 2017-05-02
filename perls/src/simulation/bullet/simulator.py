@@ -9,7 +9,7 @@ from bullet.utils import helpers as utils
 
 class BulletSimulator(object):
 
-	def __init__(self, agent, interface, task, scene, gui=True, vr=False):
+	def __init__(self, agent, interface, task, scene, gui=True, vr=False, log_dir=''):
 		# Default settings for camera
 		self.FOCAL_POINT = (0., 0., 0.)
 		self.YAW = 35.
@@ -26,10 +26,12 @@ class BulletSimulator(object):
 		self.scene = scene
 		self._interface = interface
 		self.agent = agent
-		self.VIDEO_DIR = pjoin(os.getcwd(), 'log', 'video')
-		self.TRAJECTORY_LOG_DIR = pjoin(os.getcwd(), 'log', 'record', 'trajectory')
-		self.CONTROL_LOG_DIR = pjoin(os.getcwd(), 'log', 'record', 'control')
-		self.CONTACT_LOG_DIR = pjoin(os.getcwd(), 'log', 'record', 'contact')
+
+		log_dir = log_dir or pjoin(os.getcwd(), 'log')
+		self.VIDEO_DIR = pjoin(log_dir, 'video')
+		self.TRAJECTORY_LOG_DIR = pjoin(log_dir, 'trajectory')
+		self.CONTROL_LOG_DIR = pjoin(log_dir, 'control')
+		self.CONTACT_LOG_DIR = pjoin(log_dir, 'contact')
 
 	def set_time_step(self, time_step):
 		p.setRealTimeSimulation(0)
@@ -43,23 +45,11 @@ class BulletSimulator(object):
 		try:
 			if record:
 				file += '_' + datetime.now().strftime('%m-%d-%H-%M-%S')
-				if video:
-					# Does logging only need to be called once with SharedMemory? 
-					self.logIds.append(p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, 
-						pjoin(self.VIDEO_DIR, file + '.mp4')))
-				else:
-					# Record everything
-					self.logIds.append(p.startStateLogging(p.STATE_LOGGING_GENERIC_ROBOT,
-						pjoin(self.TRAJECTORY_LOG_DIR, 'traj.' + file)))
-					self.logIds.append(p.startStateLogging(p.STATE_LOGGING_VR_CONTROLLERS, 
-						pjoin(self.CONTROL_LOG_DIR, 'ctrl.' + file)))
-					self.logIds.append(p.startStateLogging(p.STATE_LOGGING_CONTACT_POINTS,
-						pjoin(self.CONTACT_LOG_DIR, 'cont.' + file)))
+				self._record(file, video)
 			if remote_render:
 				self._interface.client_communicate(self.agent)
 			else:
 				self._interface.communicate(self.agent, self.scene, self.task, self.gui)
-
 		except (KeyboardInterrupt, SystemExit) as e:
 			self.quit()		
 
@@ -108,6 +98,23 @@ class BulletSimulator(object):
 		p.resetSimulation()
 		p.disconnect()
 
+	def _record(self, filename, video=False):
+		if video:
+			if self.gui:
+				# Does logging only need to be called once with SharedMemory? 
+				self.logIds.append(p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, 
+					pjoin(self.VIDEO_DIR, filename + '.mp4')))
+			else:
+				print('Video cannot be saved without simulation in GUI. Please check your config')
+		else:
+			# Record everything
+			self.logIds.append(p.startStateLogging(p.STATE_LOGGING_GENERIC_ROBOT,
+				pjoin(self.TRAJECTORY_LOG_DIR, 'traj.' + filename)))
+			self.logIds.append(p.startStateLogging(p.STATE_LOGGING_VR_CONTROLLERS, 
+				pjoin(self.CONTROL_LOG_DIR, 'ctrl.' + filename)))
+			self.logIds.append(p.startStateLogging(p.STATE_LOGGING_CONTACT_POINTS,
+				pjoin(self.CONTACT_LOG_DIR, 'cont.' + filename)))
+
 	def _replay(self, log, delay=0.0005):
 
 		for record in log:
@@ -138,6 +145,9 @@ class BulletSimulator(object):
 			if flag or not self.vr:
 				if self.gui:
 					p.connect(p.GUI)
+					# Disable sidebar and shadows
+					p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
+					p.configureDebugVisualizer(p.COV_ENABLE_SHADOWS, 0)
 				else:
 					p.connect(p.DIRECT)
 			else:

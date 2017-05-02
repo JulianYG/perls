@@ -8,3 +8,7 @@
 */ctrl*
 data
 0_*.txt
+*/*.mp4
+*/traj.*
+*/ctrl.*
+*/cont.*

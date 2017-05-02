@@ -18,7 +18,7 @@ def step_helper(agent, action):
 	reached = False
 	eef_pos = agent.get_tool_pose(kuka)[0]
 
-	if np.sqrt(np.sum((np.array(action[0])[:2] - np.array(eef_pos)[:2]) ** 2)) < 1e-6 and\
+	if np.sqrt(np.sum((np.array(action[0])[:2] - np.array(eef_pos)[:2]) ** 2)) < 2e-5 and\
 		abs(action[0][2] - eef_pos[2]) < 0.025:
 		reached = True
 

@@ -2,6 +2,7 @@ import gym
 from gym import error, spaces, utils
 from gym.utils import seeding
 import numpy as np
+from datetime import datetime
 
 class BulletEnv(gym.Env):
 
@@ -13,7 +14,7 @@ class BulletEnv(gym.Env):
 		'video.frames_per_second': 50
 	}
 
-	def __init__(self, simulator, step_func, time_step, realTime=False):
+	def __init__(self, simulator, step_func, time_step, realTime, record, video):
 	    self.simulator = simulator
 	    self.agent = simulator.agent
 	    self.realTimeSimulation = realTime
@@ -22,6 +23,11 @@ class BulletEnv(gym.Env):
 	    self.time_step = time_step
 	    # Setup simulator but not running
 	    self.simulator._setup(0)
+	    if record:
+	    	self.simulator._record(
+	    		datetime.now().strftime('%m-%d-%H-%M-%S'), 
+	    		video
+	    	)
 
 	def _seed(self, seed=None):
 		self.np_random, seed = seeding.np_random(seed)
