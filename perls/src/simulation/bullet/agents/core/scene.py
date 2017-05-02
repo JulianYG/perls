@@ -37,11 +37,9 @@ class Scene(object):
 		self._load_task(task)
 		self.loaded_obj = range(self.default_obj_cnt, p.getNumBodies())
 		p.setGravity(0, 0, -9.81)
-
 		if not gui:
 			for _ in range(100):
 				p.stepSimulation()
-
 
 	def mark(self, text, position, color=[255,0,0], font_size=8, time=10):
 		try:

@@ -65,8 +65,9 @@ class CtrlInterface(object):
 			print('VR Client connected. Initializing reset...')
 			p.setInternalSimFlags(0)
 			p.resetSimulation()
-			agent.solo = len(agent.arms) == 1 or len(agent.grippers) == 1
+			agent.constraints = []
 			agent.setup_scene(scene, task, gui)
+			agent.solo = len(agent.arms) == 1 or len(agent.grippers) == 1
 			return 0 
 		elif event is SHUTDOWN_HOOK:
 			print('VR Client quit')
@@ -82,7 +83,7 @@ class CtrlInterface(object):
 			# we know when one task is complete	
 			if (event[self.BTTN][1] & p.VR_BUTTON_WAS_TRIGGERED):
 				task_monitor_handler(self.socket)
-			return -1
+			return 1
 
 	def _render_from_signal(self, agent, control_map, obj_map, signal):
 
@@ -97,7 +98,6 @@ class CtrlInterface(object):
 					if not agent.arms:
 						p.changeConstraint(control_map[CONSTRAINT][obj_map[GRIPPER][obj]], 
                         	pose[0], pose[1], maxForce=agent.MAX_FORCE)
-
 					# If robot arm instance, just set gripper close/release
                     # The same thing for pr2 gripper
 					agent.set_tool_joint_states([obj], [pose[2]], POS_CTRL)
@@ -121,7 +121,6 @@ class CtrlInterface(object):
 			if agent.grippers:
 				if ID in obj_map[GRIPPER]:
 					msg[ID] += [agent.get_tool_joint_states(ID)[0][:, ctrl]]
-
 		# print(sys.getsizeof(msg), 'message package size')
 		return msg
 
