@@ -37,7 +37,6 @@ class PR2(Tool):
 		ctrl_id = event[0]
 		constraint_id = ctrl_map[CONSTRAINT][ctrl_id]
 		gripper_id = ctrl_map[GRIPPER][ctrl_id]
-
 		self.reach(constraint_id, event[1], event[2], fixed=False)
 		self.slide_grasp(gripper_id, event)
 		

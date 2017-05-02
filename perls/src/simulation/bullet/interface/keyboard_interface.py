@@ -53,16 +53,16 @@ class IKeyboard(CtrlInterface):
 		self.pos = end_effector_poses[:, 0]
 		self.orn = [[0,0,0],[0,0,0]]
 		pseudo_event = {0: 0, 3: 0.0, 6: {1: 0}}
-
 		while True:
 			# if agent.controllers:
 			events = self.socket.listen_to_client()
 			for event in events:
 				e = eval(event)
-				if self._event_loop(e, scene, task, agent, gui) < 0:
+				if self._event_loop(e, scene, task, agent, gui) > 0:
 					# The event dictionary sent
 					self._keyboard_event_handler(e, agent, control_map, pseudo_event)
 				else:
+					control_map, _ = agent.create_control_mappings()
 					end_effector_poses = agent.get_tool_poses(tools)
 					self.pos = end_effector_poses[:, 0]
 					self.orn = [[0,0,0],[0,0,0]]
