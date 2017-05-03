@@ -26,13 +26,12 @@ class Scene(object):
 		Load task for both recording and replay
 		"""
 		self.controllers = [e[0] for e in p.getVREvents()]
-		self.solo = len(self.arms) == 1 or len(self.grippers) == 1
 		return 1
 
 	def setup_scene(self, scene, task, gui=True):
 		self.init_control()
 		self._load_env(scene)
-		self._load_tools(self.pos)
+		self._load_tools(self.positions)
 		self.default_obj_cnt = p.getNumBodies()
 		self._load_task(task)
 		self.loaded_obj = range(self.default_obj_cnt, p.getNumBodies())
