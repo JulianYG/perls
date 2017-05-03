@@ -7,12 +7,12 @@ class PR2(Tool):
 
 	def __init__(self, pos, enableForceSensor=False):
 
-		super(PR2, self).__init__(pos, enableForceSensor)
+		super(PR2, self).__init__(enableForceSensor)
 		self.gripper_max_joint = 0.550569
 		self.THRESHOLD = 1.0
 		self.completed_task = {}
 		self.boxes = {}
-
+		self.positions = [[0.5, ypos, 0.7] for ypos in pos]
 	# 	#TODO: think about extracting this bounding box out to avoid repeating code if 
 	# 	# this gripper works, abandon demoVR
 	# 	# Use loadArm=True/False for demoVR load_default_env 
@@ -74,10 +74,10 @@ class PR2(Tool):
 		p.setJointMotorControl2(gripper, 2, POS_CTRL, 
 			targetPosition=analog_slide, force=5.0)
 
-	def _load_tools(self, pos):
+	def _load_tools(self, positions):
 
-		for ypos in pos:
-			pr2_gripper = p.loadURDF("pr2_gripper.urdf", [0.5, ypos, 0.7], [0, 0, 0, 1])
+		for pos in positions:
+			pr2_gripper = p.loadURDF("pr2_gripper.urdf", pos, [0, 0, 0, 1])
 			# Setup the pr2_gripper
 			jointPositions = [0.550569, 0.000000, 0.549657, 0.000000]
 			for jointIndex in range(p.getNumJoints(pr2_gripper)):
@@ -85,10 +85,11 @@ class PR2(Tool):
 
 			# Use -1 for the base, constrained within controller
 			pr2_cid = p.createConstraint(pr2_gripper, -1, -1, -1, p.JOINT_FIXED,
-				[0, 0, 0], [0, 0, 0], [0.500000, ypos, 0.700000])
+				[0, 0, 0], [0, 0, 0], pos)
 
 			self.grippers.append(pr2_gripper)
 			self.constraints.append(pr2_cid)
+		self.solo = len(self.grippers) == 1
 
 	def _check_task(self):
 		# Only check boundaries for objects in task
