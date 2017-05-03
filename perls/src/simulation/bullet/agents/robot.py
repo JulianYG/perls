@@ -5,11 +5,17 @@ from bullet.utils.enum import *
 
 class Robot(Tool):
 
-	def __init__(self, pos, enableForceSensor):
+	def __init__(self, enableForceSensor):
 
-		super(Robot, self).__init__(pos, enableForceSensor)
+		super(Robot, self).__init__(enableForceSensor)
 		self.THRESHOLD = 1.3
-		self.pos = pos
+		# Common type of grippers for all robots
+		self.gripper_urdf = 'gripper/wsg50_one_motor_gripper_new_free_base.sdf'
+
+		self.GRIPPER_REST_POS = [0., -0.011130, -0.206421, 0.205143, -0.009999, 0., -0.010055, 0.]
+		self.GRIPPER_CLOZ_POS = [0.0, -0.047564246423083795, 0.6855956234759611, 
+			-0.7479294372303137, 0.05054599996976922, 0.0, 0.049838105678835724, 0.0]
+		self.JOINT_DAMP = [.1] * self.nDOF
 
 	def get_tool_ids(self):
 		return self.arms
@@ -58,6 +64,104 @@ class Robot(Tool):
 			for i in range(p.getNumJoints(gripper)):
 				p.setJointMotorControl2(gripper, i, POS_CTRL, 
 					targetPosition=self.GRIPPER_REST_POS[i], force=50)	
+
+	def reach(self, arm_id, eef_pos, eef_orien, fixed, ctrl=POS_CTRL, 
+			null_space=True, expedite=False):
+		"""
+		Lowest level of implementation for faster operation
+		"""
+		pos_gain = 0.05
+		if expedite:
+			pos_gain = 0.5
+		if fixed:
+			if null_space:
+				joint_pos = p.calculateInverseKinematics(arm_id, self.nDOF - 1, 
+					eef_pos, eef_orien, lowerLimits=self.LOWER_LIMITS, 
+					upperLimits=self.UPPER_LIMITS, jointRanges=self.JOINT_RANGE, 
+					restPoses=self.REST_POSE, jointDamping=self.JOINT_DAMP)
+			else: 
+				joint_pos = p.calculateInverseKinematics(arm_id, self.nDOF - 1, 
+					eef_pos, eef_orien)
+			for i in range(len(joint_pos)):
+				p.setJointMotorControl2(arm_id, i, ctrl, targetPosition=joint_pos[i], 
+					targetVelocity=0, positionGain=pos_gain, 
+					velocityGain=1.0, force=self.MAX_FORCE)
+		else:
+			if null_space:
+				joint_pos = p.calculateInverseKinematics(arm_id, self.nDOF - 1, 
+					eef_pos, lowerLimits=self.LOWER_LIMITS, 
+					upperLimits=self.UPPER_LIMITS, jointRanges=self.JOINT_RANGE, 
+					restPoses=self.REST_POSE, jointDamping=self.JOINT_DAMP)
+			else:
+				joint_pos = p.calculateInverseKinematics(arm_id, self.nDOF - 1, 
+					eef_pos)
+			if eef_orien == None:
+				for i in range(len(joint_pos)):
+					p.setJointMotorControl2(arm_id, i, ctrl, 
+						targetPosition=joint_pos[i], targetVelocity=0, 
+						positionGain=pos_gain, velocityGain=1.0, force=self.MAX_FORCE)
+				return
+
+			# Only need links 1- 5, no need for joint 4-6 with pure position IK
+			for i in range(len(joint_pos) - 3):
+				p.setJointMotorControl2(arm_id, i, ctrl, 
+					targetPosition=joint_pos[i], targetVelocity=0, positionGain=pos_gain, 
+					velocityGain=1.0, force=self.MAX_FORCE)
+			
+			x, y, _ = p.getEulerFromQuaternion(eef_orien)
+
+			#TO-DO: add wait till fit
+
+			# Link 6 needs protection
+			if self.LOWER_LIMITS[self.nDOF - 1] < x < self.UPPER_LIMITS[self.nDOF - 1]:	
+				p.setJointMotorControl2(arm_id, self.nDOF - 1, 
+					ctrl, 
+					targetPosition=self._roll_map()(x), targetVelocity=0, 
+					positionGain=pos_gain, velocityGain=1.0, force=self.MAX_FORCE)
+			else:
+				p.setJointMotorControl2(arm_id, self.nDOF - 1, 
+					ctrl, 
+					targetPosition=joint_pos[self.nDOF - 1], targetVelocity=0, 
+					positionGain=pos_gain, velocityGain=1.0, force=self.MAX_FORCE)
+
+				self.mark('Warning: you are flipping arm link {}'.format(self.nDOF - 1), 
+					p.getLinkState(arm_id, 0)[0], time=1.5)
+				raise IllegalOperation(self.nDOF - 1)
+
+			if self.LOWER_LIMITS[self.nDOF - 2] < y < self.UPPER_LIMITS[self.nDOF - 2]:
+				p.setJointMotorControl2(arm_id, self.nDOF - 2, ctrl, 
+					targetPosition=self._pitch_map()(y), targetVelocity=0, 
+					positionGain=pos_gain, velocityGain=1.0, force=self.MAX_FORCE)
+			else:
+				p.setJointMotorControl2(arm_id, self.nDOF - 2, ctrl, 
+					targetPosition=joint_pos[self.nDOF - 2], targetVelocity=0, 
+					positionGain=pos_gain, velocityGain=1.0, force=self.MAX_FORCE)
+
+				self.mark('Warning: you are flipping arm link {}'.format(self.nDOF - 2), 
+					p.getLinkState(arm_id, 1)[0], time=1.5)
+				raise IllegalOperation(self.nDOF - 2)
+
+	def _load_tools(self, positions):
+		# Gripper ID to arm ID
+		for pos in positions:
+			self.arms.append(p.loadURDF(self.arm_urdf, 
+				pos, [0, 0, 0, 1], useFixedBase=True))
+			self.grippers.append(p.loadSDF(self.gripper_urdf)[0])
+
+		# Setup initial conditions for both arms
+		for arm in self.arms:
+			self._reset_robot(arm)
+
+		# Setup initial conditions for both grippers
+		for gripper in self.grippers:
+			self._reset_robot_gripper(gripper)
+			
+		# Setup constraints on grippers
+		for arm, gripper in zip(self.arms, self.grippers):
+			self.constraints.append(p.createConstraint(arm, self.nDOF - 1, 
+				gripper, 0, p.JOINT_FIXED, [0,0,0], [0,0,0.05], [0,0,0], 
+				parentFrameOrientation=[0, 0, 0, 1]))
+		self.solo = len(self.arms) == 1
 
 	def _engage(self, robot, controller_event):
 		controller_pos = controller_event[1]

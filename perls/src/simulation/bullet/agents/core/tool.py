@@ -6,12 +6,11 @@ from bullet.utils.helpers import *
 
 class Tool(Scene):
 
-	def __init__(self, pos, enableForceSensor):
+	def __init__(self, enableForceSensor):
 
 		super(Tool, self).__init__()
 		self.THRESHOLD = 1.3
 		self.FIX = True
-		self.pos = pos
 		self.has_force_sensor = enableForceSensor
 
 	def set_force_sensor(self):
