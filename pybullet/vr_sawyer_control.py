@@ -1,14 +1,17 @@
 import pybullet as p
 import numpy as np
-import math
-from datetime import datetime
-# p.connect(p.SHARED_MEMORY)
+
+def euc_dist(posA, posB):
+	dist = 0.
+	for i in range(len(posA)):
+		dist += (posA[i] - posB[i]) ** 2
+	return dist
 
 LOWER_LIMITS = [0, 0, 0, 0, 0, -3.05, -5.1477, 0, 0, 0, -1.57079632679, -3.0514, 
 	-3.0514, -2.9842, 0, -2.9842, 0, 0, -2.9842, 0]
 UPPER_LIMITS = [0, 0, 0, 0, 0, 3.05, 0.9599, 0, 0, 0, 1.57079632679, 3.0514, 
 	3.0514, 2.9842, 0, 2.9842, 0, 0, 2.9842, 0]
-JOINT_RANGE = [0, 0, 0, 0, 0, 6, 6, 0, 0, 0, 3.14, 6, 6, 5.9, 0, 5.9, 0, 0, 5.9, 0]
+JOINT_RANGE = [0, 0, 0, 0, 0, 6.1, 6.1, 0, 0, 0, 6.1, 6.1, 6.1, 5.96, 0, 5.96, 0, 0, 9.4, 0]
 REST_POSE = [0, 0, 0, 0, 0, 0.00, 0, 0, 0, 0, -1.18, 0.00, 2.18, 0.00, 0, 0.57, 0, 0, 3.3161, 0]
 JOINT_DAMP = [0.1] * 20
 
@@ -18,7 +21,6 @@ JOINT_DAMP = [0.1] * 20
 # 	3.0514, 2.9842, 2.9842, 4.7104]
 # JOINT_RANGE = [6.1, 6.1, 6.1, 6.1, 6.1, 5.96, 5.96, 9.4]
 REST_POSE_IK = [0, 0, -1.18, 0.00, 2.18, 0.00, 0.57, 3.3161]
-# JOINT_DAMP = [0.1] * 8
 
 MAX_FORCE = 500
 
@@ -62,7 +64,6 @@ sawyer_cid = p.createConstraint(sawyer, 19, sawyer_gripper, 0, p.JOINT_FIXED,
 
 p.setGravity(0,0,-9.81)
 
-
 # objects = [p.loadURDF("teddy_vhacd.urdf", 1.050000,-0.500000,0.700000,0.000000,0.000000,0.707107,0.707107)]
 # objects = [p.loadURDF("sphere_small.urdf", 0.850000,-0.400000,0.700000,0.000000,0.000000,0.707107,0.707107)]
 # objects = [p.loadURDF("duck_vhacd.urdf", 0.850000,-0.400000,0.900000,0.000000,0.000000,0.707107,0.707107)]
@@ -70,18 +71,6 @@ p.setGravity(0,0,-9.81)
 # ob = objects[0]
 # p.resetBasePositionAndOrientation(ob,[0.000000,1.000000,1.204500],[0.000000,0.000000,0.000000,1.000000])
 ball = p.loadURDF("sphere_small.urdf", -0.100000,0.9550019,1.11997019,0.1933232,-0.000000,-0.000000,0.7739192)
-# objects = [p.loadURDF("cube_small.urdf", 0.300000,0.1900000,0.850000,0.000000,0.000000,0.000000,1.000000)]
-# objects = [p.loadURDF("table_square/table_square.urdf", -1.000000,0.000000,0.000000,0.000000,0.000000,0.000000,1.000000)]
-# ob = objects[0]
-# jointPositions=[ 0.000000 ]
-# for jointIndex in range (p.getNumJoints(ob)):
-# 	p.resetJointState(ob,jointIndex,jointPositions[jointIndex])
-
-# objects = [p.loadURDF("husky/husky.urdf", 2.000000,-5.000000,1.000000,0.000000,0.000000,0.000000,1.000000)]
-# ob = objects[0]
-# jointPositions=[ 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000 ]
-# for jointIndex in range (p.getNumJoints(ob)):
-# 	p.resetJointState(ob,jointIndex,jointPositions[jointIndex])
 
 (0, 'controller_box_fixed', 4, -1, -1, 0, 0.0, 0.0)
 (1, 'pedestal_feet_fixed', 4, -1, -1, 0, 0.0, 0.0)
@@ -104,21 +93,21 @@ ball = p.loadURDF("sphere_small.urdf", -0.100000,0.9550019,1.11997019,0.1933232,
 (18, 'right_j19', 0, 14, 13, 1, 0.0, 0.0)
 (19, 'right_hand', 4, -1, -1, 0, 0.0, 0.0)
 
-# a = p.createConstraint(sawyer, -1, sawyer, 0, p.JOINT_FIXED,[0.000000,0.000000,0.000000],
-# 	[0.000000,0.00000,0.00000],[0.000000,0.00000,0.00000],
-# 	[0.000000,0.000000,0.000000,1.000000],[0.000000,0.000000,0.000000,1.000000])
-# b = p.createConstraint(sawyer, -1, sawyer, 1, p.JOINT_FIXED,[0.000000,0.000000,0.000000],
-# 	[0.000000,0.00000,0.00000],[0.000000,0.00000,0.00000],
-# 	[0.000000,0.000000,0.000000,1.000000],[0.000000,0.000000,0.000000,1.000000])
-# c = p.createConstraint(sawyer, -1, sawyer, 2, p.JOINT_FIXED,[0.000000,0.000000,0.000000],
-# 	[0.000000,0.00000,0.00000],[0.000000,0.00000,0.00000],
-# 	[0.000000,0.000000,0.000000,1.000000],[0.000000,0.000000,0.000000,1.000000])
-# d = p.createConstraint(sawyer, -1, sawyer, 3, p.JOINT_FIXED,[0.000000,0.000000,0.000000],
-# 	[0.000000,0.00000,0.00000],[0.000000,0.00000,0.00000],
-# 	[0.000000,0.000000,0.000000,1.000000],[0.000000,0.000000,0.000000,1.000000])
-# e = p.createConstraint(sawyer, -1, sawyer, 4, p.JOINT_FIXED, [0.000000,0.000000,0.000000],
-# 	[0.000000,0.00000,0.00000],[0.000000,0.00000,0.00000],
-# 	[0.000000,0.000000,0.000000,1.000000],[0.000000,0.000000,0.000000,1.000000])
+a = p.createConstraint(sawyer, -1, sawyer, 0, p.JOINT_FIXED,[0.000000,0.000000,0.000000],
+	[0.000000,0.00000,0.00000],[0.000000,0.00000,0.00000],
+	[0.000000,0.000000,0.000000,1.000000],[0.000000,0.000000,0.000000,1.000000])
+b = p.createConstraint(sawyer, -1, sawyer, 1, p.JOINT_FIXED,[0.000000,0.000000,0.000000],
+	[0.000000,0.00000,0.00000],[0.000000,0.00000,0.00000],
+	[0.000000,0.000000,0.000000,1.000000],[0.000000,0.000000,0.000000,1.000000])
+c = p.createConstraint(sawyer, -1, sawyer, 2, p.JOINT_FIXED,[0.000000,0.000000,0.000000],
+	[0.000000,0.00000,0.00000],[0.000000,0.00000,0.00000],
+	[0.000000,0.000000,0.000000,1.000000],[0.000000,0.000000,0.000000,1.000000])
+d = p.createConstraint(sawyer, -1, sawyer, 3, p.JOINT_FIXED,[0.000000,0.000000,0.000000],
+	[0.000000,0.00000,0.00000],[0.000000,0.00000,0.00000],
+	[0.000000,0.000000,0.000000,1.000000],[0.000000,0.000000,0.000000,1.000000])
+e = p.createConstraint(sawyer, -1, sawyer, 4, p.JOINT_FIXED, [0.000000,0.000000,0.000000],
+	[0.000000,0.00000,0.00000],[0.000000,0.00000,0.00000],
+	[0.000000,0.000000,0.000000,1.000000],[0.000000,0.000000,0.000000,1.000000])
 
 # p.createConstraint(sawyer, 5, sawyer, 9, p.JOINT_FIXED, [0.000000,0.000000,0.000000],
 # 	[0.000000,0.00000,0.00000],[0.000000,0.00000,0.00000])
@@ -138,18 +127,12 @@ POSITION = 1
 ORIENTATION = 2
 BUTTONS = 6
 
-def euc_dist(posA, posB):
-	dist = 0.
-	for i in range(len(posA)):
-		dist += (posA[i] - posB[i]) ** 2
-	return dist
-
-
 controllers = [e[0] for e in p.getVREvents()]
 
 while True:
 
 	for e in (p.getVREvents()):
+
 		# Only use one controller
 		###########################################
 		# This is important: make sure there's only one VR Controller!
@@ -158,7 +141,6 @@ while True:
 
 		# A simplistic version of gripper control
 		#@TO-DO: Add slider for the gripper
-
 
 		if e[BUTTONS][33] & p.VR_BUTTON_WAS_TRIGGERED:
 			# avg = 0.
@@ -180,6 +162,7 @@ while True:
 
 			for i in range(p.getNumJoints(sawyer)):
 				qIndex = p.getJointInfo(sawyer, i)[3]
+				print(qIndex, i)
 				if qIndex > 0:
 					p.setJointMotorControl2(sawyer, i, p.POSITION_CONTROL, 
 						targetPosition=joint_pos[qIndex - 7], targetVelocity=0, positionGain=0.05, 
