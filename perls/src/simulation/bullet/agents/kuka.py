@@ -1,8 +1,5 @@
 import numpy as np
 from bullet.agents.robot import *
-import pybullet as p
-from bullet.utils.enum import *
-from bullet.utils.classes import *
 
 class Kuka(Robot):
 
@@ -23,5 +20,11 @@ class Kuka(Robot):
 		self.MAX_FORCE = 500
 		self.arm_urdf = 'kuka_iiwa/model_vr_limits.urdf'
 		self.positions = [[1.4, ypos, 0.6] for ypos in pos]
+
+	def _roll_map(self):
+		return lambda x: x
+
+	def _pitch_map(self):
+		return lambda x: -x
 
 
