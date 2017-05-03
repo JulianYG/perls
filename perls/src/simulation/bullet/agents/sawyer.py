@@ -1,7 +1,5 @@
 import numpy as np
 from bullet.agents.robot import Robot
-import pybullet as p
-from bullet.utils.enum import *
 
 class Sawyer(Robot):
 
@@ -17,4 +15,11 @@ class Sawyer(Robot):
 		self.MAX_FORCE = 500
 		self.arm_urdf = 'sawyer_robot/sawyer_description/urdf/sawyer_arm.urdf'
 		self.positions = [[0.75, ypos, 0.625] for ypos in pos]
+
+	def _roll_map(self):
+		return lambda x: x
+
+	def _pitch_map(self):
+		return lambda x: x - np.pi / 2
+
 
