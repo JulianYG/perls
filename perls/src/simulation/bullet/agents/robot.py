@@ -116,7 +116,7 @@ class Robot(Tool):
 			if self.LOWER_LIMITS[self.nDOF - 1] < x < self.UPPER_LIMITS[self.nDOF - 1]:	
 				p.setJointMotorControl2(arm_id, self.nDOF - 1, 
 					ctrl, 
-					targetPosition=self._roll_map(x), targetVelocity=0, 
+					targetPosition=self._roll_map()(x), targetVelocity=0, 
 					positionGain=pos_gain, velocityGain=1.0, force=self.MAX_FORCE)
 			else:
 				p.setJointMotorControl2(arm_id, self.nDOF - 1, 
@@ -130,7 +130,7 @@ class Robot(Tool):
 
 			if self.LOWER_LIMITS[self.nDOF - 2] < y < self.UPPER_LIMITS[self.nDOF - 2]:
 				p.setJointMotorControl2(arm_id, self.nDOF - 2, ctrl, 
-					targetPosition=_pitch_map(y), targetVelocity=0, 
+					targetPosition=self._pitch_map()(y), targetVelocity=0, 
 					positionGain=pos_gain, velocityGain=1.0, force=self.MAX_FORCE)
 			else:
 				p.setJointMotorControl2(arm_id, self.nDOF - 2, ctrl, 
