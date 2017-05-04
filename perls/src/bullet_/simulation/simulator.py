@@ -5,7 +5,7 @@ from datetime import datetime
 from time import strftime
 from matplotlib import pyplot as plt
 from os.path import join as pjoin
-from simulation.utils import helpers as utils
+from simulation.utils.helpers import parse_log
 
 class BulletSimulator(object):
 
@@ -63,7 +63,7 @@ class BulletSimulator(object):
 		p.resetDebugVisualizerCamera(cameraDistance=self.FOCAL_LENGTH, 
 			cameraYaw=self.YAW, cameraPitch=self.PITCH, 
 			cameraTargetPosition=self.FOCAL_POINT)
-		log = utils.parse_log(pjoin(self.TRAJECTORY_LOG_DIR, 'traj.' + file), verbose=True)
+		log = parse_log(pjoin(self.TRAJECTORY_LOG_DIR, 'traj.' + file), verbose=True)
 		self._replay(log, delay=delay)
 		self.quit()
 

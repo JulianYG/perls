@@ -16,7 +16,6 @@ class IVR(CtrlInterface):
 	def client_communicate(self):
 
 		self.socket.connect_with_server()
-		# control_map, obj_map = agent.create_control_mappings()
 
 		# Let the socket know controller IDs
 		self.socket.broadcast_to_server(
@@ -27,12 +26,6 @@ class IVR(CtrlInterface):
 			events = p.getVREvents()
 			for event in (events):
 				self.socket.broadcast_to_server(event)
-			# # Receive and render from server
-			# signal = self.socket.listen_to_server()
-			# for s in signal:
-			# 	s = eval(s)
-			# 	self._signal_loop(s, agent, control_map, obj_map)
-
 			time.sleep(0.001)
 
 	def server_communicate(self, agent, scene, task, gui=False):
@@ -64,9 +57,6 @@ class IVR(CtrlInterface):
 						continue
 			if not gui:
 				p.stepSimulation()
-		
-			# msg = self._msg_wrapper(agent, obj_map)
-			# self.socket.broadcast_to_client(msg)
 
 	def local_communicate(self, agent, gui=True):
 		control_map, _ = agent.create_control_mappings()

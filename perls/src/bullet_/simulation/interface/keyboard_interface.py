@@ -17,14 +17,7 @@ class IKeyboard(CtrlInterface):
 	def client_communicate(self):
 
 		self.socket.connect_with_server()
-		
-		# if not agent.controllers:
-		# 	tools = agent.get_tool_ids()
-		# 	agent.set_virtual_controller(range(len(tools)))
-
-		# control_map, obj_map = agent.create_control_mappings()
-
-
+	
 		# Let the socket know controller IDs
 		self.socket.broadcast_to_server(
 			(CTRL_HOOK, [0, 1])
@@ -36,13 +29,6 @@ class IKeyboard(CtrlInterface):
 			# Make fake button events
 			event[6] = {1: 0}
 			self.socket.broadcast_to_server(event)
-
-			# # Receive and render from server
-			# signal = self.socket.listen_to_server()
-			# for s in signal:
-			# 	s = eval(s)
-			# 	self._signal_loop(s, agent, control_map, obj_map)
-
 			time.sleep(0.01)
 
 	def server_communicate(self, agent, scene, task, gui=False):
