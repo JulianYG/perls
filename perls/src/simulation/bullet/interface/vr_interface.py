@@ -53,7 +53,8 @@ class IVR(CtrlInterface):
 			events = self.socket.listen_to_client()
 			for event in events:
 				event = eval(event)
-				if self._event_loop(event, scene, task, agent, gui, skip=skip_flag) < 0:
+				if self._event_loop(event, scene, task, 
+					agent, gui, skip=skip_flag) > 0:
 					try:
 						agent.control(event, control_map)
 					except IllegalOperation as e:
