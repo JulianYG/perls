@@ -30,57 +30,34 @@ from simulation.comm import *
 
 import pybullet as p
 
-ip = '172.24.68.111'
-# agent = pr2.PR2([0.3, -0.5], enableForceSensor=False)
-agent = kuka.Kuka([0.3, -0.5], enableForceSensor=True)
+remote_ip = '172.24.68.111'
 
-host = db.RedisComm(ip)
+def run(*args):
+	socket = db.RedisComm(remote_ip)
 
-# interface = vr_interface.IVR(host, True)
-interface = keyboard_interface.IKeyboard(host, True)
+	CONFIG_DIR = pjoin(os.getcwd(), 'configs', args[0] + '.json')
+	_CONFIGS = utils.read_config(CONFIG_DIR)
 
-TASK_DIR = pjoin(os.getcwd(), 'configs', 'task.json')
-SCENE_DIR = pjoin(os.getcwd(), 'configs', 'scene.json')
-with open(TASK_DIR, 'r') as f:
-	task_repo = json.loads(f.read())
-with open(SCENE_DIR, 'r') as f:
-	scene_repo = json.loads(f.read())
+	socket.connect_with_server()
+	socket.broadcast_to_server(_CONFIGS)
 
-scene = scene_repo['basic']
-task = task_repo['default']
+	interface_type = _CONFIGS['interface']
+	if interface_type == 'vr':	# VR interface that takes VR events
+		interface = vr_interface.IVR(socket, remote)
+	elif interface_type == 'keyboard':	# Keyboard interface that takes keyboard events
+		interface = keyboard_interface.IKeyboard(socket, remote)
+	elif interface_type == 'cmd':	# Customized interface that takes any sort of command
+		interface = cmd_interface.ICmd(socket, remote)
+	else:
+		raise NotImplementedError('Non-supported interface.')
 
+	# Singleton simulator
+	simulator = BulletSimulator(None, interface, None, None)
 
-# simulator = BulletSimulator(agent, interface, task, scene, True, True)
-simulator = BulletSimulator(agent, interface, task, scene, True, False)
+	simulator.run_as_client()
 
-simulator.run(remote_render=True)
+if __name__ == '__main__':
+	run(sys.argv[1:])
 
-# def cmd_handler(msg):
-# 	data = eval(msg)
-
-# 	if data == 0:
-# 		simulator.quit()
-# 	elif data == 1:
-# 		simulator.setup(task, 0, True)
-# 	else:
-# 		for obj, pose in data.items():
-# 			p.resetBasePositionAndOrientation(obj, pose)
-
-# r = redis.StrictRedis(host=host, port=6379, db=0)
-# subscriber = r.pubsub()
-
-# subscriber.subscribe(**{'client_channel': cmd_handler})
-
-# p.connect(p.SHARED_MEMORY)
-# while True:
-# 	event = p.getVREvents()
-
-# 	for e in (event):
-# 		x = r.publish('server_channel', e)
-
-# 	time.sleep(0.001)
-# 		# iD = e[0]
-# 		# pos = e[1]
-# 		# orn = e[2]
 
 

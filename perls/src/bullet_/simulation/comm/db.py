@@ -40,7 +40,7 @@ class RedisComm(Comm):
         return events
 
     def connect_with_client(self):
-        if not connected_with_client:
+        if not self.connected_with_client:
             self.pubsub.subscribe(**{'event_channel': self._event_handler})
 
             # Start thread
@@ -56,7 +56,7 @@ class RedisComm(Comm):
                     break
 
     def connect_with_server(self):
-        if not connected_with_server:
+        if not self.connected_with_server:
             self.pubsub.subscribe(**{'signal_channel': self._signal_handler})
             server_thread = self.pubsub.run_in_thread(sleep_time=0.001)
             self.threads.append(server_thread)
