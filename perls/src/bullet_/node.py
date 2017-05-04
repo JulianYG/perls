@@ -1,56 +1,47 @@
-import socket
-import fcntl
-import struct
-from collections import defaultdict
-import os, sys, getopt, json
-from os.path import join as pjoin
-
-sys.path.append(pjoin(os.getcwd(), 'bullet_'))
-
 from simulation.agents import *
 from simulation.interface import *
 from simulation.simulator import BulletSimulator
-
+import os, sys, getopt, json
+from os.path import join as pjoin
 from simulation.utils import helpers as utils
 from simulation.comm import *
 
-def get_ip_address(ifname):
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    return socket.inet_ntoa(fcntl.ioctl(
-        s.fileno(),
-        0x8915,  # SIOCGIFADDR
-        struct.pack('256s', ifname[:15])
-    )[20:24])
+def render_simulator(agent, interface, task, filename, record=True, vr=False):
+	"""
+	Models still exist in pybullet since they are only used in pybullet
+	Example interfacing with ROS:
+	in ros_ctrl_IK.py:
 
-def execute():
+	kuka = kuka.Kuka()
+	task = task_repo['kitchen']
+	pybullet_simulator = node.render_simulator(kuka, interface, task, 'hi.bin')
+	pybullet_simulator.record('path.bin')
+	...
+	"""
+	simulator = BulletSimulator(agent, interface, task, vr)
+	simulator.setup(0)
+	if record:
+		simulator.run(file=filename, record=record)
+	return simulator
+
+def execute(*args):
 	"""
 	Default load settings from command line execution. 
 	May need a configuration file for this purpose
 	"""
 	TASK_DIR = pjoin(os.getcwd(), 'configs', 'task.json')
 	SCENE_DIR = pjoin(os.getcwd(), 'configs', 'scene.json')
+	CONFIG_DIR = pjoin(os.getcwd(), 'configs', args[0] + '.json')
 	RECORD_LOG_DIR = pjoin(os.getcwd(), 'log', 'record', 'trajectory')
-
-	# ip = get_ip_address('eth0')
-
-	socket = db.RedisComm('localhost', port=6379)  # ip
-
-	socket.connect_with_client()
-
-	_CONFIGS = defaultdict(int)
-	while True:
-		for event in socket.listen_to_client():
-			e = eval(event)
-			# Make sure it's config
-			if isinstance(e, dict) and 'task' in e:
-				_CONFIGS = e
-				break
 
 	with open(TASK_DIR, 'r') as f:
 		task_repo = json.loads(f.read())
 	with open(SCENE_DIR, 'r') as f:
 		scene_repo = json.loads(f.read())
 
+	_CONFIGS = utils.read_config(CONFIG_DIR)
+
+	interface_type = _CONFIGS['interface']
 	agent = _CONFIGS['agent']
 	job = _CONFIGS['job']
 	video = _CONFIGS['video']
@@ -82,12 +73,36 @@ def execute():
 		agent = pr2.PR2(init_pos, enableForceSensor=force_sensor)
 	else:
 		raise NotImplementedError('Invalid input: Model not recognized.')
+	
+	socket = None
+	if remote:
+		if server == 'redis':
+			socket = db.RedisComm(ip, port=6379)
+		elif server == 'tcp':
+			socket = tcp.TCPComm(ip)
+		elif server == 'cmd':
+			raise NotImplementedError('Currently not implemented')
+		else:
+			raise NotImplementedError('Invalid input: Server not recognized.')
 
-	interface = cmd_interface.ICmd(socket, remote)
+	if interface_type == 'vr':	# VR interface that takes VR events
+		interface = vr_interface.IVR(socket, remote)
+		vr = True
+	elif interface_type == 'keyboard':	# Keyboard interface that takes keyboard events
+		interface = keyboard_interface.IKeyboard(socket, remote)
+		vr = False
+	elif interface_type == 'cmd':	# Customized interface that takes any sort of command
+		interface = cmd_interface.ICmd(socket, remote)
+		vr = False
+	else:
+		raise NotImplementedError('Non-supported interface.')
+
+	if remote and (job == 'record' or job == 'run'):
+		vr = False
 
 	simulator = BulletSimulator(agent, interface, 
 								task_repo[task], scene_repo[scene],
-								gui=gui)
+								gui=gui, vr=vr)
 	if job == 'record':
 		simulator.run(fn, True, video)
 	elif job == 'replay':
@@ -107,8 +122,25 @@ def usage():
 	print('Please specify the configuration file under ./configs. Default config: 1')
 	print('Usage: python node.py -c [config]')
 
+def main(argv):
+
+	config = '1'	# default config
+
+	try:
+		opts, args = getopt.getopt(argv, 'hc:r', ['help', 'config='])
+	except getopt.GetoptError:
+		usage()
+		sys.exit(2)
+	for opt, arg in opts:
+		if opt in ('-h', '--help'):
+			usage()
+			sys.exit(0)
+		elif opt in ('-c', '--config'):
+			config = arg
+	execute(config)
+
 if __name__ == '__main__':
-	execute()
+	main(sys.argv[1:])
 
 
 
