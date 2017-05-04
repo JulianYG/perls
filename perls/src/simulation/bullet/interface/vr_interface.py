@@ -63,8 +63,8 @@ class IVR(CtrlInterface):
 			if not gui:
 				p.stepSimulation()
 		
-			msg = self._msg_wrapper(agent, obj_map)
-			self.socket.broadcast_to_client(msg)
+			# msg = self._msg_wrapper(agent, obj_map)
+			# self.socket.broadcast_to_client(msg)
 
 	def local_communicate(self, agent, gui=True):
 		control_map, _ = agent.create_control_mappings()

@@ -46,10 +46,9 @@ class BulletSimulator(object):
 			if record:
 				file += '_' + datetime.now().strftime('%m-%d-%H-%M-%S')
 				self._record(file, video)
-			if remote_render:
-				self._interface.client_communicate(self.agent)
-			else:
-				self._interface.communicate(self.agent, self.scene, self.task, self.gui)
+			# if remote_render:
+			# 	self._interface.client_communicate(self.agent)
+			self._interface.communicate(self.agent, self.scene, self.task, self.gui)
 		except (KeyboardInterrupt, SystemExit) as e:
 			self.quit()		
 

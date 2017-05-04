@@ -40,35 +40,33 @@ class RedisComm(Comm):
         return events
 
     def connect_with_client(self):
+        if not connected_with_client:
+            self.pubsub.subscribe(**{'event_channel': self._event_handler})
 
-        self.pubsub.subscribe(**{'event_channel': self._event_handler})
+            # Start thread
+            client_thread = self.pubsub.run_in_thread(sleep_time=0.001)
+            self.threads.append(client_thread)
 
-        # Start thread
-        client_thread = self.pubsub.run_in_thread(sleep_time=0.001)
-        self.threads.append(client_thread)
-
-        # Send reset and load env signal
-        print('Waiting for client\'s response...')
-        while 1:
-            if self.broadcast_to_client(START_HOOK) > 0:
-                print('Connected with client.')
-                self.connected_with_client = True
-                break
-        return 0
+            # Send reset and load env signal
+            print('Waiting for client\'s response...')
+            while 1:
+                if self.broadcast_to_client(START_HOOK) > 0:
+                    print('Connected with client.')
+                    self.connected_with_client = True
+                    break
 
     def connect_with_server(self):
+        if not connected_with_server:
+            self.pubsub.subscribe(**{'signal_channel': self._signal_handler})
+            server_thread = self.pubsub.run_in_thread(sleep_time=0.001)
+            self.threads.append(server_thread)
 
-        self.pubsub.subscribe(**{'signal_channel': self._signal_handler})
-        server_thread = self.pubsub.run_in_thread(sleep_time=0.001)
-        self.threads.append(server_thread)
-
-        print('Waiting for server\'s response...')
-        while 1:
-            if self.broadcast_to_server(RESET_HOOK) > 0:
-                print('Connected with server on {}'.format(self.ip))
-                self.connected_with_server = True
-                break
-        return 0
+            print('Waiting for server\'s response...')
+            while 1:
+                if self.broadcast_to_server(RESET_HOOK) > 0:
+                    print('Connected with server on {}'.format(self.ip))
+                    self.connected_with_server = True
+                    break
 
     def _event_handler(self, msg):
         packet = msg['data']

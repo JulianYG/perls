@@ -69,7 +69,7 @@ class IKeyboard(CtrlInterface):
 			if not gui:
 				p.stepSimulation()
 
-			self.socket.broadcast_to_client(self._msg_wrapper(agent, obj_map))
+			# self.socket.broadcast_to_client(self._msg_wrapper(agent, obj_map))
 
 	def local_communicate(self, agent, gui=True):
 		
