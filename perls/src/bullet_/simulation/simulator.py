@@ -40,17 +40,22 @@ class BulletSimulator(object):
 	def step_simulation(self):
 		p.stepSimulation()
 
-	def run(self, file='', record=False, video=False, remote_render=False):
+	def run_as_server(self, file='', record=False, video=False):
 		self._setup(0)
 		try:
 			if record:
 				file += '_' + datetime.now().strftime('%m-%d-%H-%M-%S')
 				self._record(file, video)
-			# if remote_render:
-			# 	self._interface.client_communicate(self.agent)
-			self._interface.communicate(self.agent, self.scene, self.task, self.gui)
+			self._interface.communicate(self.agent, 
+				self.scene, self.task, self.gui)
 		except (KeyboardInterrupt, SystemExit) as e:
 			self.quit()		
+
+	def run_as_client(self):
+		try:
+			self._interface.client_communicate()
+		except (KeyboardInterrupt, SystemExit) as e:
+			self.quit()	
 
 	def playback(self, file, delay=0.0001):
 		self._setup(1)

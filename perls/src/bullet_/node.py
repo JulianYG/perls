@@ -104,7 +104,7 @@ def execute(*args):
 								task_repo[task], scene_repo[scene],
 								gui=gui, vr=vr)
 	if job == 'record':
-		simulator.run(fn, True, video)
+		simulator.run_as_server(fn, True, video)
 	elif job == 'replay':
 		# Default view point setting
 		simulator.set_camera_view(*camera_info)
@@ -113,7 +113,7 @@ def execute(*args):
 		else:
 			raise IOError('Record file not found.')
 	elif job == 'run':
-		simulator.run()
+		simulator.run_as_server()
 	else:
 		raise NotImplementedError('Invalid input: Job not recognized.')
 	return simulator
