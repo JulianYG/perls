@@ -26,6 +26,7 @@ class BulletSimulator(object):
 		self.scene = scene
 		self._interface = interface
 		self.agent = agent
+		self.physics_server = None
 
 		log_dir = log_dir or pjoin(os.getcwd(), 'log')
 		self.VIDEO_DIR = pjoin(log_dir, 'video')
@@ -99,8 +100,9 @@ class BulletSimulator(object):
 				p.stopStateLogging(Id)
 		if self._interface:
 			self._interface.close()
-		p.resetSimulation()
-		p.disconnect()
+		if self.physics_server:
+			p.resetSimulation()
+			p.disconnect()
 
 	def _record(self, filename, video=False):
 		if video:
@@ -148,14 +150,14 @@ class BulletSimulator(object):
 			# Use GUI for replay or non-vr interface
 			if flag or not self.vr:
 				if self.gui:
-					p.connect(p.GUI)
+					self.physics_server = p.connect(p.GUI)
 					# Disable sidebar and shadows
 					p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
 					p.configureDebugVisualizer(p.COV_ENABLE_SHADOWS, 0)
 				else:
-					p.connect(p.DIRECT)
+					self.physics_server = p.connect(p.DIRECT)
 			else:
-				p.connect(p.SHARED_MEMORY)
+				self.physics_server = p.connect(p.SHARED_MEMORY)
 
 			# In order to avoid real time simulation in replay
 			# for deterministic paths

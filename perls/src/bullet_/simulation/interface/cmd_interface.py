@@ -4,7 +4,7 @@ from simulation.interface.core import CtrlInterface
 class ICmd(CtrlInterface):
 
 	def __init__(self, host, remote):
-		super(IVR, self).__init__(host, remote)
+		super(ICmd, self).__init__(host, remote)
 
 	def server_communicate(self, agent, scene, task, gui=True):
 		

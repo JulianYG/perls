@@ -34,6 +34,12 @@ class CtrlInterface(object):
 	def local_communicate(self, agent, gui=True):
 		raise NotImplementedError('Each interface must re-implement this method.')
 
+	def communicate(self, agent, scene, task, gui):
+		if self.remote:
+			self.server_communicate(agent, scene, task, gui=gui)
+		else:
+			self.local_communicate(agent, gui=gui)
+
 	def close(self):
 		if self.remote:
 			self.socket.disconnect()

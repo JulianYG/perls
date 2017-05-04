@@ -2,6 +2,7 @@ import pybullet as p
 import numpy as np
 from simulation.agents.core.tool import *
 from simulation.utils.enum import *
+from simulation.utils.classes import *
 
 class Robot(Tool):
 

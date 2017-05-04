@@ -5,7 +5,8 @@ from collections import defaultdict
 import os, sys, getopt, json
 from os.path import join as pjoin
 
-sys.path.append(pjoin(os.getcwd(), 'bullet_'))
+bullet_path = pjoin(os.getcwd(), 'bullet_')
+sys.path.append(bullet_path)
 
 from simulation.agents import *
 from simulation.interface import *
@@ -27,9 +28,9 @@ def execute():
 	Default load settings from command line execution. 
 	May need a configuration file for this purpose
 	"""
-	TASK_DIR = pjoin(os.getcwd(), 'configs', 'task.json')
-	SCENE_DIR = pjoin(os.getcwd(), 'configs', 'scene.json')
-	RECORD_LOG_DIR = pjoin(os.getcwd(), 'log', 'record', 'trajectory')
+	TASK_DIR = pjoin(bullet_path, 'configs', 'task.json')
+	SCENE_DIR = pjoin(bullet_path, 'configs', 'scene.json')
+	RECORD_LOG_DIR = pjoin(bullet_path, 'log', 'record', 'trajectory')
 
 	# ip = get_ip_address('eth0')
 
@@ -37,20 +38,21 @@ def execute():
 
 	socket.connect_with_client()
 
-	_CONFIGS = defaultdict(int)
-	while True:
+	_CONFIGS = {}
+
+	while not _CONFIGS:
 		for event in socket.listen_to_client():
 			e = eval(event)
 			# Make sure it's config
 			if isinstance(e, dict) and 'task' in e:
 				_CONFIGS = e
-				break
 
 	with open(TASK_DIR, 'r') as f:
 		task_repo = json.loads(f.read())
 	with open(SCENE_DIR, 'r') as f:
 		scene_repo = json.loads(f.read())
 
+	interface_type = _CONFIGS['interface']
 	agent = _CONFIGS['agent']
 	job = _CONFIGS['job']
 	video = _CONFIGS['video']
@@ -83,13 +85,20 @@ def execute():
 	else:
 		raise NotImplementedError('Invalid input: Model not recognized.')
 
-	interface = cmd_interface.ICmd(socket, remote)
+	if interface_type == 'vr':	# VR interface that takes VR events
+		interface = vr_interface.IVR(socket, remote)
+	elif interface_type == 'keyboard':	# Keyboard interface that takes keyboard events
+		interface = keyboard_interface.IKeyboard(socket, remote)
+	elif interface_type == 'cmd':	# Customized interface that takes any sort of command
+		interface = cmd_interface.ICmd(socket, remote)
+	else:
+		raise NotImplementedError('Non-supported interface.')
 
 	simulator = BulletSimulator(agent, interface, 
 								task_repo[task], scene_repo[scene],
 								gui=gui)
 	if job == 'record':
-		simulator.run(fn, True, video)
+		simulator.run_as_server(fn, True, video)
 	elif job == 'replay':
 		# Default view point setting
 		simulator.set_camera_view(*camera_info)
@@ -98,7 +107,7 @@ def execute():
 		else:
 			raise IOError('Record file not found.')
 	elif job == 'run':
-		simulator.run()
+		simulator.run_as_server()
 	else:
 		raise NotImplementedError('Invalid input: Job not recognized.')
 	return simulator

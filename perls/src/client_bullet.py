@@ -53,8 +53,10 @@ def run(*args):
 
 	# Singleton simulator
 	simulator = BulletSimulator(None, interface, None, None)
-
-	simulator.run_as_client()
+	try:
+		simulator.run_as_client()
+	except KeyboardInterrupt:
+		simulator.quit()
 
 if __name__ == '__main__':
 	run(sys.argv[1:])
