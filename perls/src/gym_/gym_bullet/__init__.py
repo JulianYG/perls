@@ -2,15 +2,13 @@ import os, json, sys
 from os.path import join as pjoin
 from gym_bullet.wrappers import *
 from gym.envs.registration import register
-
+print(os.getcwd())
 bullet_path = pjoin(os.getcwd(), '../bullet_')
 sys.path.append(bullet_path)
 
-from bullet.utils import helpers as utils
-from bullet.agents import *
-from bullet.simulator import BulletSimulator
-import bullet.utils.helpers as utils
-
+from simulation.utils import helpers as utils
+from simulation.agents import *
+from simulation.simulator import BulletSimulator
 
 TASK_DIR = pjoin(bullet_path, 'configs', 'task.json')
 SCENE_DIR = pjoin(bullet_path, 'configs', 'scene.json')
