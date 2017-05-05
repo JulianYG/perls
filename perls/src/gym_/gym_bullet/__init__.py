@@ -2,7 +2,7 @@ import os, json, sys
 from os.path import join as pjoin
 from gym_bullet.wrappers import *
 from gym.envs.registration import register
-print(os.getcwd())
+
 bullet_path = pjoin(os.getcwd(), '../bullet_')
 sys.path.append(bullet_path)
 
