@@ -29,7 +29,7 @@ Before initializing an instance of the Robot_Control class:
 	
 '''
 
-class Robot_Control(object):
+class RobotControl(object):
 
 	# Takes a limb and gripper instance as args
 	def __init__(self, limb, gripper):
@@ -42,38 +42,41 @@ class Robot_Control(object):
 		self.limb = limb
 		self.gripper = gripper
 
+		self.initEndpointPose = None
+
+	def set_init_positions(self, position):
+		
+		self.plan_joint_positions(position)
 		self.initEndpointPose = self.limb.endpoint_pose() # initial pose of end effector
 
 	# For LARGE MOVEMENTS: move joints to desired angles (motion planner)
 	# Takes in a dictionary (string:float) with entries for each joint on the robot
 	# Ex: {'right_j6': -0.2, 'right_j5': -1.0, 'right_j4': -1.8, 'right_j3': 1.4, 'right_j2': -1.0, 'right_j1': -0.2, 'right_j0': 0.9}
-	def moveJointStates(self, angles):
+	def plan_joint_positions(self, angles):
 		self.limb.move_to_joint_positions(angles) # threshold of .0087 radians for when end state has been reached
 		rospy.loginfo("Moved arm to desired position")
 
 	# Takes in a dictionary (string:float) with entries for each joint on the robot
-	def setJointPositions(self, angles): 
+	def set_joint_positions(self, angles): 
 		self.limb.set_joint_positions(angles) # look into the raw bool flag -> commands joint pos without modification to JCB -> bypasses safety check
 		rospy.loginfo("Moved arm to desired position")
 
-	def getJointAngles(self):
-		self.jointAngles = self.limb.joint_angles()
-		return self.jointVelocities
+	def get_joint_angles(self):
+		return self.limb.joint_angles()
 
-	def getJointVelocities(self):
-		self.jointVelocities = self.limb.joint_velocities()
-		return self.jointVelocities
+	def get_joint_velocities(self):
+		return self.limb.joint_velocities()
 
-	def getJointEfforts(self):
-		self.jointEfforts = self.limb.joint_efforts()
-		return self.jointEfforts
+	def get_joint_efforts(self):
+		return self.limb.joint_efforts()
 
-	def getEndpoint(self):
-		self.currEndpoint = self.limb.endpoint_pose()
-		return self.currEndpoint
+	def get_tool_pose(self):
+		pose = self.limb.endpoint_pose()
+		pos, orn = pose['position'], pose['orientation']
+		return (pos.x, pos.y, pos.z), (orn.w, orn.x, orn.y, orn.z)
 
-	# Takes in a dict of {'position' : (x,y,z), 'orientation' : (x,y,z,w)} and uses inverse IK solver to map and set the joint position
-	def setReach(self, endState): 
+	# Takes in a dict of {'position' : (x, y, z), 'orientation' : (w, x, y, z)} and uses inverse IK solver to map and set the joint position
+	def reach_absolute(self, endState): 
 		ns = "ExternalTools/right/PositionKinematicsNode/IKService"
 		iksvc = rospy.ServiceProxy(ns, SolvePositionIK)
 		ikreq = SolvePositionIKRequest()
@@ -102,24 +105,28 @@ class Robot_Control(object):
 		if (resp.result_type[0] > 0):
 			limb_joints = dict(zip(resp.joints[0].name, resp.joints[0].position)) # format IK response for compatability with Limb
 			self.limb.move_to_joint_positions(limb_joints)
+			# print(limb_joints)
+			# self.limb.set_joint_positions(limb_joints)
 			rospy.loginfo("Move to position succeeded")
 
 		else:
 			rospy.logerr("IK response is not valid")
+			return False
 
+	# def reach_relative(self, endState):
 
 
 	# Takes in a float val from 0.0 to 1.0 and maps that to the gripper
-	def setGripper(self, gripperVal):
+	def slide_grasp(self, gripperVal):
 		scaledGripPos = gripperVal * self.gripper.MAX_POSITION
 		self.gripper.set_position(scaledGripPos)
 
 	# Get the relative endpoint cartesian coordinates and orientation as compared to the arm's initial state
-	def getRelativePos(self):
-		currentEndpoint = self.getEndpoint()
+	def get_relative_pose(self):
+		currentEndpoint = self.get_tool_pose()
 
-		currPos = currentEndpoint['position']
-		currOrient = currentEndpoint['orientation']
+		currPos = currentEndpoint[0]
+		currOrient = currentEndpoint[1]
 		origPos = self.initEndpointPose['position']
 		origOrient = self.initEndpointPose['orientation']
 

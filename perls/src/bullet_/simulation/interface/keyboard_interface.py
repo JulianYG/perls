@@ -33,7 +33,6 @@ class IKeyboard(CtrlInterface):
 
 	def server_communicate(self, agent, scene, task, gui=False):
 		
-		print(self.socket.connected_with_client)
 		self.socket.connect_with_client()
 
 		tools = agent.get_tool_ids()
@@ -46,7 +45,6 @@ class IKeyboard(CtrlInterface):
 		self.orn = [[0,0,0],[0,0,0]]
 		pseudo_event = {0: 0, 3: 0.0, 6: {1: 0}}
 
-		print('communicated?')
 		while True:
 			# if agent.controllers:
 			events = self.socket.listen_to_client()
