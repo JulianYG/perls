@@ -1,4 +1,4 @@
-from simulation.comm.core import Comm
+from comm.core import Comm
 import socket, select
 
 """

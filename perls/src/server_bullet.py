@@ -13,7 +13,7 @@ from simulation.interface import *
 from simulation.simulator import BulletSimulator
 
 from simulation.utils import helpers as utils
-from simulation.comm import *
+from comm import db
 
 # def get_ip_address(ifname):
 #     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

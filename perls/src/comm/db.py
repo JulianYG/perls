@@ -3,7 +3,7 @@ if sys.version[0] == '2':
     from Queue import Queue as q
 else:
     from queue import Queue as q
-from simulation.comm.core import Comm
+from comm.core import Comm
 from simulation.utils.enum import *
 
 class RedisComm(Comm):

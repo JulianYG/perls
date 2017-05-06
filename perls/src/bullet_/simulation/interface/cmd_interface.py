@@ -1,6 +1,5 @@
 from simulation.interface.core import CtrlInterface
 
-
 class ICmd(CtrlInterface):
 
 	def __init__(self, host, remote):

@@ -10,7 +10,7 @@ sys.path.append(pjoin(os.getcwd(), 'ros_'))
 
 import rospy
 import intera_interface
-from robot import RobotControl as RC
+from controller import RobotControl as RC
 
 '''
 Before initializing an instance of the Robot_Control class:

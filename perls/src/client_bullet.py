@@ -1,4 +1,3 @@
-# import openvr
 import redis, time
 import os, sys, getopt, json
 from os.path import join as pjoin
@@ -8,27 +7,7 @@ from simulation.agents import *
 from simulation.interface import *
 from simulation.simulator import BulletSimulator
 import simulation.utils.helpers as utils
-from simulation.comm import *
-
-# openvr.init(openvr.VRApplication_Scene)
-# test
-
-# poses_t = openvr.TrackedDevicePose_t * openvr.k_unMaxTrackedDeviceCount
-# poses = poses_t()
-
-# print(type(poses_t))
-# print(type(poses))
-# while 1:
-#     openvr.VRCompositor().waitGetPoses(poses, len(poses), None, 0)
-#     hmd_pose = poses[openvr.k_unTrackedDeviceIndex_Hmd]
-#     print(hmd_pose.mDeviceToAbsoluteTracking)
-#     # sys.stdout.flush()
-#     time.sleep(1)
-
-# openvr.shutdown()
-
-
-import pybullet as p
+from comm import db
 
 remote_ip = '172.24.68.111'
 

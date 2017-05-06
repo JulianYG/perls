@@ -1,10 +1,12 @@
-from simulation.agents import *
+from simulation.agents import (
+	kuka, sawyer, pr2
+	)
 from simulation.interface import *
 from simulation.simulator import BulletSimulator
 import os, sys, getopt, json
 from os.path import join as pjoin
 from simulation.utils import helpers as utils
-from simulation.comm import *
+from comm import db
 
 def render_simulator(agent, interface, task, filename, record=True, vr=False):
 	"""
