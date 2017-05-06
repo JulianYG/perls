@@ -97,10 +97,10 @@ while True:
 				if not arm.reach_absolute({'position': target_pos, 'orientation': (0, 1, 0, 0)}):
 					target_pos = arm_initial_pos
 
-
 	except KeyboardInterrupt:
 		client_thread.stop()
 		pubsub.unsubscribe()
+		arm.shutdown()
 		sys.exit(0)
 
 
