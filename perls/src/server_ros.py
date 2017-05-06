@@ -10,7 +10,7 @@ sys.path.append(pjoin(os.getcwd(), 'ros_'))
 
 import rospy
 import intera_interface
-from controller import RobotControl as RC
+from robot import Robot
 
 '''
 Before initializing an instance of the Robot_Control class:
@@ -40,7 +40,7 @@ pubsub.subscribe(**{'event_channel': _event_handler})
 # Start thread
 client_thread = pubsub.run_in_thread(sleep_time=0.001)
 
-arm = RC(limb, gripper)
+arm = Robot(limb, gripper)
 
 # Initializing
 rest_pose = {'right_j6': 3.3161, 'right_j5': 0.57, 'right_j4': 0, 
