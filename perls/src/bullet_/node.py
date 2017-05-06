@@ -6,6 +6,7 @@ from simulation.simulator import BulletSimulator
 import os, sys, getopt, json
 from os.path import join as pjoin
 from simulation.utils import helpers as utils
+sys.path.append(pjoin(os.getcwd(), '../'))
 from comm import db
 
 def render_simulator(agent, interface, task, filename, record=True, vr=False):
