@@ -5,6 +5,7 @@ from simulation.interface import *
 from simulation.simulator import BulletSimulator
 import os, sys, getopt, json
 from os.path import join as pjoin
+sys.path.append(pjoin(os.getcwd(), '../'))
 from simulation.utils import helpers as utils
 from comm import db
 
