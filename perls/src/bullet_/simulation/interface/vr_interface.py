@@ -49,13 +49,17 @@ class IVR(CtrlInterface):
 			events = self.socket.listen_to_client()
 			for event in events:
 				event = eval(event)
-				if self._event_loop(event, scene, task, 
-					agent, gui, skip=skip_flag) > 0:
+				return_status = self._event_loop(event, scene, task, 
+					agent, gui, skip=skip_flag)
+				if return_status > 0:
 					try:
 						agent.control(event, control_map)
 					except IllegalOperation as e:
 						illegal_operation_handler(e, self.socket)
 						continue
+				if return_status < 0:
+					p.disconnect()
+					raise KeyboardInterrupt
 			if not gui:
 				p.stepSimulation()
 

@@ -51,12 +51,14 @@ class BulletSimulator(object):
 				self.scene, self.task, self.gui)
 		except (KeyboardInterrupt, SystemExit) as e:
 			self.quit()		
+		return 0
 
 	def run_as_client(self):
 		try:
 			self._interface.client_communicate()
 		except (KeyboardInterrupt, SystemExit) as e:
-			self.quit()	
+			self.quit()
+		return 0
 
 	def playback(self, file, delay=0.0001):
 		self._setup(1)

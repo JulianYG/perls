@@ -50,13 +50,11 @@ def execute(*args):
 	video = _CONFIGS['video']
 	delay = _CONFIGS['delay']
 	task = _CONFIGS['task']
-	remote = _CONFIGS['remote']
 	ip = _CONFIGS['server_ip']
 	fixed = _CONFIGS['fixed_gripper_orn']
 	force_sensor = _CONFIGS['enable_force_sensor']
 	init_pos = _CONFIGS['tool_positions']
 	camera_info = _CONFIGS['camera']
-	server = _CONFIGS['server']
 	gui = _CONFIGS['gui']
 	scene = _CONFIGS['scene']
 
@@ -77,31 +75,17 @@ def execute(*args):
 	else:
 		raise NotImplementedError('Invalid input: Model not recognized.')
 	
-	socket = None
-	if remote:
-		if server == 'redis':
-			socket = db.RedisComm(ip, port=6379)
-		elif server == 'tcp':
-			socket = tcp.TCPComm(ip)
-		elif server == 'cmd':
-			raise NotImplementedError('Currently not implemented')
-		else:
-			raise NotImplementedError('Invalid input: Server not recognized.')
-
 	if interface_type == 'vr':	# VR interface that takes VR events
-		interface = vr_interface.IVR(socket, remote)
+		interface = vr_interface.IVR(None, False)
 		vr = True
 	elif interface_type == 'keyboard':	# Keyboard interface that takes keyboard events
-		interface = keyboard_interface.IKeyboard(socket, remote)
+		interface = keyboard_interface.IKeyboard(None, False)
 		vr = False
 	elif interface_type == 'cmd':	# Customized interface that takes any sort of command
-		interface = cmd_interface.ICmd(socket, remote)
+		interface = cmd_interface.ICmd(None, False)
 		vr = False
 	else:
 		raise NotImplementedError('Non-supported interface.')
-
-	if remote and (job == 'record' or job == 'run'):
-		vr = False
 
 	simulator = BulletSimulator(agent, interface, 
 								task_repo[task], scene_repo[scene],

@@ -50,10 +50,13 @@ class IKeyboard(CtrlInterface):
 			events = self.socket.listen_to_client()
 			for event in events:
 				e = eval(event)
-
-				if self._event_loop(e, scene, task, agent, gui) > 0:
+				return_status = self._event_loop(e, scene, task, agent, gui)
+				if return_status > 0:
 					# The event dictionary sent
 					self._keyboard_event_handler(e, agent, control_map, pseudo_event)
+				elif return_status < 0:
+					p.disconnect()
+					raise KeyboardInterrupt
 				else:
 					control_map, _ = agent.create_control_mappings()
 					end_effector_poses = agent.get_tool_poses(tools)

@@ -59,7 +59,7 @@ class CtrlInterface(object):
 			return 0 
 		elif event is SHUTDOWN_HOOK:
 			print('VR Client quit')
-			return 0
+			return -1
 		elif isinstance(event, tuple) and len(event) == 2:
 			if event[0] is CTRL_HOOK:
 				agent.set_virtual_controller(event[1])
