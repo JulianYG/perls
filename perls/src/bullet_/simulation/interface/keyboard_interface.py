@@ -22,7 +22,7 @@ class IKeyboard(CtrlInterface):
 		self.socket.broadcast_to_server(
 			(CTRL_HOOK, [0, 1])
 		)
-
+		p.connect(p.GUI)
 		while True:
 			# Send to server
 			event = p.getKeyboardEvents()
@@ -48,7 +48,6 @@ class IKeyboard(CtrlInterface):
 		while True:
 			# if agent.controllers:
 			events = self.socket.listen_to_client()
-			print(events)
 			for event in events:
 				e = eval(event)
 

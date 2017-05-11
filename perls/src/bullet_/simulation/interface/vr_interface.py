@@ -21,6 +21,7 @@ class IVR(CtrlInterface):
 		self.socket.broadcast_to_server(
 			(CTRL_HOOK, [e[0] for e in p.getVREvents()])
 		)
+		p.connect(p.SHARED_MEMORY)
 		while True:
 			# Send to server
 			events = p.getVREvents()

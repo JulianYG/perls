@@ -9,12 +9,12 @@ from simulation.simulator import BulletSimulator
 import simulation.utils.helpers as utils
 from comm import db
 
-remote_ip = '172.24.68.111'
+# remote_ip = '172.24.68.111'
+remote_ip = 'localhost'
 
 def run(*args):
 	socket = db.RedisComm(remote_ip)
-
-	CONFIG_DIR = pjoin(os.getcwd(), 'configs', args[0] + '.json')
+	CONFIG_DIR = pjoin(os.getcwd(), 'bullet_/configs', args[0][0] + '.json')
 	_CONFIGS = utils.read_config(CONFIG_DIR)
 
 	socket.connect_with_server()
@@ -22,11 +22,11 @@ def run(*args):
 
 	interface_type = _CONFIGS['interface']
 	if interface_type == 'vr':	# VR interface that takes VR events
-		interface = vr_interface.IVR(socket, remote)
+		interface = vr_interface.IVR(socket, True)
 	elif interface_type == 'keyboard':	# Keyboard interface that takes keyboard events
-		interface = keyboard_interface.IKeyboard(socket, remote)
+		interface = keyboard_interface.IKeyboard(socket, True)
 	elif interface_type == 'cmd':	# Customized interface that takes any sort of command
-		interface = cmd_interface.ICmd(socket, remote)
+		interface = cmd_interface.ICmd(socket, True)
 	else:
 		raise NotImplementedError('Non-supported interface.')
 
