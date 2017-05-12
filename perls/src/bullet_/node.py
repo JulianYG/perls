@@ -112,9 +112,8 @@ def usage():
 def main(argv):
 
 	config = '1'	# default config
-
 	try:
-		opts, args = getopt.getopt(argv, 'hc:r', ['help', 'config='])
+		opts, args = getopt.getopt(argv, 'hc:', ['help', 'config='])
 	except getopt.GetoptError:
 		usage()
 		sys.exit(2)
