@@ -40,7 +40,7 @@ class IVR(CtrlInterface):
 			for event in events:
 				event = eval(event)
 				if isinstance(event, tuple):
-					if event[0] is CTRL_HOOK:
+					if event[0] is CTRL_HOOK and event[1]:
 						agent.set_virtual_controller(event[1])
 						control_map, obj_map = agent.create_control_mappings()
 

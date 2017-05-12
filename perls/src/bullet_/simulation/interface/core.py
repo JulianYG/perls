@@ -61,7 +61,7 @@ class CtrlInterface(object):
 			print('VR Client quit')
 			return -1
 		elif isinstance(event, tuple) and len(event) == 2:
-			if event[0] is CTRL_HOOK:
+			if event[0] is CTRL_HOOK and event[1]:
 				agent.set_virtual_controller(event[1])
 				print('Received controller IDs: {}'.format(agent.controllers))
 			return 0
