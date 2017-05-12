@@ -9,14 +9,12 @@ from simulation.simulator import BulletSimulator
 import simulation.utils.helpers as utils
 from comm import db
 
-# remote_ip = '172.24.68.111'
-remote_ip = 'localhost'
-
 def run(*args):
-	socket = db.RedisComm(remote_ip)
+	
 	CONFIG_DIR = pjoin(os.getcwd(), 'bullet_/configs', args[0][0] + '.json')
 	_CONFIGS = utils.read_config(CONFIG_DIR)
 
+	socket = db.RedisComm(_CONFIGS['server_ip'])
 	socket.connect_with_server()
 	socket.broadcast_to_server(_CONFIGS)
 

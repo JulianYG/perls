@@ -65,7 +65,6 @@ def run_server(config):
 	video = config['video']
 	delay = config['delay']
 	task = config['task']
-	ip = config['server_ip']
 	fixed = config['fixed_gripper_orn']
 	force_sensor = config['enable_force_sensor']
 	init_pos = config['tool_positions']
@@ -90,7 +89,7 @@ def run_server(config):
 	else:
 		raise NotImplementedError('Invalid input: Model not recognized.')
 
-	host = db.RedisComm(ip, port=6379)  # ip
+	host = db.RedisComm('localhost', port=6379)  # ip
 
 	if interface_type == 'vr':	# VR interface that takes VR events
 		interface = vr_interface.IVR(host, True)
