@@ -18,11 +18,12 @@ class IKeyboard(CtrlInterface):
 
 		self.socket.connect_with_server()
 	
+		p.connect(p.GUI)
 		# Let the socket know controller IDs
 		self.socket.broadcast_to_server(
 			(CTRL_HOOK, [0, 1])
 		)
-		p.connect(p.GUI)
+		
 		while True:
 			# Send to server
 			event = p.getKeyboardEvents()

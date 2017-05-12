@@ -115,10 +115,10 @@ class Robot(object):
 
 	# def reach_relative(self, endState):
 	def shutdown(self):
-		def clean_shutdown():
-			rs.disable()
-			print("\nExiting example...")
-		rospy.on_shutdown(clean_shutdown)
+		# def clean_shutdown():
+		# 	rs.disable()
+		# 	print("\nExiting example...")
+		rospy.signal_shutdown('Exiting example...')
 
 	# Takes in a float val from 0.0 to 1.0 and maps that to the gripper
 	def slide_grasp(self, gripperVal):

@@ -11,6 +11,7 @@ sys.path.append(pjoin(os.getcwd(), 'ros_'))
 import rospy
 import intera_interface
 from robot import Robot
+from utils import Interpolator, UniformSubsampler, MovingAverageFilter
 
 '''
 Before initializing an instance of the Robot_Control class:
@@ -58,9 +59,11 @@ while True:
 		break
 
 
-FILTER_SIZE = 20
-lpf_list = []
-lpf_num_elems = 0
+# FILTER_SIZE = 20
+# lpf_list = []
+# lpf_num_elems = 0
+
+sampler = UniformSubsampler(T=50)
 
 while True:
 	try:
@@ -76,6 +79,10 @@ while True:
 				arm.set_init_positions(rest_pose)
 				vr_initial_pos = np.array(list(e[1]))
 
+			# subsample uniformly
+			if sampler.subsample(pos) is None:
+				continue
+
 			arm_rel_pos = arm.get_relative_pose()['position']
 
 			rel_pose = np.array([arm_rel_pos.x ,arm_rel_pos.y, arm_rel_pos.z])
@@ -84,14 +91,14 @@ while True:
 
 			target_pos = arm_initial_pos + vr_rel_pos
 
-			if lpf_num_elems >= FILTER_SIZE:
-				lpf_list.pop(0)
-				lpf_list.append(target_pos)
-			else:
-				lpf_list.append(target_pos)
-				lpf_num_elems += 1
+			# if lpf_num_elems >= FILTER_SIZE:
+			# 	lpf_list.pop(0)
+			# 	lpf_list.append(target_pos)
+			# else:
+			# 	lpf_list.append(target_pos)
+			# 	lpf_num_elems += 1
 
-			target_pos = np.mean(np.array(lpf_list), axis=0)
+			# target_pos = np.mean(np.array(lpf_list), axis=0)
 
 			if 0.1 < np.sqrt(np.sum(vr_rel_pos ** 2)) < 0.8:
 				if not arm.reach_absolute({'position': target_pos, 'orientation': (0, 1, 0, 0)}):
