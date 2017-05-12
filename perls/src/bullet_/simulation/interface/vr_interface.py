@@ -18,12 +18,12 @@ class IVR(CtrlInterface):
 		self.socket.connect_with_server()
 
 		p.connect(p.SHARED_MEMORY)
-		# Let the socket know controller IDs
-		self.socket.broadcast_to_server(
-			(CTRL_HOOK, [e[0] for e in p.getVREvents()])
-		)
 		
 		while True:
+			# Let the socket know controller IDs
+			self.socket.broadcast_to_server(
+				(CTRL_HOOK, [e[0] for e in p.getVREvents()])
+			)
 			# Send to server
 			events = p.getVREvents()
 			for event in (events):
