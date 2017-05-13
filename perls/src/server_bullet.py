@@ -1,6 +1,3 @@
-import socket
-import fcntl
-import struct
 from collections import defaultdict
 import os, sys, getopt, json
 from os.path import join as pjoin
@@ -19,21 +16,12 @@ TASK_DIR = pjoin(bullet_path, 'configs', 'task.json')
 SCENE_DIR = pjoin(bullet_path, 'configs', 'scene.json')
 RECORD_LOG_DIR = pjoin(bullet_path, 'log', 'record', 'trajectory')
 
-# def get_ip_address(ifname):
-#     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-#     return socket.inet_ntoa(fcntl.ioctl(
-#         s.fileno(),
-#         0x8915,  # SIOCGIFADDR
-#         struct.pack('256s', ifname[:15])
-#     )[20:24])
-
 def execute():
 	"""
 	Default load settings from command line execution. 
 	May need a configuration file for this purpose
 	"""
 	
-
 	socket = db.RedisComm('localhost', port=6379)  # ip
 
 	socket.connect_with_client()
