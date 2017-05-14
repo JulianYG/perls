@@ -81,17 +81,32 @@ class BulletSimulator(object):
 		self.FOCAL_LENGTH = dist
 		self.image_width = width
 		self.image_height = height
-		self.viewMatrix = p.computeViewMatrixFromYawPitchRoll((targetPosX, targetPosY, targetPosZ), 
+		self.viewMatrix = p.computeViewMatrixFromYawPitchRoll(
+			(targetPosX, targetPosY, targetPosZ), 
 			dist, yaw, pitch, roll, self.UP_AX_IDX)
-		self.projectionMatrix = p.computeProjectionMatrixFOV(60, float(width) / height, .01, 1000.)
+		self.projectionMatrix = p.computeProjectionMatrixFOV(60, 
+			float(width) / height, .01, 1000.)
 
-	def snapshot(self, show=False):
-		img_arr = p.getCameraImage(self.image_width, self.image_height, 
-			self.viewMatrix, self.projectionMatrix)
-		np_img = np.reshape(img_arr[2], (img_arr[1], img_arr[0], 4)) / 255.
-		if show:
-			plt.imshow(np_img)
-		return np_img
+	def snapshot(self, show=''):
+		width, height, rgb_img, depth_img, seg_img = p.getCameraImage(self.image_width, 
+			self.image_height, self.viewMatrix, self.projectionMatrix,
+			[0, 1, 0], [1, 1, 1], renderer=p.ER_BULLET_HARDWARE_OPENGL)
+		if show == 'human':
+			rgb_img = np.reshape(rgb_img, (height, width, 4)).astype(np.float32) / 255.
+			plt.imshow(rgb_img)
+			plt.pause(2)
+			return rgb_img
+		elif show == 'depth':
+			depth_img = np.reshape(depth_img, (height, width)).astype(np.float32)
+			plt.imshow(depth_img)
+			plt.pause(2)
+			return depth_img
+		elif show == 'segment':
+			seg_img = np.reshape(seg_img, (height, width)).astype(np.float32)
+			print(seg_img)
+			plt.imshow(seg_img)
+			plt.pause(2)
+			return seg_img
 
 	def quit(self):
 		"""

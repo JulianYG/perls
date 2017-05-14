@@ -10,7 +10,7 @@ class BulletEnv(gym.Env):
 	Trying to solve InverseKinematics by RL
 	"""
 	metadata = {
-		'render.modes': ['human', 'rgb_array'],
+		'render.modes': ['human', 'depth', 'segment'],
 		'video.frames_per_second': 50
 	}
 
@@ -36,12 +36,8 @@ class BulletEnv(gym.Env):
 	def _close(self):
 		self.simulator.quit()
 
-	def _render(self, mode='rgb_array', close=False):
-		if mode == 'rgb_array':
-			img_array = self.simulator.snapshot()
-		else:
-			img_array = self.simulator.snapshot(show=True)
-		return img_array
+	def _render(self, mode='', close=False):
+		return self.simulator.snapshot(show=mode)
 
 	def _reset(self):
 		if not self.realTimeSimulation:
