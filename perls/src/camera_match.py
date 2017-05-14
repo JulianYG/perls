@@ -1,61 +1,63 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
-# import sys, os
-# import rospy
-# import cv2
-# import intera_interface
-# from std_msgs.msg import String
-# from sensor_msgs.msg import Image
-# from cv_bridge import CvBridge, CvBridgeError
+import sys, os
+import rospy
+import cv2
+import intera_interface
+from std_msgs.msg import String
+from sensor_msgs.msg import Image
+from cv_bridge import CvBridge, CvBridgeError
 
-# from os.path import join as pjoin
-# sys.path.append(pjoin(os.getcwd(), 'ros_'))
-# from robot import Robot
+from os.path import join as pjoin
+sys.path.append(pjoin(os.getcwd(), 'ros_'))
+from robot import Robot
 
 import numpy as np
 from numpy.linalg import LinAlgError
 
-# rospy.init_node('sdk_wrapper')
-# limb = intera_interface.Limb('right')
-# gripper = intera_interface.Gripper('right')
+rospy.init_node('sdk_wrapper')
+limb = intera_interface.Limb('right')
+gripper = intera_interface.Gripper('right')
 
-# arm = Robot(limb, gripper)
+arm = Robot(limb, gripper)
 
-# rest_pose = {'right_j6': 3.3161, 'right_j5': 0.57, 'right_j4': 0, 
-#     'right_j3': 2.18, 'right_j2': -0, 'right_j1': -1.18, 'right_j0': 0.}
+rest_pose = {'right_j6': 3.3161, 'right_j5': 0.57, 'right_j4': 0, 
+    'right_j3': 2.18, 'right_j2': -0, 'right_j1': -1.18, 'right_j0': 0.}
 
-# arm.set_init_positions(rest_pose)
+arm.set_init_positions(rest_pose)
 
-# _INIT_POS = np.array(arm.get_tool_pose()[0][:2])
-# _PXL = (457, 192)
+_INIT_POS = np.array(arm.get_tool_pose()[0][:2])
+_PXL = (457, 192)
 
-# _ALPHA = 0.026 / 21
+_ALPHA = 0.026 / 21
 
-# def pixel_diff_to_pos(curr_pos, curr_pxl, targ_pxl):
-#     dist = (np.array(targ_pxl) - np.array(curr_pxl)) * _ALPHA
-#     return curr_pos + dist[::-1]
+_K = np.array([[600.153387, 0, 315.459915], [0, 598.015225, 222.933946], [0, 0, 1]])
 
-# def get_current_pixel(curr_pos):
-#     pxl = ((curr_pos - _INIT_POS)[::-1] / _ALPHA).astype(np.int32) + _PXL
-#     return (pxl[0], pxl[1])
+def pixel_diff_to_pos(curr_pos, curr_pxl, targ_pxl):
+    dist = (np.array(targ_pxl) - np.array(curr_pxl)) * _ALPHA
+    return curr_pos + dist[::-1]
 
-# def move_to_pixel_without_reset(x, y):
+def get_current_pixel(curr_pos):
+    pxl = ((curr_pos - _INIT_POS)[::-1] / _ALPHA).astype(np.int32) + _PXL
+    return (pxl[0], pxl[1])
 
-#     # Ignore z-axis value
-#     gripper_pos = np.array(arm.get_tool_pose()[0][:2])
-#     curr_pxl = get_current_pixel(gripper_pos)
+def move_to_pixel_without_reset(x, y):
 
-#     target_pos = pixel_diff_to_pos(gripper_pos, curr_pxl, (x, y))
-#     arm.reach_absolute({'position': (target_pos[0], target_pos[1], 
-#         0.12), 'orientation': (0, 1, 0, 0)})
+    # Ignore z-axis value
+    gripper_pos = np.array(arm.get_tool_pose()[0][:2])
+    curr_pxl = get_current_pixel(gripper_pos)
 
-# def move_to_pixel_with_reset(x, y):
+    target_pos = pixel_diff_to_pos(gripper_pos, curr_pxl, (x, y))
+    arm.reach_absolute({'position': (target_pos[0], target_pos[1], 
+        0.12), 'orientation': (0, 1, 0, 0)})
 
-#     arm.set_init_positions(rest_pose)
-#     target_pos = pixel_diff_to_pos(gripper_pos, _PXL, (x, y))
-#     arm.reach_absolute({'position': (target_pos[0], target_pos[1], 
-#         0.12), 'orientation': (0, 1, 0, 0)})
+def move_to_pixel_with_reset(x, y):
+
+    arm.set_init_positions(rest_pose)
+    target_pos = pixel_diff_to_pos(gripper_pos, _PXL, (x, y))
+    arm.reach_absolute({'position': (target_pos[0], target_pos[1], 
+        0.12), 'orientation': (0, 1, 0, 0)})
 
 def calibrate_transformation(pts, K):
 
@@ -67,6 +69,9 @@ def calibrate_transformation(pts, K):
     p[0, :] -= 320
     p[1, :] = 240 - p[1, :]
 
+    global xx
+    xx = p
+
     d = np.matmul(np.linalg.inv(K), p)
 
     C = np.vstack([pts[:, 1].T, 
@@ -75,21 +80,61 @@ def calibrate_transformation(pts, K):
     # x = d \ C, x * c = d
     # (xc)' = d', c'x' = d', x = (d'/c')'
     try:
-        M = np.linalg.solve(C.T, d.T)[0].T
+        # M = np.linalg.solve(C.T, d.T)[0].T
+        M = d.dot(np.linalg.pinv(C))
     except LinAlgError:
         M = np.linalg.lstsq(C.T, d.T)[0].T
-
-    print(M)
     return M, M[:3, :3], M[:, 3]
 # move_to_pixel_without_reset(494, 392)
 
+def calculate_position(x, y, M):
+
+    A = _K.dot(M)
+    b = np.array([[x - 320], [240 - y], [1]])
+
+    # a x = p, solve for x
+    return np.linalg.pinv(A).dot(b)
+
 M, R, T = calibrate_transformation(
-    [[[26,74,1], [0.8, 0.6, 0.1]], [[35, 198,1], [0.6, -0.2, 0.1]]], 
-    [[600.153387, 0, 315.459915], [0, 598.015225, 222.933946], [0, 0, 1]]
+    [[[171,218,1], [0.4957, -0.1641, 0.0945]], 
+    [[274, 223,1], [0.4947, -0.0416, 0.0920]], 
+    [[351,219,1],[0.4921,0.0445,0.0921]],
+    [[445,221,1],[0.4835,0.1466,0.0895]],
+    [[171,319,1],[0.6132,-0.1623,0.0884]],
+    [[272,318,1],[0.6070,-0.0430,0.0922]],
+    [[353,315,1],[0.6042,0.0418,0.0916]],
+    [[445,319,1],[0.5983,0.1526,0.0873]],
+    [[173,404,1],[0.6758,-0.1606,0.0890]],
+    [[267,413,1],[0.717,-0.0451,0.0878]],
+    [[355,411,1],[0.7135,0.0443,0.0966]],
+    [[445,414,1],[0.7175,0.1570,0.088]]],
+    _K
 )
 
-print(R, np.array([26, 74, 1]).T, T)
-print(R.T.dot((np.array([26, 74, 1]) - T).T))
+P = np.array(
+    [[0.4957, -0.1641, 0.0945], 
+    [0.4947, -0.0416, 0.0920], 
+    [0.4921,0.0445,0.0921],
+    [0.4835,0.1466,0.0895],
+    [0.6132,-0.1623,0.0884],
+    [0.6070,-0.0430,0.0922],
+    [0.6042,0.0418,0.0916],
+    [0.5983,0.1526,0.0873],
+    [0.6758,-0.1606,0.0890],
+    [0.717,-0.0451,0.0878],
+    [0.7135,0.0443,0.0966]])
+
+C = np.vstack([P.T, 
+    np.ones(len(P), dtype=np.float32)])
+
+p = _K.dot(M).dot(C)
+p[0, :] += 320
+p[1, :] = - p[1, :] + 240
+
+print(np.linalg.pinv(_K.dot(M)).dot(xx))
+# print(np.linalg.pinv(M).dot(np.linalg.inv(_K).dot(p)).T)
+
+print(calculate_position(355, 411, M))
 
 # arm.reach_absolute({'position': (0.44989269453228237, 0.15755170628471973, 0.2), 'orientation': (0, 1, 0, 0)})
 # class image_converter:
