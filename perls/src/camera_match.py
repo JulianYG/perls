@@ -44,39 +44,38 @@ _invK = np.linalg.inv(_K)
 _D = np.array([0.147084, -0.257330, 
     0.003032, -0.006975, 0.000000], np.float32)
 
-# Manual calibration
-imgPoints = np.array([
-    [171, 218],
-    [274, 223],
-    [351, 219],
-    [415, 221],
-    [171, 319],
-    [272, 318],
-    [353, 315],
-    [445, 318],
-    [173, 404],
-    [267, 413],
-    [355, 411],
-    [445, 414]])
+def calibrate_transformation(boardShape, checkerSize, gripperInitPos):
 
-objPoints = np.array([
-    [0.4957,-0.1641,0.0945], 
-    [0.4947,-0.0416,0.0920], 
-    [0.4921,0.0445,0.0921],
-    [0.4835,0.1466,0.0895],
-    [0.6132,-0.1623,0.0884],
-    [0.6070,-0.0430,0.0922],
-    [0.6042,0.0418,0.0916],
-    [0.5983,0.1526,0.0873],
-    [0.6758,-0.1606,0.0890],
-    [0.717,-0.0451,0.0878],
-    [0.7135,0.0443,0.0966],
-    [0.7175,0.1570,0.0880]])
+    cam, s, foundPattern = cv2.VideoCapture(0), False, False
 
-def calibrate_transformation(imgPoints, objectPoints):
+    # Loop until read image
+    while not s:
+        s, img = cam.read()
+
+    # Loop until found checkerboard pattern
+    while not foundPattern:
+        foundPattern, cornerPoints = cv2.findChessboardCorners(
+            img, boardShape, None, 
+            cv2.CALIB_CB_ADAPTIVE_THRESH
+        )
+
+    numOfCornerPoints = cornerPoints.shape[0]
+
+    objectPoints = np.zeros((boardShape[0], boardShape[1], 3), dtype=np.float32)
+
+    for i in range(boardShape[0]):
+        for j in range(boardShape[1]):
+            objectPoints[i, j] = [gripperInitPos[0] + i * checkerSize, 
+                gripperInitPos[1] + j * checkerSize, 0]
+
+    objectPoints = objectPoints.reshape(numOfCornerPoints, 3).astype(np.float32)
+    cornerPoints = cornerPoints.reshape(numOfCornerPoints, 2).astype(np.float32)
+
+    print(objectPoints)
 
     retval, rvec, tvec = cv2.solvePnP(
-        objectPoints, imgPoints.astype(np.float32), _K, _D)
+        objectPoints, cornerPoints,
+        _K, _D)
 
     rotMatrix = cv2.Rodrigues(rvec)[0]
     invRotation = np.linalg.inv(rotMatrix)
@@ -93,7 +92,7 @@ def calculate_position(x, y, t, invR):
 
     # approx height of each block + 
     # (inv Rotation matrix * inv Camera matrix * point) 
-    s = .09 + tempMat3[2]
+    s = .026 + tempMat3[2]
 
     # inv Rotation matrix * tvec
     s /= tempMat2[2] 
@@ -112,9 +111,10 @@ def move_to_pixel(x, y, z, t, iR):
         z), 'orientation': (0, 1, 0, 0)})
 
 
-tvec, invRotation = calibrate_transformation(imgPoints, objPoints)
+tvec, invRotation = calibrate_transformation((9, 6), 0.026, (0.2757, -0.3494))
 
-move_to_pixel(271, 317, 0.12, tvec, invRotation)
+# print(tvec, invRotation)
+# move_to_pixel(268, 414, 0.12, tvec, invRotation)
 
 
 

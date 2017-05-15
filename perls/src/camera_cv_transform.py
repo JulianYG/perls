@@ -13,6 +13,8 @@ imgPoints = np.array([[171, 218],
 					  [267, 413],
 					  [355, 411],
 					  [445, 414]], np.float32)
+
+print(imgPoints.shape)
 objectPoints = np.array(
     [[0.4957, -0.1641, 0.0945], 
     [0.4947, -0.0416, 0.0920], 
