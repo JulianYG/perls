@@ -61,12 +61,12 @@ def calibrate_transformation(boardShape, checkerSize, gripperInitPos):
 
     numOfCornerPoints = cornerPoints.shape[0]
 
-    objectPoints = np.zeros((boardShape[0], boardShape[1], 3), dtype=np.float32)
+    objectPoints = np.zeros((boardShape[1], boardShape[0], 3), dtype=np.float32)
 
-    for i in range(boardShape[0]):
-        for j in range(boardShape[1]):
+    for i in range(boardShape[1]):
+        for j in range(boardShape[0]):
             objectPoints[i, j] = [gripperInitPos[0] + i * checkerSize, 
-                gripperInitPos[1] + j * checkerSize, 0]
+                gripperInitPos[1] + j * checkerSize, 0.]
 
     objectPoints = objectPoints.reshape(numOfCornerPoints, 3).astype(np.float32)
     cornerPoints = cornerPoints.reshape(numOfCornerPoints, 2).astype(np.float32)
