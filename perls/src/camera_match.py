@@ -15,6 +15,7 @@ from robot import Robot
 
 import numpy as np
 from numpy.linalg import LinAlgError
+import scipy.linalg as sn
 
 rospy.init_node('sdk_wrapper')
 limb = intera_interface.Limb('right')
@@ -32,7 +33,11 @@ _PXL = (457, 192)
 
 _ALPHA = 0.026 / 21
 
-_K = np.array([[600.153387, 0, 315.459915], [0, 598.015225, 222.933946], [0, 0, 1]])
+# Camera matrix
+_K = np.array([[600.153387, 0, 315.459915], [0, 598.015225, 222.933946], [0, 0, 1]], np.float32)
+
+# Distortion
+_D = np.array([0.147084, -0.257330, 0.003032, -0.006975, 0.000000], np.float32)
 
 def pixel_diff_to_pos(curr_pos, curr_pxl, targ_pxl):
     dist = (np.array(targ_pxl) - np.array(curr_pxl)) * _ALPHA
@@ -59,82 +64,105 @@ def move_to_pixel_with_reset(x, y):
     arm.reach_absolute({'position': (target_pos[0], target_pos[1], 
         0.12), 'orientation': (0, 1, 0, 0)})
 
-def calibrate_transformation(pts, K):
+def calibrate_transformation(imgPoints, objectPoints, K, D):
 
-    pts = np.array(pts)
+    # pts = np.array(pts)
 
-    # K^-1 * [u, v, 1]' = x * [X, Y, Z, 1]'
-    p = pts[:, 0].T 
+    # # K^-1 * [u, v, 1]' = x * [X, Y, Z, 1]'
+    # p = pts[:, 0].T 
 
-    p[0, :] -= 320
-    p[1, :] = 240 - p[1, :]
+    # p[0, :] -= 320
+    # p[1, :] = 240 - p[1, :]
 
-    global xx
-    xx = p
+    # global xx
+    # xx = p
 
-    d = np.matmul(np.linalg.inv(K), p)
+    # d = np.matmul(np.linalg.inv(K), p)
 
-    C = np.vstack([pts[:, 1].T, 
-        np.ones(len(pts), dtype=np.float32)])
+    # C = np.vstack([pts[:, 1].T, 
+    #     np.ones(len(pts), dtype=np.float32)])
 
-    # x = d \ C, x * c = d
-    # (xc)' = d', c'x' = d', x = (d'/c')'
-    try:
-        # M = np.linalg.solve(C.T, d.T)[0].T
-        M = d.dot(np.linalg.pinv(C))
-    except LinAlgError:
-        M = np.linalg.lstsq(C.T, d.T)[0].T
-    return M, M[:3, :3], M[:, 3]
+    # # x = d \ C, x * c = d
+    # # (xc)' = d', c'x' = d', x = (d'/c')'
+    # try:
+    #     # M = np.linalg.solve(C.T, d.T)[0].T
+    #     M = d.dot(sn.pinv(C))
+    # except LinAlgError:
+    #     M = np.linalg.lstsq(C.T, d.T)[0].T
+    # return M, M[:3, :3], M[:, 3]
+
+    retval, rvec, tvec = cv2.solvePnP(objectPoints, imgPoints.astype(np.float32), K, D)
+
+    rotMatrix = cv2.Rodrigues(rvec)[0]
+
+    invRot = np.linalg.inv(rotMatrix)
+    invCamera = np.linalg.inv(K)
+
+    return tvec, invRot, invCamera
+
 # move_to_pixel_without_reset(494, 392)
 
-def calculate_position(x, y, M):
+def calculate_position(x, y, t, iR, iC):
 
-    A = _K.dot(M)
-    b = np.array([[x - 320], [240 - y], [1]])
+    # A = _K.dot(M)
+    # b = np.array([[x - 320], [240 - y], [1]])
 
-    # a x = p, solve for x
-    return np.linalg.pinv(A).dot(b)
+    # # a x = p, solve for x
+    # return sn.pinv(A).dot(b)
 
-M, R, T = calibrate_transformation(
-    [[[171,218,1], [0.4957, -0.1641, 0.0945]], 
-    [[274, 223,1], [0.4947, -0.0416, 0.0920]], 
-    [[351,219,1],[0.4921,0.0445,0.0921]],
-    [[445,221,1],[0.4835,0.1466,0.0895]],
-    [[171,319,1],[0.6132,-0.1623,0.0884]],
-    [[272,318,1],[0.6070,-0.0430,0.0922]],
-    [[353,315,1],[0.6042,0.0418,0.0916]],
-    [[445,319,1],[0.5983,0.1526,0.0873]],
-    [[173,404,1],[0.6758,-0.1606,0.0890]],
-    [[267,413,1],[0.717,-0.0451,0.0878]],
-    [[355,411,1],[0.7135,0.0443,0.0966]],
-    [[445,414,1],[0.7175,0.1570,0.088]]],
-    _K
+    uvPoint = np.array([x,y,1]).astype(np.float32) # Change the pixel point here (in form [u,v,1])
+    tempMat = iR * iC
+    tempMat2 = tempMat.dot(uvPoint)
+    tempMat3 = iR.dot(np.reshape(t, 3))
+
+    s = .09 + tempMat3[2] # .09 + (inv Rotation matrix * inv Camera matrix * point) -> .09 is approx height of each block
+    s /= tempMat2[2] # inv Rotation matrix * tvec
+
+
+    #s * [u,v,1] = M(R*[X,Y,Z] - t)  ->   R^-1 * (M^-1 * s * [u,v,1] - t) = [X,Y,Z] 
+    temp = iC.dot(s * uvPoint)
+    temp2 = temp - np.reshape(t, 3)
+
+    realworldCoords = iR.dot(temp2)
+    return realworldCoords
+
+tvec, invR, invC = calibrate_transformation(
+    np.array([[171, 218],
+              [274, 223],
+              [351, 219],
+              [415, 221],
+              [171, 319],
+              [272, 318],
+              [353, 315],
+              [445, 318],
+              [173, 404],
+              [267, 413],
+              [355, 411],
+              [445, 414]]),
+    np.array(
+        [[0.4957, -0.1641, 0.0945], 
+        [0.4947, -0.0416, 0.0920], 
+        [0.4921,0.0445,0.0921],
+        [0.4835,0.1466,0.0895],
+        [0.6132,-0.1623,0.0884],
+        [0.6070,-0.0430,0.0922],
+        [0.6042,0.0418,0.0916],
+        [0.5983,0.1526,0.0873],
+        [0.6758,-0.1606,0.0890],
+        [0.717,-0.0451,0.0878],
+        [0.7135,0.0443,0.0966],
+        [0.7175, 0.1570, 0.0880]]),
+    _K, _D
 )
 
-P = np.array(
-    [[0.4957, -0.1641, 0.0945], 
-    [0.4947, -0.0416, 0.0920], 
-    [0.4921,0.0445,0.0921],
-    [0.4835,0.1466,0.0895],
-    [0.6132,-0.1623,0.0884],
-    [0.6070,-0.0430,0.0922],
-    [0.6042,0.0418,0.0916],
-    [0.5983,0.1526,0.0873],
-    [0.6758,-0.1606,0.0890],
-    [0.717,-0.0451,0.0878],
-    [0.7135,0.0443,0.0966]])
 
-C = np.vstack([P.T, 
-    np.ones(len(P), dtype=np.float32)])
+def move_to_pixel(x, y):
+    target_pos = calculate_position(x, y, tvec, invR, invC)
+    arm.reach_absolute({'position': (target_pos[0], target_pos[1], 
+        0.12), 'orientation': (0, 1, 0, 0)})
 
-p = _K.dot(M).dot(C)
-p[0, :] += 320
-p[1, :] = - p[1, :] + 240
-
-print(np.linalg.pinv(_K.dot(M)).dot(xx))
-# print(np.linalg.pinv(M).dot(np.linalg.inv(_K).dot(p)).T)
-
-print(calculate_position(355, 411, M))
+move_to_pixel(271, 317)
+# print(calculate_position(355, 411, tvec, invR, invC))
 
 # arm.reach_absolute({'position': (0.44989269453228237, 0.15755170628471973, 0.2), 'orientation': (0, 1, 0, 0)})
 # class image_converter:
