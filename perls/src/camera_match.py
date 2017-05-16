@@ -42,17 +42,65 @@ _invK = np.linalg.inv(_K)
 _D = np.array([0.147084, -0.257330, 
     0.003032, -0.006975, 0.000000], np.float32)
 
-cam = cv2.VideoCapture(0)
+# global robotCamFoundCorners
+# robotCamFoundCorners = False
+
+usbCam = cv2.VideoCapture(0)
+
+# robotCamCornerPoints = []
+# # robotCamCornerPoints = None
+
+# robotCam = intera_interface.Cameras()
+
+# def show_image_callback(img_data):
+
+#     bridge = CvBridge()
+#     try:
+#         cv_image = bridge.imgmsg_to_cv2(img_data, "bgr8")
+#         foundPattern, cornerPoints = cv2.findChessboardCorners(
+#             cv_image, (9, 6), None
+#         )
+        
+#         if foundPattern and not robotCamCornerPoints:
+#             robotCamCornerPoints.append(cornerPoints)
+#             return
+
+#     except CvBridgeError, err:
+#         rospy.logerr(err)
+#         return    
+
+
+# if not robotCam.verify_camera_exists('head_camera'):
+#     rospy.logerr("Invalid robotCam name, exiting the example.")
+    
+# robotCam.start_streaming('head_camera')
+
+# robotCam.set_callback('head_camera', show_image_callback,
+#     rectify_image=True)
+
+# try:
+#     rospy.spin()
+# except KeyboardInterrupt:
+#     rospy.loginfo('Shutting down robot image detection')
+
+# robotCamCornerPoints = np.array(robotCamCornerPoints[0]).reshape((54, 2))[::-1]
+# print(robotCamCornerPoints)
+
+
+# robotCam.stop_streaming('head_camera')
+
 
 def calibrate_transformation(boardShape, checkerSize, gripperInitPos):
 
     s, foundPattern = False, False
 
     # Loop until read image
+    print('Reading from usb camera...')
     while not s:
-        s, img = cam.read()
+        s, img = usbCam.read()
 
     # Loop until found checkerboard pattern
+    print('Finding checkerboard pattern...')
     while not foundPattern:
         foundPattern, cornerPoints = cv2.findChessboardCorners(
             img, boardShape, None, 
@@ -122,7 +170,7 @@ def move_to_with_grasp_and_lift(x, y, t, iR):
     time.sleep(0.5)
     arm.slide_grasp(1)
 
-tvec, invRotation = calibrate_transformation((9, 6), 0.026, (0.3045, -0.3623))
+# tvec, invRotation = calibrate_transformation((9, 6), 0.026, (0.3045, -0.3623))
 
 # print(tvec, invRotation)
 # move_to_pixel(179, 401, 0.12, tvec, invRotation)
@@ -134,7 +182,7 @@ def mouse_callback(event, x, y, flags, params):
 
 while 1:
     try:
-        s, img = cam.read()
+        s, img = usbCam.read()
         if s:
             color_img = cv2.bilateralFilter(img, 9, 75, 75)
             color_img = cv2.fastNlMeansDenoisingColored(color_img, None, 10, 10, 7, 21)

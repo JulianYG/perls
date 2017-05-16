@@ -23,11 +23,11 @@ while 1:
 	    setMouseCallback('cam-calibrate', mouse_callback)
 	    # res, corners = findChessboardCorners(img, (9, 6), None, CALIB_CB_ADAPTIVE_THRESH)
 	    # if res:
-	    	# print(corners, corners.shape)
+	    # 	print(corners, corners.shape)
 	    imshow("cam-calibrate",img)
 	    # imwrite('test.jpg', img)
 	    # print(img.shape)
-	    waitKey(0)
+	    waitKey(1)
 # destroyWindow("cam-calibrate")
 
 

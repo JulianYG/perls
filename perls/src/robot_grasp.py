@@ -61,7 +61,7 @@ def color_detection(img, boundaries=[
      
         # show the images
         # cv2.imshow("images", np.hstack([img, output]))
-        print(cv2.findChessboardCorners(img, (9, 6)))
+        print(cv2.findChessboardCorners(img, (9, 6)), None)
 
         cv2.imshow('images', img)
         cv2.waitKey(1)
