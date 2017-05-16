@@ -6,7 +6,18 @@ import rospy
 import cv2
 import intera_interface
 from std_msgs.msg import String
-from sensor_msgs.msg import Image
+
+#TODO: 
+from sensor_msgs.msg import CameraInfo
+from geometry_msgs.msg import (
+    PoseStamped,
+    Pose,
+    Point,
+    Quaternion,
+    Vector3Stamped,
+    Vector3
+)
+
 import tf
 from cv_bridge import CvBridge, CvBridgeError
 
@@ -43,8 +54,14 @@ class GraspSawyer(object):
 
         self._usb_intrinsic = usbCameraMatrix
         self._usb_distortion = usbDistortionVector
+
+        self._robot_intrinsic = np.array(CameraInfo.K, dtype=np.float32)
+        self._robot_distortion = np.array(CameraInfo.D, dtype=np.float32)
+
         self._board_size = boardSize
         self._checker_size = checkerSize
+
+        self._inverse_robot_intrinsic = np.linalg.inv(self._robot_intrinsic)
         self._inverse_usb_intrinsic = np.linalg.inv(self._usb_intrinsic)
 
         # self._init_pose = {'right_j6': 3.3161, 'right_j5': 0.57, 'right_j4': 0, 
@@ -154,13 +171,21 @@ class GraspSawyer(object):
     def robot_cam_to_gripper(pixel_location):
 
         # TODO: figure out how to do the image to camera reference frame in sawyer
-        if self.tl.frameExists('/head_camera') and self.tl.frameExists('/right_j6')
-            t = self.tl.getLatestCommonTime("/head_camera", "/right_j6")
-            translation, rotation_quaternion = self.tf.lookupTransform(
-                "/head_camera", "/right_j6", t)
-            transform_matrix = self.tl.TransformerROS.fromTranslationRotation(
-                translation, rotation_quaternion)
-            return transform_matrix * pixel_location.T
+        if self.tl.frameExists('head_camera') and self.tl.frameExists('right_j6')
+  
+            hdr = Header(stamp=rospy.Time.now(), frame_id='head_camera')
+
+            print(pixel_location)
+
+            # TODO: find head camera intrinsic K
+            camera_frame_position = self._inverse_robot_intrinsic.dot(pixel_location.T)
+
+            v3s = Vector3Stamped(header=hdr,
+                    vector=Vector3(*camera_frame_position))
+
+            gripper_vector = self.tl.transformVector3('right_j6', v3s)
+            
+            return (gripper_vector.x, gripper_vector.y, gripper_vector.z)
 
     def move_to(self, u, v, z):
 
