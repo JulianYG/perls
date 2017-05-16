@@ -4,7 +4,7 @@ from cv2 import *
 import numpy as np
 
 # initialize the camera
-cam = VideoCapture(0)   # 0 -> index of camera
+cam = VideoCapture(1)   # 0 -> index of camera
 
 
 def mouse_callback(event, x, y, flags, params):
@@ -27,7 +27,7 @@ while 1:
 	    imshow("cam-calibrate",img)
 	    # imwrite('test.jpg', img)
 	    # print(img.shape)
-	    waitKey(1)
+	    waitKey(0)
 # destroyWindow("cam-calibrate")
 
 

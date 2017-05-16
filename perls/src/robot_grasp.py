@@ -71,12 +71,21 @@ def show_image_callback(img_data):
     """The callback function to show image by using CvBridge and cv
     """
     bridge = CvBridge()
+    def mouse_callback(event, x, y, flags, params):
+        if event == 1:
+            print(x, y)
     try:
         cv_image = bridge.imgmsg_to_cv2(img_data, "bgr8")
+        cv2.namedWindow("cam-calibrate", cv2.CV_WINDOW_AUTOSIZE)
+        cv2.imshow("cam-calibrate", cv_image)
+        
+        cv2.setMouseCallback('cam-calibrate', mouse_callback)
+        cv2.waitKey(0)
     except CvBridgeError, err:
         rospy.logerr(err)
         return
-    color_detection(cv_image)
+
+    # color_detection(cv_image)
     
 
 def main():
