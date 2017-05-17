@@ -48,7 +48,8 @@ _UD = np.array([0.147084, -0.257330,
 class GraspSawyer(object):
 
     def __init__(self, robot, usbCameraMatrix=None, 
-        usbDistortionVector=None, boardSize=(9, 6), checkerSize=0.026, 
+        usbDistortionVector=None, boardSize=(9, 6), 
+        checkerSize=0.026, numCalibPoints=10,
         usbCameraIndex=0, stereo=True, gripper_init_pos=None):
 
         if not stereo and (not gripper_init_pos \
@@ -57,6 +58,7 @@ class GraspSawyer(object):
 
         self._robot = robot
         self.stereo = stereo
+        self._calibration_iter = numCalibPoints
 
         self._usb_intrinsic = usbCameraMatrix
         self._usb_distortion = usbDistortionVector
@@ -132,7 +134,7 @@ class GraspSawyer(object):
         object_points = np.reshape(raw_points, (self._numCornerPoints, 3)).astype(np.float32)
 
         retVal, k1, d1, k2, d2, R, T, E, F = cv2.stereoCalibrate(
-            [object_points] * 10, 
+            [object_points] * self._calibration_iter, 
             self.usb_camera_corner_points, 
             self.robot_camera_corner_points, (640, 480),
             flags=cv2.CALIB_FIX_INTRINSIC
@@ -144,7 +146,7 @@ class GraspSawyer(object):
     def _get_stereo_points(self):
 
         corner_points = []
-        i = 0
+        i = -1
         if not self._robot_camera.verify_camera_exists('head_camera'):
             rospy.logerr("Invalid self._robot_camera name, exiting the example.")
 
@@ -157,7 +159,7 @@ class GraspSawyer(object):
                     cv_image, self._board_size, None
                 )
                 #TODO: unsubscribe by itself
-                if foundPattern and len(self.robot_camera_corner_points) < 10:
+                if foundPattern and len(self.robot_camera_corner_points) < self._calibration_iter:
                     print('Gathering image info time {}...'.format(i))
                     time.sleep(0.8)
                     self.usb_camera_corner_points.append(self._get_usb_camera_points())
@@ -331,7 +333,8 @@ class GraspSawyer(object):
 sawyer = GraspSawyer(arm, 
     usbCameraMatrix=_UK, 
     usbDistortionVector=_UD, 
-    usbCameraIndex=1)
+    usbCameraIndex=1,
+    numCalibPoints=10)
 # sawyer.grasp_by_color('yellow')
 
 sawyer.move_to(38, 35, 0.2)
