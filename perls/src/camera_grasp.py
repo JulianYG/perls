@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
+import pickle
 import sys, os
 import rospy
 import rosparam
@@ -53,7 +54,7 @@ class GraspSawyer(object):
         usbCameraIndex=0, stereo=True, gripper_init_pos=None):
 
         if not stereo and (not gripper_init_pos \
-            or not usbCameraMatrix or not usbDistortionVector):
+            or usbCameraMatrix is None or usbDistortionVector is None):
             raise Exception('Need to specify gripper position for single camera')
 
         self._robot = robot
@@ -62,10 +63,10 @@ class GraspSawyer(object):
 
         self._usb_intrinsic = usbCameraMatrix
         self._usb_distortion = usbDistortionVector
+        self._usb_index = usbCameraIndex
 
         head_camera_param = rosparam.get_param('/robot_config/'
             'jcb_joint_config/head_pan/head_camera')['intrinsics']
-        print(head_camera_param)
 
         self._robot_intrinsic = np.array([
             [head_camera_param[2], 0, head_camera_param[3]], 
@@ -93,7 +94,7 @@ class GraspSawyer(object):
         if self.stereo:
             self._usb_intrinsic, self._usb_distortion, \
                 self._robot_intrinsic, self._robot_distortion, \
-                    self._fundamental = self._calibrate_stereo()
+                self._fundamental = self.calibrate_stereo()
         else:
             self.usb_pxl_translation, self.usb_pxl_invRotation = \
                 self._calibrate_monocular(gripper_init_pos)
@@ -110,8 +111,11 @@ class GraspSawyer(object):
         for i in range(self._board_size[1]):
             for j in range(self._board_size[0]):
                 # Use 0.09 for z as approximate height of cubes
-                raw_points[i, j] = [gripper_init_pos[0] + i * self._checker_size, 
+                gripper_pos[i, j] = [gripper_init_pos[0] + i * self._checker_size, 
                     gripper_init_pos[1] + j * self._checker_size, 0.09]
+
+        gripper_pos = np.reshape(gripper_pos, (self._numCornerPoints, 3)).astype(np.float32)
+
         retval, rvec, tvec = cv2.solvePnP(
             gripper_pos, usbCamCornerPoints, 
             self._usb_intrinsic, self._usb_distortion)
@@ -120,49 +124,95 @@ class GraspSawyer(object):
         invRotation = np.linalg.inv(rotMatrix)
         return tvec, invRotation
 
-    def _calibrate_stereo(self):
+    def calibrate_stereo(self):
 
-        # Fill in points
-        self._get_stereo_points()
+        if not os.path.exists('ros_/calib_data/fundamental.p') or \
+            (not os.path.exists('ros_/calib_data/sawyer_head_camera.p') or not \
+                os.path.exists('ros_/calib_data/usb_camera.p')):
 
-        raw_points = np.zeros((self._board_size[1], self._board_size[0], 3), 
-            dtype=np.float32)
-        for i in range(self._board_size[1]):
-            for j in range(self._board_size[0]):
-                # Use 0 for z as for lying on the plane
-                raw_points[i, j] = [i * self._checker_size, j * self._checker_size, 0.]
-        object_points = np.reshape(raw_points, (self._numCornerPoints, 3)).astype(np.float32)
+            # Fill in points
+            self._get_stereo_points()
 
-        retVal, k1, d1, k2, d2, R, T, E, F = cv2.stereoCalibrate(
-            [object_points] * self._calibration_iter, 
-            self.usb_camera_corner_points, 
-            self.robot_camera_corner_points, (640, 480),
-            flags=cv2.CALIB_FIX_INTRINSIC
-        )
-        # print(usbCamPoints)
-        # print(robotCamPoints)
+            raw_points = np.zeros((self._board_size[1], self._board_size[0], 3), 
+                dtype=np.float32)
+            for i in range(self._board_size[1]):
+                for j in range(self._board_size[0]):
+                    # Use 0 for z as for lying on the plane
+                    raw_points[i, j] = [i * self._checker_size, j * self._checker_size, 0.]
+            object_points = np.reshape(raw_points, (self._numCornerPoints, 3)).astype(np.float32)
+
+            print((self.usb_camera_corner_points))
+            print((self.robot_camera_corner_points))
+
+            print(len(self.usb_camera_corner_points))
+            print(len(self.robot_camera_corner_points))
+
+            #TODO: Use cornerSubPix
+            # F, _ = cv2.findFundamentalMat(self.usb_camera_corner_points[0], 
+            #     self.robot_camera_corner_points[0], method=cv2.FM_8POINT)
+
+            retVal, k1, d1, k2, d2, R, T, E, F = cv2.stereoCalibrate(
+                [object_points] * len(self.usb_camera_corner_points), 
+                self.usb_camera_corner_points, 
+                self.robot_camera_corner_points, (640, 480),
+                flags=cv2.CALIB_FIX_INTRINSIC + cv2.CALIB_FIX_ASPECT_RATIO +
+                                 cv2.CALIB_ZERO_TANGENT_DIST +
+                                 cv2.CALIB_SAME_FOCAL_LENGTH +
+                                 cv2.CALIB_RATIONAL_MODEL +
+                                 cv2.CALIB_FIX_K3 + cv2.CALIB_FIX_K4 + cv2.CALIB_FIX_K5,
+            )
+
+            with open('ros_/calib_data/usb_camera.p', 'wb') as fu:
+                pickle.dump(k1, fu)
+                pickle.dump(d1, fu)
+
+            with open('ros_/calib_data/sawyer_head_camera.p', 'wb') as fs:
+                pickle.dump(k2, fs)
+                pickle.dump(d2, fs)
+
+            with open('ros_/calib_data/fundamental.p', 'wb') as ff:
+                pickle.dump(F, ff)
+
+        else:
+            with open('ros_/calib_data/usb_camera.p', 'rb') as f:
+                k1 = pickle.load(f)
+                d1 = pickle.load(f)
+
+            with open('ros_/calib_data/sawyer_head_camera.p', 'rb') as r:
+                k2 = pickle.load(r)
+                d2 = pickle.load(r)
+
+            with open('ros_/calib_data/fundamental.p', 'rb') as f:
+                F = pickle.load(f)
+
+        print(F, k1, d1)
+        print(np.array([227, 143,1]).dot(F))
         return k1, d1, k2, d2, F
 
     def _get_stereo_points(self):
 
-        corner_points = []
-        i = -1
         if not self._robot_camera.verify_camera_exists('head_camera'):
             rospy.logerr("Invalid self._robot_camera name, exiting the example.")
 
         def sawyer_camera_callback(img_data):
-            i += 1
+            
             bridge = CvBridge()
             try:
                 cv_image = bridge.imgmsg_to_cv2(img_data, "bgr8")
+                print('Sawyer finding checkerboard pattern...')
                 foundPattern, points = cv2.findChessboardCorners(
                     cv_image, self._board_size, None
                 )
                 #TODO: unsubscribe by itself
+                if not foundPattern:
+                    print('Sawyer head camera did not find pattern...')
+                    return
                 if foundPattern and len(self.robot_camera_corner_points) < self._calibration_iter:
-                    print('Gathering image info time {}...'.format(i))
-                    time.sleep(0.8)
-                    self.usb_camera_corner_points.append(self._get_usb_camera_points())
+                    time.sleep(1)
+                    usb_points = self._get_monocular_points()
+                    print('Saving to usb corner points..')
+                    self.usb_camera_corner_points.append(usb_points)
+                    print('Saving to sawyer corner points..')
                     self.robot_camera_corner_points.append(np.reshape(points, (self._numCornerPoints, 2)))
                     return
             except CvBridgeError, err:
@@ -180,6 +230,7 @@ class GraspSawyer(object):
 
     def _get_monocular_points(self):
 
+        # self._usb_camera.open(self._usb_index)
         s, foundPattern = False, False
         # Loop until read image
         print('Reading from usb camera...')
@@ -187,12 +238,14 @@ class GraspSawyer(object):
             s, img = self._usb_camera.read()
 
         # Loop until found checkerboard pattern
-        print('Finding checkerboard pattern...')
+        print('USB camera finding checkerboard pattern...')
         while not foundPattern:
+            print('USB camera did not find pattern...')
             foundPattern, usbCamCornerPoints = cv2.findChessboardCorners(
                 img, self._board_size, None, 
                 cv2.CALIB_CB_ADAPTIVE_THRESH
             )
+        # self._usb_camera.release()
         return usbCamCornerPoints.reshape((self._numCornerPoints, 2))
 
     def _usb_cam_to_gripper(self, u, v):
@@ -252,9 +305,9 @@ class GraspSawyer(object):
 
     def move_to_with_grasp(self, u, v, hover, dive):
         self.move_to(u, v, hover)
-        time.sleep(0.2)
+        time.sleep(0.5)
         self.move_to(u, v, dive)
-        time.sleep(0.3)
+        time.sleep(0.5)
         arm.slide_grasp(0)
 
     def move_to_with_lift(self, u, v, 
@@ -274,14 +327,15 @@ class GraspSawyer(object):
         def mouse_callback(event, x, y, flags, params):
             if event == 1:
                 self.move_to_with_lift(x, y)
-        try:
-            s, img = self._usb_camera.read()
-            cv2.namedWindow('grasp-by-click', cv2.CV_WINDOW_AUTOSIZE)
-            cv2.setMouseCallback('grasp-by-click', mouse_callback)
-            cv2.imshow('grasp-by-click', img)
-            cv2.waitKey(2)
-        except KeyboardInterrupt:
-            cv2.destroyAllWindows()
+        while True:
+            try:
+                s, img = self._usb_camera.read()
+                cv2.namedWindow('grasp-by-click', cv2.CV_WINDOW_AUTOSIZE)
+                cv2.setMouseCallback('grasp-by-click', mouse_callback)
+                cv2.imshow('grasp-by-click', img)
+                cv2.waitKey(1)
+            except KeyboardInterrupt:
+                cv2.destroyAllWindows()
 
     def grasp_by_color(self, color='blue'):
 
@@ -334,7 +388,14 @@ sawyer = GraspSawyer(arm,
     usbCameraMatrix=_UK, 
     usbDistortionVector=_UD, 
     usbCameraIndex=1,
-    numCalibPoints=10)
+    boardSize=(9, 6), 
+    checkerSize=0.026,
+    numCalibPoints=10,
+    stereo=True, gripper_init_pos=(0.4501, -0.3628))
 # sawyer.grasp_by_color('yellow')
 
-sawyer.move_to(38, 35, 0.2)
+# sawyer.grasp_by_click()
+# sawyer.move_to(38, 35, 0.2)
+# sawyer.calibrate_stereo()
+
+
