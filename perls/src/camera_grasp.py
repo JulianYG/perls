@@ -47,37 +47,34 @@ _UD = np.array([0.147084, -0.257330,
 
 class GraspSawyer(object):
 
-    def __init__(self, robot, usbCameraMatrix, 
-        usbDistortionVector, boardSize=(9, 6), checkerSize=0.026, 
-        usbCameraIndex=0):
+    def __init__(self, robot, usbCameraMatrix=None, 
+        usbDistortionVector=None, boardSize=(9, 6), checkerSize=0.026, 
+        usbCameraIndex=0, stereo=True, gripper_init_pos=None):
+
+        if not stereo and (not gripper_init_pos \
+            or not usbCameraMatrix or not usbDistortionVector):
+            raise Exception('Need to specify gripper position for single camera')
 
         self._robot = robot
+        self.stereo = stereo
 
         self._usb_intrinsic = usbCameraMatrix
         self._usb_distortion = usbDistortionVector
 
-        head_camera_param = rosparam.get_param('/robot_config/jcb_joint_config/head_pan/head_camera')['intrinsics']
-
+        head_camera_param = rosparam.get_param('/robot_config/'
+            'jcb_joint_config/head_pan/head_camera')['intrinsics']
         print(head_camera_param)
+
         self._robot_intrinsic = np.array([
             [head_camera_param[2], 0, head_camera_param[3]], 
             [0, head_camera_param[5], head_camera_param[6]], 
             [0,                    0,                   1]], dtype=np.float32)
-
-        # self._robot_intrinsic = np.array([
-        #     [639.1025, 0, 383.8624],
-        #     [0, 408.7, 407.9717],
-        #     [0, 0, 1]
-        #     ], dtype=np.float32)
 
         self._robot_distortion = np.array(head_camera_param[-8:], dtype=np.float32)
 
         self._board_size = boardSize
         self._checker_size = checkerSize
         self._numCornerPoints = self._board_size[0] * self._board_size[1]
-
-        self._inverse_robot_intrinsic = np.linalg.inv(self._robot_intrinsic)
-        self._inverse_usb_intrinsic = np.linalg.inv(self._usb_intrinsic)
 
         self._init_pose = {'right_j6': 3.3161, 'right_j5': 0.57, 'right_j4': 0, 
             'right_j3': 2.18, 'right_j2': -0, 'right_j1': -1.18, 'right_j0': 0.}
@@ -91,42 +88,60 @@ class GraspSawyer(object):
 
         self._robot.limb.move_to_neutral()
 
-        # Run transform matrix initializer
-        # robot_camera_corner_points = self._get_robot_camera_points()
-        # usb_camera_corner_points = self._get_usb_camera_points()
+        if self.stereo:
+            self._usb_intrinsic, self._usb_distortion, \
+                self._robot_intrinsic, self._robot_distortion, \
+                    self._fundamental = self._calibrate_stereo()
+        else:
+            self.usb_pxl_translation, self.usb_pxl_invRotation = \
+                self._calibrate_monocular(gripper_init_pos)
 
-        # self.pixel_usb_cam_translation, self.pixel_usb_cam_inv_rotation = \
-        #     self._get_camera_transformation(robot_camera_corner_points)
+        self._inverse_robot_intrinsic = np.linalg.inv(self._robot_intrinsic)
+        self._inverse_usb_intrinsic = np.linalg.inv(self._usb_intrinsic)
 
-        self._fundamental = self._calibrate_usb_and_robot_cameras()
+    def _calibrate_monocular(self, gripper_init_pos):
 
-        
+        usbCamCornerPoints = self._get_monocular_points()
 
-    def _calibrate_usb_and_robot_cameras(self):
+        gripper_pos = np.zeros((self._board_size[1], self._board_size[0], 3), 
+            dtype=np.float32)
+        for i in range(self._board_size[1]):
+            for j in range(self._board_size[0]):
+                # Use 0.09 for z as approximate height of cubes
+                raw_points[i, j] = [gripper_init_pos[0] + i * self._checker_size, 
+                    gripper_init_pos[1] + j * self._checker_size, 0.09]
+        retval, rvec, tvec = cv2.solvePnP(
+            gripper_pos, usbCamCornerPoints, 
+            self._usb_intrinsic, self._usb_distortion)
 
-        usbCamPoints = []
-        robotCamPoints = []
-        self._get_robot_camera_points()
+        rotMatrix = cv2.Rodrigues(rvec)[0]
+        invRotation = np.linalg.inv(rotMatrix)
+        return tvec, invRotation
 
-        raw_points = np.zeros((self._board_size[1], self._board_size[0], 3), dtype=np.float32)
+    def _calibrate_stereo(self):
+
+        # Fill in points
+        self._get_stereo_points()
+
+        raw_points = np.zeros((self._board_size[1], self._board_size[0], 3), 
+            dtype=np.float32)
         for i in range(self._board_size[1]):
             for j in range(self._board_size[0]):
                 # Use 0 for z as for lying on the plane
                 raw_points[i, j] = [i * self._checker_size, j * self._checker_size, 0.]
         object_points = np.reshape(raw_points, (self._numCornerPoints, 3)).astype(np.float32)
 
-        retVal, m1, d1, m2, d2, R, T, E, F = cv2.stereoCalibrate([object_points] * 10, 
-            self.usb_camera_corner_points, self.robot_camera_corner_points, (640, 480))
-
-        # retVal, _, _, _, _, R, T, E, F = cv2.stereoCalibrate([object_points], [usbCamPoints], [robotCamPoints], (640, 480), 
-        #     self._usb_intrinsic, self._usb_distortion, self._robot_intrinsic, self._robot_distortion, 
-        #     R, T, E=None, F=None, flags=cv2.CALIB_FIX_INTRINSIC)
-       
+        retVal, k1, d1, k2, d2, R, T, E, F = cv2.stereoCalibrate(
+            [object_points] * 10, 
+            self.usb_camera_corner_points, 
+            self.robot_camera_corner_points, (640, 480),
+            flags=cv2.CALIB_FIX_INTRINSIC
+        )
         # print(usbCamPoints)
         # print(robotCamPoints)
-        return F
+        return k1, d1, k2, d2, F
 
-    def _get_robot_camera_points(self):
+    def _get_stereo_points(self):
 
         corner_points = []
         i = 0
@@ -161,10 +176,7 @@ class GraspSawyer(object):
             rospy.loginfo('Shutting down robot camera corner detection')
             self._robot_camera.stop_streaming('head_camera')
 
-        # Reverse the matrix since two cameras see reverted images
-        # return np.array(corner_points[0]).reshape((self._numCornerPoints, 2))
-
-    def _get_usb_camera_points(self):
+    def _get_monocular_points(self):
 
         s, foundPattern = False, False
         # Loop until read image
@@ -181,45 +193,60 @@ class GraspSawyer(object):
             )
         return usbCamCornerPoints.reshape((self._numCornerPoints, 2))
 
-    def usb_cam_to_robot_cam(self, u, v):
+    def _usb_cam_to_gripper(self, u, v):
 
         p = np.array([u, v, 1], dtype=np.float32)
-        # returns column vec
-        return self._fundamental.dot(p.T)
 
-    def robot_cam_to_gripper(self, pixel_location):
+        if self.stereo:
+            pixel_location = self._fundamental.dot(p.T)
 
-        # TODO: figure out how to do the image to camera reference frame in sawyer
-        if self.tl.frameExists('head_camera') and self.tl.frameExists('right_hand'):
-            
-            hdr = Header(stamp=self.tl.getLatestCommonTime('head_camera',
-                'right_hand'), frame_id='head_camera')
+            # TODO: figure out how to do the image to camera reference frame in sawyer
+            if self.tl.frameExists('head_camera') and self.tl.frameExists('right_hand'):
+                
+                hdr = Header(stamp=self.tl.getLatestCommonTime('head_camera',
+                    'right_hand'), frame_id='head_camera')
 
-            # pixel_location = np.array([pixel_location[0], pixel_location[1], 1], 
-            #     dtype=np.float32)
-            print(pixel_location, 'pix')
+                # pixel_location = np.array([pixel_location[0], pixel_location[1], 1], 
+                #     dtype=np.float32)
+                print(pixel_location, 'pix')
 
-            pixel_location = np.array([758, 529, 1], 
-                dtype=np.float32)
-            camera_frame_position = self._inverse_robot_intrinsic.dot(pixel_location)
+                # pixel_location = np.array([758, 529, 1], 
+                #     dtype=np.float32)
+                camera_frame_position = self._inverse_robot_intrinsic.dot(pixel_location)
 
-            print(camera_frame_position, 'frame')
+                print(camera_frame_position, 'frame')
 
-            v3s = Vector3Stamped(header=hdr,
-                    vector=Vector3(*camera_frame_position))
-            gripper_vector = self.tl.transformVector3('right_hand', v3s).vector
-            
-            return (gripper_vector.x, gripper_vector.y, gripper_vector.z)
+                v3s = Vector3Stamped(header=hdr,
+                        vector=Vector3(*camera_frame_position))
+                gripper_vector = self.tl.transformVector3('right_hand', v3s).vector
+                
+                return np.array([gripper_vector.x, gripper_vector.y, gripper_vector.z])
+
+        else:
+            tempMat = self.usb_pxl_invRotation * self._usb_intrinsic
+            tempMat2 = tempMat.dot(p)
+            tempMat3 = self.usb_pxl_invRotation.dot(
+                np.reshape(self.usb_pxl_translation, 3))
+
+            # approx height of each block + 
+            # (inv Rotation matrix * inv Camera matrix * point)
+            # inv Rotation matrix * tvec
+            s = (.09 + tempMat3[2]) / tempMat2[2]
+
+            # s * [u,v,1] = M(R * [X,Y,Z] - t)  
+            # ->   R^-1 * (M^-1 * s * [u,v,1] - t) = [X,Y,Z] 
+            temp = self._inverse_usb_intrinsic.dot(s * p)
+            temp2 = temp - np.reshape(self.usb_pxl_translation, 3)
+            gripper_coords = self.usb_pxl_invRotation.dot(temp2)
+
+            return gripper_coords
 
     def move_to(self, u, v, z):
 
-        robot_cam_coords = self.usb_cam_to_robot_cam(u, v)
-        gripper_coords = self.robot_cam_to_gripper(robot_cam_coords)
-
+        gripper_coords = self._usb_cam_to_gripper(u, v)
         print(gripper_coords, 'gripper coords')
-
         # self._robot.reach_absolute({'position': (gripper_coords[0], 
-        #     gripper_coords[1], z), 'orientation': (0, 1, 0, 0)})
+        #     gripper_coords[1], z), 'orientation': (0.707, 0.707, 0, 0)})
 
     def move_to_with_grasp(self, u, v, hover, dive):
         self.move_to(u, v, hover)
@@ -301,7 +328,10 @@ class GraspSawyer(object):
             time.sleep(1)
 
 
-sawyer = GraspSawyer(arm, _UK, _UD, usbCameraIndex=1)
+sawyer = GraspSawyer(arm, 
+    usbCameraMatrix=_UK, 
+    usbDistortionVector=_UD, 
+    usbCameraIndex=1)
 # sawyer.grasp_by_color('yellow')
 
 sawyer.move_to(38, 35, 0.2)
