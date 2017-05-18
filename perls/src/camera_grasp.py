@@ -99,6 +99,7 @@ class GraspSawyer(object):
         self.wrist_camera_corner_points = []
         self.usb_camera_corner_points = []
 
+ 
         if self.stereo:
             self._usb_intrinsic, self._usb_distortion, \
                 self._head_camera_intrinsic, self._head_camera_distortion, \
@@ -110,30 +111,48 @@ class GraspSawyer(object):
         self._inverse_robot_intrinsic = np.linalg.inv(self._head_camera_intrinsic)
         self._inverse_usb_intrinsic = np.linalg.inv(self._usb_intrinsic)
 
-        self._robot.limb.move_to_neutral()
+        self._robot.limb.set_joint_position_speed(0.1)
+        self._robot.slide_grasp(1)
+        # self._robot.limb.move_to_neutral()
 
     def _calibrate_external_camera(self, gripper_init_pos):
 
-        found = False
-        while not found:
-            found, usbCamCornerPoints, _ = self._get_external_points()
+        if not os.path.exists('ros_/calib_data/extern_invR.p') or \
+            not os.path.exists('ros_/calib_data/extern_T.p'):
+            found = False
+            while not found:
+                found, usbCamCornerPoints, _ = self._get_external_points()
 
-        gripper_pos = np.zeros((self._board_size[1], self._board_size[0], 3), 
-            dtype=np.float32)
-        for i in range(self._board_size[1]):
-            for j in range(self._board_size[0]):
-                # Use 0.09 for z as approximate height of cubes
-                gripper_pos[i, j] = [gripper_init_pos[0] + i * self._checker_size, 
-                    gripper_init_pos[1] + j * self._checker_size, 0.09]
+            gripper_pos = np.zeros((self._board_size[1], self._board_size[0], 3), 
+                dtype=np.float32)
+            for i in range(self._board_size[1]):
+                for j in range(self._board_size[0]):
+                    # Use 0.09 for z as approximate height of cubes
+                    gripper_pos[i, j] = [gripper_init_pos[0] + i * self._checker_size, 
+                        gripper_init_pos[1] + j * self._checker_size, 0.09]
 
-        gripper_pos = np.reshape(gripper_pos, (self._numCornerPoints, 3)).astype(np.float32)
+            gripper_pos = np.reshape(gripper_pos, (self._numCornerPoints, 3)).astype(np.float32)
 
-        retval, rvec, tvec = cv2.solvePnP(
-            gripper_pos, usbCamCornerPoints, 
-            self._usb_intrinsic, self._usb_distortion)
+            retval, rvec, tvec = cv2.solvePnP(
+                gripper_pos, usbCamCornerPoints, 
+                self._usb_intrinsic, self._usb_distortion)
 
-        rotMatrix = cv2.Rodrigues(rvec)[0]
-        invRotation = np.linalg.inv(rotMatrix)
+            rotMatrix = cv2.Rodrigues(rvec)[0]
+            invRotation = np.linalg.inv(rotMatrix)
+
+            with open('ros_/calib_data/extern_invR.p', 'wb') as ir:
+                pickle.dump(invRotation, ir)
+
+            with open('ros_/calib_data/extern_T.p', 'wb') as t:
+                pickle.dump(tvec, t)
+            
+        else:
+            with open('ros_/calib_data/extern_invR.p', 'rb') as r:
+                invRotation = pickle.load(r)
+
+            with open('ros_/calib_data/extern_T.p', 'rb') as f:
+                tvec = pickle.load(f)
+
         return tvec, invRotation
 
     def _calibrate_head_camera(self, ):
@@ -389,30 +408,53 @@ class GraspSawyer(object):
             return gripper_coords
 
     def move_to(self, u, v, z):
-
+        offset_x = 0.007
+        offset_y = -0.01
         gripper_coords = self._usb_cam_to_gripper(u, v)
         print(gripper_coords, 'gripper coords')
-        # self._robot.reach_absolute({'position': (gripper_coords[0], 
-        #     gripper_coords[1], z), 'orientation': (0.707, 0.707, 0, 0)})
+        self._robot.reach_absolute({'position': (gripper_coords[0]+offset_x, 
+            gripper_coords[1]+offset_y, z), 'orientation': (0.707, 0.707, 0, 0)})
 
-    def move_to_with_grasp(self, u, v, hover, dive):
+    def move_to_with_grasp(self, u, v, hover, dive):        
         self.move_to(u, v, hover)
-        time.sleep(0.5)
+        time.sleep(0.7)
+        self.move_to(u, v, dive + 0.06)
+        self._robot.limb.set_joint_position_speed(0.06)
         self.move_to(u, v, dive)
-        time.sleep(0.5)
+        time.sleep(0.8)
         arm.slide_grasp(0)
 
     def move_to_with_lift(self, u, v, 
-        hover=0.18, dive=0.10, drop=None):
+        hover=0.32, dive=0.09, drop=None):
 
         self.move_to_with_grasp(u, v, hover, dive)
-        time.sleep(0.8)
+        time.sleep(.75)
+
+        self.move_to(u, v, 0.13)
+        time.sleep(0.2)
+        self._robot.limb.set_joint_position_speed(0.1)
         if drop:
-           self.move_to(drop[0], drop[1], hover)
+            self.move_to(u, v, 0.35)
+            time.sleep(.75)
+            self.move_to(drop[0], drop[1], hover)
         else:
-            self._robot.limb.move_to_neutral()
-        time.sleep(0.5)
+            self.move_to(u, v, 0.35)
+            time.sleep(.75)
+            # Hardcoded bin
+            self._robot.reach_absolute({'position': (0.5713327811387512, 
+                0.24199145859810134, 0.35), 
+                'orientation': (0.707, 0.707, 0, 0)}) #move_to_neutral()
+
+        time.sleep(.8)
+        self._robot.reach_absolute({'position': (0.5713327811387512, 
+            0.24199145859810134, 0.23),
+            'orientation': (0.707, 0.707, 0, 0)}) #move_to_neutral()
+        time.sleep(.8)
         arm.slide_grasp(1)
+        time.sleep(0.5)
+        self._robot.reach_absolute({'position': (0.5713327811387512, 
+            0.24199145859810134, 0.35),
+            'orientation': (0.707, 0.707, 0, 0)}) #move_to_neutral()
 
     def grasp_by_click(self):
         
@@ -430,6 +472,11 @@ class GraspSawyer(object):
                 cv2.destroyAllWindows()
 
     def grasp_by_color(self, color='blue'):
+
+        im = self._usb_camera.read()[1]
+        im = cv2.bilateralFilter(im,9,75,75)
+        im = cv2.fastNlMeansDenoisingColored(im,None,10,10,7,21)
+        hsv_img = cv2.cvtColor(im, cv2.COLOR_BGR2HSV) 
 
         if color == 'blue':
             COLOR_MIN = np.array([110, 50, 50], dtype=np.uint8)
@@ -467,12 +514,12 @@ class GraspSawyer(object):
 
         for k, cnt in enumerate(contours):
             x, y, w, h = cv2.boundingRect(cnt)
-            cv2.rectangle(color_img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            # cv2.rectangle(color_img, (x, y), (x + w, y + h), (0, 255, 0), 2)
             cubePoints.append((x + w / 2., y + h / 2.))
 
         for cp in cubePoints:
             #TODO: maybe change to grasp
-            self.move_to(cp[0], cp[1], 0.15)
+            self.move_to_with_lift(cp[0], cp[1])
             time.sleep(1)
 
 sawyer = GraspSawyer(arm, 
@@ -482,10 +529,12 @@ sawyer = GraspSawyer(arm,
     boardSize=(9, 6), 
     checkerSize=0.026,
     numCalibPoints=10,
-    stereo='right_hand_camera', gripper_init_pos=(0.3849633, -0.3866577))
-# sawyer.grasp_by_color('yellow')
+    stereo='', 
+    gripper_init_pos=(0.41988895080044875, -0.40558702344362024)
+    )
+# sawyer.grasp_by_color('red')
 
-# sawyer.grasp_by_click()
+sawyer.grasp_by_click()
 # sawyer._calibrate_wrist_camera()
 
 # sawyer.move_to(38, 35, 0.2)
