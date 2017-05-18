@@ -51,9 +51,9 @@ class GraspSawyer(object):
     def __init__(self, robot, usbCameraMatrix=None, 
         usbDistortionVector=None, boardSize=(9, 6), 
         checkerSize=0.026, numCalibPoints=10,
-        usbCameraIndex=0, stereo=True, gripper_init_pos=None):
+        usbCameraIndex=0, camera='stereo', gripper_init_pos=None):
 
-        if not stereo and (not gripper_init_pos \
+        if camera == 'external' and (not gripper_init_pos \
             or usbCameraMatrix is None or usbDistortionVector is None):
             raise Exception('Need to specify gripper position for single camera')
 
@@ -99,14 +99,24 @@ class GraspSawyer(object):
         self.wrist_camera_corner_points = []
         self.usb_camera_corner_points = []
  
-        if self.stereo:
+        if calibration == 'stereo':
             self._usb_intrinsic, self._usb_distortion, \
                 self._head_camera_intrinsic, self._head_camera_distortion, \
                     self._stereo_rotation, self._stereo_translation, \
                 self._fundamental = self.calibrate_stereo(self.stereo)
-        else:
+        elif calibration == 'external':
             self.usb_pxl_translation, self.usb_pxl_invRotation = \
-                self._calibrate_external_camera(gripper_init_pos)
+                self._solve_external_camera(gripper_init_pos)
+
+        elif calibration == 'wrist':
+            self._wrist_camera_intrinsic, self._wrist_camera_distortion, \
+                self.wrist_pxl_translation, self.wrist_pxl_invRotation = \
+                    self._calibrate_wrist_camera()
+
+        elif calibration == 'head':
+            self._head_camera_intrinsic, self._head_camera_distortion, \
+                self.head_pxl_translation, self.head_pxl_invRotation = \
+                    self._calibrate_head_camera()
 
         self._inverse_robot_intrinsic = np.linalg.inv(self._head_camera_intrinsic)
         self._inverse_usb_intrinsic = np.linalg.inv(self._usb_intrinsic)
@@ -115,83 +125,99 @@ class GraspSawyer(object):
         self._robot.slide_grasp(1)
         # self._robot.limb.move_to_neutral()
 
-    def _calibrate_external_camera(self, gripper_init_pos):
+    def _solve_external_camera(self, gripper_init_pos):
 
-        if not os.path.exists('ros_/calib_data/extern_invR.p') or \
-            not os.path.exists('ros_/calib_data/extern_T.p'):
-            found = False
-            while not found:
-                found, usbCamCornerPoints, _ = self._get_external_points()
+        found = False
+        while not found:
+            found, usbCamCornerPoints, _ = self._get_external_points()
 
-            gripper_pos = np.zeros((self._board_size[1], self._board_size[0], 3), 
-                dtype=np.float32)
-            for i in range(self._board_size[1]):
-                for j in range(self._board_size[0]):
-                    # Use 0.09 for z as approximate height of cubes
-                    gripper_pos[i, j] = [gripper_init_pos[0] + i * self._checker_size, 
-                        gripper_init_pos[1] + j * self._checker_size, 0.09]
+        gripper_pos = np.zeros((self._board_size[1], self._board_size[0], 3), 
+            dtype=np.float32)
+        for i in range(self._board_size[1]):
+            for j in range(self._board_size[0]):
+                # Use 0.09 for z as approximate height of cubes
+                gripper_pos[i, j] = [gripper_init_pos[0] + i * self._checker_size, 
+                    gripper_init_pos[1] + j * self._checker_size, 0.09]
 
-            gripper_pos = np.reshape(gripper_pos, (self._numCornerPoints, 3)).astype(np.float32)
+        gripper_pos = np.reshape(gripper_pos, (self._numCornerPoints, 3)).astype(np.float32)
 
-            retval, rvec, tvec = cv2.solvePnP(
-                gripper_pos, usbCamCornerPoints, 
-                self._usb_intrinsic, self._usb_distortion)
+        retval, rvec, tvec = cv2.solvePnP(
+            gripper_pos, usbCamCornerPoints, 
+            self._usb_intrinsic, self._usb_distortion)
 
-            rotMatrix = cv2.Rodrigues(rvec)[0]
-            invRotation = np.linalg.inv(rotMatrix)
-
-            with open('ros_/calib_data/extern_invR.p', 'wb') as ir:
-                pickle.dump(invRotation, ir)
-
-            with open('ros_/calib_data/extern_T.p', 'wb') as t:
-                pickle.dump(tvec, t)
-            
-        else:
-            with open('ros_/calib_data/extern_invR.p', 'rb') as r:
-                invRotation = pickle.load(r)
-
-            with open('ros_/calib_data/extern_T.p', 'rb') as f:
-                tvec = pickle.load(f)
+        rotMatrix = cv2.Rodrigues(rvec)[0]
+        invRotation = np.linalg.inv(rotMatrix)
 
         return tvec, invRotation
 
     def _calibrate_head_camera(self):
-            
-        self._get_head_camera_points()
+        
+        if not os.path.exists('ros_/calib_data/extern_invR.p') or \
+            not os.path.exists('ros_/calib_data/extern_T.p'):
 
-        raw_points = np.zeros((self._board_size[1], self._board_size[0], 3), 
-                dtype=np.float32)
-        for i in range(self._board_size[1]):
-            for j in range(self._board_size[0]):
-                # Use 0 for z as for lying on the plane
-                raw_points[i, j] = [i * self._checker_size, j * self._checker_size, 0.]
+            self._get_head_camera_points()
 
-        object_points = np.reshape(raw_points, (self._numCornerPoints, 3)).astype(np.float32)
+            raw_points = np.zeros((self._board_size[1], self._board_size[0], 3), 
+                    dtype=np.float32)
+            for i in range(self._board_size[1]):
+                for j in range(self._board_size[0]):
+                    # Use 0 for z as for lying on the plane
+                    raw_points[i, j] = [i * self._checker_size, j * self._checker_size, 0.]
 
-        retval, K, d, rvec, tvec = cv2.calibrateCamera(
-            [object_points] * len(self.head_camera_corner_points),
-            self.head_camera_corner_points, (1280, 800))
+            object_points = np.reshape(raw_points, (self._numCornerPoints, 3)).astype(np.float32)
 
-        print(rvec, tvec, K, d)
+            retval, K, d, rvec, tvec = cv2.calibrateCamera(
+                [object_points] * len(self.head_camera_corner_points),
+                self.head_camera_corner_points, (1280, 800))
+
+            self._write_params({
+                'head_R': rvec,
+                'head_T': tvec,
+                'head_instrinsic': K, 
+                'head_distortion': d
+                })
+
+        else:
+            names = ['head_instrinsic', 'head_distortion', 
+                'head_R', 'head_T']
+            data = self._read_params(names)
+            K, d, rvec, tvec = [data[n] for n in names]
+
+        print(K, d, rvec, tvec)
         return K, d, rvec, tvec
-
 
     def _calibrate_wrist_camera(self):
 
-        self._get_wrist_camera_points()
+        if not os.path.exists('ros_/calib_data/wrist_invR.p') or \
+            not os.path.exists('ros_/calib_data/wrist_T.p'):
 
-        raw_points = np.zeros((self._board_size[1], self._board_size[0], 3), 
-                dtype=np.float32)
-        for i in range(self._board_size[1]):
-            for j in range(self._board_size[0]):
-                # Use 0 for z as for lying on the plane
-                raw_points[i, j] = [i * self._checker_size, j * self._checker_size, 0.]
+            self._get_wrist_camera_points()
 
-        object_points = np.reshape(raw_points, (self._numCornerPoints, 3)).astype(np.float32)
+            raw_points = np.zeros((self._board_size[1], self._board_size[0], 3), 
+                    dtype=np.float32)
+            for i in range(self._board_size[1]):
+                for j in range(self._board_size[0]):
+                    # Use 0 for z as for lying on the plane
+                    raw_points[i, j] = [i * self._checker_size, j * self._checker_size, 0.]
 
-        retval, K, d, rvec, tvec = cv2.calibrateCamera(
-            [object_points] * len(self.wrist_camera_corner_points),
-            self.wrist_camera_corner_points, (752, 480))
+            object_points = np.reshape(raw_points, (self._numCornerPoints, 3)).astype(np.float32)
+
+            retval, K, d, rvec, tvec = cv2.calibrateCamera(
+                [object_points] * len(self.wrist_camera_corner_points),
+                self.wrist_camera_corner_points, (752, 480))
+
+            self._write_params({
+                'wrist_R': rvec,
+                'wrist_T': tvec,
+                'wrist_instrinsic': K, 
+                'wrist_distortion': d
+                })
+
+        else:
+            names = ['wrist_instrinsic', 'wrist_distortion', 
+                'wrist_R', 'wrist_T']
+            data = self._read_params(names)
+            K, d, rvec, tvec = [data[n] for n in names]
 
         print(rvec, tvec, K, d)
         return K, d, rvec, tvec
@@ -227,8 +253,8 @@ class GraspSawyer(object):
     def calibrate_stereo(self, camera):
 
         if not os.path.exists('ros_/calib_data/fundamental.p') or \
-            (not os.path.exists('ros_/calib_data/sawyer_head_camera.p') or not \
-                os.path.exists('ros_/calib_data/usb_camera.p')):
+            (not os.path.exists('ros_/calib_data/usb_intrinsic.p') or not \
+                os.path.exists('ros_/calib_data/usb_distortion.p')):
             # Fill in points
             self._get_stereo_points(camera)
 
@@ -274,43 +300,24 @@ class GraspSawyer(object):
                                  cv2.CALIB_SAME_FOCAL_LENGTH +
                                  cv2.CALIB_RATIONAL_MODEL +
                                  cv2.CALIB_FIX_K3 + cv2.CALIB_FIX_K4 + cv2.CALIB_FIX_K5,
-            )
-
-            with open('ros_/calib_data/usb_camera.p', 'wb') as fu:
-                pickle.dump(k1, fu)
-                pickle.dump(d1, fu)
-
-            with open('ros_/calib_data/sawyer_head_camera.p', 'wb') as fs:
-                pickle.dump(k2, fs)
-                pickle.dump(d2, fs)
-
-            with open('ros_/calib_data/fundamental.p', 'wb') as ff:
-                pickle.dump(F, ff)
-
-            with open('ros_/calib_data/rotation.p', 'wb') as ff:
-                pickle.dump(R, ff)
-
-            with open('ros_/calib_data/translation.p', 'wb') as ff:
-                pickle.dump(T, ff)
-
+                )
+            self._write_params({
+                'usb_intrinsic': k1,
+                'usb_distortion': d1,
+                '{}_intrinsic'.format(camera): k2,
+                '{}_distortion'.format(camera): d2, 
+                'rotation': R,
+                'translation': T,
+                'fundamental': F
+                })
         else:
-            with open('ros_/calib_data/usb_camera.p', 'rb') as f:
-                k1 = pickle.load(f)
-                d1 = pickle.load(f)
+            names = ['usb_intrinsic', 'usb_distortion', 
+                '{}_intrinsic'.format(camera),
+                '{}_distortion'.format(camera), 
+                'rotation', 'translation', 'fundamental']
 
-            with open('ros_/calib_data/sawyer_head_camera.p', 'rb') as r:
-                k2 = pickle.load(r)
-                d2 = pickle.load(r)
-
-            with open('ros_/calib_data/fundamental.p', 'rb') as f:
-                F = pickle.load(f)
-
-            with open('ros_/calib_data/rotation.p', 'rb') as ff:
-                R = pickle.load(ff)
-
-            with open('ros_/calib_data/translation.p', 'rb') as ff:
-                T = pickle.load(ff)
-
+            data = self._read_params(names)
+            k1, d1, k2, d2, R, T, F = [data[n] for n in names]
 
         print(F, R, T,  k1, d1, k2, d2)
         print(np.array([227, 143,1]).dot(F))
@@ -391,7 +398,9 @@ class GraspSawyer(object):
 
     def _head_cam_to_gripper(self, u, v):
 
-        # tempMat 
+        # tempMat
+        p = np.array([u, v, 1], dtype=np.float32)
+
         pass
 
     def _usb_cam_to_gripper(self, u, v):
@@ -558,11 +567,26 @@ class GraspSawyer(object):
             self.move_to_with_lift(cp[0], cp[1])
             time.sleep(1)
 
+    def _write_params(self, data, direct='ros_/calib_data/'):
+        
+        for name, mat in data:
+            with open('{}/{}.p'.format(direct, name), 'wb') as f:
+                pickle.dump(mat, f)
+
+    def _read_params(self, names, direct='ros_/calib_data/'):
+
+        data = {}
+        for name in names:
+            with open('{}/{}.p'.format(direct, name), 'rb') as f:
+                data[name] = pickle.load(f)
+        return data
 
     def direct(self):
 
         _, _, rvec, tvec = self._calibrate_wrist_camera()
 
+
+    def direct(self):
 
 
 
@@ -573,11 +597,12 @@ sawyer = GraspSawyer(arm,
     boardSize=(9, 6), 
     checkerSize=0.026,
     numCalibPoints=10,
-    stereo='head_camera', 
+    stereo='wrist_camera', 
     gripper_init_pos=(0.47448053323879247, -0.2883169194187024)
     )
 # sawyer.grasp_by_color('red')
 
+# sawyer.direct()
 # sawyer.grasp_by_click()
 # sawyer._calibrate_wrist_camera()
 
