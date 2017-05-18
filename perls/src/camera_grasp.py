@@ -67,10 +67,10 @@ class GraspSawyer(object):
 
         head_camera_param = rosparam.get_param('/robot_config/'
             'jcb_joint_config/head_pan/head_camera')['intrinsics']
-
+        print(head_camera_param)
         self._robot_intrinsic = np.array([
-            [head_camera_param[2], 0, head_camera_param[3]], 
-            [0, head_camera_param[5], head_camera_param[6]], 
+            [head_camera_param[2], 0, head_camera_param[5]], 
+            [0, head_camera_param[3], head_camera_param[6]], 
             [0,                    0,                   1]], dtype=np.float32)
 
         self._robot_distortion = np.array(head_camera_param[-8:], dtype=np.float32)
@@ -89,7 +89,7 @@ class GraspSawyer(object):
         self.robot_camera_corner_points = []
         self.usb_camera_corner_points = []
 
-        self._robot.limb.move_to_neutral()
+        # self._robot.limb.move_to_neutral()
 
         if self.stereo:
             self._usb_intrinsic, self._usb_distortion, \
@@ -97,14 +97,14 @@ class GraspSawyer(object):
                 self._fundamental = self.calibrate_stereo()
         else:
             self.usb_pxl_translation, self.usb_pxl_invRotation = \
-                self._calibrate_monocular(gripper_init_pos)
+                self._calibrate_external(gripper_init_pos)
 
         self._inverse_robot_intrinsic = np.linalg.inv(self._robot_intrinsic)
         self._inverse_usb_intrinsic = np.linalg.inv(self._usb_intrinsic)
 
-    def _calibrate_monocular(self, gripper_init_pos):
+    def _calibrate_external(self, gripper_init_pos):
 
-        usbCamCornerPoints = self._get_monocular_points()
+        usbCamCornerPoints, _ = self._get_monocular_points()
 
         gripper_pos = np.zeros((self._board_size[1], self._board_size[0], 3), 
             dtype=np.float32)
@@ -124,12 +124,15 @@ class GraspSawyer(object):
         invRotation = np.linalg.inv(rotMatrix)
         return tvec, invRotation
 
+    def _calibrate_internal(self, ):
+
+
+        
     def calibrate_stereo(self):
 
         if not os.path.exists('ros_/calib_data/fundamental.p') or \
             (not os.path.exists('ros_/calib_data/sawyer_head_camera.p') or not \
                 os.path.exists('ros_/calib_data/usb_camera.p')):
-
             # Fill in points
             self._get_stereo_points()
 
@@ -139,6 +142,7 @@ class GraspSawyer(object):
                 for j in range(self._board_size[0]):
                     # Use 0 for z as for lying on the plane
                     raw_points[i, j] = [i * self._checker_size, j * self._checker_size, 0.]
+
             object_points = np.reshape(raw_points, (self._numCornerPoints, 3)).astype(np.float32)
 
             print((self.usb_camera_corner_points))
@@ -209,12 +213,18 @@ class GraspSawyer(object):
                     return
                 if foundPattern and len(self.robot_camera_corner_points) < self._calibration_iter:
                     time.sleep(1)
-                    usb_points = self._get_monocular_points()
+                    time_stamp = rospy.Time.now()
+                    usb_points, usb_img = self._get_monocular_points()
                     print('Saving to usb corner points..')
+                    cv2.imwrite('ros_/calib_data/camera/{}.jpg'.format(time_stamp), usb_img)
                     self.usb_camera_corner_points.append(usb_points)
                     print('Saving to sawyer corner points..')
+                    cv2.imwrite('ros_/calib_data/head_camera/{}.jpg'.format(time_stamp), cv_image)
                     self.robot_camera_corner_points.append(np.reshape(points, (self._numCornerPoints, 2)))
                     return
+                cv2.namedWindow("robot-calibrate", CV_WINDOW_AUTOSIZE)
+                cv2.imshow("robot-calibrate", cv_image)
+                cv2.waitKey(1)
             except CvBridgeError, err:
                 rospy.logerr(err)
                 return  
@@ -246,7 +256,7 @@ class GraspSawyer(object):
                 cv2.CALIB_CB_ADAPTIVE_THRESH
             )
         # self._usb_camera.release()
-        return usbCamCornerPoints.reshape((self._numCornerPoints, 2))
+        return usbCamCornerPoints.reshape((self._numCornerPoints, 2)), img
 
     def _usb_cam_to_gripper(self, u, v):
 
@@ -263,13 +273,14 @@ class GraspSawyer(object):
 
                 # pixel_location = np.array([pixel_location[0], pixel_location[1], 1], 
                 #     dtype=np.float32)
-                print(pixel_location, 'pix')
+                # print(pixel_location, 'pix')
 
-                # pixel_location = np.array([758, 529, 1], 
-                #     dtype=np.float32)
+                pixel_location = np.array([689, 582, 1], 
+                    dtype=np.float32)
+
                 camera_frame_position = self._inverse_robot_intrinsic.dot(pixel_location)
 
-                print(camera_frame_position, 'frame')
+                print(camera_frame_position, 'camera (world) frame')
 
                 v3s = Vector3Stamped(header=hdr,
                         vector=Vector3(*camera_frame_position))
@@ -383,18 +394,17 @@ class GraspSawyer(object):
             self.move_to(cp[0], cp[1], 0.15)
             time.sleep(1)
 
-
 sawyer = GraspSawyer(arm, 
     usbCameraMatrix=_UK, 
     usbDistortionVector=_UD, 
-    usbCameraIndex=1,
+    usbCameraIndex=0,
     boardSize=(9, 6), 
     checkerSize=0.026,
     numCalibPoints=10,
-    stereo=True, gripper_init_pos=(0.4501, -0.3628))
+    stereo=True, gripper_init_pos=(0.3849633, -0.3866577))
 # sawyer.grasp_by_color('yellow')
 
-# sawyer.grasp_by_click()
+sawyer.grasp_by_click()
 # sawyer.move_to(38, 35, 0.2)
 # sawyer.calibrate_stereo()
 
