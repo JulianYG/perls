@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import pickle
+import yaml
 import numpy as np
 
 import sys, os
@@ -15,12 +16,12 @@ import intera_interface
 from std_msgs.msg import String, Header
 from sensor_msgs.msg import CameraInfo
 from geometry_msgs.msg import (
-    PoseStamped,
-    Pose,
-    Point,
-    Quaternion,
-    Vector3Stamped,
-    Vector3
+	PoseStamped,
+	Pose,
+	Point,
+	Quaternion,
+	Vector3Stamped,
+	Vector3
 )
 
 
@@ -41,19 +42,19 @@ class CameraCalibrator(object):
 		direct, calib_min, camera_dim):
 
 		self._board_size = boardSize
-        self._checker_size = checkerSize
+		self._checker_size = checkerSize
 
-        self._calib_directory = direct
-    	self._calibration_points = calib_min
+		self._calib_directory = direct
+		self._calibration_points = calib_min
 
-    	self._numCornerPoints = self._board_size[0] * self._board_size[1]
-    	self._camera_dim = camera_dim
+		self._numCornerPoints = self._board_size[0] * self._board_size[1]
+		self._camera_dim = camera_dim
 
-    	# Initialize image points for consistency
-    	self.image_points = []
+		# Initialize image points for consistency
+		self.image_points = []
 
-    def calibrate(self):
-    	"""
+	def calibrate(self):
+		"""
 		Calibrate the camera if target information does not exist. 
 		Otherwise read stored data.
 		Returns the following calibration parameters:
@@ -67,106 +68,118 @@ class CameraCalibrator(object):
 		Rotation / translation of camera 2 w.r.t camera 1
 		Essential matrix
 		Fundamental matrix
-    	"""
-    	meta_file = pjoin(self._calib_directory, 'meta.yml')
-    	if not os.path.exists(meta_file):
-    		return self._calibrate_camera()
+		"""
+		meta_file = pjoin(self._calib_directory, 'meta.yml')
+		if not os.path.exists(meta_file):
+			return self._calibrate_camera()
 
-    	else:
-    		info_list = self.parse_meta(meta_file)
-    		return self._read_params(info_list)
+		else:
+			camera_type, info_list = self.parse_meta(meta_file)
+			return self._read_params(camera_type, info_list)
 
-    def _calibrate_camera(self):
-    	"""
+	def _calibrate_camera(self):
+		"""
 		The standard calibration procedure using opencv2
-    	"""
+		"""
 		# Get sets of points
 		object_points = self._get_object_points()
 		self._get_image_points()
 
 		# Crank the calibration
 		retval, K, d, rvec, tvec = cv2.calibrateCamera(
-	        [object_points] * self._calibration_points,
-	        self.img_points, self._camera_dim)
+			object_points, self.img_points, self._camera_dim)
 
-	    self._write_params({
-	        'head_R': rvec,
-	        'head_T': tvec,
-	        'head_instrinsic': K, 
-	        'head_distortion': d
-	        })
+		self._write_params({
+			'rotation': rvec,
+			'translation': tvec,
+			'instrinsic': K, 
+			'distortion': d
+			})
 
-	   	self.write_meta()
+		self.write_meta({
+			'calibration_': self.__name__,
+			'data': 
+				['rotation', 
+				'translation', 
+				'intrinsic',
+				'distortion']
+			})
 
-	    return K, d, rvec, tvec
+		return K, d, rvec, tvec
    
-    def _get_image_points(self):
-    	"""
+	def _get_image_points(self):
+		"""
 		Get image points for calibratio; polling from
 		the camera(s)
-    	"""
+		"""
+		raise NotImplementedError('Each calibrator class must re-implement this method.')
 
-    	raise NotImplementedError('Each calibrator class must re-implement this method.')
-
-    def _get_object_points(self):
-    	"""
+	def _get_object_points(self):
+		"""
 		Return a numpy array of object points in shape [num, 3], float32
 		The object points represent the corner points on checkerboard
 		in real world frame, origin from the top left corner of 
 		the checkerboard
-    	"""
-    	raw_points = np.zeros(
-    		(self._board_size[1], self._board_size[0], 3), 
-            dtype=np.float32)
+		"""
+		raw_points = np.zeros(
+			(self._board_size[1], self._board_size[0], 3), 
+			dtype=np.float32)
 
-        for i in range(self._board_size[1]):
-            for j in range(self._board_size[0]):
-                # Use 0 for z as for lying on the plane
-                raw_points[i, j] = [i * self._checker_size, 
-                	j * self._checker_size, 0.]
+		for i in range(self._board_size[1]):
+			for j in range(self._board_size[0]):
+				# Use 0 for z as for lying on the plane
+				raw_points[i, j] = [i * self._checker_size, 
+					j * self._checker_size, 0.]
 
-        object_points = np.reshape(raw_points, 
-        	(self._numCornerPoints, 3)).astype(np.float32)
+		object_points = np.reshape(raw_points, 
+			(self._numCornerPoints, 3)).astype(np.float32)
 
-        return object_points
+		# Correspond correct number of points with sampled points
+		return [object_points] * self._calibration_points
 
-    @staticmethod
-    def parse_meta(file):
-    	"""
+	@staticmethod
+	def parse_meta(file=''):
+		"""
 		Static method to parse the metadata file
-    	"""
-    	raise NotImplementedError
+		"""
+		meta = file or pjoin(self._calib_directory, 'meta.yml')
+		with open(meta, 'r') as f:
+			data_info = yaml.load(f)
 
-    @staticmethod
-   	def write_meta(meta_data):
-   		"""
+		camera = data_info['calibration_']
+		names = data_info['data']
+		return data_info, names
+
+	@staticmethod
+	def write_meta(meta_data):
+		"""
 		Outputs a metadata file .yml
-   		"""
-   		raise NotImplementedError
+		"""
+		with open(pjoin(self._calib_directory, 'meta.yml'), 'w') as f:
+			yaml.dump(metadata, f, default_flow_style=False)
 
 	def _write_params(self, data):
-        """
+		"""
 		Given data, write into files.
 		Data: a dictionary with (name, value) as key, value pairs
-        """
-        for name, mat in data.items():
-            with open('{}/{}.p'.format(self._calib_directory, 
-            	name), 'wb') as f:
-                pickle.dump(mat, f)
-        writemeta
+		"""
+		for name, mat in data.items():
+			with open(pjoin(self._calib_directory, 
+				'{}_{}.p'.format(self.__name__, name)), 'wb') as f:
+				pickle.dump(mat, f)
 
-    def _read_params(self, names):
-    	"""
-    	Names: a list of properties in query.
+	def _read_params(self, camera, names):
+		"""
+		Names: a list of properties in query.
 		Reads the data and returns corresponding stored data
 		in the same order as given names.
-    	"""
-        data = {}
-        for name in names:
-            with open('{}/{}.p'.format(self._calib_directory, 
-            	name), 'rb') as f:
-                data[name] = pickle.load(f)
-        return data
+		"""
+		data = {}
+		for name in names:
+			with open(pjoin(self._calib_directory, 
+				'{}_{}.p'.format(camera, name)), 'rb') as f:
+				data[name] = pickle.load(f)
+		return data
 
 
 class RGBDCalibrator(CameraCalibrator):
@@ -197,34 +210,35 @@ class UVCCalibrator(CameraCalibrator):
 	def _get_image_points(self):
 
 		s = False
-        while not s:
-            s, img = self._camera.read()
+		while not s:
+			s, img = self._camera.read()
 
-        # Sample enough image points
-        while len(self.img_points) < self._calibration_points:
-        	self.camera_callback(img, rospy.Time.now())
+		# Sample enough image points
+		while len(self.img_points) < self._calibration_points:
+			self.camera_callback(img, rospy.Time.now())
 
+	def camera_callback(self, img_data, time_stamp):
 
-    def camera_callback(self, img_data, time_stamp):
-
-   		foundPattern, points = cv2.findChessboardCorners(
-            img, self._board_size, None, 
-            cv2.CALIB_CB_ADAPTIVE_THRESH
-        )
+		foundPattern, points = cv2.findChessboardCorners(
+			img, self._board_size, None, 
+			cv2.CALIB_CB_ADAPTIVE_THRESH
+		)
 
 		if not foundPattern:
 			raw_input('UVC camera did not find pattern...'
-                ' Please re-adjust checkerboard position' 
-                'and press Enter.')
+				' Please re-adjust checkerboard position' 
+				'and press Enter.')
+			cv2.imwrite(pjoin(self._calib_directory, 
+				'failures/{}.jpg'.format(time_stamp)), img)
 		else:
 			self.img_points.append(points.reshape((
 				self._numCornerPoints, 2)))
 			cv2.imwrite(pjoin(self._calib_directory, 
-            	'uvc/{}.jpg'.format(time_stamp)), img)
+				'uvc/{}.jpg'.format(time_stamp)), img)
 
-            raw_input('Successfully read one point.'
-                ' Re-adjust the checkerboard and'
-                ' press Enter to Continue...')
+			raw_input('Successfully read one point.'
+				' Re-adjust the checkerboard and'
+				' press Enter to Continue...')
 
 
 class RobotCalibrator(CameraCalibrator):
@@ -240,26 +254,57 @@ class RobotCalibrator(CameraCalibrator):
 		self._robot_camera = intera_interface.Cameras()
 		self._camera_type = camera
 
-    
+	def camera_callback(self, img_data, camera):
+		try:
+			time_stamp = rospy.Time.now()
+			cv_image = CvBridge().imgmsg_to_cv2(img_data, 'bgr8')
+			robotFoundPattern, robot_points = cv2.findChessboardCorners(
+				cv_image, self._board_size, None
+			)
+			if not robotFoundPattern:
+				raw_input('Robot camera did not find pattern...'
+					' Please re-adjust checkerboard position and press Enter.')
+				cv2.imwrite(pjoin(self._calib_directory, 
+					'failures/{}.jpg'.format(time_stamp)), cv_image)
+				return
+			elif len(self.image_points) < self._calibration_points:
+
+				self.image_points.append(np.reshape(
+					robot_points, (self._numCornerPoints, 2)))
+
+				cv2.imwrite(pjoin(self._calib_directory, 
+					'{}/{}.jpg'.format(camera, time_stamp), cv_image))
+
+				raw_input('Successfully read one point.'
+					' Re-adjust the checkerboard '
+					'and press Enter to Continue...')
+				return
+			else:
+				raw_input('Done sampling points. Please Ctrl+C to continue.')
+
+		except CvBridgeError, err:
+			rospy.logerr(err)
+			return
 
 	def _get_image_points(self):
 		"""
 		Use a callback function to process captured images
 		"""
 		if not self._robot_camera.verify_camera_exists(self._camera_type):
-            rospy.logerr('Invalid camera name: {}, '
-            	'exit the program.'.format(self._camera_type))
-        
-        self._robot_camera.start_streaming(self._camera_type)
-        self._robot_camera.set_callback(self._camera_type, 
-        	self.camera_callback,
-            rectify_image=True, 
-            callback_args=self._camera_type)
-        try:
-            rospy.spin()
-        except KeyboardInterrupt:
-            rospy.loginfo('Shutting down robot camera corner detection')
-            self._robot_camera.stop_streaming(self._camera_type)
+			rospy.logerr('Invalid camera name: {}, '
+				'exit the program.'.format(self._camera_type))
+		
+		self._robot_camera.start_streaming(self._camera_type)
+		self._robot_camera.set_callback(self._camera_type, 
+			self.camera_callback,
+			rectify_image=True, 
+			callback_args=self._camera_type)
+		try:
+			rospy.spin()
+		except KeyboardInterrupt:
+			rospy.loginfo('Shutting down robot camera corner detection')
+			self._robot_camera.stop_streaming(self._camera_type)
+
 
 class StereoCalibrator(CameraCalibrator):
 
@@ -273,7 +318,10 @@ class StereoCalibrator(CameraCalibrator):
 	"""
 	def __init__(self, camera1, camera2, boardSize, 
 		checkerSize, direct, camera_dim, calib_min=4):
-
+		"""
+		Note constructor here takes the index of 
+		both left and right cameras
+		"""
 		super(StereoCalibrator, self).__init__(boardSize, 
 			checkerSize, direct, calib_min, camera_dim)
 
@@ -281,41 +329,55 @@ class StereoCalibrator(CameraCalibrator):
 		self._right_camera = cv2.VideoCapture(camera2)
 
 		self.left_img_points = []
-		self.right_img_points = []
+		self.right_img_points = [] # image_points
 
 	def _calibrate_camera(self):
 
-		object_points = [self._get_object_points()] * calib_min
+		object_points = self._get_object_points()
 		self._get_image_points()
 
 		#TODO: Use cornerSubPix
-        retVal, k1, d1, k2, d2, R, T, E, F = cv2.stereoCalibrate(
-            object_points, 
-            self.left_img_points, 
-            self.right_img_points, 
+		retVal, k1, d1, k2, d2, R, T, E, F = cv2.stereoCalibrate(
+			object_points, 
+			self.left_img_points, 
+			self.right_img_points, 
 
-            self._camera_dim,
+			self._camera_dim,
 
-            flags=(
-            	cv2.CALIB_FIX_INTRINSIC + 
-            	cv2.CALIB_FIX_ASPECT_RATIO +
-                cv2.CALIB_ZERO_TANGENT_DIST +
-                cv2.CALIB_SAME_FOCAL_LENGTH +
-                cv2.CALIB_RATIONAL_MODEL +
-                cv2.CALIB_FIX_K3 + 
-                cv2.CALIB_FIX_K4 + 
-                cv2.CALIB_FIX_K5)
-            )
-        self._write_params({
-            'usb_intrinsic': k1,
-            'usb_distortion': d1,
-            '{}_intrinsic'.format(camera): k2,
-            '{}_distortion'.format(camera): d2, 
-            'rotation': R,
-            'translation': T,
-            'essential': E, 
-            'fundamental': F
-            })
+			flags=(
+				cv2.CALIB_FIX_INTRINSIC + 
+				cv2.CALIB_FIX_ASPECT_RATIO +
+				cv2.CALIB_ZERO_TANGENT_DIST +
+				cv2.CALIB_SAME_FOCAL_LENGTH +
+				cv2.CALIB_RATIONAL_MODEL +
+				cv2.CALIB_FIX_K3 + 
+				cv2.CALIB_FIX_K4 + 
+				cv2.CALIB_FIX_K5)
+			)
+		self._write_params({
+			'left_intrinsic': k1,
+			'left_distortion': d1,
+			'right_intrinsic': k2,
+			'right_distortion': d2, 
+			'rotation': R,
+			'translation': T,
+			'essential': E, 
+			'fundamental': F
+			})
+
+		self.write_meta({
+			'calibration_': self.__name__,
+			'data': 
+				['left_intrinsic', 
+				'left_distortion', 
+				'right_distortion',
+				'right_distortion',
+				'rotation',
+				'translation',
+				'essential', 
+				'fundamental'
+				]
+			})
 
 		return k1, d1, k2, d2, R, T, E, F
 
@@ -323,29 +385,29 @@ class StereoCalibrator(CameraCalibrator):
 
 		s = False
 		# Confirm both cameras can see image
-        while not s:
-        	s1, img1 = self._left_camera.read()
-            s2, img2 = self._right_camera.read()
-            s = s1 and s2
+		while not s:
+			s1, img1 = self._left_camera.read()
+			s2, img2 = self._right_camera.read()
+			s = s1 and s2
 
-        # Sample enough image points
-        while len(self.left_img_points) < self._calibration_points:
-        	self.camera_callback(img1, img2, rospy.Time.now())
+		# Sample enough image points
+		while len(self.left_img_points) < self._calibration_points:
+			self.camera_callback(img1, img2, rospy.Time.now())
 
-    def camera_callback(self, left_img, right_img, time_stamp):
+	def camera_callback(self, left_img, right_img, time_stamp):
 
-    	leftFoundPattern, left_points = cv2.findChessboardCorners(
-            left_img, self._board_size, None, 
-            cv2.CALIB_CB_ADAPTIVE_THRESH)
+		leftFoundPattern, left_points = cv2.findChessboardCorners(
+			left_img, self._board_size, None, 
+			cv2.CALIB_CB_ADAPTIVE_THRESH)
 
-        rightFoundPattern, right_points = cv2.findChessboardCorners(
-            right_img, self._board_size, None, 
-            cv2.CALIB_CB_ADAPTIVE_THRESH)
+		rightFoundPattern, right_points = cv2.findChessboardCorners(
+			right_img, self._board_size, None, 
+			cv2.CALIB_CB_ADAPTIVE_THRESH)
 
 		if not (leftFoundPattern and rightFoundPattern):
 			raw_input('At least one camera did not find pattern...'
-                ' Please re-adjust checkerboard position' 
-                'and press Enter.')
+				' Please re-adjust checkerboard position' 
+				'and press Enter.')
 		else:
 			self.left_img_points.append(left_points.reshape((
 				self._numCornerPoints, 2)))
@@ -353,16 +415,16 @@ class StereoCalibrator(CameraCalibrator):
 				self._numCornerPoints, 2)))
 
 			cv2.imwrite(pjoin(self._calib_directory, 
-            	'stereo_left/{}.jpg'.format(time_stamp)), left_img)
+				'stereo_left/{}.jpg'.format(time_stamp)), left_img)
 			cv2.imwrite(pjoin(self._calib_directory, 
-            	'stereo_right/{}.jpg'.format(time_stamp)), right_img)
+				'stereo_right/{}.jpg'.format(time_stamp)), right_img)
 
-            raw_input('Successfully read one point.'
-                ' Re-adjust the checkerboard and'
-                ' press Enter to Continue...')
+			raw_input('Successfully read one point.'
+				' Re-adjust the checkerboard and'
+				' press Enter to Continue...')
 
 
-class DuoCalibrator(object):
+class DuoCalibrator(RobotCalibrator):
 	"""
 	Duo camera calibration (generalization of stereo)
 	By default, camera1 (left) is external camera (usually providing
@@ -376,49 +438,123 @@ class DuoCalibrator(object):
 
 	def __init__(self, camera1, camera2, boardSize, 
 		checkerSize, direct, camera_dim1, camera_dim2, 
-		camera_idx=0, calib_min=4):
+		calib_min=4):
+		"""
+		Note the constructor takes the index of external 
+		camera, and the string name of the robot camera (internal)
+		"""
+		super(DuoCalibrator, self).__init__(camera2, boardSize, 
+			checkerSize, direct, camera_dim, calib_min)
 
-		if camera1 == 'uvc':
-			self._left_camera = UVCCalibrator(
-				boardSize, checkerSize, direct, 
-				camera_dim1, camera_idx, calib_min)
-		elif camera1 == 'rgbd':
-			self._left_camera = RGBDCalibrator(
-				boardSize, checkerSize, direct, 
-				camera_dim1, camera_idx, calib_min)
-		else:
-			raise NotImplementedError('Unrecognized external camera type')
+		self._external_camera = cv2.VideoCapture(camera1)
 
-		self._right_camera = RobotCalibrator(camera, 
-			boardSize, checkerSize, direct, 
-			camera_dim2, calib_min)
+		self._external_camera_dim = camera_dim1
+		self._internal_camera_dim = camera_dim2
 
+		self.external_img_points = []
+	
 	def _calibrate_camera(self):
-    	"""
+		"""
 		The standard calibration procedure using opencv2
-    	"""
+		"""
 		# Get sets of points
 		object_points = self._get_object_points()
 		
-
+		self._get_image_points()
 
 		# Crank the calibration
-		retval, K, d, rvec, tvec = cv2.calibrateCamera(
-	        [object_points] * self._calibration_points,
-	        self.img_points, self._camera_dim)
+		retval, K1, d1, rvec1, tvec1 = cv2.calibrateCamera(
+			object_points, 
+			self.external_img_points, 
+			self._external_camera_dim)
 
-	    self._write_params({
-	        'head_R': rvec,
-	        'head_T': tvec,
-	        'head_instrinsic': K, 
-	        'head_distortion': d
-	        })
+		retval, K2, d2, rvec2, tvec2 = cv2.calibrateCamera(
+			object_points,
+			self.internal_img_points,
+			self._internal_camera_dim)
 
-	   	self.write_meta()
-
-	    return K, d, rvec, tvec
+		#TODO: some math manipulations
 
 
+
+		self._write_params({
+			'external_intrinsic': K1,
+			'external_distortion': d1,
+			'internal_intrinsic': K2,
+			'internal_distortion': d2, 
+			'rotation': R,
+			'translation': T,
+			'essential': E, 
+			'fundamental': F
+			})
+
+
+		self.write_meta({
+			'calibration_': self.__name__,
+			'data': 
+				['external_intrinsic', 
+				'external_distortion', 
+				'internal_intrinsic',
+				'internal_distortion',
+				'rotation',
+				'translation',
+				'essential', 
+				'fundamental'
+				]
+			})
+
+		return K, d, rvec, tvec
+
+	def camera_callback(self, img_data, camera):
+		"""
+		Due to the constraint of sampling the same set of points,
+		has to read the same set of points in ROS initiated 
+		camera callback for the external camera
+		"""
+		try:
+			time_stamp = rospy.Time.now()
+			
+			internal_img = CvBridge().imgmsg_to_cv2(img_data, 'bgr8')
+			external_img = self._external_camera.read()[1]
+
+			robotFoundPattern, internal_points = cv2.findChessboardCorners(
+				internal_img, self._board_size, None
+			)
+			#TODO: unsubscribe by itself
+			externFoundPattern, external_points = cv2.findChessboardCorners(
+				external_img, self._board_size, None, 
+				cv2.CALIB_CB_ADAPTIVE_THRESH
+			)
+
+			if not (robotFoundPattern and externFoundPattern):
+				raw_input('At least camera did not find pattern...'
+					' Please re-adjust checkerboard position and press Enter.')
+				
+				fail_img = internal_img if not robotFoundPattern else external_img
+				cv2.imwrite(pjoin(self._calib_directory, 
+					'failures/{}.jpg'.format(time_stamp)), fail_img)
+				return
+
+			elif len(self.image_points) < self._calibration_iter:
+
+				self.image_points.append(internal_points)
+				self.external_img_points.append(external_points)
+
+				cv2.imwrite(pjoin(self._calib_directory, 
+					'camera/{}.jpg'.format(time_stamp)), external_img)
+				cv2.imwrite(pjoin(self._calib_directory,
+					'{}/{}.jpg'.format(camera, time_stamp)), internal_img)
+
+				raw_input('Successfully read one point.'
+					' Re-adjust the checkerboard and press Enter to Continue...')
+				return
+
+			else:
+				raw_input('Done sampling points. Please Ctrl+C to continue.')
+
+		except CvBridgeError, err:
+			rospy.logerr(err)
+			return
 
 
 
