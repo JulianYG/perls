@@ -90,6 +90,8 @@ class GraspSawyer(object):
         self._init_pose = {'right_j6': 3.3161, 'right_j5': 0.57, 'right_j4': 0, 
             'right_j3': 2.18, 'right_j2': -0, 'right_j1': -1.18, 'right_j0': 0.}
 
+        # self._robot.set_init_positions(self._init_pose)
+
         self._usb_camera = cv2.VideoCapture(usbCameraIndex)
         self._robot_camera = intera_interface.Cameras()
         self.tl = tf.TransformListener()
@@ -483,7 +485,7 @@ class GraspSawyer(object):
         arm.slide_grasp(0)
 
     def move_to_with_lift(self, u, v, 
-        hover=0.4, dive=0.099, drop=None):
+        hover=0.4, dive=0.095, drop=None, drop_depth=0.23):
 
         self.move_to_with_grasp(u, v, hover, dive)
         time.sleep(.75)
@@ -496,11 +498,13 @@ class GraspSawyer(object):
             time.sleep(.75)
             self.move_to(drop[0], drop[1], hover)
             time.sleep(.8)
-            self.move_to(drop[0], drop[1], 0.23)
+            self._robot.limb.set_joint_position_speed(0.03)
+            self.move_to(drop[0], drop[1], drop_depth)
             time.sleep(.5)
             arm.slide_grasp(1)
             time.sleep(.5)
-            self.move_to(drop[0], drop[1], .45)
+            self._robot.limb.set_joint_position_speed(0.1)
+            self.move_to(drop[0], drop[1], hover)
         else:
             self.move_to(u, v, 0.45)
             time.sleep(.75)
@@ -602,6 +606,31 @@ class GraspSawyer(object):
                 data[name] = pickle.load(f)
         return data
 
+    def stack(self):
+
+        origin = []
+        cnt = 0
+        def mouse_callback(event, x, y, flags, param):
+
+            if event == 1:
+                
+                if not param[0]:
+                    param[0].append((x, y))
+                else:
+                    self.move_to_with_lift(x, y, drop_depth=param[1] * 0.026 + 0.095, drop=param[0][0])
+                    param[1] += 1
+
+                self.move_to(498, 52, 0.4)
+                print(param)
+        while True:
+            try:
+                s, img = self._usb_camera.read()
+                cv2.namedWindow('grasp-by-click', cv2.CV_WINDOW_AUTOSIZE)
+                cv2.setMouseCallback('grasp-by-click', mouse_callback, param=[origin, cnt])
+                cv2.imshow('grasp-by-click', img)
+                cv2.waitKey(1)
+            except KeyboardInterrupt:
+                cv2.destroyAllWindows()
 
     def direct(self):
 
@@ -617,10 +646,12 @@ sawyer = GraspSawyer(arm,
     camera='external', 
     gripper_init_pos=(0.5317384221429671, -0.12024318500698714)
     )
+
 # sawyer.grasp_by_color('yellow')
+sawyer.stack()
 
 # sawyer.direct()
-sawyer.grasp_by_click()
+# sawyer.grasp_by_click()
 # sawyer._calibrate_wrist_camera()
 
 # sawyer.move_to(38, 35, 0.2)
