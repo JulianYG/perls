@@ -148,7 +148,7 @@ class CameraCalibrator(object):
 
 		camera = data_info['calibration_']
 		names = data_info['data']
-		return data_info, names
+		return camera, names
 
 	@staticmethod
 	def write_meta(meta_data):
