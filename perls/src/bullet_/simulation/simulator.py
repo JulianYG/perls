@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 from os.path import join as pjoin
 from simulation.utils.helpers import parse_log
 
-class BulletSimulator(object):
+class BulletSimulator:
 
 	def __init__(self, agent, interface, task, scene, gui=True, vr=False, log_dir=''):
 		# Default settings for camera

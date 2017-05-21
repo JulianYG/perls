@@ -26,3 +26,4 @@ class Comm(object):
 	def close(self):
 		raise NotImplementedError('Each messager should re-implement this method')
 		
+

@@ -1,7 +1,6 @@
-from simulation.agents import (
-	kuka, sawyer, pr2
-	)
-from simulation.interface import *
+from simulation.agent import PR2
+from simulation.robot import Kuka, Sawyer
+from simulation.interface import IVR, IKeyboard, ICmd
 from simulation.simulator import BulletSimulator
 import os, sys, getopt, json
 from os.path import join as pjoin
@@ -67,22 +66,22 @@ def execute(*args):
 
 	if agent == 'kuka':
 		# Change Fixed to True for keyboard
-		agent = kuka.Kuka(init_pos, fixed=fixed, enableForceSensor=force_sensor)
+		agent = Kuka(init_pos, fixed=fixed, enableForceSensor=force_sensor)
 	elif agent == 'sawyer':
-		agent = sawyer.Sawyer(init_pos, fixed=fixed, enableForceSensor=force_sensor)
+		agent = Sawyer(init_pos, fixed=fixed, enableForceSensor=force_sensor)
 	elif agent == 'pr2':
-		agent = pr2.PR2(init_pos, enableForceSensor=force_sensor)
+		agent = PR2(init_pos, enableForceSensor=force_sensor)
 	else:
 		raise NotImplementedError('Invalid input: Model not recognized.')
 	
 	if interface_type == 'vr':	# VR interface that takes VR events
-		interface = vr_interface.IVR(None, False)
+		interface = IVR(None, False)
 		vr = True
 	elif interface_type == 'keyboard':	# Keyboard interface that takes keyboard events
-		interface = keyboard_interface.IKeyboard(None, False)
+		interface = IKeyboard(None, False)
 		vr = False
 	elif interface_type == 'cmd':	# Customized interface that takes any sort of command
-		interface = cmd_interface.ICmd(None, False)
+		interface = ICmd(None, False)
 		vr = False
 	else:
 		raise NotImplementedError('Non-supported interface.')

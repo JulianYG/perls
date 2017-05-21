@@ -5,8 +5,9 @@ from os.path import join as pjoin
 bullet_path = pjoin(os.getcwd(), 'bullet_')
 sys.path.append(bullet_path)
 
-from simulation.agents import *
-from simulation.interface import *
+from simulation.agent import PR2
+from simulation.robot import Sawyer, Kuka
+from simulation.interface import IVR, IKeyboard, ICmd
 from simulation.simulator import BulletSimulator
 
 from simulation.utils import helpers as utils
@@ -69,22 +70,22 @@ def run_server(config):
 
 	if agent == 'kuka':
 		# Change Fixed to True for keyboard
-		agent = kuka.Kuka(init_pos, fixed=fixed, enableForceSensor=force_sensor)
+		agent = Kuka(init_pos, fixed=fixed, enableForceSensor=force_sensor)
 	elif agent == 'sawyer':
-		agent = sawyer.Sawyer(init_pos, fixed=fixed, enableForceSensor=force_sensor)
+		agent = Sawyer(init_pos, fixed=fixed, enableForceSensor=force_sensor)
 	elif agent == 'pr2':
-		agent = pr2.PR2(init_pos, enableForceSensor=force_sensor)
+		agent = PR2(init_pos, enableForceSensor=force_sensor)
 	else:
 		raise NotImplementedError('Invalid input: Model not recognized.')
 
 	host = db.RedisComm('localhost', port=6379)  # ip
 
 	if interface_type == 'vr':	# VR interface that takes VR events
-		interface = vr_interface.IVR(host, True)
+		interface = IVR(host, True)
 	elif interface_type == 'keyboard':	# Keyboard interface that takes keyboard events
-		interface = keyboard_interface.IKeyboard(host, True)
+		interface = IKeyboard(host, True)
 	elif interface_type == 'cmd':	# Customized interface that takes any sort of command
-		interface = cmd_interface.ICmd(host, True)
+		interface = ICmd(host, True)
 	else:
 		raise NotImplementedError('Non-supported interface.')
 

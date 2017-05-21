@@ -1,9 +1,9 @@
 import rospy
 import intera_interface
 from intera_interface import CHECK_VERSION
-from ros_.robot import Robot
+from ..ros_.robot import Robot
 import time
-from utils import Interpolator
+from ..ros.utils.filter import Interpolator
 import numpy as np
 import cPickle
 
