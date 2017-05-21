@@ -325,6 +325,16 @@ class StereoCalibrator(CameraCalibrator):
 		super(StereoCalibrator, self).__init__(boardSize, 
 			checkerSize, direct, calib_min, camera_dim)
 
+		# WARNING: 
+		# If two cameras are connected to the same usb card,
+		# then it's possible one camera reads None image due 
+		# to bandwidth limit. In that case decrease the 
+		# resolution by doing:
+		# self._left_camera.set(3, 160)
+		# self._left_camera.set(4, 120)
+		# self._right_camera.set(3, 160)
+		# self._right_camera.set(4, 120)
+
 		self._left_camera = cv2.VideoCapture(camera1) 
 		self._right_camera = cv2.VideoCapture(camera2)
 
