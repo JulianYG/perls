@@ -1,10 +1,10 @@
-from simulation.agents import (
-	kuka, sawyer, pr2
-	)
-from simulation.interface import *
+from simulation.agent import PR2
+from simulation.robot import Kuka, Sawyer
+from simulation.interface import IVR, IKeyboard, ICmd
 from simulation.simulator import BulletSimulator
 import os, sys, getopt, json
 from os.path import join as pjoin
+sys.path.append(pjoin(os.getcwd(), '../'))
 from simulation.utils import helpers as utils
 sys.path.append(pjoin(os.getcwd(), '../'))
 from comm import db
@@ -50,13 +50,11 @@ def execute(*args):
 	video = _CONFIGS['video']
 	delay = _CONFIGS['delay']
 	task = _CONFIGS['task']
-	remote = _CONFIGS['remote']
 	ip = _CONFIGS['server_ip']
 	fixed = _CONFIGS['fixed_gripper_orn']
 	force_sensor = _CONFIGS['enable_force_sensor']
 	init_pos = _CONFIGS['tool_positions']
 	camera_info = _CONFIGS['camera']
-	server = _CONFIGS['server']
 	gui = _CONFIGS['gui']
 	scene = _CONFIGS['scene']
 
@@ -69,39 +67,25 @@ def execute(*args):
 
 	if agent == 'kuka':
 		# Change Fixed to True for keyboard
-		agent = kuka.Kuka(init_pos, fixed=fixed, enableForceSensor=force_sensor)
+		agent = Kuka(init_pos, fixed=fixed, enableForceSensor=force_sensor)
 	elif agent == 'sawyer':
-		agent = sawyer.Sawyer(init_pos, fixed=fixed, enableForceSensor=force_sensor)
+		agent = Sawyer(init_pos, fixed=fixed, enableForceSensor=force_sensor)
 	elif agent == 'pr2':
-		agent = pr2.PR2(init_pos, enableForceSensor=force_sensor)
+		agent = PR2(init_pos, enableForceSensor=force_sensor)
 	else:
 		raise NotImplementedError('Invalid input: Model not recognized.')
 	
-	socket = None
-	if remote:
-		if server == 'redis':
-			socket = db.RedisComm(ip, port=6379)
-		elif server == 'tcp':
-			socket = tcp.TCPComm(ip)
-		elif server == 'cmd':
-			raise NotImplementedError('Currently not implemented')
-		else:
-			raise NotImplementedError('Invalid input: Server not recognized.')
-
 	if interface_type == 'vr':	# VR interface that takes VR events
-		interface = vr_interface.IVR(socket, remote)
+		interface = IVR(None, False)
 		vr = True
 	elif interface_type == 'keyboard':	# Keyboard interface that takes keyboard events
-		interface = keyboard_interface.IKeyboard(socket, remote)
+		interface = IKeyboard(None, False)
 		vr = False
 	elif interface_type == 'cmd':	# Customized interface that takes any sort of command
-		interface = cmd_interface.ICmd(socket, remote)
+		interface = ICmd(None, False)
 		vr = False
 	else:
 		raise NotImplementedError('Non-supported interface.')
-
-	if remote and (job == 'record' or job == 'run'):
-		vr = False
 
 	simulator = BulletSimulator(agent, interface, 
 								task_repo[task], scene_repo[scene],
@@ -128,9 +112,8 @@ def usage():
 def main(argv):
 
 	config = '1'	# default config
-
 	try:
-		opts, args = getopt.getopt(argv, 'hc:r', ['help', 'config='])
+		opts, args = getopt.getopt(argv, 'hc:', ['help', 'config='])
 	except getopt.GetoptError:
 		usage()
 		sys.exit(2)

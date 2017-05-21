@@ -7,8 +7,9 @@ bullet_path = pjoin(os.getcwd(), '../bullet_')
 sys.path.append(bullet_path)
 
 from simulation.utils import helpers as utils
-from simulation.agents import *
 from simulation.simulator import BulletSimulator
+
+from simulation.robot import Sawyer, Kuka
 
 TASK_DIR = pjoin(bullet_path, 'configs', 'task.json')
 SCENE_DIR = pjoin(bullet_path, 'configs', 'scene.json')
@@ -41,11 +42,11 @@ reward_thresh = _CONFIGS['reward_thresh']
 module = eval(step_func)
 if agent == 'kuka':
 	# Change Fixed to True for keyboard
-	agent = kuka.Kuka(init_pos, fixed=fixed, enableForceSensor=force_sensor)
+	agent = Kuka(init_pos, fixed=fixed, enableForceSensor=force_sensor)
 elif agent == 'sawyer':
-	agent = sawyer.Sawyer(init_pos, fixed=fixed, enableForceSensor=force_sensor)
+	agent = Sawyer(init_pos, fixed=fixed, enableForceSensor=force_sensor)
 elif agent == 'pr2':
-	agent = pr2.PR2(init_pos, enableForceSensor=force_sensor)
+	agent = PR2(init_pos, enableForceSensor=force_sensor)
 else:
 	raise NotImplementedError('Invalid input: Model not recognized.')
 

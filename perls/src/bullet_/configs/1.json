@@ -9,7 +9,6 @@
 	"remote": true, 
 	"fixed_gripper_orn": false,
 	"server_ip": "172.24.68.111",
-	"server": "redis",
 	"enable_force_sensor": false,
 	"tool_positions": [0.3, -0.5],
 	"replay_file_name": null, 

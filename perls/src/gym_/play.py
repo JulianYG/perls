@@ -24,10 +24,13 @@ def execute(*args):
 			print(action)
 			# break
 			observation, reward, done, info = env.step(action)
+			
 			task += 1
 			if done:
 				print("Episode finished after {} timesteps".format(task + 1))
+            	env.render(mode='segment')
             	break
+
 
 if __name__ == '__main__':
 	execute(sys.argv[1:])
