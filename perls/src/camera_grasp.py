@@ -536,7 +536,10 @@ class GraspSawyer(object):
                 s, img = self._usb_camera.read()
                 cv2.namedWindow('grasp-by-click', cv2.CV_WINDOW_AUTOSIZE)
                 cv2.setMouseCallback('grasp-by-click', mouse_callback)
-                cv2.imshow('grasp-by-click', img)
+                # Remove distoration
+                rectified_image = cv2.undistort(self._usb_intrinsic, 
+                    self._usb_distortion)
+                cv2.imshow('grasp-by-click', rectified_image)
                 cv2.waitKey(1)
             except KeyboardInterrupt:
                 cv2.destroyAllWindows()
