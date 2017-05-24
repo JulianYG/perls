@@ -12,6 +12,8 @@ import cv2
 from cv_bridge import CvBridge, CvBridgeError
 
 import tf
+import rospy
+import rosparam
 import intera_interface
 from std_msgs.msg import String, Header
 from sensor_msgs.msg import CameraInfo
@@ -24,6 +26,17 @@ from geometry_msgs.msg import (
 	Vector3
 )
 
+
+# USB Camera matrix 
+_UK = np.array([
+	[600.153387, 0, 315.459915], 
+	[0, 598.015225, 222.933946], 
+	[0,          0,          1]
+	], np.float32)
+
+# USB Camera Distortion
+_UD = np.array([0.147084, -0.257330, 
+	0.003032, -0.006975, 0.000000], np.float32)
 
 class CameraCalibrator(object):
 	"""
@@ -137,8 +150,7 @@ class CameraCalibrator(object):
 		# Correspond correct number of points with sampled points
 		return [object_points] * self._calibration_points
 
-	@staticmethod
-	def parse_meta(file=''):
+	def parse_meta(self, file=''):
 		"""
 		Static method to parse the metadata file
 		"""
@@ -150,13 +162,12 @@ class CameraCalibrator(object):
 		names = data_info['data']
 		return camera, names
 
-	@staticmethod
-	def write_meta(meta_data):
+	def write_meta(self, meta_data):
 		"""
 		Outputs a metadata file .yml
 		"""
 		with open(pjoin(self._calib_directory, 'meta.yml'), 'w') as f:
-			yaml.dump(metadata, f, default_flow_style=False)
+			yaml.dump(meta_data, f, default_flow_style=False)
 
 	def _write_params(self, data):
 		"""
@@ -165,7 +176,7 @@ class CameraCalibrator(object):
 		"""
 		for name, mat in data.items():
 			with open(pjoin(self._calib_directory, 
-				'{}_{}.p'.format(self.__name__, name)), 'wb') as f:
+				'{}_{}.p'.format(self.__class__.__name__, name)), 'wb') as f:
 				pickle.dump(mat, f)
 
 	def _read_params(self, camera, names):
@@ -248,19 +259,39 @@ class RobotCalibrator(CameraCalibrator):
 	def __init__(self, camera, boardSize, checkerSize, 
 		direct, camera_dim, calib_min=4):
 
-		super(RobotCamCalibrator, self).__init__(boardSize, 
+		super(RobotCalibrator, self).__init__(boardSize, 
 			checkerSize, direct, calib_min, camera_dim)
 
+		rospy.init_node('calibration')
 		self._robot_camera = intera_interface.Cameras()
 		self._camera_type = camera
+
+		if camera == "head_camera":
+			param = rosparam.get_param('/robot_config/'
+				'jcb_joint_config/head_pan/' + camera)['intrinsics']
+		else:
+			param = rosparam.get_param('/robot_config/'
+				'jcb_joint_config/right_j5/' + camera)['intrinsics']
+
+		self._internal_intrinsic = np.array([
+			[param[2], 0, param[5]], 
+			[0, param[3], param[6]], 
+			[0,                    0,                   1]], dtype=np.float32)
+
+		if camera == "head_camera":
+			self._internal_distortion = np.array(param[-8:], dtype=np.float32)
+		else:
+			self._internal_distortion = np.array(param[-5:], dtype=np.float32)
 
 	def camera_callback(self, img_data, camera):
 		try:
 			time_stamp = rospy.Time.now()
 			cv_image = CvBridge().imgmsg_to_cv2(img_data, 'bgr8')
+			
 			robotFoundPattern, robot_points = cv2.findChessboardCorners(
 				cv_image, self._board_size, None
 			)
+
 			if not robotFoundPattern:
 				raw_input('Robot camera did not find pattern...'
 					' Please re-adjust checkerboard position and press Enter.')
@@ -268,6 +299,11 @@ class RobotCalibrator(CameraCalibrator):
 					'failures/{}.jpg'.format(time_stamp)), cv_image)
 				return
 			elif len(self.image_points) < self._calibration_points:
+
+
+				cv2.cornerSubPix(cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY), 
+					robot_points, (11, 11), (-1, -1), 
+					(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001))
 
 				self.image_points.append(np.reshape(
 					robot_points, (self._numCornerPoints, 2)))
@@ -454,7 +490,7 @@ class DuoCalibrator(RobotCalibrator):
 		camera, and the string name of the robot camera (internal)
 		"""
 		super(DuoCalibrator, self).__init__(camera2, boardSize, 
-			checkerSize, direct, camera_dim, calib_min)
+			checkerSize, direct, camera_dim2, calib_min)
 
 		self._external_camera = cv2.VideoCapture(camera1)
 
@@ -462,6 +498,16 @@ class DuoCalibrator(RobotCalibrator):
 		self._internal_camera_dim = camera_dim2
 
 		self.external_img_points = []
+
+		self.tl = tf.TransformListener()
+
+
+		self.br = tf.TransformBroadcaster()
+
+
+		self._external_intrinsic = _UK
+		self._external_distortion = _UD
+
 	
 	def _calibrate_camera(self):
 		"""
@@ -472,48 +518,77 @@ class DuoCalibrator(RobotCalibrator):
 		
 		self._get_image_points()
 
-		# Crank the calibration
-		retval, K1, d1, rvec1, tvec1 = cv2.calibrateCamera(
-			object_points, 
-			self.external_img_points, 
-			self._external_camera_dim)
+		objp = object_points[0]
 
-		retval, K2, d2, rvec2, tvec2 = cv2.calibrateCamera(
-			object_points,
-			self.internal_img_points,
-			self._internal_camera_dim)
-
-		#TODO: some math manipulations
+		rvecs_external, tvecs_external, _ = cv2.solvePnPRansac(objp, self.external_img_points[0], 
+			self._external_intrinsic, self._external_distortion)
 
 
+		rvecs_internal, tvecs_internal, _ = cv2.solvePnPRansac(objp, self.image_points[0], 
+			self._internal_intrinsic, self._internal_distortion)
 
-		self._write_params({
-			'external_intrinsic': K1,
-			'external_distortion': d1,
-			'internal_intrinsic': K2,
-			'internal_distortion': d2, 
-			'rotation': R,
-			'translation': T,
-			'essential': E, 
-			'fundamental': F
-			})
+		r_external, _ = cv2.Rodrigues(rvecs_external)
+		r_internal, _ = cv2.Rodrigues(rvecs_internal)
 
 
-		self.write_meta({
-			'calibration_': self.__name__,
-			'data': 
-				['external_intrinsic', 
-				'external_distortion', 
-				'internal_intrinsic',
-				'internal_distortion',
-				'rotation',
-				'translation',
-				'essential', 
-				'fundamental'
-				]
-			})
+		trans_external = np.vstack((np.column_stack((r_external, tvecs_external)), [0, 0, 0, 1]))
+		trans_internal = np.vstack((np.column_stack((r_internal, tvecs_internal)), [0, 0, 0, 1]))
 
-		return K, d, rvec, tvec
+		external_to_internal = trans_internal.dot(np.linalg.inv(trans_external))
+
+		if self.tl.frameExists(self._camera_type) and self.tl.frameExists('base'):
+
+			t = self.tl.getLatestCommonTime(self._camera_type, 'base')
+			
+			# t = rospy.Time.now()
+			# t = rospy.get_rostime()
+			hdr = Header(stamp=t, frame_id=self._camera_type)
+
+			translation, rotation = self.tl.lookupTransform('base', self._camera_type, t)
+
+			# mat = tf.TransformerROS('base', hdr)
+			mat = tf.TransformerROS().fromTranslationRotation(translation, rotation)
+
+			TR = mat.dot(external_to_internal)
+			# TR = external_to_internal
+
+			# print(robot_camera_coords, 'camera (world) frame')
+
+			# v3s = Vector3Stamped(header=hdr,
+			#         vector=Vector3(*robot_camera_coords))
+			# gripper_vector = self.tl.transformVector3('base', v3s).vector
+			
+			# return np.array([gripper_vector.x, gripper_vector.y, gripper_vector.z])
+			print('=-=========================')
+			print(TR)
+
+	
+			self._write_params({
+				# 'external_intrinsic': K1,
+				# 'external_distortion': d1,
+				# 'internal_intrinsic': K2,
+				# 'internal_distortion': d2, 
+				'transform': TR
+				})
+
+
+			self.write_meta({
+				'calibration_': 'DuoCalibrator',
+				'data': 
+					[
+					# 'external_intrinsic', 
+					# 'external_distortion', 
+					# 'internal_intrinsic',
+					# 'internal_distortion',
+					'transform'
+					]
+				})
+
+			# return K1, d1, K2, d2, TR
+			return TR
+
+		else:
+			raise Exception('Frame does not exist. Severe Error!')
 
 	def camera_callback(self, img_data, camera):
 		"""
@@ -522,6 +597,9 @@ class DuoCalibrator(RobotCalibrator):
 		camera callback for the external camera
 		"""
 		try:
+
+
+
 			time_stamp = rospy.Time.now()
 			
 			internal_img = CvBridge().imgmsg_to_cv2(img_data, 'bgr8')
@@ -536,6 +614,7 @@ class DuoCalibrator(RobotCalibrator):
 				cv2.CALIB_CB_ADAPTIVE_THRESH
 			)
 
+
 			if not (robotFoundPattern and externFoundPattern):
 				raw_input('At least camera did not find pattern...'
 					' Please re-adjust checkerboard position and press Enter.')
@@ -545,7 +624,16 @@ class DuoCalibrator(RobotCalibrator):
 					'failures/{}.jpg'.format(time_stamp)), fail_img)
 				return
 
-			elif len(self.image_points) < self._calibration_iter:
+			elif len(self.image_points) < self._calibration_points:
+
+
+				cv2.cornerSubPix(cv2.cvtColor(internal_img, cv2.COLOR_BGR2GRAY), 
+					internal_points, (11, 11), (-1, -1), 
+					(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001))
+
+				cv2.cornerSubPix(cv2.cvtColor(external_img, cv2.COLOR_BGR2GRAY), 
+					external_points, (11, 11), (-1, -1), 
+					(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001))
 
 				self.image_points.append(internal_points)
 				self.external_img_points.append(external_points)
@@ -557,6 +645,8 @@ class DuoCalibrator(RobotCalibrator):
 
 				raw_input('Successfully read one point.'
 					' Re-adjust the checkerboard and press Enter to Continue...')
+
+
 				return
 
 			else:
