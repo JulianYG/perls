@@ -4,7 +4,7 @@ from cv2 import *
 import numpy as np
 
 # initialize the camera
-cam = VideoCapture(1)   # 0 -> index of camera
+cam = VideoCapture(0)   # 0 -> index of camera
 
 
 def mouse_callback(event, x, y, flags, params):
@@ -21,13 +21,15 @@ while 1:
 	if s:    # frame captured without any errors
 	    namedWindow("cam-calibrate", CV_WINDOW_AUTOSIZE)
 	    setMouseCallback('cam-calibrate', mouse_callback)
-	    # res, corners = findChessboardCorners(img, (9, 6), None, CALIB_CB_ADAPTIVE_THRESH)
+	    res, corners = findChessboardCorners(img, (9, 6), None, CALIB_CB_ADAPTIVE_THRESH)
 	    # if res:
+
+	    print(res)
 	    # 	print(corners, corners.shape)
 	    imshow("cam-calibrate",img)
 	    # imwrite('test.jpg', img)
 	    # print(img.shape)
-	    waitKey(0)
+	    waitKey(1)
 # destroyWindow("cam-calibrate")
 
 

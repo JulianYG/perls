@@ -522,23 +522,50 @@ class DuoCalibrator(RobotCalibrator):
 
 		external_to_internal = np.zeros((4, 4), dtype=np.float32)
 
+
+		retval, k1, d1, r1, t1 = cv2.calibrateCamera(
+			object_points, 
+			self.external_img_points,
+			self._external_camera_dim
+			)
+
+		retval, k2, d2, r2, t2 = cv2.calibrateCamera(
+			object_points,
+			self.image_points,
+			self._internal_camera_dim
+			)
+
+	
 		for i in range(self._calibration_points):
 
-			rvecs_external, tvecs_external, _ = cv2.solvePnPRansac(objp, self.external_img_points[i], 
-				self._external_intrinsic, self._external_distortion)
+			r_external, _ = cv2.Rodrigues(r1[i])
+			r_internal, _ = cv2.Rodrigues(r2[i])
 
-			rvecs_internal, tvecs_internal, _ = cv2.solvePnPRansac(objp, self.image_points[i], 
-				self._internal_intrinsic, self._internal_distortion)
-
-			r_external, _ = cv2.Rodrigues(rvecs_external)
-			r_internal, _ = cv2.Rodrigues(rvecs_internal)
-
-			trans_external = np.vstack((np.column_stack((r_external, tvecs_external)), [0, 0, 0, 1]))
-			trans_internal = np.vstack((np.column_stack((r_internal, tvecs_internal)), [0, 0, 0, 1]))
+			trans_external = np.vstack((np.column_stack((r_external, t1[i])), [0, 0, 0, 1]))
+			trans_internal = np.vstack((np.column_stack((r_internal, t2[i])), [0, 0, 0, 1]))
 
 			external_to_internal += trans_internal.dot(np.linalg.inv(trans_external))
 
-		external_to_internal /= self._calibration_points
+		external_to_internal /= self._calibration_points		
+
+
+		# for i in range(self._calibration_points):
+
+		# 	rvecs_external, tvecs_external, _ = cv2.solvePnPRansac(objp, self.external_img_points[i], 
+		# 		self._external_intrinsic, self._external_distortion)
+
+		# 	rvecs_internal, tvecs_internal, _ = cv2.solvePnPRansac(objp, self.image_points[i], 
+		# 		self._internal_intrinsic, self._internal_distortion)
+
+		# 	r_external, _ = cv2.Rodrigues(rvecs_external)
+		# 	r_internal, _ = cv2.Rodrigues(rvecs_internal)
+
+		# 	trans_external = np.vstack((np.column_stack((r_external, tvecs_external)), [0, 0, 0, 1]))
+		# 	trans_internal = np.vstack((np.column_stack((r_internal, tvecs_internal)), [0, 0, 0, 1]))
+
+		# 	external_to_internal += trans_internal.dot(np.linalg.inv(trans_external))
+
+		# external_to_internal /= self._calibration_points
 
 		if self.tl.frameExists(self._camera_type) and self.tl.frameExists('base'):
 
@@ -562,6 +589,7 @@ class DuoCalibrator(RobotCalibrator):
 					]
 				})
 
+			print(k1, k2, d1, d2)
 			return TR
 
 		else:
@@ -600,8 +628,8 @@ class DuoCalibrator(RobotCalibrator):
 				return
 				
 			if not (robotFoundPattern and externFoundPattern):
-				raw_input('At least camera did not find pattern...'
-					' Please re-adjust checkerboard position and press Enter.')
+				print('At least camera did not find pattern...'
+					' Please re-adjust checkerboard position to continue.')
 				
 				fail_img = internal_img if not robotFoundPattern else external_img
 				cv2.imwrite(pjoin(self._calib_directory, 
@@ -609,7 +637,6 @@ class DuoCalibrator(RobotCalibrator):
 				return
 
 			elif len(self.image_points) < self._calibration_points:
-
 
 				cv2.cornerSubPix(cv2.cvtColor(internal_img, cv2.COLOR_BGR2GRAY), 
 					internal_points, (11, 11), (-1, -1), 

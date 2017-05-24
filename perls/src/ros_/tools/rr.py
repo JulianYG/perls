@@ -27,7 +27,7 @@ from geometry_msgs.msg import (
 
 
 
-
+import rosparam
 rospy.init_node('dsdfs')
 
 br = tf.TransformBroadcaster()
@@ -36,9 +36,35 @@ with open(pjoin('../calib_data',
 	'DuoCalibrator_transform.p'), 'rb') as f:
 	TR = pickle.load(f)
 
+param = rosparam.get_param('/robot_config/'
+		'jcb_joint_config/right_j5/' + 'right_hand_camera')['intrinsics']
+
+internal_intrinsic = np.array([
+	[param[2], 0, param[5]], 
+	[0, param[3], param[6]], 
+	[0,                    0,                   1]], dtype=np.float32)
+
+internal_distortion = np.array(param[-5:], dtype=np.float32)
+
+p = np.array([438, 292, 1], dtype=np.float32).T
+x = np.linalg.inv(internal_intrinsic).dot(p)
+
+print(np.linalg.inv(TR[:3, :3]).dot(x - TR[:3, 3]))
+
+print(x)
+x = [ 0.12308943,  0.09174353,  0.56    , 1    ]
+y = np.array([0.7215373067087614, -0.22962536113906679, 0.16429005664644528, 1.])
+
+print(np.linalg.inv(TR).dot(y))
+print(TR.dot(x))
 print(TR)
+
+
 pos = TR[:3, 3]
 
+rot = TR[:3, :3]
+x = [ 0.12308943,  0.09174353,  1.     ]
+print((rot).dot( x - pos  ), 'ha')
 # pos = (0.05309283,
 # 0.12304577,
 # 0.63757806)
