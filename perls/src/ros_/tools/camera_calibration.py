@@ -520,54 +520,36 @@ class DuoCalibrator(RobotCalibrator):
 
 		objp = object_points[0]
 
-		rvecs_external, tvecs_external, _ = cv2.solvePnPRansac(objp, self.external_img_points[0], 
-			self._external_intrinsic, self._external_distortion)
+		external_to_internal = np.zeros((4, 4), dtype=np.float32)
 
+		for i in range(self._calibration_points):
 
-		rvecs_internal, tvecs_internal, _ = cv2.solvePnPRansac(objp, self.image_points[0], 
-			self._internal_intrinsic, self._internal_distortion)
+			rvecs_external, tvecs_external, _ = cv2.solvePnPRansac(objp, self.external_img_points[i], 
+				self._external_intrinsic, self._external_distortion)
 
-		r_external, _ = cv2.Rodrigues(rvecs_external)
-		r_internal, _ = cv2.Rodrigues(rvecs_internal)
+			rvecs_internal, tvecs_internal, _ = cv2.solvePnPRansac(objp, self.image_points[i], 
+				self._internal_intrinsic, self._internal_distortion)
 
+			r_external, _ = cv2.Rodrigues(rvecs_external)
+			r_internal, _ = cv2.Rodrigues(rvecs_internal)
 
-		trans_external = np.vstack((np.column_stack((r_external, tvecs_external)), [0, 0, 0, 1]))
-		trans_internal = np.vstack((np.column_stack((r_internal, tvecs_internal)), [0, 0, 0, 1]))
+			trans_external = np.vstack((np.column_stack((r_external, tvecs_external)), [0, 0, 0, 1]))
+			trans_internal = np.vstack((np.column_stack((r_internal, tvecs_internal)), [0, 0, 0, 1]))
 
-		external_to_internal = trans_internal.dot(np.linalg.inv(trans_external))
+			external_to_internal += trans_internal.dot(np.linalg.inv(trans_external))
+
+		external_to_internal /= self._calibration_points
 
 		if self.tl.frameExists(self._camera_type) and self.tl.frameExists('base'):
 
 			t = self.tl.getLatestCommonTime(self._camera_type, 'base')
-			
-			# t = rospy.Time.now()
-			# t = rospy.get_rostime()
 			hdr = Header(stamp=t, frame_id=self._camera_type)
-
 			translation, rotation = self.tl.lookupTransform('base', self._camera_type, t)
 
-			# mat = tf.TransformerROS('base', hdr)
 			mat = tf.TransformerROS().fromTranslationRotation(translation, rotation)
-
 			TR = mat.dot(external_to_internal)
-			# TR = external_to_internal
-
-			# print(robot_camera_coords, 'camera (world) frame')
-
-			# v3s = Vector3Stamped(header=hdr,
-			#         vector=Vector3(*robot_camera_coords))
-			# gripper_vector = self.tl.transformVector3('base', v3s).vector
-			
-			# return np.array([gripper_vector.x, gripper_vector.y, gripper_vector.z])
-			print('=-=========================')
-			print(TR)
-
 	
 			self._write_params({
-				# 'external_intrinsic': K1,
-				# 'external_distortion': d1,
-				# 'internal_intrinsic': K2,
-				# 'internal_distortion': d2, 
 				'transform': TR
 				})
 
@@ -576,15 +558,10 @@ class DuoCalibrator(RobotCalibrator):
 				'calibration_': 'DuoCalibrator',
 				'data': 
 					[
-					# 'external_intrinsic', 
-					# 'external_distortion', 
-					# 'internal_intrinsic',
-					# 'internal_distortion',
 					'transform'
 					]
 				})
 
-			# return K1, d1, K2, d2, TR
 			return TR
 
 		else:
@@ -597,8 +574,6 @@ class DuoCalibrator(RobotCalibrator):
 		camera callback for the external camera
 		"""
 		try:
-
-
 
 			time_stamp = rospy.Time.now()
 			
@@ -614,7 +589,16 @@ class DuoCalibrator(RobotCalibrator):
 				cv2.CALIB_CB_ADAPTIVE_THRESH
 			)
 
+			cv2.imshow("internal-calibrate", internal_img)
+			cv2.imshow("external-calibrate", external_img)
+			
+			k = cv2.waitKey(1) & 0xff
 
+			if k == 115:
+				print('Recognizing pattern...')
+			else:
+				return
+				
 			if not (robotFoundPattern and externFoundPattern):
 				raw_input('At least camera did not find pattern...'
 					' Please re-adjust checkerboard position and press Enter.')
@@ -643,10 +627,9 @@ class DuoCalibrator(RobotCalibrator):
 				cv2.imwrite(pjoin(self._calib_directory,
 					'{}/{}.jpg'.format(camera, time_stamp)), internal_img)
 
-				raw_input('Successfully read one point.'
-					' Re-adjust the checkerboard and press Enter to Continue...')
-
-
+				print('Successfully read one point.'
+					' Re-adjust the checkerboard to continue...')
+			
 				return
 
 			else:
