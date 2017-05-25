@@ -27,17 +27,6 @@ from geometry_msgs.msg import (
 )
 
 
-# USB Camera matrix 
-_UK = np.array([
-	[600.153387, 0, 315.459915], 
-	[0, 598.015225, 222.933946], 
-	[0,          0,          1]
-	], np.float32)
-
-# USB Camera Distortion
-_UD = np.array([0.147084, -0.257330, 
-	0.003032, -0.006975, 0.000000], np.float32)
-
 class CameraCalibrator(object):
 	"""
 	The basic camera calibrator parent class. Takes the 
@@ -578,6 +567,10 @@ class DuoCalibrator(RobotCalibrator):
 	
 			self._write_params({
 				'transform': TR
+				'external_intrinsic': k1,
+				'external_distortion': d1,
+				'internal_intrinsic': k2,
+				'internal_distortion': d2
 				})
 
 
@@ -585,12 +578,16 @@ class DuoCalibrator(RobotCalibrator):
 				'calibration_': 'DuoCalibrator',
 				'data': 
 					[
-					'transform'
+					'transform',
+					'external_intrinsic',
+					'external_distortion',
+					'internal_intrinsic',
+					'internal_distortion'
 					]
 				})
 
-			print(k1, k2, d1, d2)
-			return TR
+			# print(k1, k2, d1, d2)
+			return TR, k1, k2, d1, d2
 
 		else:
 			raise Exception('Frame does not exist. Severe Error!')
