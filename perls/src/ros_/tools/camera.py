@@ -470,9 +470,9 @@ class HybridStereo(StereoCamera):
 			cv2.imshow("internal-calibrate", internal_img)
 			cv2.imshow("external-calibrate", external_img)
 			
-			k = cv2.waitKey(1) & 0xff
+			key = cv2.waitKey(1) & 0xff
 
-			if k == 115:
+			if key == 115:
 				print('Recognizing pattern...')
 			else:
 				return
