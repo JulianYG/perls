@@ -244,7 +244,7 @@ class RobotCamera(Camera):
 			)
 
 			cv2.drawChessboardCorners(img_data, info['board_size'], 
-				robot_points, foundPattern)
+				robot_points, robotFoundPattern)
 
 			cv2.imshow('calibrate', cv_image)
 			key = cv2.waitKey(1) & 0xff
