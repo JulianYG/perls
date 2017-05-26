@@ -22,7 +22,7 @@ _UD = np.array([0.147084, -0.257330,
 # 		calib_min=15)
 # dc.calibrate()
 
-camera = RobotCamera('head_camera')
+camera = RobotCamera('right_hand_camera')
 
 rc = RC(camera, (9,6 ), 0.026, '../calib_data')
 
