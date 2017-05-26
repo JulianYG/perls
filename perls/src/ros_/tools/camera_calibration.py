@@ -220,21 +220,25 @@ class UVCCalibrator(CameraCalibrator):
 	def camera_callback(self, img_data, time_stamp):
 
 		foundPattern, points = cv2.findChessboardCorners(
-			img, self._board_size, None, 
+			img_data, self._board_size, None, 
 			cv2.CALIB_CB_ADAPTIVE_THRESH
 		)
+
+		cv2.cornerSubPix(cv2.cvtColor(img_data, cv2.COLOR_BGR2GRAY), 
+			points, (11, 11), (-1, -1), 
+			(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001))
 
 		if not foundPattern:
 			raw_input('UVC camera did not find pattern...'
 				' Please re-adjust checkerboard position' 
 				'and press Enter.')
 			cv2.imwrite(pjoin(self._calib_directory, 
-				'failures/{}.jpg'.format(time_stamp)), img)
+				'failures/{}.jpg'.format(time_stamp)), img_data)
 		else:
 			self.img_points.append(points.reshape((
 				self._numCornerPoints, 2)))
 			cv2.imwrite(pjoin(self._calib_directory, 
-				'uvc/{}.jpg'.format(time_stamp)), img)
+				'uvc/{}.jpg'.format(time_stamp)), img_data)
 
 			raw_input('Successfully read one point.'
 				' Re-adjust the checkerboard and'
