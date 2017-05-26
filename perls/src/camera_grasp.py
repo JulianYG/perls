@@ -70,6 +70,7 @@ class GraspSawyer(object):
         wrist_camera_param = rosparam.get_param('/robot_config/'
             'jcb_joint_config/right_j5/right_hand_camera')['intrinsics']
 
+
         self._head_camera_intrinsic = np.array([
             [head_camera_param[2], 0, head_camera_param[5]], 
             [0, head_camera_param[3], head_camera_param[6]], 
