@@ -17,6 +17,7 @@ import cv2
 from cv_bridge import CvBridge, CvBridgeError
 
 import rospy
+import rosparam
 import intera_interface
 
 class Camera(object):
@@ -31,12 +32,12 @@ class Camera(object):
 		# Due to different type of camera 
 		# interfaces, this should be implemented separately
 		self.camera_on = False
-		self._camera = self.turn_on(camera)
-
 		# camera parameters
 		self._dimension = dimension
 		self._intrinsics = intrinsics
 		self._distortion = distortion
+
+		self._camera = self.turn_on(camera)
 
 	@property
 	def on(self):
@@ -135,7 +136,7 @@ class UVCCamera(Camera):
 		instance.open()
 		# 3, 4 are cv2 constants for width, height
 		if not self._dimension:
-			self.dimension((instance.get(3), instance.get(4)))
+			self.dimension = (instance.get(3), instance.get(4))
 
 		self.camera_on = instance.isOpened()
 		return instance
@@ -177,29 +178,61 @@ class RobotCamera(Camera):
 	def __init__(self, camera_type, dimension=None, 
 		intrinsics=None, distortion=None):
 
+		rospy.init_node('calibration')
 		super(RobotCamera, self).__init__(camera_type, 
 			dimension, intrinsics, distortion)
-
-		rospy.init_node('calibration')
 
 		self._type = camera_type
 
 	# Cannot implement turn_on and 
-	def turn_on(self, camera):
+	def turn_on(self, camera_type):
 		robot_camera = intera_interface.Cameras()
-		if not robot_camera.verify_camera_exists(camera):
+		if not robot_camera.verify_camera_exists(camera_type):
 			rospy.logerr('Invalid camera name: {}, '
-				'exit the program.'.format(camera))
+				'exit the program.'.format(camera_type))
+		
+		if camera_type == 'head_camera':
+			lnk_name = 'head_pan/' + camera_type
+		elif camera_type == 'right_hand_camera':
+			lnk_name = 'right_j5/' + camera_type
+		else:
+			lnk_name = camera_type
+		cfg = rosparam.get_param('/robot_config/jcb_joint_config/{}/intrinsics'.format(lnk_name))
+
 		if not self._dimension:
-			cfg = rospy.get_param('/robot_config/camera_config/' + camera_type)
-			# Debug
-			print(cfg)
-			self.dimension((cfg['width'], cfg['height']))
+			self.dimension = (cfg[0], cfg[1])
+
+		if not self._intrinsics:
+			self.intrinsics = np.array([
+				[cfg[2], 	  0, cfg[5]],
+				[	  0, cfg[3], cfg[6]],
+				[	  0,	  0, 	  1]
+				], dtype=np.float32)
+
+		if not self._distortion:
+			if camera_type == 'head_camera':
+				self.distortion = np.array(cfg[-8:], dtype=np.float32)
+			else:
+				self.distortion = np.array(cfg[-5:], dtype=np.float32)
+
 		self.camera_on = True
 		return robot_camera
 
 	def turn_off(self):
 		self.camera_on = False
+
+	def snapshot(self, info):
+
+		self._camera.start_streaming(self._type)
+		self._camera.set_callback(self._type, 
+			self.callback,
+			rectify_image=True, 
+			callback_args=info)
+		try:
+			rospy.spin()
+		except KeyboardInterrupt:
+			rospy.loginfo('Shutting down robot camera corner detection')
+			self._camera.stop_streaming(self._type)
 
 	def callback(self, img_data, info):
 		try:
@@ -218,7 +251,7 @@ class RobotCamera(Camera):
 				return
 
 			if not robotFoundPattern:
-				
+				print('Camera did not recognize pattern... Please readjust the board')
 				cv2.imwrite(pjoin(info['directory'], 
 					'failures/{}.jpg'.format(rospy.Time.now())), cv_image)
 				return

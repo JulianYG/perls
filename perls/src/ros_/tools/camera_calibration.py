@@ -232,16 +232,7 @@ class RobotCalibrator(CameraCalibrator):
 			calibration_points=self._calibration_points
 			)
 
-		self._camera.start_streaming(self._camera_type)
-		self._camera.set_callback(self._camera_type, 
-			self._camera.callback,
-			rectify_image=True, 
-			callback_args=info)
-		try:
-			rospy.spin()
-		except KeyboardInterrupt:
-			rospy.loginfo('Shutting down robot camera corner detection')
-			self._camera.stop_streaming(self._camera_type)
+		self._camera.snapshot(info)
 
 
 class StereoCalibrator(CameraCalibrator):
@@ -456,7 +447,7 @@ class HybridCalibrator(StereoCalibrator):
 			TR = mat.dot(external_to_internal)
 	
 			self._write_params({
-				'transform': TR
+				'transform': TR,
 				'external_intrinsic': k1,
 				'external_distortion': d1,
 				'internal_intrinsic': k2,
