@@ -244,7 +244,7 @@ class RobotCamera(Camera):
 			)
 
 			cv2.drawChessboardCorners(img_data, info['board_size'], 
-				points, foundPattern)
+				robot_points, foundPattern)
 
 			cv2.imshow('calibrate', cv_image)
 			key = cv2.waitKey(1) & 0xff
@@ -255,7 +255,8 @@ class RobotCamera(Camera):
 				return
 
 			if not robotFoundPattern:
-				print('Camera did not recognize pattern... Please readjust the board')
+				print('Camera did not recognize pattern...'
+					' Please readjust the board')
 				cv2.imwrite(pjoin(info['directory'], 
 					'failures/{}.jpg'.format(rospy.Time.now())), cv_image)
 				return
@@ -265,7 +266,6 @@ class RobotCamera(Camera):
 				cv2.cornerSubPix(cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY), 
 					robot_points, (11, 11), (-1, -1), 
 					(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001))
-
 				info['point_list'].append(np.reshape(
 					robot_points, (info['num_of_points'], 2)))
 
