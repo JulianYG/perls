@@ -389,7 +389,6 @@ class HybridCalibrator(StereoCalibrator):
 
 		external_to_internal = np.zeros((4, 4), dtype=np.float32)
 
-
 		retval, k1, d1, r1, t1 = cv2.calibrateCamera(
 			object_points, 
 			self.left_image_points,
@@ -416,9 +415,7 @@ class HybridCalibrator(StereoCalibrator):
 
 		external_to_internal /= self._calibration_points		
 
-
 		# for i in range(self._calibration_points):
-
 		# 	rvecs_external, tvecs_external, _ = cv2.solvePnPRansac(objp, self.external_img_points[i], 
 		# 		self._external_intrinsic, self._external_distortion)
 
