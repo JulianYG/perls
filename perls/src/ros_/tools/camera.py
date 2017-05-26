@@ -98,7 +98,8 @@ class Camera(object):
 			img_data, info['board_size'], None, 
 			cv2.CALIB_CB_ADAPTIVE_THRESH
 		)
-
+		cv2.drawChessboardCorners(img_data, info['board_size'], 
+			points, foundPattern)
 		cv2.imshow('calibrate', img_data)
 		key = cv2.waitKey(1) & 0xff
 
@@ -242,6 +243,9 @@ class RobotCamera(Camera):
 				cv_image, info['board_size'], None
 			)
 
+			cv2.drawChessboardCorners(img_data, info['board_size'], 
+				points, foundPattern)
+
 			cv2.imshow('calibrate', cv_image)
 			key = cv2.waitKey(1) & 0xff
 
@@ -371,6 +375,12 @@ class StereoCamera(Camera):
 			cv2.CALIB_CB_ADAPTIVE_THRESH
 		)
 
+		cv2.drawChessboardCorners(left_img, info['board_size'], 
+			left_points, left_found)
+
+		cv2.drawChessboardCorners(right_img, info['board_size'], 
+			right_points, right_found)
+
 		cv2.imshow('calibrate_left', left_img)
 		cv2.imshow('calibrate_right', right_img)
 		key = cv2.waitKey(1) & 0xff
@@ -450,6 +460,12 @@ class HybridStereo(StereoCamera):
 				external_img, info['board_size'], None, 
 				cv2.CALIB_CB_ADAPTIVE_THRESH
 			)
+
+			cv2.drawChessboardCorners(external_img, info['board_size'], 
+				external_points, external_found)
+
+			cv2.drawChessboardCorners(internal_img, info['board_size'], 
+				internal_points, internal_found)
 
 			cv2.imshow("internal-calibrate", internal_img)
 			cv2.imshow("external-calibrate", external_img)
