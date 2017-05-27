@@ -145,12 +145,12 @@ class UVCCamera(Camera):
 
 	def turn_on(self):
 		self._device = cv2.VideoCapture(self._camera_idx)
-		# instance.open(camera_idx)
+
 		# 3, 4 are cv2 constants for width, height
 		if not self._dimension:
-			self.dimension = (int(instance.get(3)), int(instance.get(4)))
+			self.dimension = (int(self._device.get(3)), int(self._device.get(4)))
 
-		self.camera_on = instance.isOpened()
+		self.camera_on = self._device.isOpened()
 
 	def turn_off(self):
 
@@ -191,6 +191,7 @@ class Kinect(Camera):
 			Image, callback, callback_args=info)
 		
 	def turn_off(self):
+		cv2.destroyWindow('kinect_calibrate')
 		self._device.unregister()
 		self.camera_on = False
 
@@ -228,7 +229,6 @@ class Kinect(Camera):
 				' Re-adjust the checkerboard to continue...')
 			return
 		else:
-			cv2.destroyWindow('kinect_calibrate')
 			self.turn_off()
 			print('Done sampling points.')
 
@@ -279,6 +279,7 @@ class RobotCamera(Camera):
 
 	def turn_off(self):
 		rospy.loginfo('Shutting down robot camera corner detection')
+		cv2.destroyWindow('robot_calibrate')
 		self._device.unregister()
 		self.camera_on = False
 
@@ -293,7 +294,6 @@ class RobotCamera(Camera):
 		self._device = rospy.Subscriber(config, Image, 
 			callback, 
 			callback_args=info)
-
 
 	def callback(self, img_data, info):
 		
@@ -334,7 +334,6 @@ class RobotCamera(Camera):
 				'and press Enter to Continue...')
 			return 
 		else:
-			cv2.destroyWindow('robot_calibrate')
 			print('Done sampling points.')
 			self.turn_off()
 
@@ -501,19 +500,6 @@ class UVCRobotStereo(StereoCamera):
 
 		self._right_camera.snapshot(self.callback, info)
 		self.stream()
-		# camera_type = self._right_camera._camera_idx
-		# self._right_camera._camera.start_streaming(camera_type)
-		# self._right_camera._camera.set_callback(camera_type, 
-		# 	self.callback,
-		# 	rectify_image=True, 
-		# 	callback_args=info)
-		# try:
-		# 	rospy.spin()
-		# except KeyboardInterrupt:
-		# 	rospy.loginfo('Shutting down robot camera corner detection')
-		# 	self._right_camera._camera.stop_streaming(camera_type)
-		# 	rospy.loginfo('Collected {} points from {} angles.'.format(info['num_of_points'],
-		# 		len(info['left_point_list'])))
 
 	def callback(self, img_data, info):
 		"""
@@ -573,7 +559,6 @@ class UVCRobotStereo(StereoCamera):
 				print('Successfully read one point.'
 					' Re-adjust the checkerboard to continue...')
 			else:
-				cv2.destroyAllWindows()
 				print('Done sampling points.')
 				self.turn_off()
 
@@ -609,25 +594,8 @@ class KinectRobotStereo(StereoCamera):
 
 	def snapshot(self, info):
 
-		# camera_type = self._right_camera._camera_idx
-		# self._right_camera._camera.start_streaming(camera_type)
-		# self._right_camera._camera.set_callback(camera_type, 
-		# 	self.robot_callback,
-		# 	rectify_image=True, 
-		# 	callback_args=info)
-
 		self._left_camera.snapshot(self.kinect_callback, info)
 		self._right_camera.snapshot(self.robot_callback, info)
-		# Prepare to fire up Kinect
-		# self._left_camera.snapshot(info)
-		# self._right_camera.snapshot(info)
-		# try:
-		# 	rospy.spin()
-		# except KeyboardInterrupt:
-		# 	rospy.loginfo('Shutting down robot camera corner detection')
-		# 	self._right_camera._camera.stop_streaming(camera_type)
-		# 	rospy.loginfo('Collected {} points from {} angles.'.format(info['num_of_points'],
-		# 		len(info['left_point_list'])))
 
 	def kinect_callback(self, img_data, info):
 		"""
@@ -642,7 +610,7 @@ class KinectRobotStereo(StereoCamera):
 
 		cv2.drawChessboardCorners(cv_image, info['board_size'], 
 			points, found)
-		cv2.imshow('external_calibrate', cv_image)
+		cv2.imshow('kinect_calibrate', cv_image)
 
 		key = cv2.waitKey(1) & 0xff
 
@@ -666,7 +634,6 @@ class KinectRobotStereo(StereoCamera):
 			info['left_point_list'].append(points)
 			print('Kinect successfully read one point.')
 		else:
-			cv2.destroyWindow('external_calibrate')
 			print('Done sampling points from Kinect.')
 			self._left_camera.turn_off()
 
@@ -687,7 +654,7 @@ class KinectRobotStereo(StereoCamera):
 		
 		cv2.drawChessboardCorners(internal_img, info['board_size'], 
 			internal_points, internal_found)
-		cv2.imshow("internal_calibrate", internal_img)
+		cv2.imshow("robot_calibrate", internal_img)
 		
 		key = cv2.waitKey(1) & 0xff
 
@@ -712,7 +679,6 @@ class KinectRobotStereo(StereoCamera):
 			info['right_point_list'].append(internal_points)
 			print('Robot successfully read one point.')
 		else:
-			cv2.destroyWindow('internal_calibrate')
 			print('Done sampling points from robot camera.')
 			self._right_camera.turn_off()
 
