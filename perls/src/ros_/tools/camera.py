@@ -39,7 +39,7 @@ class Camera(object):
 		self._distortion = distortion
 
 		self._camera_idx = camera
-		self._camera = self.turn_on()
+		self.turn_on()
 
 	@property
 	def on(self):
@@ -84,6 +84,15 @@ class Camera(object):
 		Turn off the camera;
 		"""
 		self.camera_on = False
+
+	def stream(self):
+		"""
+		Only used for ROS subscriber related cameras.
+		"""
+		try:
+			rospy.spin()
+		except KeyboardInterrupt:
+			self.turn_off()
 
 	def snapshot(self):
 		"""
@@ -135,23 +144,22 @@ class UVCCamera(Camera):
 			dimension, intrinsics, distortion)
 
 	def turn_on(self):
-		instance = cv2.VideoCapture(self._camera_idx)
+		self._device = cv2.VideoCapture(self._camera_idx)
 		# instance.open(camera_idx)
 		# 3, 4 are cv2 constants for width, height
 		if not self._dimension:
 			self.dimension = (int(instance.get(3)), int(instance.get(4)))
 
 		self.camera_on = instance.isOpened()
-		return instance
 
 	def turn_off(self):
 
-		self._camera.release()
+		self._device.release()
 		self.camera_on = False
 
 	def snapshot(self):
 		if self.camera_on:
-			s, img = self._camera.read()
+			s, img = self._device.read()
 			if s:
 				return img
 
@@ -177,18 +185,21 @@ class Kinect(Camera):
 		super(Kinect, self).__init__(camera, 
 			dimension, intrinsics, distortion)
 
+
 	def snapshot(self, callback, info):
-		rospy.Subscriber('/kinect2/{}/image_color_rect'.format(self._camera_idx), 
+		self._device = rospy.Subscriber('/kinect2/{}/image_color_rect'.format(self._camera_idx), 
 			Image, callback, callback_args=info)
+		
+	def turn_off(self):
+		self._device.unregister()
+		self.camera_on = False
 
 	def callback(self, img_data, info):
 
 		cv_image = CvBridge().imgmsg_to_cv2(img_data, 'bgr8')
-			
 		found, points = cv2.findChessboardCorners(
 			cv_image, info['board_size'], None
 		)
-
 		cv2.drawChessboardCorners(cv_image, info['board_size'], 
 			points, found)
 
@@ -203,7 +214,6 @@ class Kinect(Camera):
 		if not found:
 			print('Robot camera did not find pattern...'
 				' Please re-adjust checkerboard position to continue.')
-
 			cv2.imwrite(pjoin(info['directory'], 
 				'failures/{}.jpg'.format(rospy.Time.now())), cv_image)
 			return
@@ -219,7 +229,8 @@ class Kinect(Camera):
 			return
 		else:
 			cv2.destroyWindow('kinect_calibrate')
-			print('Done sampling points. Please Ctrl+C to continue.')
+			self.turn_off()
+			print('Done sampling points.')
 
 
 class RobotCamera(Camera):
@@ -267,68 +278,65 @@ class RobotCamera(Camera):
 		return robot_camera
 
 	def turn_off(self):
-
 		rospy.loginfo('Shutting down robot camera corner detection')
-		self._camera.stop_streaming(self._camera_idx)
+		self._device.unregister()
 		self.camera_on = False
 
 	def snapshot(self, callback, info):
+		if self._camera_idx == 'head_camera':
+			image_string = 'image_rect_color'	
+		else:
+			image_string = 'image_rect'
+		config = '/'.join(['/io/internal_camera', self._camera_idx,
+			image_string])
 
-		self._camera.start_streaming(self._camera_idx)
-		self._camera.set_callback(self._camera_idx, 
-			callback,
-			rectify_image=True, 
+		self._device = rospy.Subscriber(config, Image, 
+			callback, 
 			callback_args=info)
-		try:
-			rospy.spin()
-		except KeyboardInterrupt:
-			self.turn_off()
+
 
 	def callback(self, img_data, info):
-		try:
-			cv_image = CvBridge().imgmsg_to_cv2(img_data, 'bgr8')
+		
+		cv_image = CvBridge().imgmsg_to_cv2(img_data, 'bgr8')
 			
-			robotFoundPattern, robot_points = cv2.findChessboardCorners(
-				cv_image, info['board_size'], None
-			)
+		robotFoundPattern, robot_points = cv2.findChessboardCorners(
+			cv_image, info['board_size'], None
+		)
 
-			cv2.drawChessboardCorners(cv_image, info['board_size'], 
-				robot_points, robotFoundPattern)
+		cv2.drawChessboardCorners(cv_image, info['board_size'], 
+			robot_points, robotFoundPattern)
 
-			cv2.imshow('robot_calibrate', cv_image)
-			key = cv2.waitKey(1) & 0xff
+		cv2.imshow('robot_calibrate', cv_image)
+		key = cv2.waitKey(1) & 0xff
 
-			if key == 115:
-				print('Recognizing pattern...')
-			else:
-				return
-
-			if not robotFoundPattern:
-				print('Camera did not recognize pattern...'
-					' Please readjust the board')
-				cv2.imwrite(pjoin(info['directory'], 
-					'failures/{}.jpg'.format(rospy.Time.now())), cv_image)
-				return
-
-			elif len(info['point_list']) < info['calibration_points']:
-
-				cv2.cornerSubPix(cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY), 
-					robot_points, (11, 11), (-1, -1), 
-					(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001))
-				info['point_list'].append(np.reshape(
-					robot_points, (info['num_of_points'], 2)))
-
-				print('Successfully read one point.'
-					' Re-adjust the checkerboard '
-					'and press Enter to Continue...')
-				return 
-			else:
-				cv2.destroyWindow('robot_calibrate')
-				print('Done sampling points. Please Ctrl+C to continue.')
-
-		except CvBridgeError, err:
-			rospy.logerr(err)
+		if key == 115:
+			print('Recognizing pattern...')
+		else:
 			return
+
+		if not robotFoundPattern:
+			print('Camera did not recognize pattern...'
+				' Please readjust the board')
+			cv2.imwrite(pjoin(info['directory'], 
+				'failures/{}.jpg'.format(rospy.Time.now())), cv_image)
+			return
+
+		elif len(info['point_list']) < info['calibration_points']:
+
+			cv2.cornerSubPix(cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY), 
+				robot_points, (11, 11), (-1, -1), 
+				(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001))
+			info['point_list'].append(np.reshape(
+				robot_points, (info['num_of_points'], 2)))
+
+			print('Successfully read one point.'
+				' Re-adjust the checkerboard '
+				'and press Enter to Continue...')
+			return 
+		else:
+			cv2.destroyWindow('robot_calibrate')
+			print('Done sampling points.')
+			self.turn_off()
 
 
 class StereoCamera(Camera):
@@ -370,7 +378,6 @@ class StereoCamera(Camera):
 		self.right_on = self._right_camera.on
 		self._left_dimension = self._left_camera.dimension
 		self._right_dimension = self._right_camera.dimension
-
 
 	def snapshot(self):
 		return self._left_camera.snapshot(), self._right_camera.snapshot()
@@ -493,12 +500,13 @@ class UVCRobotStereo(StereoCamera):
 	def snapshot(self, info):
 
 		self._right_camera.snapshot(self.callback, info)
-		camera_type = self._right_camera._camera_idx
-		self._right_camera._camera.start_streaming(camera_type)
-		self._right_camera._camera.set_callback(camera_type, 
-			self.callback,
-			rectify_image=True, 
-			callback_args=info)
+		self.stream()
+		# camera_type = self._right_camera._camera_idx
+		# self._right_camera._camera.start_streaming(camera_type)
+		# self._right_camera._camera.set_callback(camera_type, 
+		# 	self.callback,
+		# 	rectify_image=True, 
+		# 	callback_args=info)
 		# try:
 		# 	rospy.spin()
 		# except KeyboardInterrupt:
@@ -566,7 +574,8 @@ class UVCRobotStereo(StereoCamera):
 					' Re-adjust the checkerboard to continue...')
 			else:
 				cv2.destroyAllWindows()
-				print('Done sampling points. Please Ctrl+C to continue.')
+				print('Done sampling points.')
+				self.turn_off()
 
 		except CvBridgeError, err:
 			rospy.logerr(err)
@@ -658,7 +667,8 @@ class KinectRobotStereo(StereoCamera):
 			print('Kinect successfully read one point.')
 		else:
 			cv2.destroyWindow('external_calibrate')
-			print('Done sampling points. Please Ctrl+C to continue.')
+			print('Done sampling points from Kinect.')
+			self._left_camera.turn_off()
 
 		print(len(info['left_point_list']), len(info['right_point_list']), 'kinect')
 
@@ -703,7 +713,8 @@ class KinectRobotStereo(StereoCamera):
 			print('Robot successfully read one point.')
 		else:
 			cv2.destroyWindow('internal_calibrate')
-			print('Done sampling points. Please Ctrl+C to continue.')
+			print('Done sampling points from robot camera.')
+			self._right_camera.turn_off()
 
 		print(len(info['left_point_list']), len(info['right_point_list']), 'robot')
 

@@ -241,7 +241,7 @@ class RobotCalibrator(CameraCalibrator):
 			calibration_points=self._calibration_points
 			)
 		self._camera.snapshot(info)
-
+		self._camera.stream()
 
 class StereoCalibrator(CameraCalibrator):
 
@@ -367,6 +367,7 @@ class HybridCalibrator(StereoCalibrator):
 			)
 
 		self._camera.snapshot(info)
+		self._camera.stream()
 
 	def _calibrate_camera(self):
 		"""
