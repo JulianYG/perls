@@ -265,18 +265,23 @@ class RobotCamera(Camera):
 		self.camera_on = True
 		return robot_camera
 
-	def snapshot(self, info):
+	def turn_off(self):
+
+		rospy.loginfo('Shutting down robot camera corner detection')
+		self._camera.stop_streaming(self._camera_idx)
+		self.camera_on = False
+
+	def snapshot(self, callback, info):
 
 		self._camera.start_streaming(self._camera_idx)
 		self._camera.set_callback(self._camera_idx, 
-			self.callback,
+			callback,
 			rectify_image=True, 
 			callback_args=info)
 		try:
 			rospy.spin()
 		except KeyboardInterrupt:
-			rospy.loginfo('Shutting down robot camera corner detection')
-			self._camera.stop_streaming(self._camera_idx)
+			self.turn_off()
 
 	def callback(self, img_data, info):
 		try:
@@ -487,19 +492,20 @@ class UVCRobotStereo(StereoCamera):
 
 	def snapshot(self, info):
 
+		self._right_camera.snapshot(self.callback, info)
 		camera_type = self._right_camera._camera_idx
 		self._right_camera._camera.start_streaming(camera_type)
 		self._right_camera._camera.set_callback(camera_type, 
 			self.callback,
 			rectify_image=True, 
 			callback_args=info)
-		try:
-			rospy.spin()
-		except KeyboardInterrupt:
-			rospy.loginfo('Shutting down robot camera corner detection')
-			self._right_camera._camera.stop_streaming(camera_type)
-			rospy.loginfo('Collected {} points from {} angles.'.format(info['num_of_points'],
-				len(info['left_point_list'])))
+		# try:
+		# 	rospy.spin()
+		# except KeyboardInterrupt:
+		# 	rospy.loginfo('Shutting down robot camera corner detection')
+		# 	self._right_camera._camera.stop_streaming(camera_type)
+		# 	rospy.loginfo('Collected {} points from {} angles.'.format(info['num_of_points'],
+		# 		len(info['left_point_list'])))
 
 	def callback(self, img_data, info):
 		"""
@@ -596,25 +602,25 @@ class KinectRobotStereo(StereoCamera):
 
 	def snapshot(self, info):
 
-		camera_type = self._right_camera._camera_idx
-		self._right_camera._camera.start_streaming(camera_type)
-		self._right_camera._camera.set_callback(camera_type, 
-			self.robot_callback,
-			rectify_image=True, 
-			callback_args=info)
+		# camera_type = self._right_camera._camera_idx
+		# self._right_camera._camera.start_streaming(camera_type)
+		# self._right_camera._camera.set_callback(camera_type, 
+		# 	self.robot_callback,
+		# 	rectify_image=True, 
+		# 	callback_args=info)
 
 		self._left_camera.snapshot(self.kinect_callback, info)
-
+		self._right_camera.snapshot(self.robot_callback, info)
 		# Prepare to fire up Kinect
 		# self._left_camera.snapshot(info)
 		# self._right_camera.snapshot(info)
-		try:
-			rospy.spin()
-		except KeyboardInterrupt:
-			rospy.loginfo('Shutting down robot camera corner detection')
-			self._right_camera._camera.stop_streaming(camera_type)
-			rospy.loginfo('Collected {} points from {} angles.'.format(info['num_of_points'],
-				len(info['left_point_list'])))
+		# try:
+		# 	rospy.spin()
+		# except KeyboardInterrupt:
+		# 	rospy.loginfo('Shutting down robot camera corner detection')
+		# 	self._right_camera._camera.stop_streaming(camera_type)
+		# 	rospy.loginfo('Collected {} points from {} angles.'.format(info['num_of_points'],
+		# 		len(info['left_point_list'])))
 
 	def kinect_callback(self, img_data, info):
 		"""
