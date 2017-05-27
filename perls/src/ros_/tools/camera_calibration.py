@@ -229,7 +229,6 @@ class RobotCalibrator(CameraCalibrator):
 		super(RobotCalibrator, self).__init__(camera, 
 			boardSize, checkerSize, directory, calib_min)
 
-
 	def _get_image_points(self):
 		"""
 		Use a callback function to process captured images
@@ -276,9 +275,7 @@ class StereoCalibrator(CameraCalibrator):
 			object_points, 
 			self.left_image_points, 
 			self.right_image_points, 
-
 			self._camera_dim,
-
 			flags=(
 				cv2.CALIB_FIX_INTRINSIC + 
 				cv2.CALIB_FIX_ASPECT_RATIO +
@@ -354,9 +351,7 @@ class HybridCalibrator(StereoCalibrator):
 		"""
 		super(HybridCalibrator, self).__init__(camera, boardSize, 
 			checkerSize, directory, calib_min)
-
 		self.tl = tf.TransformListener()
-	
 
 	def _get_image_points(self):
 		"""
@@ -383,7 +378,6 @@ class HybridCalibrator(StereoCalibrator):
 		self._get_image_points()
 
 		dimensions = self._camera.dimension
-
 		external_to_internal = np.zeros((4, 4), dtype=np.float32)
 
 		k1, k2 = self._camera.intrinsics
@@ -400,7 +394,7 @@ class HybridCalibrator(StereoCalibrator):
 				object_points, 
 				self.left_image_points,
 				dimensions[0]
-				)
+			)
 
 		r2, t2 = [0] * self._calibration_points, [0] * self._calibration_points
 		
@@ -408,15 +402,12 @@ class HybridCalibrator(StereoCalibrator):
 			for i in range(self._calibration_points):
 				_, r2[i], t2[i] = cv2.solvePnP(object_points[i], 
 					self.right_image_points[i], k2, d2)
-		else:
-			
+		else:	
 			_, k2, d2, r2, t2 = cv2.calibrateCamera(
 				object_points,
 				self.right_image_points,
-
-				# Check how to get idmension
 				dimensions[1]
-				)
+			)
 
 		for i in range(self._calibration_points):
 
@@ -429,23 +420,6 @@ class HybridCalibrator(StereoCalibrator):
 			external_to_internal += trans_internal.dot(np.linalg.inv(trans_external))
 
 		external_to_internal /= self._calibration_points		
-
-		# for i in range(self._calibration_points):
-		# 	rvecs_external, tvecs_external, _ = cv2.solvePnPRansac(objp, self.external_img_points[i], 
-		# 		self._external_intrinsic, self._external_distortion)
-
-		# 	rvecs_internal, tvecs_internal, _ = cv2.solvePnPRansac(objp, self.image_points[i], 
-		# 		self._internal_intrinsic, self._internal_distortion)
-
-		# 	r_external, _ = cv2.Rodrigues(rvecs_external)
-		# 	r_internal, _ = cv2.Rodrigues(rvecs_internal)
-
-		# 	trans_external = np.vstack((np.column_stack((r_external, tvecs_external)), [0, 0, 0, 1]))
-		# 	trans_internal = np.vstack((np.column_stack((r_internal, tvecs_internal)), [0, 0, 0, 1]))
-
-		# 	external_to_internal += trans_internal.dot(np.linalg.inv(trans_external))
-
-		# external_to_internal /= self._calibration_points
 
 		robot_cam_type = self._camera._right_camera._camera_idx
 
@@ -467,7 +441,7 @@ class HybridCalibrator(StereoCalibrator):
 				})
 
 			self.write_meta({
-				'calibration_': 'DuoCalibrator',
+				'calibration_': 'HybridCalibrator',
 				'data': 
 					[
 					'transform',
@@ -479,9 +453,7 @@ class HybridCalibrator(StereoCalibrator):
 				})
 
 			self._camera.turn_off()
-			# print(k1, k2, d1, d2)
 			return TR, k1, k2, d1, d2
-
 		else:
 			raise Exception('Frame does not exist. Severe Error!')
 

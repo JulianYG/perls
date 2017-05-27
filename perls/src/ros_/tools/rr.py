@@ -76,6 +76,6 @@ print(orn)
 # orn = [ 0.9739193 , -0.03370887 ,-0.22305033 ,-0.02436092]
 while not rospy.is_shutdown():
 	br.sendTransform(pos, orn, 
-					rospy.Time.now(), 'uvc', 'base')
+					rospy.Time.now(), 'kinect', 'base')
 	rospy.Rate(10.).sleep()
 

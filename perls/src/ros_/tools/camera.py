@@ -15,6 +15,7 @@ from os.path import join as pjoin
 
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
+from sensor_msgs.msg import CameraInfo, Image
 
 import rospy
 import rosparam
@@ -76,13 +77,13 @@ class Camera(object):
 		Turn on the camera;
 		Returns an instance of corresponding camera object
 		"""
-		raise NotImplementedError('Each camera class must implement this method individually.')
+		self.camera_on = True
 
 	def turn_off(self):
 		"""
 		Turn off the camera;
 		"""
-		raise NotImplementedError('Each camera class must implement this method individually.')
+		self.camera_on = False
 
 	def snapshot(self):
 		"""
@@ -171,8 +172,53 @@ class Kinect(Camera):
 	def __init__(self, camera, dimension=None, 
 		intrinsics=None, distortion=None):
 
+		if rospy.get_name() == '/unnamed':
+			rospy.init_node('kinect_calibration')
 		super(Kinect, self).__init__(camera, 
 			dimension, intrinsics, distortion)
+
+	def snapshot(self, callback, info):
+		rospy.Subscriber('/kinect2/{}/image_color_rect'.format(self._camera_idx), 
+			Image, callback, callback_args=info)
+
+	def callback(self, img_data, info):
+
+		cv_image = CvBridge().imgmsg_to_cv2(img_data, 'bgr8')
+			
+		found, points = cv2.findChessboardCorners(
+			cv_image, info['board_size'], None
+		)
+
+		cv2.drawChessboardCorners(cv_image, info['board_size'], 
+			points, found)
+
+		cv2.imshow('external_calibrate', cv_image)
+		key = cv2.waitKey(1) & 0xff
+
+		if key == 115:
+			print('Recognizing pattern...')
+		else:
+			return
+
+		if not found:
+			print('Robot camera did not find pattern...'
+				' Please re-adjust checkerboard position to continue.')
+
+			cv2.imwrite(pjoin(info['directory'], 
+				'failures/{}.jpg'.format(rospy.Time.now())), cv_image)
+			return
+
+		elif len(info['point_list']) < info['calibration_points']:
+
+			cv2.cornerSubPix(cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY), 
+				points, (11, 11), (-1, -1), 
+				(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001))
+			info['point_list'].append(points)
+			print('Successfully read one point.'
+				' Re-adjust the checkerboard to continue...')
+			return
+		else:
+			print('Done sampling points. Please Ctrl+C to continue.')
 
 
 class RobotCamera(Camera):
@@ -180,7 +226,8 @@ class RobotCamera(Camera):
 	def __init__(self, camera_type, dimension=None, 
 		intrinsics=None, distortion=None):
 
-		rospy.init_node('calibration')
+		if rospy.get_name() == '/unnamed':
+			rospy.init_node('robot_camera_calibration')
 		super(RobotCamera, self).__init__(camera_type, 
 			dimension, intrinsics, distortion)
 
@@ -217,9 +264,6 @@ class RobotCamera(Camera):
 
 		self.camera_on = True
 		return robot_camera
-
-	def turn_off(self):
-		self.camera_on = False
 
 	def snapshot(self, info):
 
@@ -416,7 +460,7 @@ class StereoCamera(Camera):
 				right_points.reshape((info['num_of_points'], 2)))
 
 
-class HybridStereo(StereoCamera):
+class UVCRobotStereo(StereoCamera):
 	"""
 	Hybrid indicates the two different types of cameras.
 	Usually Kinect & robot camera
@@ -433,7 +477,7 @@ class HybridStereo(StereoCamera):
 		right_intrinsics=None,
 		right_distortion=None):
 		
-		super(HybridStereo, self).__init__(left, right, 
+		super(UVCRobotStereo, self).__init__(left, right, 
 			left_dimension, 
 			left_intrinsics, 
 			left_distortion, 
@@ -466,7 +510,6 @@ class HybridStereo(StereoCamera):
 		try:
 			# Using internal to indicate robot camera (right)
 			# and external to indicate UVC/Kinect camera (left)
-
 			internal_img = CvBridge().imgmsg_to_cv2(img_data, 'bgr8')
 
 			# Directly using the left camera
@@ -475,7 +518,6 @@ class HybridStereo(StereoCamera):
 			internal_found, internal_points = cv2.findChessboardCorners(
 				internal_img, info['board_size'], None
 			)
-
 			external_found, external_points = cv2.findChessboardCorners(
 				external_img, info['board_size'], None, 
 				cv2.CALIB_CB_ADAPTIVE_THRESH
@@ -483,7 +525,6 @@ class HybridStereo(StereoCamera):
 
 			cv2.drawChessboardCorners(external_img, info['board_size'], 
 				external_points, external_found)
-
 			cv2.drawChessboardCorners(internal_img, info['board_size'], 
 				internal_points, internal_found)
 
@@ -491,7 +532,6 @@ class HybridStereo(StereoCamera):
 			cv2.imshow("external-calibrate", external_img)
 			
 			key = cv2.waitKey(1) & 0xff
-
 			if key == 115:
 				print('Recognizing pattern...')
 			else:
@@ -504,7 +544,6 @@ class HybridStereo(StereoCamera):
 				fail_img = internal_img if not internal_found else external_img
 				cv2.imwrite(pjoin(info['directory'], 
 					'failures/{}.jpg'.format(rospy.Time.now())), fail_img)
-				return
 
 			elif len(info['left_point_list']) < info['calibration_points']:
 
@@ -521,7 +560,6 @@ class HybridStereo(StereoCamera):
 
 				print('Successfully read one point.'
 					' Re-adjust the checkerboard to continue...')
-				return
 
 			else:
 				print('Done sampling points. Please Ctrl+C to continue.')
@@ -531,6 +569,137 @@ class HybridStereo(StereoCamera):
 			return
 
 
+class KinectRobotStereo(StereoCamera):
+	"""
+	Hybrid indicates the two different types of cameras.
+	Usually Kinect & robot camera
+	Note: left camera is usually the external camera, be 
+	UVC or PrimeSense, or Kinect, and the right camera
+	is the name string of robot camera, be 
+	'head_camera' or 'right_hand_camera' for Sawyer
+	"""
+	def __init__(self, left, right, 
+		left_dimension=None, 
+		left_intrinsics=None, 
+		left_distortion=None, 
+		right_dimension=None,
+		right_intrinsics=None,
+		right_distortion=None):
+		
+		super(KinectRobotStereo, self).__init__(left, right, 
+			left_dimension, 
+			left_intrinsics, 
+			left_distortion, 
+			right_dimension,
+			right_intrinsics,
+			right_distortion)
+
+	def snapshot(self, info):
+
+		camera_type = self._right_camera._camera_idx
+		self._right_camera._camera.start_streaming(camera_type)
+		self._right_camera._camera.set_callback(camera_type, 
+			self.robot_callback,
+			rectify_image=True, 
+			callback_args=info)
+
+		self._left_camera.snapshot(self.kinect_callback, info)
+
+		# Prepare to fire up Kinect
+		# self._left_camera.snapshot(info)
+		# self._right_camera.snapshot(info)
+		try:
+			rospy.spin()
+		except KeyboardInterrupt:
+			rospy.loginfo('Shutting down robot camera corner detection')
+			self._right_camera._camera.stop_streaming(camera_type)
+			rospy.loginfo('Collected {} points from {} angles.'.format(info['num_of_points'],
+				len(info['left_point_list'])))
+
+	def kinect_callback(self, img_data, info):
+		"""
+		Need to run 
+		rosrun kinect2_bridge kinect2_bridge _fps_limit:=3
+		with limit!
+		"""
+		cv_image = CvBridge().imgmsg_to_cv2(img_data, 'bgr8')
+		found, points = cv2.findChessboardCorners(
+			cv_image, info['board_size'], None
+		)
+
+		cv2.drawChessboardCorners(cv_image, info['board_size'], 
+			points, found)
+		cv2.imshow('external_calibrate', cv_image)
+
+		key = cv2.waitKey(1) & 0xff
+
+		# Use space for kinect
+		if key == 32:
+			print('Kinect recognizing pattern...')
+		else:
+			return
+
+		if not found:
+			print('Kinect did not find pattern...'
+				' Please re-adjust checkerboard position to continue.')
+			cv2.imwrite(pjoin(info['directory'], 
+				'failures/{}.jpg'.format(rospy.Time.now())), cv_image)
+
+		elif len(info['left_point_list']) < info['calibration_points']:
+
+			cv2.cornerSubPix(cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY), 
+				points, (11, 11), (-1, -1), 
+				(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001))
+			info['left_point_list'].append(points)
+			print('Kinect successfully read one point.')
+		else:
+			print('Done sampling points. Please Ctrl+C to continue.')
+
+		print(len(info['left_point_list']), len(info['right_point_list']), 'kinect')
+
+	def robot_callback(self, img_data, info):
+		"""
+		Due to the constraint of sampling the same set of points,
+		has to read the same set of points in ROS initiated 
+		camera callback for the external camera
+		"""
+
+		# Using internal to indicate robot camera (right)
+		internal_img = CvBridge().imgmsg_to_cv2(img_data, 'bgr8')
+		internal_found, internal_points = cv2.findChessboardCorners(
+			internal_img, info['board_size'], None
+		)
+		
+		cv2.drawChessboardCorners(internal_img, info['board_size'], 
+			internal_points, internal_found)
+		cv2.imshow("internal_calibrate", internal_img)
+		
+		key = cv2.waitKey(1) & 0xff
+
+		# Use 's' for robot
+		if key == 115:
+			print('Robot recognizing pattern...')
+		else:
+			return
+			
+		if not internal_found:
+			print('Robot camera did not find pattern...'
+				' Please re-adjust checkerboard position to continue.')
+
+			cv2.imwrite(pjoin(info['directory'], 
+				'failures/{}.jpg'.format(rospy.Time.now())), internal_img)
+
+		elif len(info['right_point_list']) < info['calibration_points']:
+
+			cv2.cornerSubPix(cv2.cvtColor(internal_img, cv2.COLOR_BGR2GRAY), 
+				internal_points, (11, 11), (-1, -1), 
+				(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001))
+			info['right_point_list'].append(internal_points)
+			print('Robot successfully read one point.')
+		else:
+			print('Done sampling points. Please Ctrl+C to continue.')
+
+		print(len(info['left_point_list']), len(info['right_point_list']), 'robot')
 
 
 

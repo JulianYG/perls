@@ -25,8 +25,15 @@ _UD = np.array([0.147084, -0.257330,
 # camera = RobotCamera('right_hand_camera')
 # rc = RC(camera, (9,6 ), 0.026, '../calib_data')
 
-left_cam = UVCCamera(0)
+# left_cam = UVCCamera(0)
+
+left_cam = Kinect('hd', dimension=(1920, 1080))
+# left_cam.snapshot(dict(
+# 			board_size=(9, 6),
+# 			num_of_points=54,
+# 			directory='../calib_data'
+# 			))
 right_cam = RobotCamera('right_hand_camera')
-hs = HybridStereo(left_cam, right_cam)
+hs = KinectRobotStereo(left_cam, right_cam)
 hc = HC(hs, (9,6 ), 0.026, '../calib_data', calib_min=5)
 hc.calibrate()
