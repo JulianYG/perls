@@ -192,7 +192,7 @@ class Kinect(Camera):
 		cv2.drawChessboardCorners(cv_image, info['board_size'], 
 			points, found)
 
-		cv2.imshow('external_calibrate', cv_image)
+		cv2.imshow('kinect_calibrate', cv_image)
 		key = cv2.waitKey(1) & 0xff
 
 		if key == 115:
@@ -218,6 +218,7 @@ class Kinect(Camera):
 				' Re-adjust the checkerboard to continue...')
 			return
 		else:
+			cv2.destroyWindow('kinect_calibrate')
 			print('Done sampling points. Please Ctrl+C to continue.')
 
 
@@ -294,7 +295,7 @@ class RobotCamera(Camera):
 			cv2.drawChessboardCorners(cv_image, info['board_size'], 
 				robot_points, robotFoundPattern)
 
-			cv2.imshow('calibrate', cv_image)
+			cv2.imshow('robot_calibrate', cv_image)
 			key = cv2.waitKey(1) & 0xff
 
 			if key == 115:
@@ -322,6 +323,7 @@ class RobotCamera(Camera):
 					'and press Enter to Continue...')
 				return 
 			else:
+				cv2.destroyWindow('robot_calibrate')
 				print('Done sampling points. Please Ctrl+C to continue.')
 
 		except CvBridgeError, err:
@@ -430,7 +432,6 @@ class StereoCamera(Camera):
 
 		cv2.drawChessboardCorners(left_img, info['board_size'], 
 			left_points, left_found)
-
 		cv2.drawChessboardCorners(right_img, info['board_size'], 
 			right_points, right_found)
 
@@ -456,7 +457,6 @@ class StereoCamera(Camera):
 				' Please re-adjust checkerboard position to continue.')
 			
 			fail_img = left_img if not robotFoundPattern else right_img
-				
 			cv2.imwrite(pjoin(info['directory'], 
 				'failures/{}.jpg'.format(rospy.Time.now())), fail_img)
 		
@@ -546,7 +546,6 @@ class UVCRobotStereo(StereoCamera):
 			if not internal_found or not external_found:
 				print('At least camera did not find pattern...'
 					' Please re-adjust checkerboard position to continue.')
-				
 				fail_img = internal_img if not internal_found else external_img
 				cv2.imwrite(pjoin(info['directory'], 
 					'failures/{}.jpg'.format(rospy.Time.now())), fail_img)
@@ -556,7 +555,6 @@ class UVCRobotStereo(StereoCamera):
 				cv2.cornerSubPix(cv2.cvtColor(internal_img, cv2.COLOR_BGR2GRAY), 
 					internal_points, (11, 11), (-1, -1), 
 					(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001))
-
 				cv2.cornerSubPix(cv2.cvtColor(external_img, cv2.COLOR_BGR2GRAY), 
 					external_points, (11, 11), (-1, -1), 
 					(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001))
@@ -566,8 +564,8 @@ class UVCRobotStereo(StereoCamera):
 
 				print('Successfully read one point.'
 					' Re-adjust the checkerboard to continue...')
-
 			else:
+				cv2.destroyAllWindows()
 				print('Done sampling points. Please Ctrl+C to continue.')
 
 		except CvBridgeError, err:
@@ -659,6 +657,7 @@ class KinectRobotStereo(StereoCamera):
 			info['left_point_list'].append(points)
 			print('Kinect successfully read one point.')
 		else:
+			cv2.destroyWindow('external_calibrate')
 			print('Done sampling points. Please Ctrl+C to continue.')
 
 		print(len(info['left_point_list']), len(info['right_point_list']), 'kinect')
@@ -703,6 +702,7 @@ class KinectRobotStereo(StereoCamera):
 			info['right_point_list'].append(internal_points)
 			print('Robot successfully read one point.')
 		else:
+			cv2.destroyWindow('internal_calibrate')
 			print('Done sampling points. Please Ctrl+C to continue.')
 
 		print(len(info['left_point_list']), len(info['right_point_list']), 'robot')
