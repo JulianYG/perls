@@ -89,8 +89,14 @@ class CameraCalibrator(object):
 		self._get_image_points()
 
 		# Crank the calibration
-		retval, K, d, rvec, tvec = cv2.calibrateCamera(
-			object_points, self.image_points, self._camera.dimension)
+		K, d = self._camera.intrinsics, self._camera.distortion
+		if K and d:
+			_, rvec, tvec = cv2.solvePnP(object_points, self.image_points,
+				self._camera.intrinsics, self._camera.distortion)
+		else:
+			_, K, d, rvec, tvec = cv2.calibrateCamera(
+				object_points, self.image_points, self._camera.dimension)
+
 
 		self._write_params({
 			'rotation': rvec,
@@ -107,7 +113,7 @@ class CameraCalibrator(object):
 				'intrinsic',
 				'distortion']
 			})
-
+		self._camera.turn_off()
 		return K, d, rvec, tvec
    
 	def _get_image_points(self):
@@ -124,6 +130,11 @@ class CameraCalibrator(object):
 		in real world frame, origin from the top left corner of 
 		the checkerboard
 		"""
+
+		# objp = np.zeros((9*6, 3), np.float32)
+		# objp[:, :2] = np.mgrid[0:9, 0:6].T.reshape(-1, 2)
+
+		# return 
 		raw_points = np.zeros(
 			(self._board_size[1], self._board_size[0], 3), 
 			dtype=np.float32)
@@ -218,7 +229,6 @@ class RobotCalibrator(CameraCalibrator):
 		super(RobotCalibrator, self).__init__(camera, 
 			boardSize, checkerSize, directory, calib_min)
 
-		self._camera_type = camera._type
 
 	def _get_image_points(self):
 		"""
@@ -231,7 +241,6 @@ class RobotCalibrator(CameraCalibrator):
 			point_list=self.image_points,
 			calibration_points=self._calibration_points
 			)
-
 		self._camera.snapshot(info)
 
 
@@ -251,8 +260,8 @@ class StereoCalibrator(CameraCalibrator):
 		Note constructor here takes the index of 
 		both left and right cameras
 		"""
-
-		self._camera = stereoCamera
+		super(StereoCalibrator, self).__init__(stereoCamera, 
+			boardSize, checkerSize, directory, calib_min)
 
 		self.left_image_points = []
 		self.right_image_points = [] # image_points
@@ -263,7 +272,7 @@ class StereoCalibrator(CameraCalibrator):
 		self._get_image_points()
 
 		#TODO: Use cornerSubPix
-		retVal, k1, d1, k2, d2, R, T, E, F = cv2.stereoCalibrate(
+		_, k1, d1, k2, d2, R, T, E, F = cv2.stereoCalibrate(
 			object_points, 
 			self.left_image_points, 
 			self.right_image_points, 
@@ -304,7 +313,7 @@ class StereoCalibrator(CameraCalibrator):
 				'fundamental'
 				]
 			})
-
+		self._camera.turn_off()
 		return k1, d1, k2, d2, R, T, E, F
 
 	def _get_image_points(self):
@@ -362,18 +371,7 @@ class HybridCalibrator(StereoCalibrator):
 			calibration_points=self._calibration_points
 			)
 
-		robot_cam = self._camera._right_camera
-		robot_cam.start_streaming(robot_cam._type)
-		robot_cam.set_callback(robot_cam._type, 
-			self._camera.callback,
-			rectify_image=True, 
-			callback_args=info)
-		try:
-			rospy.spin()
-		except KeyboardInterrupt:
-			rospy.loginfo('Shutting down robot camera corner detection')
-			robot_cam.stop_streaming(robot_cam._type)
-
+		self._camera.snapshot(info)
 
 	def _calibrate_camera(self):
 		"""
@@ -384,25 +382,42 @@ class HybridCalibrator(StereoCalibrator):
 		
 		self._get_image_points()
 
-		objp = object_points[0]
 		dimensions = self._camera.dimension
 
 		external_to_internal = np.zeros((4, 4), dtype=np.float32)
 
-		retval, k1, d1, r1, t1 = cv2.calibrateCamera(
-			object_points, 
-			self.left_image_points,
-			dimensions[0]
-			)
+		k1, k2 = self._camera.intrinsics
+		d1, d2 = self._camera.distortion
 
-		retval, k2, d2, r2, t2 = cv2.calibrateCamera(
-			object_points,
-			self.right_image_points,
+		r1, t1 = [0] * self._calibration_points, [0] * self._calibration_points
 
-			# Check how to get idmension
-			dimensions[1]
-			)
-	
+		if np.any(k1) and np.any(d1):
+			for i in range(self._calibration_points):
+				_, r1[i], t1[i] = cv2.solvePnP(object_points[i], 
+					self.left_image_points[i], k1, d1)
+		else:
+			_, k1, d1, r1, t1 = cv2.calibrateCamera(
+				object_points, 
+				self.left_image_points,
+				dimensions[0]
+				)
+
+		r2, t2 = [0] * self._calibration_points, [0] * self._calibration_points
+		
+		if np.any(k2) and np.any(d2):
+			for i in range(self._calibration_points):
+				_, r2[i], t2[i] = cv2.solvePnP(object_points[i], 
+					self.right_image_points[i], k2, d2)
+		else:
+			
+			_, k2, d2, r2, t2 = cv2.calibrateCamera(
+				object_points,
+				self.right_image_points,
+
+				# Check how to get idmension
+				dimensions[1]
+				)
+
 		for i in range(self._calibration_points):
 
 			r_external, _ = cv2.Rodrigues(r1[i])
@@ -432,7 +447,7 @@ class HybridCalibrator(StereoCalibrator):
 
 		# external_to_internal /= self._calibration_points
 
-		robot_cam_type = self._camera._right_camera._type
+		robot_cam_type = self._camera._right_camera._camera_idx
 
 		if self.tl.frameExists(robot_cam_type) and self.tl.frameExists('base'):
 
@@ -463,6 +478,7 @@ class HybridCalibrator(StereoCalibrator):
 					]
 				})
 
+			self._camera.turn_off()
 			# print(k1, k2, d1, d2)
 			return TR, k1, k2, d1, d2
 

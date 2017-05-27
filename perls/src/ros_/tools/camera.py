@@ -37,7 +37,8 @@ class Camera(object):
 		self._intrinsics = intrinsics
 		self._distortion = distortion
 
-		self._camera = self.turn_on(camera)
+		self._camera_idx = camera
+		self._camera = self.turn_on()
 
 	@property
 	def on(self):
@@ -70,14 +71,14 @@ class Camera(object):
 	def distortion(self, D):
 		self._distortion = D
 
-	def turn_on(self, camera):
+	def turn_on(self):
 		"""
 		Turn on the camera;
 		Returns an instance of corresponding camera object
 		"""
 		raise NotImplementedError('Each camera class must implement this method individually.')
 
-	def turn_off(self, camera):
+	def turn_off(self):
 		"""
 		Turn off the camera;
 		"""
@@ -132,12 +133,12 @@ class UVCCamera(Camera):
 		super(UVCCamera, self).__init__(camera_index, 
 			dimension, intrinsics, distortion)
 
-	def turn_on(self, camera_idx):
-		instance = cv2.VideoCapture(camera_idx)
-		instance.open()
+	def turn_on(self):
+		instance = cv2.VideoCapture(self._camera_idx)
+		# instance.open(camera_idx)
 		# 3, 4 are cv2 constants for width, height
 		if not self._dimension:
-			self.dimension = (instance.get(3), instance.get(4))
+			self.dimension = (int(instance.get(3)), int(instance.get(4)))
 
 		self.camera_on = instance.isOpened()
 		return instance
@@ -183,25 +184,23 @@ class RobotCamera(Camera):
 		super(RobotCamera, self).__init__(camera_type, 
 			dimension, intrinsics, distortion)
 
-		self._type = camera_type
-
 	# Cannot implement turn_on and 
-	def turn_on(self, camera_type):
+	def turn_on(self):
 		robot_camera = intera_interface.Cameras()
-		if not robot_camera.verify_camera_exists(camera_type):
+		if not robot_camera.verify_camera_exists(self._camera_idx):
 			rospy.logerr('Invalid camera name: {}, '
-				'exit the program.'.format(camera_type))
+				'exit the program.'.format(self._camera_idx))
 		
-		if camera_type == 'head_camera':
-			lnk_name = 'head_pan/' + camera_type
-		elif camera_type == 'right_hand_camera':
-			lnk_name = 'right_j5/' + camera_type
+		if self._camera_idx == 'head_camera':
+			lnk_name = 'head_pan/' + self._camera_idx
+		elif self._camera_idx == 'right_hand_camera':
+			lnk_name = 'right_j5/' + self._camera_idx
 		else:
-			lnk_name = camera_type
+			lnk_name = self._camera_idx
 		cfg = rosparam.get_param('/robot_config/jcb_joint_config/{}/intrinsics'.format(lnk_name))
 
 		if not self._dimension:
-			self.dimension = (cfg[0], cfg[1])
+			self.dimension = (int(cfg[0]), int(cfg[1]))
 
 		if not self._intrinsics:
 			self.intrinsics = np.array([
@@ -211,7 +210,7 @@ class RobotCamera(Camera):
 				], dtype=np.float32)
 
 		if not self._distortion:
-			if camera_type == 'head_camera':
+			if self._camera_idx == 'head_camera':
 				self.distortion = np.array(cfg[-8:], dtype=np.float32)
 			else:
 				self.distortion = np.array(cfg[-5:], dtype=np.float32)
@@ -224,8 +223,8 @@ class RobotCamera(Camera):
 
 	def snapshot(self, info):
 
-		self._camera.start_streaming(self._type)
-		self._camera.set_callback(self._type, 
+		self._camera.start_streaming(self._camera_idx)
+		self._camera.set_callback(self._camera_idx, 
 			self.callback,
 			rectify_image=True, 
 			callback_args=info)
@@ -233,7 +232,7 @@ class RobotCamera(Camera):
 			rospy.spin()
 		except KeyboardInterrupt:
 			rospy.loginfo('Shutting down robot camera corner detection')
-			self._camera.stop_streaming(self._type)
+			self._camera.stop_streaming(self._camera_idx)
 
 	def callback(self, img_data, info):
 		try:
@@ -295,7 +294,8 @@ class StereoCamera(Camera):
 		right_distortion):
 
 		self.left_on, self.right_on = False, False
-		self._left_camera, self._right_camera = self.turn_on(left, right)
+
+		self._left_camera, self._right_camera = left, right
 
 		self._left_dimension = left_dimension
 		self._left_intrinsics = left_intrinsics 
@@ -304,18 +304,22 @@ class StereoCamera(Camera):
 		self._right_intrinsics = right_intrinsics
 		self._right_distortion = right_distortion
 
-	def turn_on(self, left, right):
+		self.turn_on()
+
+	def turn_on(self):
 		"""
 		Turn on takes left and right inputs. Snapshot and 
 		turn_off inherit from the Camera class
 		"""
-		left_instance = left.turn_on()
-		right_instance = right.turn_on()
+		if not self._left_camera.on:
+			self._left_camera.turn_on()
+			self._right_camera.turn_on()
+		
 		self.left_on = self._left_camera.on
 		self.right_on = self._right_camera.on
 		self._left_dimension = self._left_camera.dimension
 		self._right_dimension = self._right_camera.dimension
-		return left_instance, right_instance
+
 
 	def snapshot(self):
 		return self._left_camera.snapshot(), self._right_camera.snapshot()
@@ -344,21 +348,21 @@ class StereoCamera(Camera):
 
 	@property
 	def intrinsics(self):
-		return self._left_intrinsics, self._right_intrinsics
+		return self._left_camera.intrinsics, self._right_camera.intrinsics
 
 	@intrinsics.setter
 	def intrinsics(self, lK, rK):
-		self._left_intrinsics = lK
-		self._right_intrinsics = rK
+		self._left_camera.intrinsics = lK
+		self._right_camera.intrinsics = rK
 
 	@property
 	def distortion(self):
-		return self._left_distortion, self._right_distortion
+		return self._left_camera.distortion, self._right_camera.distortion
 
 	@distortion.setter
 	def distortion(self, lD, rD):
-		self._left_distortion = lD
-		self._right_distortion = rD
+		self._left_camera.distortion = lD
+		self._right_camera.distortion = rD
 
 	def callback(self, left_img, right_img, info):
 		"""
@@ -436,6 +440,22 @@ class HybridStereo(StereoCamera):
 			right_dimension,
 			right_intrinsics,
 			right_distortion)
+
+	def snapshot(self, info):
+
+		camera_type = self._right_camera._camera_idx
+		self._right_camera._camera.start_streaming(camera_type)
+		self._right_camera._camera.set_callback(camera_type, 
+			self.callback,
+			rectify_image=True, 
+			callback_args=info)
+		try:
+			rospy.spin()
+		except KeyboardInterrupt:
+			rospy.loginfo('Shutting down robot camera corner detection')
+			self._right_camera._camera.stop_streaming(camera_type)
+			rospy.loginfo('Collected {} points from {} angles.'.format(info['num_of_points'],
+				len(info['left_point_list'])))
 
 	def callback(self, img_data, info):
 		"""

@@ -1,7 +1,7 @@
 
 
 from camera_calibration import RobotCalibrator as RC
-
+from camera_calibration import HybridCalibrator as HC
 from camera import *
 
 
@@ -22,8 +22,11 @@ _UD = np.array([0.147084, -0.257330,
 # 		calib_min=15)
 # dc.calibrate()
 
-camera = RobotCamera('right_hand_camera')
+# camera = RobotCamera('right_hand_camera')
+# rc = RC(camera, (9,6 ), 0.026, '../calib_data')
 
-rc = RC(camera, (9,6 ), 0.026, '../calib_data')
-
-rc.calibrate()
+left_cam = UVCCamera(0)
+right_cam = RobotCamera('right_hand_camera')
+hs = HybridStereo(left_cam, right_cam)
+hc = HC(hs, (9,6 ), 0.026, '../calib_data', calib_min=5)
+hc.calibrate()
