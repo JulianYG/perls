@@ -33,7 +33,7 @@ rospy.init_node('dsdfs')
 br = tf.TransformBroadcaster()
 
 with open(pjoin('../calib_data',  
-	'DuoCalibrator_transform.p'), 'rb') as f:
+	'HybridCalibrator_transform.p'), 'rb') as f:
 	TR = pickle.load(f)
 
 param = rosparam.get_param('/robot_config/'
@@ -76,6 +76,6 @@ print(orn)
 # orn = [ 0.9739193 , -0.03370887 ,-0.22305033 ,-0.02436092]
 while not rospy.is_shutdown():
 	br.sendTransform(pos, orn, 
-					rospy.Time.now(), 'usb', 'base')
+					rospy.Time.now(), 'kinect', 'base')
 	rospy.Rate(10.).sleep()
 
