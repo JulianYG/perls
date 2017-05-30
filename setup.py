@@ -18,15 +18,16 @@ setup(
     # https://packaging.python.org/en/latest/single_source_version.html
     version='0.0.1',
 
-    description='A sample Python project',
+    description='A ROS - simulation - VR joint interface for '
+        'conducting experiments and tests',
     long_description=long_description,
 
     # The project's main homepage.
-    url='https://github.com/pypa/sampleproject',
+    url='https://github.com/StanfordVL/perls',
 
     # Author details
-    author='Stanford Vision Lab',
-    author_email='svl@stanford.edu',
+    author='Julian Gao, Ajay Mandlekar',
+    author_email='julianyg@stanford.edu',
 
     # Choose your license
     license='MIT',
@@ -61,7 +62,7 @@ setup(
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
-    packages=find_packages(exclude=['contrib', 'docs', 'tools', 'test']),
+    packages=find_packages(exclude=['dist', 'docs', 'tools', 'test']),
 
     # Alternatively, if you want to distribute just a my_module.py, uncomment
     # this:
@@ -71,7 +72,7 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['numpy', 'pybullet', 'redis'],
+    install_requires=['numpy', 'pybullet', 'redis', 'gym', 'matplotlib'],
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
@@ -85,9 +86,7 @@ setup(
     # If there are data files included in your packages that need to be
     # installed, specify them here.  If using Python 2.6 or less, then these
     # have to be included in MANIFEST.in as well.
-    package_data={
-        'perls': ['package_data.dat'],
-    },
+    package_data={},
 
     # Although 'package_data' is the preferred approach, in some case you may
     # need to place data files outside of your packages. See:
