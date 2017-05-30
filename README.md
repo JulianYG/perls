@@ -1,3 +1,7 @@
+## perls
+
+Read more about API docs in this [Wiki](https://github.com/JulianYG/perls/wiki).
+
 ## Bullet Instructions
 
 ### File Structure
@@ -59,10 +63,6 @@ Notes:
 
 - For VR Simulator, controllers cannot be turned on after running `run.py`. Hold the circle button in the center to engage the arms, release for disengage. 
 - For all other simulators, it is suggested to just keep one controller turned on, in order to avoid the interference from the idle controller to the arm.
-
-- Code instructions
-
-Read more about API docs in this Wiki.
 
 Simulator callable methods:
 
