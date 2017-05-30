@@ -1,17 +1,12 @@
-
+#!/usr/bin/env python
 import redis
 import sys, os, subprocess
 from os.path import join as pjoin
-sys.path.append(pjoin(os.getcwd(), 'ros_'))
-# os.system('./ros_/run.sh')
-# subprocess.call(['cd', '~/ros_ws'])
-# subprocess.call('./ros_/intera.sh')
-# subprocess.call('cd {}'.format(os.getcwd()))
 
 import rospy
 import intera_interface
-from robot import Robot
-from utils import Interpolator, UniformSubsampler, MovingAverageFilter
+from ros_.robot import Robot
+from ros_.utils import Interpolator, UniformSubsampler, MovingAverageFilter
 
 '''
 Before initializing an instance of the Robot_Control class:
@@ -39,7 +34,8 @@ pubsub = r.pubsub()
 pubsub.subscribe(**{'event_channel': _event_handler})
 
 # Start thread
-client_thread = pubsub.run_in_thread(sleep_time=0.001)
+# Using sleep_time=0.1 to update VR points on 10Hz
+client_thread = pubsub.run_in_thread(sleep_time=0.1)
 
 arm = Robot(limb, gripper)
 
@@ -47,21 +43,20 @@ arm = Robot(limb, gripper)
 rest_pose = {'right_j6': 3.3161, 'right_j5': 0.57, 'right_j4': 0, 
 	'right_j3': 2.18, 'right_j2': -0, 'right_j1': -1.18, 'right_j0': 0.}
 arm.set_init_positions(rest_pose)
+# Release the gripper first
 arm.slide_grasp(1)
 
+# Initialize reference frame positions
 arm_initial_pos = np.array(list(arm.get_tool_pose()[0]))
-
 vr_initial_pos = None
+
+# Initialize initial pos1 for interpolation
+pos1 = arm_initial_pos
 
 while True:
 	if not event_queue.empty():
 		vr_initial_pos = np.array(list(event_queue.get()[1]))
 		break
-
-
-# FILTER_SIZE = 20
-# lpf_list = []
-# lpf_num_elems = 0
 
 sampler = UniformSubsampler(T=50)
 
@@ -69,52 +64,42 @@ while True:
 	try:
 		while not event_queue.empty():
 			e = event_queue.get()
+			
+			# Get position and orientation
+			# orn not used currently
 			pos, orn = e[1], e[2]
+
+			# control the gripper
 			if e[6][33] & p.VR_BUTTON_WAS_TRIGGERED:
 				arm.slide_grasp(0)
 			if e[6][33] & p.VR_BUTTON_WAS_RELEASED:
 				arm.slide_grasp(1)
-
 			if e[6][1] & p.VR_BUTTON_WAS_TRIGGERED:
 				arm.set_init_positions(rest_pose)
 				vr_initial_pos = np.array(list(e[1]))
 
 			# subsample uniformly
-			if sampler.subsample(pos) is None:
-				continue
+			# if sampler.subsample(pos) is None:
+			# 	continue
 
 			arm_rel_pos = arm.get_relative_pose()['position']
-
 			rel_pose = np.array([arm_rel_pos.x ,arm_rel_pos.y, arm_rel_pos.z])
 
-			vr_rel_pos = np.array(list(pos) - vr_initial_pos)
+			vr_rel_pos = np.array(list(pos2) - vr_initial_pos)
+			pos2 = arm_initial_pos + vr_rel_pos
 
-			target_pos = arm_initial_pos + vr_rel_pos
-
-			# if lpf_num_elems >= FILTER_SIZE:
-			# 	lpf_list.pop(0)
-			# 	lpf_list.append(target_pos)
-			# else:
-			# 	lpf_list.append(target_pos)
-			# 	lpf_num_elems += 1
-
-			# target_pos = np.mean(np.array(lpf_list), axis=0)
-
-			if 0.1 < np.sqrt(np.sum(vr_rel_pos ** 2)) < 0.8:
+			if 0.1 < np.sqrt(np.sum(pos2 ** 2)) < 0.8:
 				if not arm.reach_absolute({'position': target_pos, 'orientation': (0, 1, 0, 0)}):
-					target_pos = arm_initial_pos
+					pos2 = arm_initial_pos
+
+			#TODO: do the interp and minjerk with pos1 and pos2  
+
+			# Update pos1 now
+			pos1 = pos2
 
 	except KeyboardInterrupt:
 		client_thread.stop()
 		pubsub.unsubscribe()
 		arm.shutdown()
 		sys.exit(0)
-
-
-
-
-# print(initial_pos)
-# pose = {'position': (-0.605, 0.076, 0.86), 'orientation': (0, 1, 0, 0)}
-
-# arm.reach(pose)
 
