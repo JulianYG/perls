@@ -181,7 +181,7 @@ class Robot(Tool):
 					p.setJointMotorControl2(arm_id, i, ctrl, 
 						targetPosition=joint_pos[i], targetVelocity=0, 
 						positionGain=pos_gain, velocityGain=1.0, force=self.MAX_FORCE)
-				return
+				return joint_pos
 
 			# Only need links 1- 5, no need for joint 4-6 with pure position IK
 			for i in range(len(joint_pos) - 3):
@@ -221,6 +221,7 @@ class Robot(Tool):
 				self.mark('Warning: you are flipping arm link {}'.format(self.nDOF - 2), 
 					p.getLinkState(arm_id, 1)[0], time=1.5)
 				raise IllegalOperation(self.nDOF - 2)
+		return joint_pos
 
 	def _load_tools(self, positions):
 		# Gripper ID to arm ID

@@ -21,7 +21,7 @@ def render_simulator(agent, interface, task, filename, record=True, vr=False):
 	...
 	"""
 	simulator = BulletSimulator(agent, interface, task, vr)
-	simulator.setup(0)
+	simulator._setup(0)
 	if record:
 		simulator.run(file=filename, record=record)
 	return simulator
