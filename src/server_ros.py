@@ -70,7 +70,7 @@ class VR(object):
 
 		self.arm = Robot(limb, gripper)
 
-		self.controller = RobotController(rate=100, command_queue=self.cmd_queue)
+		self.controller = RobotController(rate=100)
 
 		
 		self.r = redis.StrictRedis(host='localhost', port=6379, db=0)
@@ -92,9 +92,6 @@ class VR(object):
 		self.arm_initial_pos = np.array(list(self.arm.get_tool_pose()[0]))
 
 
-		self.prev_time = time.time()
-
-
 	def start(self):
 
 		
@@ -104,6 +101,7 @@ class VR(object):
 		# Using sleep_time=0.1 to update VR points on 10Hz
 		self.client_thread = self.pubsub.run_in_thread(sleep_time=0.1)
 
+		self.prev_time = time.time()
 		self.controller.control_loop()
 
 	def _event_handler(self, msg):
@@ -122,16 +120,17 @@ class VR(object):
 		if e[6][1] & p.VR_BUTTON_WAS_TRIGGERED:
 			self.arm.set_init_positions(rest_pose)
 			self.vr_initial_pos = np.array(list(e[1]))
-			cmd_queue.put(rest_pose.values()[::-1])
+			self.controller.put_item(rest_pose.values()[::-1])
 
 		self.arm_rel_pos = self.arm.get_relative_pose()['position']
-		rel_pose = np.array([self.arm_rel_pos.x ,self.arm_rel_pos.y, self.arm_rel_pos.z])
+		rel_pose = np.array([self.arm_rel_pos.y, self.arm_rel_pos.x, self.arm_rel_pos.z])
 
 		# self.arm_target = self.arm_init + (vr_now - vr_init)
 		rel_pos = np.array(pos) - np.array(self.vr_initial_pos)
 
 
-		rel_pos = np.array([rel_pos[1], rel_pos[0], rel_pos[2]])
+		# sim_rel_pos = np.array([rel_pos[1], rel_pos[0], rel_pos[2]])
+
 
 		self.arm_target_pos = self.arm_initial_pos + rel_pos
 
@@ -157,9 +156,7 @@ class VR(object):
 				velocityGain = 1.)
 		# if 0.1 < np.sqrt(np.sum(self.arm_target_pos ** 2)) < 0.8:
 
-		if not self.cmd_queue.full():
-			
-			self.cmd_queue.put((self.arm_joint_pos, t))
+		self.controller.put_item((self.arm_joint_pos, t))
 		self.prev_time = time.time()
 
 
