@@ -1,10 +1,10 @@
 {
 	"interface": "keyboard", 
 	"agent": "kuka",
-	"job": "run", 
+	"job": "replay", 
 	"video": false, 
 	"delay": 0.0001, 
-	"task": "sorting", 
+	"task": "hanoi", 
 	"scene": "basic",
 	"remote": false, 
 	"fixed_gripper_orn": true,
@@ -12,8 +12,8 @@
 	"server": "redis",
 	"enable_force_sensor": false,
 	"tool_positions": [0.4],
-	"replay_file_name": null, 
-	"record_file_name": null,
+	"replay_file_name": "try_haha_05-31-11-54-17", 
+	"record_file_name": "try_haha",
 	"gui": true,
 
 	"camera": [0.8, -0.2, 1, 0, -90, 120, 1, 600, 540]
