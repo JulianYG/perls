@@ -1,5 +1,6 @@
 import json
 import numpy as np
+import struct
 
 def get_distance(posA, posB):
 	return np.sqrt(np.sum((np.array(posA) - np.array(posB)) ** 2))
