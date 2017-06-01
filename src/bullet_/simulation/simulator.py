@@ -45,7 +45,6 @@ class BulletSimulator:
 		self._setup(0)
 		try:
 			if record:
-				file += '_' + datetime.now().strftime('%m-%d-%H')
 				self._record(file, video)
 			self._interface.communicate(self.agent, 
 				self.scene, self.task, self.gui)
