@@ -45,7 +45,7 @@ class BulletSimulator:
 		self._setup(0)
 		try:
 			if record:
-				file += '_' + datetime.now().strftime('%m-%d-%H-%M-%S')
+				file += '_' + datetime.now().strftime('%m-%d-%H')
 				self._record(file, video)
 			self._interface.communicate(self.agent, 
 				self.scene, self.task, self.gui)
@@ -65,7 +65,7 @@ class BulletSimulator:
 		p.resetDebugVisualizerCamera(cameraDistance=self.FOCAL_LENGTH, 
 			cameraYaw=self.YAW, cameraPitch=self.PITCH, 
 			cameraTargetPosition=self.FOCAL_POINT)
-		log = parse_log(pjoin(self.TRAJECTORY_LOG_DIR, 'traj.' + file), verbose=True)
+		log = parse_log(pjoin(self.TRAJECTORY_LOG_DIR, file + '.bin'), verbose=True)
 		self._replay(log, delay=delay)
 		self.quit()
 
@@ -132,11 +132,11 @@ class BulletSimulator:
 		else:
 			# Record everything
 			self.logIds.append(p.startStateLogging(p.STATE_LOGGING_GENERIC_ROBOT,
-				pjoin(self.TRAJECTORY_LOG_DIR, 'traj.' + filename)))
+				pjoin(self.TRAJECTORY_LOG_DIR, filename + '.bin')))
 			self.logIds.append(p.startStateLogging(p.STATE_LOGGING_VR_CONTROLLERS, 
-				pjoin(self.CONTROL_LOG_DIR, 'ctrl.' + filename)))
+				pjoin(self.CONTROL_LOG_DIR, filename + '.bin')))
 			self.logIds.append(p.startStateLogging(p.STATE_LOGGING_CONTACT_POINTS,
-				pjoin(self.CONTACT_LOG_DIR, 'cont.' + filename)))
+				pjoin(self.CONTACT_LOG_DIR, filename + '.bin')))
 
 	def _replay(self, log, delay=0.0005):
 

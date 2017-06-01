@@ -13,3 +13,5 @@ data
 */ctrl.*
 */cont.*
 .*
+*/*.bin
+

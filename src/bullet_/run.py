@@ -94,10 +94,7 @@ def execute(*args):
 	elif job == 'replay':
 		# Default view point setting
 		simulator.set_camera_view(*camera_info)
-		if os.path.isfile(pjoin(RECORD_LOG_DIR, replay_file)):
-			simulator.playback(fn, delay)
-		else:
-			raise IOError('Record file not found.')
+		simulator.playback(replay_file, delay)
 	elif job == 'run':
 		simulator.run_as_server()
 	else:
