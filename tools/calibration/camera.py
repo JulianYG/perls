@@ -151,17 +151,24 @@ class UVCCamera(Camera):
 			self.dimension = (int(self._device.get(3)), int(self._device.get(4)))
 
 		self.camera_on = self._device.isOpened()
-
-	def turn_off(self):
-
-		self._device.release()
-		self.camera_on = False
+		
 
 	def snapshot(self):
+		self._device.release()
+		self._device.open(self._camera_idx)
+		self._device.set(3, 1280)
+		self._device.set(4, 720)
 		if self.camera_on:
 			s, img = self._device.read()
+			
 			if s:
 				return img
+
+	def stream(self):
+		self._device.open(self._camera_idx)
+		self._device.set(3, 1280)
+		self._device.set(4, 720)
+		return self._device.read()[1]
 
 
 class PrimeSense(Camera):
