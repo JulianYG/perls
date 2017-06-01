@@ -114,6 +114,7 @@ class BulletSimulator:
 		if self.logIds:
 			for Id in self.logIds:
 				p.stopStateLogging(Id)
+		self.agent.write_body_info(pjoin(self.TRAJECTORY_LOG_DIR, 'body_info.txt'))
 		if self._interface:
 			self._interface.close()
 		if self.physics_server:

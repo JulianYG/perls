@@ -133,9 +133,8 @@ class Tracker():
 			target = origin + pos
 
 			# Add randomness to orientation
-			target_orn = orn + np.random.normal(0, 0.05, 4)
-
-			target_orn /= np.sqrt(np.sum(target_orn ** 2))
+			# target_orn = orn + np.random.normal(0, 0.05, 4)
+			# target_orn /= np.sqrt(np.sum(target_orn ** 2))
 
 			end_state = dict(position=tuple(target),
 						 orientation=(0,0,0,1))
@@ -162,7 +161,6 @@ class Tracker():
 		object_points = self._get_object_points(len(image_points))
 
 		if self.K is None or self.d is None:
-
 			_, self.K, self.d, _, _ = cv2.calibrateCamera(
 				object_points, self.calibration_points, (1280, 720))
 			self.d = np.squeeze(self.d)
@@ -235,13 +233,11 @@ class Tracker():
 					(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001))
 
 			usbCamCornerPoints = np.squeeze(usbCamCornerPoints)
-			# print(usbCamCornerPoints)
 			recognized_pix = np.mean(usbCamCornerPoints, axis=0)
 
 			cv2.drawChessboardCorners(img, self._board_size, 
 				usbCamCornerPoints, foundPattern)
 			self.calibration_points.append(usbCamCornerPoints)
-
 			return True, recognized_pix
 		else:
 			return False, None

@@ -126,10 +126,8 @@ class Camera(object):
 		if not foundPattern:
 			print('Camera did not find pattern...'
 				' Please re-adjust checkerboard position to continue.')
-				
 			cv2.imwrite(pjoin(info['directory'], 
 				'failures/{}.jpg'.format(rospy.Time.now())), img_data)
-		
 		else:
 			return points.reshape((info['num_of_points'], 2))
 

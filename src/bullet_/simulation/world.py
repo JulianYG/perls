@@ -4,6 +4,8 @@ import numpy as np
 from simulation.utils.enum import *
 from simulation.utils.helpers import *
 
+import csv
+
 class World(object):
 	"""
 	The basic scene setup in VR 
@@ -24,6 +26,7 @@ class World(object):
 
 		self.solo = None
 		self.MAX_FORCE = 500
+		self.name_dic = dict()
 
 	def init_control(self):
 		"""
@@ -35,8 +38,8 @@ class World(object):
 	def setup_scene(self, scene, task, gui=True):
 		self.init_control()
 		self._load_env(scene)
-		self._load_tools(self.positions)
 		self.default_obj_cnt = p.getNumBodies()
+		self._load_tools(self.positions)
 		self._load_task(task)
 		self.loaded_obj = range(self.default_obj_cnt, p.getNumBodies())
 		p.setGravity(0, 0, -9.81)
@@ -50,6 +53,12 @@ class World(object):
 		except Exception:
 			print(text)
 
+	def write_body_info(self, file):
+		with open(file, 'w') as f:
+			writer = csv.writer(f)
+			for k, v in self.name_dic.items():
+				writer.writerow([k, v])
+
 	def get_loaded_obj(self):
 		return self.loaded_obj
 
@@ -60,17 +69,19 @@ class World(object):
 				p.resetBasePositionAndOrientation(ob, 
 					obj_pose[1], obj_pose[2])
 			else:
-				p.loadURDF(
+				ob = p.loadURDF(
 					obj_pose[0], obj_pose[1], 
 					obj_pose[2], useFixedBase=obj_pose[3]
 				)
+			self.name_dic[ob] = p.getBodyInfo(ob)[1]
 
 	def _load_task(self, task):
 		for obj_pose in task:
 			if len(obj_pose) == 1:
-				p.loadSDF(obj_pose[0])
+				ob = p.loadSDF(obj_pose[0])
 			else:
-				p.loadURDF(*obj_pose)
+				ob = p.loadURDF(*obj_pose)
+			self.name_dic[ob] = p.getBodyInfo(ob)[1]
 
 
 class Tool(World):

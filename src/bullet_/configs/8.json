@@ -1,7 +1,7 @@
 {
 	"interface": "keyboard", 
 	"agent": "kuka",
-	"job": "run", 
+	"job": "record", 
 	"video": false, 
 	"delay": 0.0001, 
 	"task": "hanoi", 
