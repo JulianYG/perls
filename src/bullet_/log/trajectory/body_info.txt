@@ -1,12 +1,14 @@
-0,"('planeLink', 'plane')"
-1,"('baseLink', 'table.urdf')"
-2,"('lbr_iiwa_link_0', 'lbr_iiwa')_0"
-3,"('world', 'wsg50_with_gripper')_0"
-4,"('lbr_iiwa_link_0', 'lbr_iiwa')_1"
-5,"('world', 'wsg50_with_gripper')_1"
-6,"('baseLink', 'slate.urdf')"
-7,"('baseLink', 'slate.urdf')"
-8,"('baseLink', 'slate.urdf')"
-9,"('baseLink', 'slate.urdf')"
-10,"('baseLink', 'slate.urdf')"
-11,"('baseLink', 'slate.urdf')"
+0,plane
+1,table.urdf
+2,urdf_table
+3,Amazon Pod
+4,sawyer_0
+5,wsg50_with_gripper_0
+6,sawyer_1
+7,wsg50_with_gripper_1
+8,slate.urdf
+9,slate.urdf
+10,slate.urdf
+11,slate.urdf
+12,slate.urdf
+13,slate.urdf
