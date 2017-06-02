@@ -3,7 +3,7 @@ from os.path import join as pjoin
 from gym_bullet.wrappers import *
 from gym.envs.registration import register
 
-bullet_path = pjoin(os.getcwd(), '../bullet_')
+bullet_path = pjoin(os.getcwd(), '../src/bullet_')
 sys.path.append(bullet_path)
 
 from simulation.utils import helpers as utils
@@ -19,7 +19,7 @@ with open(TASK_DIR, 'r') as f:
 with open(SCENE_DIR, 'r') as f:
 	scene_repo = json.loads(f.read())
 
-CONFIG_DIR = pjoin(os.getcwd(), 'config.json')
+CONFIG_DIR = pjoin(os.getcwd(), '../src/gym_', 'config.json')
 _CONFIGS = utils.read_config(CONFIG_DIR)
 
 num_episodes = _CONFIGS['num_episodes']

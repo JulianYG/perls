@@ -1,7 +1,8 @@
 import redis, time
 import os, sys, getopt, json
 from os.path import join as pjoin
-sys.path.append(pjoin(os.getcwd(), 'bullet_'))
+sys.path.append(pjoin(os.getcwd(), '../src/bullet_'))
+sys.path.append(pjoin(os.getcwd(), '../src'))
 
 from simulation.interface import IVR, IKeyboard, ICmd
 from simulation.simulator import BulletSimulator
@@ -11,7 +12,7 @@ from comm import db
 
 def run(*args):
 	
-	CONFIG_DIR = pjoin(os.getcwd(), 'bullet_/configs', args[0][0] + '.json')
+	CONFIG_DIR = pjoin(os.getcwd(), '../src/bullet_/configs', args[0][0] + '.json')
 	_CONFIGS = utils.read_config(CONFIG_DIR)
 
 	socket = db.RedisComm(_CONFIGS['server_ip'])

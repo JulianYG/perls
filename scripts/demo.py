@@ -1,12 +1,15 @@
+import os, sys, getopt, json
+from os.path import join as pjoin
+sys.path.append(pjoin(os.getcwd(), '../src/bullet_'))
+sys.path.append(pjoin(os.getcwd(), '../src/'))
+WORK_DIR = pjoin(os.getcwd(), '../src/bullet_')
+
 from simulation.agent import PR2
 from simulation.robot import Kuka, Sawyer
 from simulation.interface import IVR, IKeyboard, ICmd
 from simulation.simulator import BulletSimulator
-import os, sys, getopt, json
-from os.path import join as pjoin
-sys.path.append(pjoin(os.getcwd(), '../'))
 from simulation.utils import helpers as utils
-sys.path.append(pjoin(os.getcwd(), '../'))
+
 from comm import db
 
 def render_simulator(agent, interface, task, filename, record=True, vr=False):
@@ -32,10 +35,10 @@ def execute(*args):
 	Default load settings from command line execution. 
 	May need a configuration file for this purpose
 	"""
-	TASK_DIR = pjoin(os.getcwd(), 'configs', 'task.json')
-	SCENE_DIR = pjoin(os.getcwd(), 'configs', 'scene.json')
-	CONFIG_DIR = pjoin(os.getcwd(), 'configs', args[0] + '.json')
-	RECORD_LOG_DIR = pjoin(os.getcwd(), 'log', 'record', 'trajectory')
+	TASK_DIR = pjoin(WORK_DIR, 'configs', 'task.json')
+	SCENE_DIR = pjoin(WORK_DIR, 'configs', 'scene.json')
+	CONFIG_DIR = pjoin(WORK_DIR, 'configs', args[0] + '.json')
+	RECORD_LOG_DIR = pjoin(WORK_DIR, 'log', 'record', 'trajectory')
 
 	with open(TASK_DIR, 'r') as f:
 		task_repo = json.loads(f.read())
@@ -89,7 +92,7 @@ def execute(*args):
 
 	simulator = BulletSimulator(agent, interface, 
 								task_repo[task], scene_repo[scene],
-								gui=gui, vr=vr)
+								gui=gui, vr=vr, log_dir=RECORD_LOG_DIR)
 	if job == 'record':
 		simulator.run_as_server(fn, True, video)
 	elif job == 'replay':

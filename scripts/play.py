@@ -1,4 +1,8 @@
 import gym, sys
+import os
+from os.path import join as pjoin
+sys.path.append(pjoin(os.getcwd(), '../src/gym_'))
+
 from gym_bullet.envs.bullet_env import BulletEnv
 import numpy as np
 from gym_bullet.wrappers import ik as module

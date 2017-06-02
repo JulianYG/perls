@@ -1,4 +1,8 @@
 import numpy as np
+import sys, os
+from os.path import join as pjoin
+sys.path.append(pjoin(os.getcwd(), '../src/bullet_'))
+
 from simulation.agent import Robot
 
 class Sawyer(Robot):

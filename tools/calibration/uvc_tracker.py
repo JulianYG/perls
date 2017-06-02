@@ -162,7 +162,7 @@ class Tracker():
 
 		if self.K is None or self.d is None:
 			_, self.K, self.d, _, _ = cv2.calibrateCamera(
-				object_points, self.calibration_points, (1280, 720))
+				object_points, self.calibration_points, self._camera.dimension)
 			self.d = np.squeeze(self.d)
 
 		# Solve for matrices

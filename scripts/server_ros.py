@@ -1,29 +1,19 @@
 #!/usr/bin/env python
-
 import redis
 import sys, os
 from os.path import join as pjoin
+sys.path.append(pjoin(os.getcwd(), '../src/'))
 
 import rospy
 import intera_interface
+
 from ros_.robot import Robot
 from ros_.utils.filter import Interpolator, UniformSubsampler, MovingAverageFilter
 from ros_.utils.VRcontrol import RobotController
-'''
-Before initializing an instance of the Robot_Control class:
-	rospy.init_node("sdk_wrapper") #initializes node on machine to talk to self.arm
-	limb = intera_interface.Limb('right')
-	gripper = intera_interface.Gripper('right')
-	self.arm = Robot_Control(limb, gripper)
-	
-'''
-sys.path.append(pjoin(os.getcwd(), 'bullet_'))
+
 import pybullet as p
 import Queue, time
 import numpy as np
-# event_queue = Queue.Queue(2048)
-import time
-
 
 from bullet_.simulation.robot import Sawyer
 from bullet_.simulation.simulator import BulletSimulator
@@ -44,24 +34,17 @@ for jointIndex in range(7):
 p.setRealTimeSimulation(1)
 sim_initial_pos = p.getLinkState(sawyer, 6)[0]
 
-
-rospy.init_node('sdk_wrapper')
-
-
+rospy.init_node('server')
 
 # Initializing
 rest_pose = {'right_j6': 3.3161, 'right_j5': 0.57, 'right_j4': 0, 
 	'right_j3': 2.18, 'right_j2': -0, 'right_j1': -1.18, 'right_j0': 0.}
 
 
-
-
-
 class VR(object):
 
 	def __init__(self, size=2048):
 		self.vr_initial_pos = None
-		
 
 		self.cmd_queue = Queue.Queue(size)
 
@@ -72,14 +55,11 @@ class VR(object):
 
 		self.controller = RobotController(rate=100)
 
-		
 		self.r = redis.StrictRedis(host='localhost', port=6379, db=0)
 		self.pubsub = self.r.pubsub()
 		# sampler = UniformSubsampler(T=50)
 
-
 	def turn_on(self):
-
 
 		self.arm.set_init_positions(rest_pose)
 		# Release the gripper first
@@ -91,10 +71,8 @@ class VR(object):
 		# Initialize reference frame positions
 		self.arm_initial_pos = np.array(list(self.arm.get_tool_pose()[0]))
 
-
 	def start(self):
 
-		
 		self.pubsub.subscribe(**{'event_channel': self._event_handler})
 
 		# Start thread
@@ -128,9 +106,7 @@ class VR(object):
 		# self.arm_target = self.arm_init + (vr_now - vr_init)
 		rel_pos = np.array(pos) - np.array(self.vr_initial_pos)
 
-
 		# sim_rel_pos = np.array([rel_pos[1], rel_pos[0], rel_pos[2]])
-
 
 		self.arm_target_pos = self.arm_initial_pos + rel_pos
 
@@ -159,36 +135,8 @@ class VR(object):
 		self.controller.put_item((self.arm_joint_pos, t))
 		self.prev_time = time.time()
 
-
 vr = VR()
 vr.turn_on()
 
 vr.start()
-# while True:
-# 	try:
-# 		while not event_queue.empty():
-# 			e = event_queue.get()
-			
-# 			# Get position and orientation
-# 			# orn not used currently
-			
-
-# 			# subsample uniformly
-# 			# if sampler.subsample(pos) is None:
-# 			# 	continue
-
-			
-# 				# if not self.arm.reach_absolute({'position': self.arm_target_pos, 'orientation': (0, 1, 0, 0)}):
-# 				# 	pos2 = self.arm_initial_pos
-
-# 			#TODO: do the interp and minjerk with pos1 and pos2  
-
-# 			# Update pos1 now
-# 			# pos1 = pos2
-
-# 	except KeyboardInterrupt:
-# 		client_thread.stop()
-# 		pubsub.unsubscribe()
-# 		self.arm.shutdown()
-# 		sys.exit(0)
 
