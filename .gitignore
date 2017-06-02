@@ -14,4 +14,4 @@ data
 */cont.*
 .*
 */*.bin
-
+src/bullet_/log/*

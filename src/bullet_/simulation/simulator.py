@@ -45,7 +45,6 @@ class BulletSimulator:
 		self._setup(0)
 		try:
 			if record:
-				file += '_' + datetime.now().strftime('%m-%d-%H')
 				self._record(file, video)
 			self._interface.communicate(self.agent, 
 				self.scene, self.task, self.gui)
@@ -115,6 +114,7 @@ class BulletSimulator:
 		if self.logIds:
 			for Id in self.logIds:
 				p.stopStateLogging(Id)
+		self.agent.write_body_info(pjoin(self.TRAJECTORY_LOG_DIR, 'body_info.txt'))
 		if self._interface:
 			self._interface.close()
 		if self.physics_server:

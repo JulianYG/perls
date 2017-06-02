@@ -68,7 +68,8 @@ class PR2(Tool):
 
 	def _load_tools(self, positions):
 
-		for pos in positions:
+		for i in range(len(positions)):
+			pos = positions[i]
 			pr2_gripper = p.loadURDF("pr2_gripper.urdf", pos, [0, 0, 0, 1])
 			# Setup the pr2_gripper
 			jointPositions = [0.550569, 0.000000, 0.549657, 0.000000]
@@ -81,6 +82,7 @@ class PR2(Tool):
 
 			self.grippers.append(pr2_gripper)
 			self.constraints.append(pr2_cid)
+			self.name_dic[pr2_gripper] = 'pr2_{}'.format(i)
 		self.solo = len(self.grippers) == 1
 
 
@@ -225,10 +227,18 @@ class Robot(Tool):
 
 	def _load_tools(self, positions):
 		# Gripper ID to arm ID
-		for pos in positions:
-			self.arms.append(p.loadURDF(self.arm_urdf, 
-				pos, [0, 0, 0, 1], useFixedBase=True))
-			self.grippers.append(p.loadSDF(self.gripper_urdf)[0])
+		for i in range(len(positions)):
+
+			pos = positions[i]
+			arm_id = p.loadURDF(self.arm_urdf, 
+				pos, [0, 0, 0, 1], useFixedBase=True)
+			self.arms.append(arm_id)
+
+			gripper_id = p.loadSDF(self.gripper_urdf)[0]
+			self.grippers.append(gripper_id)
+
+			self.name_dic[arm_id] = '{}_{}'.format(p.getBodyInfo(arm_id)[1], i)
+			self.name_dic[gripper_id] = '{}_{}'.format(p.getBodyInfo(gripper_id)[1], i)
 
 		# Setup initial conditions for both arms
 		for arm in self.arms:

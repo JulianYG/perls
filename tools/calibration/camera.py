@@ -126,10 +126,8 @@ class Camera(object):
 		if not foundPattern:
 			print('Camera did not find pattern...'
 				' Please re-adjust checkerboard position to continue.')
-				
 			cv2.imwrite(pjoin(info['directory'], 
 				'failures/{}.jpg'.format(rospy.Time.now())), img_data)
-		
 		else:
 			return points.reshape((info['num_of_points'], 2))
 
@@ -152,23 +150,15 @@ class UVCCamera(Camera):
 
 		self.camera_on = self._device.isOpened()
 		
-
 	def snapshot(self):
 		self._device.release()
 		self._device.open(self._camera_idx)
-		self._device.set(3, 1280)
-		self._device.set(4, 720)
+		self._device.set(3, self.dimension[0])
+		self._device.set(4, self.dimension[1])
 		if self.camera_on:
-			s, img = self._device.read()
-			
+			s, img = self._device.read()	
 			if s:
 				return img
-
-	def stream(self):
-		self._device.open(self._camera_idx)
-		self._device.set(3, 1280)
-		self._device.set(4, 720)
-		return self._device.read()[1]
 
 
 class PrimeSense(Camera):
