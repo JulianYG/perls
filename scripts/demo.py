@@ -1,8 +1,8 @@
 import os, sys, getopt, json
 from os.path import join as pjoin
-sys.path.append(pjoin(os.getcwd(), '../src/bullet_'))
-sys.path.append(pjoin(os.getcwd(), '../src/'))
-WORK_DIR = pjoin(os.getcwd(), '../src/bullet_')
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/')))
+
+from bullet_ import simulation
 
 from simulation.agent import PR2
 from simulation.robot import Kuka, Sawyer
@@ -11,6 +11,8 @@ from simulation.simulator import BulletSimulator
 from simulation.utils import helpers as utils
 
 from comm import db
+
+WORK_DIR = pjoin(os.getcwd(), '../src/bullet_')
 
 def render_simulator(agent, interface, task, filename, record=True, vr=False):
 	"""

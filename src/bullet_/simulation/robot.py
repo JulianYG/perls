@@ -1,9 +1,9 @@
 import numpy as np
 import sys, os
 from os.path import join as pjoin
-sys.path.append(pjoin(os.getcwd(), '../src/bullet_'))
+sys.path.append(os.path.abspath(pjoin(os.path.dirname(__file__), '..')))
 
-from simulation.agent import Robot
+from agent import Robot
 
 class Sawyer(Robot):
 

@@ -1,5 +1,5 @@
 import pybullet as p
-from simulation.utils.enum import *
+from simulation.utils.enum import WARNING_HOOK
 
 class IllegalOperation(Exception):
 	def __init__(self, link):

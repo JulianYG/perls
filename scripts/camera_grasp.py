@@ -596,13 +596,15 @@ class GraspSawyer(object):
             self.move_to_with_lift(cp[0], cp[1])
             time.sleep(1)
 
-    def _write_params(self, data, direct='ros_/calib_data/'):
+    @staticmethod
+    def _write_params(data, direct='ros_/calib_data/'):
         
         for name, mat in data.items():
             with open('{}/{}.p'.format(direct, name), 'wb') as f:
                 pickle.dump(mat, f)
 
-    def _read_params(self, names, direct='ros_/calib_data/'):
+    @staticmethod
+    def _read_params(names, direct='ros_/calib_data/'):
 
         data = {}
         for name in names:

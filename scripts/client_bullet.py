@@ -1,8 +1,8 @@
 import redis, time
 import os, sys, getopt, json
 from os.path import join as pjoin
-sys.path.append(pjoin(os.getcwd(), '../src/bullet_'))
-sys.path.append(pjoin(os.getcwd(), '../src'))
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/bullet_')))
 
 from simulation.interface import IVR, IKeyboard, ICmd
 from simulation.simulator import BulletSimulator

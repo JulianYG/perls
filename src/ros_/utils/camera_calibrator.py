@@ -338,7 +338,6 @@ class HybridCalibrator(StereoCalibrator):
 	clear top view, can be Kinect or UVC); camera 2 is 
 	the robot camera used for transforming camera coords 
 	to the base coords (for gripper)
-
 	Performs calibration separately, then compute the 
 	relation between two cameras
 	"""
@@ -459,5 +458,3 @@ class HybridCalibrator(StereoCalibrator):
 			raise Exception('Frame does not exist. Severe Error!')
 
 	
-
-
