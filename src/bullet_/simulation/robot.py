@@ -1,5 +1,9 @@
 import numpy as np
-from simulation.agent import Robot
+import sys, os
+from os.path import join as pjoin
+sys.path.append(os.path.abspath(pjoin(os.path.dirname(__file__), '..')))
+
+from agent import Robot
 
 class Sawyer(Robot):
 

@@ -7,9 +7,11 @@ A tracker that calibrates by tracking the robot gripper
 import pickle
 import yaml
 import numpy as np
+from matplotlib import pyplot as plt
 
 import sys, os
 from os.path import join as pjoin
+sys.path.append(os.path.abspath(pjoin(os.path.dirname(__file__), '../')))
 
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
@@ -21,11 +23,7 @@ import intera_interface
 import time
 
 from camera import UVCCamera
-
-sys.path.append(pjoin(os.getcwd(), '../../src/ros_/'))
 from robot import Robot
-
-from matplotlib import pyplot as plt
 
 # USB Camera matrix 
 # dimension (640, 480)
@@ -53,7 +51,8 @@ _UD = np.array([
 class Tracker():
 
 	def __init__(self, camera, robot, board_size=(2,2), itermat=(8, 9),
-		z=0, K=None, D=None, debug=False, calib='../calib_data'):
+		z=0, K=None, D=None, debug=False, 
+		calib='../../../tools/calibration/calib_data'):
 
 		self._camera = camera
 
@@ -162,7 +161,7 @@ class Tracker():
 
 		if self.K is None or self.d is None:
 			_, self.K, self.d, _, _ = cv2.calibrateCamera(
-				object_points, self.calibration_points, (1280, 720))
+				object_points, self.calibration_points, self._camera.dimension)
 			self.d = np.squeeze(self.d)
 
 		# Solve for matrices
@@ -190,25 +189,26 @@ class Tracker():
 
 		return tvec, invRotation
 
-	def convert(self, u, v):
+	@staticmethod
+	def convert(u, v, z, K, T, invR):
 
 		# Pixel value
 		p = np.array([u, v, 1], dtype=np.float32)
 
-		tempMat = self.invR * self.K
+		tempMat = invR * K
 		tempMat2 = tempMat.dot(p)
-		tempMat3 = self.invR.dot(np.reshape(self.T, 3))
+		tempMat3 = invR.dot(np.reshape(T, 3))
 
 		# approx height of each block + 
 		# (inv Rotation matrix * inv Camera matrix * point)
 		# inv Rotation matrix * tvec
-		s = (self.z_offset + tempMat3[2]) / tempMat2[2]
+		s = (z + tempMat3[2]) / tempMat2[2]
 
 		# s * [u,v,1] = M(R * [X,Y,Z] - t)  
 		# ->   R^-1 * (M^-1 * s * [u,v,1] - t) = [X,Y,Z] 
-		temp = np.linalg.inv(self.K).dot(s * p)
-		temp2 = temp - np.reshape(self.T, 3)
-		gripper_coords = self.invR.dot(temp2)
+		temp = np.linalg.inv(K).dot(s * p)
+		temp2 = temp - np.reshape(T, 3)
+		gripper_coords = invR.dot(temp2)
 
 		return gripper_coords
 
@@ -246,7 +246,8 @@ class Tracker():
 
 		def mouse_callback(event, x, y, flags, params):
 			if event == 1:
-				print((x, y), self.convert(x, y))
+				print((x, y), self.convert(x, y, 
+					self.z_offset, self.K, self.T, self.invR))
 		img = self._camera.snapshot()
 		while True:
 			try:
@@ -262,6 +263,8 @@ class Tracker():
 			except KeyboardInterrupt:
 				cv2.destroyAllWindows()
 
+
+## Code to run calibration
 # rospy.init_node('track')
 # limb = intera_interface.Limb('right')
 # limb.set_joint_position_speed(0.2)
@@ -273,6 +276,8 @@ class Tracker():
 # 	K=_UK, D=_UD, board_size=(9, 6), itermat=(9, 9), debug=False)
 
 # tracker.match_eval()
+
+
 
 
 

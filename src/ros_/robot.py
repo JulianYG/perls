@@ -20,6 +20,7 @@ from intera_core_msgs.srv import (
 	SolvePositionFK,
 	SolvePositionFKRequest
 )
+
 '''
 Before initializing an instance of the Robot_Control class:
 	rospy.init_node("sdk_wrapper") #initializes node on machine to talk to arm

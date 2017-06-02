@@ -2,8 +2,9 @@ from collections import defaultdict
 import os, sys, getopt, json
 from os.path import join as pjoin
 
-bullet_path = pjoin(os.getcwd(), 'bullet_')
+bullet_path = pjoin(os.getcwd(), '../src/bullet_')
 sys.path.append(bullet_path)
+sys.path.append(pjoin(os.getcwd(), '../src'))
 
 from simulation.agent import PR2
 from simulation.robot import Sawyer, Kuka

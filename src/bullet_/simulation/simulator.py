@@ -1,10 +1,15 @@
 import pybullet as p
 import numpy as np
-import os, struct, time
-from datetime import datetime
-from time import strftime
+import os, struct, time, sys
 from matplotlib import pyplot as plt
 from os.path import join as pjoin
+
+sys.path.append(os.path.abspath(pjoin(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(pjoin(os.path.dirname(__file__), '../..')))
+
+from datetime import datetime
+from time import strftime
+
 from simulation.utils.helpers import parse_log
 
 class BulletSimulator:

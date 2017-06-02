@@ -1,8 +1,11 @@
 import pybullet as p
 import numpy as np
-from simulation.utils.enum import *
-from simulation.utils.classes import *
-from simulation.world import Tool
+import sys, os
+from os.path import join as pjoin
+
+from utils.enum import *
+from utils.classes import *
+from world import Tool
 
 class PR2(Tool):
 

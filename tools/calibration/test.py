@@ -1,7 +1,7 @@
 
 
-from camera_calibration import RobotCalibrator as RC
-from camera_calibration import HybridCalibrator as HC
+from camera_calibrator import RobotCalibrator as RC
+from camera_calibrator import HybridCalibrator as HC
 from camera import *
 
 
