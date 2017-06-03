@@ -240,6 +240,7 @@ class IKeyboard(CtrlInterface):
 
 			pseudo_event[2] = (0, 1, 0, 0)
 			pseudo_event[6] = {32: 1, 33: 0, 1: 0}
+
 			# Keyboard mappings:
 			# 1: 49  2: 50
 			# x: 120  y: 121 z: 122

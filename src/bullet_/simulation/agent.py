@@ -177,6 +177,9 @@ class Tool(World):
 	def release(self, gripper):
 		raise NotImplementedError('Each tool agent must re-implement this method.')
 
+	def _set_camera(self, uid):
+		raise NotImplementedError('Each tool agent must re-implement this method.')
+
 	def get_tool_ids(self):
 		raise NotImplementedError('Each tool agent must re-implement this method.')
 
@@ -213,6 +216,7 @@ class PR2(Tool):
 		ctrl_id = event[0]
 		constraint_id = ctrl_map[CONSTRAINT][ctrl_id]
 		gripper_id = ctrl_map[GRIPPER][ctrl_id]
+		self._set_camera(gripper_id)
 		self.reach(constraint_id, event[1], event[2], fixed=False)
 		self.slide_grasp(gripper_id, event)
 		
@@ -269,21 +273,26 @@ class PR2(Tool):
 			self.name_dic[pr2_gripper] = 'pr2_{}'.format(i)
 		self.solo = len(self.grippers) == 1
 
+	def _set_camera(self, uid):
+		p.resetDebugVisualizerCamera(0.4, 45, 90, 
+			p.getBasePositionAndOrientation(uid)[0])
 
-class Robot(Tool):
+class Arm(Tool):
 
-	def __init__(self, enableForceSensor, 
-		gripper_urdf='gripper/wsg50_one_motor_gripper_new_free_base.sdf'):
+	def __init__(self, enableForceSensor,
+		gripper_file='gripper/wsg50_one_motor_gripper_new_free_base.sdf'):
 
-		super(Robot, self).__init__(enableForceSensor)
+		super(Arm, self).__init__(enableForceSensor)
 		self.THRESHOLD = 1.3
 		# Common type of grippers for all robots
-		self.gripper_file = gripper_urdf
+		self.gripper_file = gripper_file
 
 		self.GRIPPER_REST_POS = [0., -0.011130, -0.206421, 0.205143, -0.009999, 0., -0.010055, 0.]
 		self.GRIPPER_CLOZ_POS = [0.0, -0.047564246423083795, 0.6855956234759611, 
 			-0.7479294372303137, 0.05054599996976922, 0.0, 0.049838105678835724, 0.0]
 		self.JOINT_DAMP = [.1] * self.nDOF
+
+		self.ee_offset = 0.05
 
 	def get_tool_ids(self):
 		return self.arms
@@ -298,7 +307,7 @@ class Robot(Tool):
 		ctrl_id = event[0]
 		arm_id = ctrl_map[ARM][ctrl_id]
 		gripper_id = ctrl_map[GRIPPER][ctrl_id]
-		
+		self._set_camera(gripper_id)
 		self.slide_grasp(gripper_id, event)
 
 		# Allows robot arm control by VR controllers
@@ -442,7 +451,7 @@ class Robot(Tool):
 		for arm, gripper in zip(self.arms, self.grippers):
 			self.constraints.append(p.createConstraint(arm, self.nDOF - 1, 
 				# gripper, 0, p.JOINT_FIXED, [0,0,0], [0,0,0.05], [0,0,0], 
-				gripper, 0, p.JOINT_FIXED, [0,0,0], [0,0,0.195], [0,0,0], 
+				gripper, 0, p.JOINT_FIXED, [0,0,0], [0,0, self.ee_offset], [0,0,0], 
 				parentFrameOrientation=[0, 0, 0, 1],
 				childFrameOrientation=[0., 0, 0.707, 0.707]))
 		self.solo = len(self.arms) == 1

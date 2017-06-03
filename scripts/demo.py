@@ -5,7 +5,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/
 from bullet_ import simulation
 
 from simulation.agent import PR2
-from simulation.robot import Kuka, Sawyer
+from simulation.arm import Kuka, Sawyer
 from simulation.interface import IVR, IKeyboard, ICmd
 from simulation.simulator import BulletSimulator
 from simulation.utils import helpers as utils

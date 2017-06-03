@@ -9,7 +9,7 @@ sys.path.append(bullet_path)
 from simulation.utils import helpers as utils
 from simulation.simulator import BulletSimulator
 
-from simulation.robot import Sawyer, Kuka
+from simulation.arm import Sawyer, Kuka
 
 TASK_DIR = pjoin(bullet_path, 'configs', 'task.json')
 SCENE_DIR = pjoin(bullet_path, 'configs', 'scene.json')
