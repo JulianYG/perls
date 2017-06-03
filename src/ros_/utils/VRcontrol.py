@@ -104,7 +104,7 @@ class RobotController(object):
         # self.redis_thread = self.redis_pubsub.run_in_thread(sleep_time=0.001)
 
         # TODO: make sure command queue allows us to do asynch polling
-        self.command_queue = Queue()
+        self.command_queue = Queue(maxsize=7)
         assert(self.command_queue is not None)
 
     def _redis_handler(self, message):
@@ -114,6 +114,8 @@ class RobotController(object):
         self.command_queue.put(message['data'])
 
     def put_item(self, item):
+        if self.command_queue.full():
+            self.command_queue.get()
         self.command_queue.put(item)
 
 
@@ -312,6 +314,8 @@ class RobotController(object):
 
         # helps us keep the specified control rate
         control_rate = rospy.Rate(self.control_rate)
+
+
         while True:
 
             # if no new points, maintain current position by writing 0 to all joint velocities
@@ -324,6 +328,7 @@ class RobotController(object):
             # points_array should be [p(t-1), p(t), p(t+1)] and we want to move to p(t)
             # duration_array should be [dt1, dt2] and correspond to the durations between the points.
             new_pos, duration = self.command_queue.get()
+    
             self.control_points.pop(0)
             self.control_points.append(new_pos)
             self.control_durations.pop(0)
@@ -345,6 +350,7 @@ class RobotController(object):
             # loop for the duration of the motion between the control points
             start_time = rospy.get_time()
             now_from_start = rospy.get_time() - start_time
+            # print(duration)
             while (now_from_start < duration):
 
                 # get interpolated point using ratio of time expired in time slice
@@ -370,13 +376,12 @@ class RobotController(object):
                         self.limb.exit_control_mode()
                         return False
                     velocities[jnt] = self._pid[jnt].compute_output(delta)
-                    print(velocities[jnt])
+                    # print(velocities[jnt])
                     if velocities[jnt] >= 0.5:
-                        print("ERRRRRRROROROROROROOROROROROROOROR")
-                        sys.exit(1)
+                        velocities[jnt] = 0.5
                 self.limb.set_joint_velocities(velocities)
 
-                print('haha')
+                # print('haha')
                 # enforce the control rate
                 control_rate.sleep()
 
