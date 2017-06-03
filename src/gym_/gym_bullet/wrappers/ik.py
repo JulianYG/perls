@@ -1,6 +1,9 @@
 import numpy as np
 
 def reset(agent):
+	"""
+	:return initial state
+	"""
 
 	return [0.8, 0., 1.], (0, 1, 0, 0)
 
@@ -10,6 +13,8 @@ def step(agent, action):
 	User defined step_helper. Takes pybullet tool agent and action,
 	returns tuple of observation, reward, done status, and info.
 	A high level pybullet wrapper for the gym step function
+
+	:return observation, reward, done, info
 	""" 
 	# Define initial state
 	kuka = agent.get_tool_ids()[0]

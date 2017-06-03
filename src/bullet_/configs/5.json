@@ -6,7 +6,6 @@
 	"delay": 0.0001, 
 	"task": "ball", 
 	"scene": "basic",
-	"remote": true, 
 	"fixed_gripper_orn": false,
 	"server_ip": "172.24.68.111",
 	"enable_force_sensor": false,

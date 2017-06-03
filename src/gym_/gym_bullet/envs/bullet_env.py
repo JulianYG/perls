@@ -51,6 +51,6 @@ class BulletEnv(gym.Env):
 	def _step(self, action):
 		if not self.realTimeSimulation:
 			self.simulator.step_simulation()
-		observation, reward, done, info = self._step_func(self.agent, action)
-		return observation, reward, done, info
+		return self._step_func(self.agent, action)
+		
 
