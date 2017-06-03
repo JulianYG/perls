@@ -1,9 +1,6 @@
-import json
+import json, csv
 import numpy as np
 import struct
-
-def get_distance(posA, posB):
-	return np.sqrt(np.sum((np.array(posA) - np.array(posB)) ** 2))
 
 def read_config(config):
 	dic = {}
@@ -12,6 +9,12 @@ def read_config(config):
 		for k, v in config.items():
 			dic[str(k)] = v
 	return dic
+
+def write_body_info(name_dic, file):
+	with open(file, 'w') as f:
+		writer = csv.writer(f)
+		for k, v in name_dic.items():
+			writer.writerow([k, v])
 
 def parse_log(filename, verbose=True):
 

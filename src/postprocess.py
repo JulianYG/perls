@@ -1,5 +1,5 @@
 import pybullet as p
-from bullet_.simulation.utils.helpers import parse_log as plog
+from bullet_.simulation.utils.io import parse_log as plog
 import numpy as np
 # from IPython import embed
 

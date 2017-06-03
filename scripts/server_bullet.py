@@ -4,19 +4,17 @@ from os.path import join as pjoin
 
 bullet_path = pjoin(os.getcwd(), '../src/bullet_')
 sys.path.append(bullet_path)
-sys.path.append(pjoin(os.getcwd(), '../src'))
-
-from simulation.agent import PR2
-from simulation.robot import Sawyer, Kuka
-from simulation.interface import IVR, IKeyboard, ICmd
-from simulation.simulator import BulletSimulator
-
-from simulation.utils import helpers as utils
-from comm import db
-
 TASK_DIR = pjoin(bullet_path, 'configs', 'task.json')
 SCENE_DIR = pjoin(bullet_path, 'configs', 'scene.json')
 RECORD_LOG_DIR = pjoin(bullet_path, 'log', 'record', 'trajectory')
+
+from simulation.tool import PR2
+from simulation.arm import Sawyer, Kuka
+from simulation.interface import IVR, IKeyboard, ICmd
+from simulation.simulator import BulletSimulator
+
+sys.path.append(pjoin(os.getcwd(), '../src'))
+from comm import db
 
 def execute():
 	"""
@@ -25,7 +23,6 @@ def execute():
 	"""
 	
 	socket = db.RedisComm('localhost', port=6379)  # ip
-
 	socket.connect_with_client()
 
 	try:

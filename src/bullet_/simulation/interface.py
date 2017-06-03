@@ -1,7 +1,10 @@
 import pybullet as p
-import time, sys
-from simulation.utils.classes import *
-from simulation.utils.enum import *
+import time, sys, os
+from os.path import join as pjoin
+sys.path.append(os.path.abspath(pjoin(os.path.dirname(__file__))))
+
+from utils import handler
+from utils.misc import Constant
 from numpy import array
 import numpy as np
 
@@ -50,7 +53,7 @@ class CtrlInterface(object):
 			if event[0] == agent.controllers[1]:
 				return 0
 		# Hook handlers
-		if event is RESET_HOOK:
+		if event is Constant.RESET_HOOK:
 			print('VR Client connected. Initializing reset...')
 			p.setInternalSimFlags(0)
 			p.resetSimulation()
@@ -58,11 +61,11 @@ class CtrlInterface(object):
 			agent.setup_scene(scene, task, gui)
 			agent.solo = len(agent.arms) == 1 or len(agent.grippers) == 1
 			return 0 
-		elif event is SHUTDOWN_HOOK:
+		elif event is Constant.SHUTDOWN_HOOK:
 			print('VR Client quit')
 			return -1
 		elif isinstance(event, tuple) and len(event) == 2:
-			if event[0] is CTRL_HOOK and event[1]:
+			if event[0] is Constant.CTRL_HOOK and event[1]:
 				agent.set_virtual_controller(event[1])
 				print('Received controller IDs: {}'.format(agent.controllers))
 			return 0
@@ -97,8 +100,8 @@ class ICmd(CtrlInterface):
 								fixed=False, 
 								expedite=True)
 
-				except IllegalOperation as e:
-					illegal_operation_handler(e, self.socket)
+				except handler.IllegalOperation as e:
+					handler.illegal_operation_handler(e, self.socket)
 					continue
 			if not gui:
 				p.stepSimulation()
@@ -113,7 +116,7 @@ class ICmd(CtrlInterface):
 
 		control_map, obj_map = agent.create_control_mappings()
 		# Let the socket know controller IDs
-		self.socket.broadcast_to_server((CTRL_HOOK, agent.controllers))
+		self.socket.broadcast_to_server((Constant.CTRL_HOOK, agent.controllers))
 
 		while True:
 			# Send to server
@@ -161,7 +164,7 @@ class IKeyboard(CtrlInterface):
 		p.connect(p.GUI)
 		# Let the socket know controller IDs
 		self.socket.broadcast_to_server(
-			(CTRL_HOOK, [0, 1])
+			(Constant.CTRL_HOOK, [0, 1])
 		)
 		
 		while True:
@@ -230,7 +233,7 @@ class IKeyboard(CtrlInterface):
 	def _keyboard_event_handler(self, events, agent, control_map, pseudo_event):
 
 		for e in (events):
-			if e not in HOT_KEYS:
+			if e not in Constant.HOT_KEYS:
 				continue
 			if not agent.solo:
 				if e == 49 and (events[e] == p.KEY_IS_DOWN):
@@ -303,9 +306,9 @@ class IKeyboard(CtrlInterface):
 					poses = agent.get_tool_poses(agent.get_tool_ids())
 					self.pos = poses[:, 0]
 
-			except IllegalOperation as e:
+			except handler.IllegalOperation as e:
 				if self.socket:
-					illegal_operation_handler(e, self.socket)
+					handler.illegal_operation_handler(e, self.socket)
 				self.orn = [[0,0,0],[0,0,0]]
 				continue
 
@@ -325,7 +328,7 @@ class IVR(CtrlInterface):
 		while True:
 			# Let the socket know controller IDs
 			self.socket.broadcast_to_server(
-				(CTRL_HOOK, [e[0] for e in p.getVREvents()])
+				(Constant.CTRL_HOOK, [e[0] for e in p.getVREvents()])
 			)
 			# Send to server
 			events = p.getVREvents()
@@ -343,7 +346,7 @@ class IVR(CtrlInterface):
 			for event in events:
 				event = eval(event)
 				if isinstance(event, tuple):
-					if event[0] is CTRL_HOOK and event[1]:
+					if event[0] is Constant.CTRL_HOOK and event[1]:
 						agent.set_virtual_controller(event[1])
 						control_map, obj_map = agent.create_control_mappings()
 
@@ -358,8 +361,8 @@ class IVR(CtrlInterface):
 				if return_status > 0:
 					try:
 						agent.control(event, control_map)
-					except IllegalOperation as e:
-						illegal_operation_handler(e, self.socket)
+					except handler.IllegalOperation as e:
+						handler.illegal_operation_handler(e, self.socket)
 						continue
 				if return_status < 0:
 					p.disconnect()
@@ -380,7 +383,7 @@ class IVR(CtrlInterface):
 						agent.control(event, control_map)
 					else:
 						agent.control(event, control_map)
-				except IllegalOperation:
+				except handler.IllegalOperation:
 					continue
 			if not gui:
 				p.stepSimulation()

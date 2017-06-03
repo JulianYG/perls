@@ -6,7 +6,7 @@ from gym.envs.registration import register
 bullet_path = pjoin(os.getcwd(), '../src/bullet_')
 sys.path.append(bullet_path)
 
-from simulation.utils import helpers as utils
+from simulation.utils import io
 from simulation.simulator import BulletSimulator
 
 from simulation.arm import Sawyer, Kuka
@@ -20,7 +20,7 @@ with open(SCENE_DIR, 'r') as f:
 	scene_repo = json.loads(f.read())
 
 CONFIG_DIR = pjoin(os.getcwd(), '../src/gym_', 'config.json')
-_CONFIGS = utils.read_config(CONFIG_DIR)
+_CONFIGS = io.read_config(CONFIG_DIR)
 
 num_episodes = _CONFIGS['num_episodes']
 agent = _CONFIGS['agent'] 
@@ -39,7 +39,7 @@ scene = _CONFIGS['scene']
 step_limit = _CONFIGS['step_limit']
 reward_thresh = _CONFIGS['reward_thresh']
 
-module = eval(step_func)
+module = getattr(sys.modules[__name__], step_func)
 if agent == 'kuka':
 	# Change Fixed to True for keyboard
 	agent = Kuka(init_pos, fixed=fixed, enableForceSensor=force_sensor)

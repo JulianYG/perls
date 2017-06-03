@@ -1,10 +1,11 @@
 import pybullet as p
 import numpy as np
 
-from simulation.utils.enum import *
-from simulation.utils.helpers import *
+import sys, os
+from os.path import join as pjoin
+sys.path.append(os.path.abspath(pjoin(os.path.dirname(__file__))))
 
-import csv
+from utils import io
 
 class World(object):
 	"""
@@ -53,11 +54,9 @@ class World(object):
 		except Exception:
 			print(text)
 
-	def write_body_info(self, file):
-		with open(file, 'w') as f:
-			writer = csv.writer(f)
-			for k, v in self.name_dic.items():
-				writer.writerow([k, v])
+	def generate_body_info(self, file):
+		# Write out body info to text
+		io.write_body_info(self.name_dic, file)
 
 	def get_loaded_obj(self):
 		return self.loaded_obj

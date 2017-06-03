@@ -1,10 +1,13 @@
-import redis, sys
+import redis, sys, os
 if sys.version[0] == '2':
     from Queue import Queue as q
 else:
     from queue import Queue as q
+from os.path import join as pjoin
+sys.path.append(os.path.abspath(pjoin(os.path.dirname(__file__), '..')))
+
 from comm.core import Comm
-from simulation.utils.enum import *
+from bullet_.simulation.utils.misc import Constant
 
 class RedisComm(Comm):
 
@@ -50,7 +53,7 @@ class RedisComm(Comm):
             # Send reset and load env signal
             print('Waiting for client\'s response...')
             while 1:
-                if self.broadcast_to_client(START_HOOK) > 0:
+                if self.broadcast_to_client(Constant.START_HOOK) > 0:
                     print('Connected with client.')
                     self.connected_with_client = True
                     break
@@ -63,7 +66,7 @@ class RedisComm(Comm):
 
             print('Waiting for server\'s response...')
             while 1:
-                if self.broadcast_to_server(RESET_HOOK) > 0:
+                if self.broadcast_to_server(Constant.RESET_HOOK) > 0:
                     print('Connected with server on {}'.format(self.ip))
                     self.connected_with_server = True
                     break
@@ -82,10 +85,10 @@ class RedisComm(Comm):
 
     def disconnect(self):
         if self.connected_with_server:
-            self.broadcast_to_server(SHUTDOWN_HOOK)
+            self.broadcast_to_server(Constant.SHUTDOWN_HOOK)
             self.connected_with_server = False
         if self.connected_with_client:
-            self.broadcast_to_client(SHUTDOWN_HOOK)
+            self.broadcast_to_client(Constant.SHUTDOWN_HOOK)
             self.connected_with_client = False
         for t in self.threads:
             t.stop()

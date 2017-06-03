@@ -4,11 +4,11 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/
 
 from bullet_ import simulation
 
-from simulation.agent import PR2
+from simulation.tool import PR2
 from simulation.arm import Kuka, Sawyer
 from simulation.interface import IVR, IKeyboard, ICmd
 from simulation.simulator import BulletSimulator
-from simulation.utils import helpers as utils
+from simulation.utils import io
 
 from comm import db
 
@@ -47,7 +47,7 @@ def execute(*args):
 	with open(SCENE_DIR, 'r') as f:
 		scene_repo = json.loads(f.read())
 
-	_CONFIGS = utils.read_config(CONFIG_DIR)
+	_CONFIGS = io.read_config(CONFIG_DIR)
 
 	interface_type = _CONFIGS['interface']
 	agent = _CONFIGS['agent']

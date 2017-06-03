@@ -25,7 +25,7 @@ class BulletEnv(gym.Env):
 	    self.simulator._setup(0)
 	    if record:
 	    	self.simulator._record(
-	    		datetime.now().strftime('%m-%d-%H-%M-%S'), 
+	    		datetime.now().strftime('%m-%d-%H-%M'), 
 	    		video
 	    	)
 

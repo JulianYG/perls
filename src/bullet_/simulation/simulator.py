@@ -3,14 +3,12 @@ import numpy as np
 import os, struct, time, sys
 from matplotlib import pyplot as plt
 from os.path import join as pjoin
-
-sys.path.append(os.path.abspath(pjoin(os.path.dirname(__file__), '..')))
-sys.path.append(os.path.abspath(pjoin(os.path.dirname(__file__), '../..')))
+sys.path.append(os.path.abspath(pjoin(os.path.dirname(__file__))))
 
 from datetime import datetime
 from time import strftime
 
-from simulation.utils.helpers import parse_log
+from utils import io
 
 class BulletSimulator:
 
@@ -69,7 +67,7 @@ class BulletSimulator:
 		p.resetDebugVisualizerCamera(cameraDistance=self.FOCAL_LENGTH, 
 			cameraYaw=self.YAW, cameraPitch=self.PITCH, 
 			cameraTargetPosition=self.FOCAL_POINT)
-		log = parse_log(pjoin(self.TRAJECTORY_LOG_DIR, file + '.bin'), verbose=True)
+		log = io.parse_log(pjoin(self.TRAJECTORY_LOG_DIR, file + '.bin'), verbose=True)
 		self._replay(log, delay=delay)
 		self.quit()
 
@@ -119,7 +117,7 @@ class BulletSimulator:
 		if self.logIds:
 			for Id in self.logIds:
 				p.stopStateLogging(Id)
-		self.agent.write_body_info(pjoin(self.TRAJECTORY_LOG_DIR, 'body_info.txt'))
+		self.agent.generate_body_info(pjoin(self.TRAJECTORY_LOG_DIR, 'body_info.txt'))
 		if self._interface:
 			self._interface.close()
 		if self.physics_server:
