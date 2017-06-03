@@ -1,0 +1,5 @@
+<launch>
+
+ <node pkg="tf" type="static_transform_publisher" name="kinect_transform" args="1.17090723 -0.065932 0.76435313 0.67193004 -0.66087106 -0.23648175 0.23629609 /base /kinect2_rgb_optical_frame 100"/>
+
+</launch>

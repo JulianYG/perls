@@ -25,12 +25,13 @@ _UD = np.array([
 	0.078759, -0.143339, -0.000887 ,-0.001555 ,0.000000
 	], dtype=np.float32)
 
-tracker = Tracker(None, None, K=_UK, D=_UD, board_size=(9,6))
+# tracker = Tracker(None, None, K=_UK, D=_UD, board_size=(9,6))
 
 def mouse_callback(event, x, y, flags, params):
 	if event == 1:
-		print(tracker.convert(x, y))
+		# print(tracker.convert(x, y))
 
+		print(x, y)
 while 1:
 	s, img = cam.read()
 	if s:    # frame captured without any errors

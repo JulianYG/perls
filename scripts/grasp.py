@@ -5,23 +5,28 @@ import sys
 import numpy as np
 
 from os.path import join as pjoin
-
 sys.path.append(os.path.abspath(pjoin(os.path.dirname(__file__), '../src/ros_')))
 
-from utils.uvc_tracker import Tracker
+from controller import Controller
+
+import rospy
+import intera_interface
 
 from robot import Robot
 
 rospy.init_node('track')
+
 limb = intera_interface.Limb('right')
+gripper = intera_interface.Gripper('right')
 limb.set_joint_position_speed(0.2)
-robot = Robot(limb, None)
+robot = Robot(limb, gripper)
 
-camera = UVCCamera(0, (1280, 720), _UK, _UD)
+ctrlr = Controller(robot, 
+	pjoin(os.path.dirname(__file__), '../tools/calib_data/Tracker_inverseRotation.p'),
+	pjoin(os.path.dirname(__file__), '../tools/calib_data/Tracker_translation.p'),
+	pjoin(os.path.dirname(__file__), '../tools/calib_data/Tracker_intrinsics.p'))
 
-tracker = Tracker(camera, robot, 
-	K=_UK, D=_UD, board_size=(9, 6), itermat=(9, 9), debug=False)
-
-tracker.match_eval()
-
+ctrlr.grasp_by_click()
+# ctrlr.grasp_by_color('blue red yellow')
+# ctrlr.stack()
 
