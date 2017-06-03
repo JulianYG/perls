@@ -25,7 +25,7 @@ JOINT_RANGE = [6.1, 6.1, 6.1, 6.1, 5.96, 5.96, 9.4]
 
 p.connect(p.GUI)
 sawyer = p.loadURDF('sawyer_robot/sawyer_description/urdf/sawyer_arm.urdf',
-	useFixedBase=1)
+	(0, 0, 0.9), useFixedBase=1)
 p.loadURDF('plane.urdf')
 
 for jointIndex in range(7):
@@ -43,10 +43,9 @@ rest_pose = {'right_j6': 3.3161, 'right_j5': 0.57, 'right_j4': 0,
 
 class VR(object):
 
-	def __init__(self, size=2048):
+	def __init__(self):
 		self.vr_initial_pos = None
 
-		self.cmd_queue = Queue.Queue(size)
 
 		limb = intera_interface.Limb('right')
 		gripper = intera_interface.Gripper('right')
@@ -64,9 +63,6 @@ class VR(object):
 		self.arm.set_init_positions(rest_pose)
 		# Release the gripper first
 		self.arm.slide_grasp(1)
-
-		# Enqueue initial joint positions
-		self.cmd_queue.put(rest_pose.values()[::-1])
 
 		# Initialize reference frame positions
 		self.arm_initial_pos = np.array(list(self.arm.get_tool_pose()[0]))
@@ -119,6 +115,8 @@ class VR(object):
 						sim_target_pos, (0, 1, 0, 0), lowerLimits=LOWER_LIMITS, 
 						upperLimits=UPPER_LIMITS, jointRanges=JOINT_RANGE, 
 						restPoses=REST_POSE, jointDamping=[0.1] * 7)
+
+		jpos = self.arm.get_joint_angles().values()[::-1]
 
 		for i in range(7):
 
