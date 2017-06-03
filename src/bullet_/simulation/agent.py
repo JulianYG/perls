@@ -2,6 +2,8 @@ import pybullet as p
 import numpy as np
 import sys, os
 from os.path import join as pjoin
+sys.path.append(os.path.abspath(pjoin(os.path.dirname(__file__))))
+
 
 from utils.enum import *
 from utils.classes import *
