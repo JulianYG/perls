@@ -219,6 +219,7 @@ class IKeyboard(CtrlInterface):
 		agent.set_virtual_controller(range(len(tools)))
 		control_map, _ = agent.create_control_mappings()
 		pseudo_event = {0: 0, 3: 0.0}
+
 		while True:
 			events = p.getKeyboardEvents()
 			self._keyboard_event_handler(events, agent, control_map, pseudo_event)	

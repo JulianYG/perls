@@ -9,7 +9,8 @@ class Sawyer(Robot):
 
 	def __init__(self, pos, fixed=False, enableForceSensor=False):
 		self.nDOF = 7
-		super(Sawyer, self).__init__(enableForceSensor)
+		super(Sawyer, self).__init__(enableForceSensor,
+			gripper_urdf='rethink_ee_description/urdf/right_end_effector.urdf')
 		self.FIX = fixed
 		# Set boundaries on kuka arm
 		self.LOWER_LIMITS = [-3.05, -3.82, -3.05, -3.05, -2.98, -2.98, -4.71]
@@ -19,6 +20,9 @@ class Sawyer(Robot):
 		self.MAX_FORCE = 500
 		self.arm_urdf = 'sawyer_robot/sawyer_description/urdf/sawyer_arm.urdf'
 		self.positions = [[0.45, ypos, 0.9] for ypos in pos]
+
+		self.GRIPPER_REST_POS = [0., 0.020833, 0., -0.020833, 0.]
+		self.GRIPPER_CLOZ_POS = [0., 0., 0., 0., 0.]
 
 	def _roll_map(self):
 		return lambda x: x

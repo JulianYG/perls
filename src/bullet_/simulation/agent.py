@@ -7,6 +7,7 @@ sys.path.append(os.path.abspath(pjoin(os.path.dirname(__file__))))
 
 from utils.enum import *
 from utils.classes import *
+from utils.helpers import get_distance
 from world import World
 
 class Tool(World):
@@ -50,6 +51,7 @@ class Tool(World):
 		Given (tool_id, joint_values) tuple, set the joints of tool with 
 		given values and specified control type. If the joint value is None,
 		the corresponding joint will remain previous state
+		TORQ_CTRL, VEL_CTRL
 		"""
 		pd, vd, f = 0.05, 1.0, self.MAX_FORCE
 		if not isinstance(tool_ids, list):
@@ -270,12 +272,13 @@ class PR2(Tool):
 
 class Robot(Tool):
 
-	def __init__(self, enableForceSensor):
+	def __init__(self, enableForceSensor, 
+		gripper_urdf='gripper/wsg50_one_motor_gripper_new_free_base.sdf'):
 
 		super(Robot, self).__init__(enableForceSensor)
 		self.THRESHOLD = 1.3
 		# Common type of grippers for all robots
-		self.gripper_urdf = 'gripper/wsg50_one_motor_gripper_new_free_base.sdf'
+		self.gripper_file = gripper_urdf
 
 		self.GRIPPER_REST_POS = [0., -0.011130, -0.206421, 0.205143, -0.009999, 0., -0.010055, 0.]
 		self.GRIPPER_CLOZ_POS = [0.0, -0.047564246423083795, 0.6855956234759611, 
@@ -416,7 +419,12 @@ class Robot(Tool):
 				pos, [0, 0, 0, 1], useFixedBase=True)
 			self.arms.append(arm_id)
 
-			gripper_id = p.loadSDF(self.gripper_urdf)[0]
+			df_format = self.gripper_file.split('.')[1]
+
+			if df_format == 'sdf':
+				gripper_id = p.loadSDF(self.gripper_file)[0]
+			else:
+				gripper_id = p.loadURDF(self.gripper_file, (0, 0, 0.9))
 			self.grippers.append(gripper_id)
 
 			self.name_dic[arm_id] = '{}_{}'.format(p.getBodyInfo(arm_id)[1], i)
@@ -433,8 +441,10 @@ class Robot(Tool):
 		# Setup constraints on grippers
 		for arm, gripper in zip(self.arms, self.grippers):
 			self.constraints.append(p.createConstraint(arm, self.nDOF - 1, 
-				gripper, 0, p.JOINT_FIXED, [0,0,0], [0,0,0.05], [0,0,0], 
-				parentFrameOrientation=[0, 0, 0, 1]))
+				# gripper, 0, p.JOINT_FIXED, [0,0,0], [0,0,0.05], [0,0,0], 
+				gripper, 0, p.JOINT_FIXED, [0,0,0], [0,0,0.195], [0,0,0], 
+				parentFrameOrientation=[0, 0, 0, 1],
+				childFrameOrientation=[0., 0, 0.707, 0.707]))
 		self.solo = len(self.arms) == 1
 
 	def _engage(self, robot, controller_event):
