@@ -5,7 +5,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/
 
 from gym_bullet.envs.bullet_env import BulletEnv
 import numpy as np
-from gym_bullet.wrappers import ik as module
 
 def execute(*args):
 

@@ -39,7 +39,8 @@ scene = _CONFIGS['scene']
 step_limit = _CONFIGS['step_limit']
 reward_thresh = _CONFIGS['reward_thresh']
 
-module = getattr(sys.modules[__name__], step_func)
+module = reduce(getattr, step_func.split("."), sys.modules[__name__])
+
 if agent == 'kuka':
 	# Change Fixed to True for keyboard
 	agent = Kuka(init_pos, fixed=fixed, enableForceSensor=force_sensor)
@@ -62,9 +63,10 @@ register(
 	entry_point='gym_bullet.envs:BulletEnv',
 	timestep_limit=step_limit,
 	reward_threshold=reward_thresh,
-	kwargs={'simulator': simulator, 'step_func': module.step_helper, 
-			'realTime': real_time, 'time_step': time_step,
-			'record': record, 'video': video}
+	kwargs={'simulator': simulator, 'reset_func': module.reset,
+			'step_func': module.step, 'realTime': real_time, 
+			'time_step': time_step, 'record': record, 
+			'video': video}
 )
 
 

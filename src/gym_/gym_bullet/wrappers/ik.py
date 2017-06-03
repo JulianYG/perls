@@ -1,7 +1,11 @@
 import numpy as np
 
+def reset(agent):
+
+	return [0.8, 0., 1.], (0, 1, 0, 0)
+
 # Make use of self.agent
-def step_helper(agent, action):	
+def step(agent, action):	
 	"""
 	User defined step_helper. Takes pybullet tool agent and action,
 	returns tuple of observation, reward, done status, and info.
@@ -9,8 +13,6 @@ def step_helper(agent, action):
 	""" 
 	# Define initial state
 	kuka = agent.get_tool_ids()[0]
-	if action == None:
-		return ([0.8, 0., 1.], (0, 1, 0, 0)), 0., False, {}
 
 	joint_states = agent.get_tool_joint_states(kuka)[0]
 	agent.reach(kuka, action[0], action[1], fixed=True, null_space=False, expedite=True)

@@ -1,0 +1,17 @@
+0,plane
+1,table.urdf
+2,sawyer_0
+3,right_end_effector_0
+4,jenga.urdf
+5,jenga.urdf
+6,jenga.urdf
+7,jenga.urdf
+8,jenga.urdf
+9,jenga.urdf
+10,cube.urdf
+11,cube.urdf
+12,urdf_robot
+13,cube.urdf
+14,cube.urdf
+15,urdf_robot
+16,cube.urdf
