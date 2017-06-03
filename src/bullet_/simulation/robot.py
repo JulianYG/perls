@@ -1,7 +1,7 @@
 import numpy as np
 import sys, os
 from os.path import join as pjoin
-sys.path.append(os.path.abspath(pjoin(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(pjoin(os.path.dirname(__file__))))
 
 from agent import Robot
 

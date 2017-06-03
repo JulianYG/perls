@@ -1,11 +1,11 @@
 {
-	"agent": "kuka",
+	"agent": "sawyer",
 	"task": "default", 
 	"scene": "basic",
 	"fixed_gripper_orn": true,
 
 	"enable_force_sensor": false,
-	"tool_positions": [0.3, -0.5],
+	"tool_positions": [0.2],
 	"record": false,
 	"video": false,
 	"gui": true,
@@ -15,7 +15,7 @@
 	"num_episodes": 1000,
 	"real_time": false,
 	"step_function": "ik",
-	"time_step": 0.01,
+	"time_step": 0.001,
 	"step_limit": 100000,
 	"reward_thresh": 1000
 }
