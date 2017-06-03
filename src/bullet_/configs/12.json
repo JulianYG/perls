@@ -1,0 +1,19 @@
+{
+	"interface": "vr", 
+	"agent": "sawyer",
+	"job": "replay", 
+	"video": false, 
+	"delay": 0.000, 
+	"task": "sortingCubes", 
+	"scene": "default",
+	"remote": false, 
+	"fixed_gripper_orn": false,
+	"server_ip": "172.24.68.111",
+	"enable_force_sensor": false,
+	"tool_positions": [-0.5],
+	"replay_file_name": "ajay_demo", 
+	"record_file_name": "ajay_demo",
+	"gui": true,
+
+	"camera": [0.8, -0.2, 1, 0, -90, 120, 1, 600, 540]
+}

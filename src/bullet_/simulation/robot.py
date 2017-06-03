@@ -18,13 +18,13 @@ class Sawyer(Robot):
 		self.REST_POSE = [0, -1.18, 0.00, 2.18, 0.00, 0.57, 3.3161]
 		self.MAX_FORCE = 500
 		self.arm_urdf = 'sawyer_robot/sawyer_description/urdf/sawyer_arm.urdf'
-		self.positions = [[0.3, ypos, 0.9] for ypos in pos]
+		self.positions = [[0.45, ypos, 0.9] for ypos in pos]
 
 	def _roll_map(self):
 		return lambda x: x
 
 	def _pitch_map(self):
-		return lambda x: x - np.pi / 2
+		return lambda x: x - np.pi / 4
 
 
 class Kuka(Robot):
