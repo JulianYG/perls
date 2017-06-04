@@ -8,6 +8,7 @@
 */ctrl*
 data
 0_*.txt
+*/0_*.txt
 */*.mp4
 */traj.*
 */ctrl.*
@@ -16,3 +17,5 @@ data
 */*.bin
 src/bullet_/log/*
 scripts/monitor
+monitor
+*/monitor

@@ -1,2 +1,0 @@
-0,plane
-1,table.urdf

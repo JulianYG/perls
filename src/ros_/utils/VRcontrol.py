@@ -1,5 +1,6 @@
 # !/usr/bin/env python
-import intera_interface.cfg.SawyerVelocityJointTrajectoryActionServerConfig as cfg
+import intera_interface.cfg.\
+    SawyerVelocityJointTrajectoryActionServerConfig as cfg
 import math
 import numpy as np
 

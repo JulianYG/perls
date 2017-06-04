@@ -1,18 +1,23 @@
 #!/usr/bin/env python
 
+__package__ = 'ros_'
+
 import time, os
 import sys
 import numpy as np
 
 from os.path import join as pjoin
-sys.path.append(os.path.abspath(pjoin(os.path.dirname(__file__), '../src/ros_')))
+path = os.path.abspath(os.getcwd()).rsplit('/')
+rpath = '/'.join(path[: path.index('perls') + 1])
+sys.path.append(pjoin(rpath, 'src'))
 
-from controller import Controller
+import ros_
+
+from .controller import Controller
+from .robot import Robot
 
 import rospy
 import intera_interface
-
-from robot import Robot
 
 rospy.init_node('track')
 

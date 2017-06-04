@@ -1,7 +1,0 @@
-calibration_: HybridCalibrator
-data:
-- transform
-- external_intrinsic
-- external_distortion
-- internal_intrinsic
-- internal_distortion

@@ -11,7 +11,6 @@ from matplotlib import pyplot as plt
 
 import sys, os
 from os.path import join as pjoin
-sys.path.append(os.path.abspath(pjoin(os.path.dirname(__file__), '../')))
 
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
@@ -22,8 +21,8 @@ import rosparam
 import intera_interface
 import time
 
-from camera import UVCCamera
-from robot import Robot
+from .camera import UVCCamera
+from .robot import Robot
 
 # USB Camera matrix 
 # dimension (640, 480)
@@ -262,22 +261,6 @@ class Tracker():
 				cv2.waitKey(1)
 			except KeyboardInterrupt:
 				cv2.destroyAllWindows()
-
-
-## Code to run calibration
-# rospy.init_node('track')
-# limb = intera_interface.Limb('right')
-# limb.set_joint_position_speed(0.2)
-# robot = Robot(limb, None)
-
-# camera = UVCCamera(0, (1280, 720), _UK, _UD)
-
-# tracker = Tracker(camera, robot, 
-# 	K=_UK, D=_UD, board_size=(9, 6), itermat=(9, 9), debug=False)
-
-# tracker.match_eval()
-
-
 
 
 

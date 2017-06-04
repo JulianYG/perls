@@ -1,17 +1,17 @@
 # /dev/video0
 import os, sys
 from os.path import join as pjoin
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../src/ros_/')))
+path = os.path.abspath(os.getcwd()).rsplit('/')
+rpath = '/'.join(path[: path.index('perls') + 1])
+sys.path.append(pjoin(rpath, 'src/ros_'))
 
 import cv2
 import numpy as np
 
-# initialize the camera
-
 from utils.uvc_tracker import Tracker 
 
+# initialize the camera
 cam = cv2.VideoCapture(0)   # 0 -> index of camera
-
 cam.set(3, 1280)
 cam.set(4, 720)
 
