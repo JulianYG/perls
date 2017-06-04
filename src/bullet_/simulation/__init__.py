@@ -1,3 +1,6 @@
-import os, sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
+from . import utils
+from . import arm
+from . import interface
+from . import simulator
+from . import tool
+from . import world

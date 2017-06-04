@@ -1,11 +1,12 @@
+
+__package__ = 'bullet_.simulation'
+
 import pybullet as p
 import numpy as np
 
-import sys, os
-from os.path import join as pjoin
-sys.path.append(os.path.abspath(pjoin(os.path.dirname(__file__))))
+import sys
 
-from utils import io
+from .utils import io
 
 class World(object):
 	"""

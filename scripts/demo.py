@@ -1,18 +1,19 @@
 import os, sys, getopt, json
 from os.path import join as pjoin
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/')))
+
+path = os.path.abspath(os.getcwd()).rsplit('/')
+sys.path.append(pjoin('/'.join(path[: path.index('perls') + 1]), 'src'))
 
 from bullet_ import simulation
-
-from simulation.tool import PR2
-from simulation.arm import Kuka, Sawyer
-from simulation.interface import IVR, IKeyboard, ICmd
-from simulation.simulator import BulletSimulator
-from simulation.utils import io
-
 from comm import db
 
-WORK_DIR = pjoin(os.getcwd(), '../src/bullet_')
+__package__ = 'bullet_.simulation'
+
+from .tool import PR2
+from .arm import Kuka, Sawyer
+from .interface import IVR, IKeyboard, ICmd
+from .simulator import BulletSimulator
+from .utils import io
 
 def render_simulator(agent, interface, task, filename, record=True, vr=False):
 	"""
@@ -37,6 +38,7 @@ def execute(*args):
 	Default load settings from command line execution. 
 	May need a configuration file for this purpose
 	"""
+	WORK_DIR = args[1]
 	TASK_DIR = pjoin(WORK_DIR, 'configs', 'task.json')
 	SCENE_DIR = pjoin(WORK_DIR, 'configs', 'scene.json')
 	CONFIG_DIR = pjoin(WORK_DIR, 'configs', args[0] + '.json')
@@ -125,7 +127,11 @@ def main(argv):
 			sys.exit(0)
 		elif opt in ('-c', '--config'):
 			config = arg
-	execute(config)
+
+	path = os.path.abspath(os.getcwd()).rsplit('/')
+	wd = pjoin('/'.join(path[: path.index('perls') + 1]), 'src/bullet_')
+
+	execute(config, wd)
 
 if __name__ == '__main__':
 	main(sys.argv[1:])

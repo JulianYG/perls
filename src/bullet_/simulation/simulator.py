@@ -1,14 +1,19 @@
+
+__package__ = 'bullet_.simulation'
+
 import pybullet as p
 import numpy as np
-import os, struct, time, sys
+
+import os, sys
+import struct, time
+
 from matplotlib import pyplot as plt
 from os.path import join as pjoin
-sys.path.append(os.path.abspath(pjoin(os.path.dirname(__file__))))
 
 from datetime import datetime
 from time import strftime
 
-from utils import io
+from .utils import io
 
 class BulletSimulator:
 

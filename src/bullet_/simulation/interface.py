@@ -1,12 +1,14 @@
-import pybullet as p
-import time, sys, os
-from os.path import join as pjoin
-sys.path.append(os.path.abspath(pjoin(os.path.dirname(__file__))))
+__package__ = 'bullet_.simulation'
 
-from utils import handler
-from utils.misc import Constant
+import pybullet as p
+import time, sys
+
 from numpy import array
 import numpy as np
+
+from .utils import handler
+from .utils.misc import Constant
+
 
 class CtrlInterface(object):
 	"""

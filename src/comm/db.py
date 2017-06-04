@@ -1,12 +1,13 @@
-import redis, sys, os
+__package__ = 'comm'
+
+import redis, sys
 if sys.version[0] == '2':
     from Queue import Queue as q
 else:
     from queue import Queue as q
-from os.path import join as pjoin
-sys.path.append(os.path.abspath(pjoin(os.path.dirname(__file__), '..')))
 
-from comm.core import Comm
+from .core import Comm
+
 from bullet_.simulation.utils.misc import Constant
 
 class RedisComm(Comm):

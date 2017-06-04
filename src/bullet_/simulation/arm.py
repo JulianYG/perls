@@ -1,13 +1,12 @@
+__package__ = 'bullet_.simulation'
+
 import numpy as np
 import pybullet as p
-import sys, os
-from os.path import join as pjoin
-sys.path.append(os.path.abspath(pjoin(os.path.dirname(__file__))))
 
-from utils import handler
-from utils.misc import Constant
+from .utils import handler
+from .utils.misc import Constant
 
-from tool import Tool
+from .tool import Tool
 
 class Arm(Tool):
 	def __init__(self, enableForceSensor,

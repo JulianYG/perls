@@ -1,13 +1,15 @@
+
+__package__ = 'bullet_.simulation'
+
 import pybullet as p
 import numpy as np
-import sys, os
-from os.path import join as pjoin
-sys.path.append(os.path.abspath(pjoin(os.path.dirname(__file__))))
 
-from world import World
+import sys
 
-from utils.misc import Constant
-from utils import handler, misc
+from .world import World
+
+from .utils.misc import Constant
+from .utils import handler, misc
 
 
 class Tool(World):
