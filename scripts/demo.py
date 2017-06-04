@@ -2,7 +2,7 @@ import os, sys, getopt, json
 from os.path import join as pjoin
 
 path = os.path.abspath(os.getcwd()).rsplit('/')
-sys.path.append(pjoin('/'.join(path[: path.index('perls') + 1]), 'src'))
+sys.path.append(pjoin('/'.join(rpath[: path.index('perls') + 1]), 'src'))
 
 from bullet_ import simulation
 from comm import db

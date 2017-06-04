@@ -1,20 +1,27 @@
+
 from collections import defaultdict
 import os, sys, getopt, json
 from os.path import join as pjoin
 
-bullet_path = pjoin(os.getcwd(), '../src/bullet_')
+path = os.path.abspath(os.getcwd()).rsplit('/')
+rpath = '/'.join(path[: path.index('perls') + 1])
+sys.path.append(pjoin(rpath, 'src'))
+
+from bullet_ import simulation
+from comm import db
+
+__package__ = 'bullet_.simulation'
+
+from .tool import PR2
+from .arm import Sawyer, Kuka
+from .interface import IVR, IKeyboard, ICmd
+from .simulator import BulletSimulator
+
+bullet_path = pjoin(rpath, 'src/bullet_')
 sys.path.append(bullet_path)
 TASK_DIR = pjoin(bullet_path, 'configs', 'task.json')
 SCENE_DIR = pjoin(bullet_path, 'configs', 'scene.json')
 RECORD_LOG_DIR = pjoin(bullet_path, 'log', 'record', 'trajectory')
-
-from simulation.tool import PR2
-from simulation.arm import Sawyer, Kuka
-from simulation.interface import IVR, IKeyboard, ICmd
-from simulation.simulator import BulletSimulator
-
-sys.path.append(pjoin(os.getcwd(), '../src'))
-from comm import db
 
 def execute():
 	"""
