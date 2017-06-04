@@ -1,16 +1,12 @@
 #!/usr/bin/env python
 
-import time, os
+import time
 import sys
 import numpy as np
 
-from os.path import join as pjoin
-
-sys.path.append(os.path.abspath(pjoin(os.path.dirname(__file__), '../src/ros_')))
-
-from utils.uvc_tracker import Tracker
-from utils.camera import UVCCamera
-from robot import Robot
+from .utils.uvc_tracker import Tracker
+from .utils.camera import UVCCamera
+from .robot import Robot
 
 import cv2
 import pickle

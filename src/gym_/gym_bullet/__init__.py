@@ -1,16 +1,22 @@
 import os, json, sys
 from os.path import join as pjoin
-from gym_bullet.wrappers import *
+from .wrappers import *
 from gym.envs.registration import register
 
-bullet_path = pjoin(os.getcwd(), '../src/bullet_')
-sys.path.append(bullet_path)
+path = os.path.abspath(os.getcwd()).rsplit('/')
+rpath = '/'.join(path[: path.index('perls') + 1])
+sys.path.append(pjoin(rpath, 'src'))
 
-from simulation.utils import io
-from simulation.simulator import BulletSimulator
+from bullet_ import simulation
 
-from simulation.arm import Sawyer, Kuka
+__package__ = 'bullet_.simulation'
 
+from .utils import io
+from .simulator import BulletSimulator
+
+from .arm import Sawyer, Kuka
+
+bullet_path = pjoin(rpath, 'src/bullet_')
 TASK_DIR = pjoin(bullet_path, 'configs', 'task.json')
 SCENE_DIR = pjoin(bullet_path, 'configs', 'scene.json')
 
@@ -19,7 +25,7 @@ with open(TASK_DIR, 'r') as f:
 with open(SCENE_DIR, 'r') as f:
 	scene_repo = json.loads(f.read())
 
-CONFIG_DIR = pjoin(os.getcwd(), '../src/gym_', 'config.json')
+CONFIG_DIR = pjoin(rpath, 'src/gym_/config.json')
 _CONFIGS = io.read_config(CONFIG_DIR)
 
 num_episodes = _CONFIGS['num_episodes']

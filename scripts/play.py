@@ -1,7 +1,9 @@
 import gym, sys
 import os
 from os.path import join as pjoin
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/gym_')))
+path = os.path.abspath(os.getcwd()).rsplit('/')
+rpath = '/'.join(path[: path.index('perls') + 1])
+sys.path.append(pjoin(rpath, 'src/gym_'))
 
 from gym_bullet.envs.bullet_env import BulletEnv
 import numpy as np
