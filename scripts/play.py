@@ -1,7 +1,7 @@
 import gym, sys
 import os
 from os.path import join as pjoin
-path = os.path.abspath(os.getcwd()).rsplit('/')
+path = os.path.split(os.path.abspath(os.getcwd()))
 rpath = '/'.join(path[: path.index('perls') + 1])
 sys.path.append(pjoin(rpath, 'src/gym_'))
 
@@ -33,12 +33,12 @@ def execute(*args):
 			task += 1
 			if done:
 				print("Episode finished after {} timesteps".format(task + 1))
-            	env.render(mode='segment')
-            	break
+				env.render(mode='segment')
+				break
 
 
 if __name__ == '__main__':
 	execute(sys.argv[1:])
 
-            	
+				
 

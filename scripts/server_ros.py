@@ -3,7 +3,7 @@ import redis
 import sys, os
 from os.path import join as pjoin
 
-path = os.path.abspath(os.getcwd()).rsplit('/')
+path = os.path.split(os.path.abspath(os.getcwd()))
 rpath = '/'.join(path[: path.index('perls') + 1])
 sys.path.append(pjoin(rpath, 'src'))
 

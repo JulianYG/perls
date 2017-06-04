@@ -3,7 +3,7 @@ from os.path import join as pjoin
 from .wrappers import *
 from gym.envs.registration import register
 
-path = os.path.abspath(os.getcwd()).rsplit('/')
+path = os.path.split(os.path.abspath(os.getcwd()))
 rpath = '/'.join(path[: path.index('perls') + 1])
 sys.path.append(pjoin(rpath, 'src'))
 
@@ -45,7 +45,11 @@ scene = _CONFIGS['scene']
 step_limit = _CONFIGS['step_limit']
 reward_thresh = _CONFIGS['reward_thresh']
 
-module = reduce(getattr, step_func.split("."), sys.modules[__name__])
+if sys.version[0] == '2':
+    module = reduce(getattr, step_func.split("."), sys.modules[__name__])
+else:
+    import functools
+    module = functools.reduce(getattr, step_func.split("."), sys.modules[__name__])
 
 if agent == 'kuka':
 	# Change Fixed to True for keyboard

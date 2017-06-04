@@ -69,7 +69,7 @@ class CtrlInterface(object):
 		elif isinstance(event, tuple) and len(event) == 2:
 			if event[0] is Constant.CTRL_HOOK and event[1]:
 				agent.set_virtual_controller(event[1])
-				print('Received controller IDs: {}'.format(agent.controllers))
+				# print('Received controller IDs: {}'.format(agent.controllers))
 			return 0
 		else:
 			# Add user interaction for task completion

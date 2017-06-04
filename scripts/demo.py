@@ -3,9 +3,9 @@
 import os, sys, getopt, json
 from os.path import join as pjoin
 
-path = os.path.abspath(os.getcwd()).rsplit('/')
-rpath = '/'.join(path[: path.index('perls') + 1])
-sys.path.append(pjoin(rpath, 'src'))
+path = os.path.split(os.path.abspath(os.getcwd()))
+PERLS = '/'.join(path[: path.index('perls') + 1])
+sys.path.append(pjoin(PERLS, 'src'))
 
 from comm import db
 from bullet_ import simulation
@@ -131,8 +131,7 @@ def main(argv):
 		elif opt in ('-c', '--config'):
 			config = arg
 
-	path = os.path.abspath(os.getcwd()).rsplit('/')
-	wd = pjoin('/'.join(path[: path.index('perls') + 1]), 'src/bullet_')
+	wd = pjoin(PERLS, 'src/bullet_')
 
 	execute(config, wd)
 

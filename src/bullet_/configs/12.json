@@ -1,7 +1,7 @@
 {
 	"interface": "vr", 
 	"agent": "sawyer",
-	"job": "replay", 
+	"job": "record", 
 	"video": false, 
 	"delay": 0.000, 
 	"task": "sortingCubes", 
