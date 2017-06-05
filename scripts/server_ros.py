@@ -18,7 +18,7 @@ import pybullet as p
 import Queue, time
 import numpy as np
 
-from bullet_.simulation.robot import Sawyer
+from bullet_.simulation.arm import Sawyer
 from bullet_.simulation.simulator import BulletSimulator
 
 REST_POSE = [0, -1.18, 0.00, 2.18, 0.00, 0.57, 3.3161]
