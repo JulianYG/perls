@@ -33,7 +33,7 @@ class BulletSimulator:
 		self.task = task
 		self.scene = scene
 		self._interface = interface
-		self.agent = agent
+		self.tool = agent
 		self.physics_server = None
 
 		log_dir = log_dir or pjoin(os.getcwd(), 'log')
@@ -51,10 +51,11 @@ class BulletSimulator:
 
 	def run_as_server(self, file='', record=False, video=False):
 		self._setup(0)
+		self.tool.setup_scene(self.scene, self.task, self.gui)
 		try:
 			if record:
 				self._record(file, video)
-			self._interface.communicate(self.agent, 
+			self._interface.communicate(self.tool, 
 				self.scene, self.task, self.gui)
 		except (KeyboardInterrupt, SystemExit) as e:
 			self.quit()		
@@ -69,6 +70,7 @@ class BulletSimulator:
 
 	def playback(self, file, delay=0.0001):
 		self._setup(1)
+		self.tool.setup_scene(self.scene, self.task, self.gui)
 		p.resetDebugVisualizerCamera(cameraDistance=self.FOCAL_LENGTH, 
 			cameraYaw=self.YAW, cameraPitch=self.PITCH, 
 			cameraTargetPosition=self.FOCAL_POINT)
@@ -122,8 +124,8 @@ class BulletSimulator:
 		if self.logIds:
 			for Id in self.logIds:
 				p.stopStateLogging(Id)
-		if self.agent:
-			self.agent.generate_body_info(pjoin(self.TRAJECTORY_LOG_DIR, 
+		if self.tool:
+			self.tool.generate_body_info(pjoin(self.TRAJECTORY_LOG_DIR, 
 				'body_info.txt'))
 		if self._interface:
 			self._interface.close()
@@ -201,6 +203,5 @@ class BulletSimulator:
 			else:
 				raise Exception('Cannot create pybullet GUI instance. Please try again.')
 		p.resetSimulation()
-		self.agent.setup_scene(self.scene, self.task, self.gui)
-
+		
 

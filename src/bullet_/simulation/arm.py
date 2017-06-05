@@ -10,6 +10,7 @@ from .utils.misc import Constant
 from .tool import Tool
 
 class Arm(Tool):
+
 	def __init__(self, enableForceSensor,
 				 gripper_file='gripper/wsg50_one_motor_gripper_new_free_base.sdf'):
 
@@ -155,7 +156,7 @@ class Arm(Tool):
 				raise handler.IllegalOperation(self.nDOF - 2)
 		return joint_pos
 
-	def _load_tools(self, positions):
+	def _load_tools(self, positions, reset):
 		# Gripper ID to arm ID
 		for i in range(len(positions)):
 
@@ -176,8 +177,9 @@ class Arm(Tool):
 			self.name_dic[gripper_id] = '{}_{}'.format(p.getBodyInfo(gripper_id)[1], i)
 
 		# Setup initial conditions for both arms
-		for arm in self.arms:
-			self._reset_robot(arm)
+		if reset:
+			for arm in self.arms:
+				self._reset_robot(arm)
 
 		# Setup initial conditions for both grippers
 		for gripper in self.grippers:

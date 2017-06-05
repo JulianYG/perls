@@ -1,44 +1,118 @@
 import numpy as np
+import os, sys
+from os.path import join as pjoin
+from .base import Wrapper
 
-def reset(agent):
-	"""
-	:return initial state
-	"""
+class VelocityControl(Wrapper):
 
-	return [0.8, 0., 1.], (0, 1, 0, 0)
+	def __init__(self, agent):
 
-# Make use of self.agent
-def step(agent, action):	
-	"""
-	User defined step_helper. Takes pybullet tool agent and action,
-	returns tuple of observation, reward, done status, and info.
-	A high level pybullet wrapper for the gym step function
+		super(VelocityControl, self).__init__(agent)
 
-	:return observation, reward, done, info
-	""" 
-	# Define initial state
-	kuka = agent.get_tool_ids()[0]
+	def reset(self, scene, task, gui):
+		"""
+		:return initial state
+		"""
+		self.agent.setup_scene(scene, task, gui, reset=True)
+		return self._get_states()
 
-	joint_states = agent.get_tool_joint_states(kuka)[0]
-	agent.reach(kuka, action[0], action[1], fixed=True, null_space=False, expedite=True)
+	# Make use of self.agent
+	def step(self, action):	
+		"""
+		User defined step_helper. Takes pybullet tool agent and action,
+		returns tuple of observation, reward, done status, and info.
+		A high level pybullet wrapper for the gym step function
+
+		:return observation, reward, done, info
+		""" 
+		arm = self.agent.get_tool_ids()[0]
+			
+		# 0 for velocity control
+		self.agent.set_tool_joint_states(arm, action, ctrl=0)
+		
+		state = self._get_states()
+		reached = False
+		if np.sqrt(np.sum((np.array(state[0])) ** 2)) < 2e-3:
+			reached = True
+
+		return state, 1., reached, {}
+
+
+class TorqueControl(Wrapper):
+
+	def __init__(self, agent):
+
+		super(TorqueControl, self).__init__(agent)
+
+	def reset(self, scene, task, gui):
+		"""
+		:return initial state
+		"""
+
+		# Reset false to enable torque control 
+		self.agent.setup_scene(scene, task, gui, reset=False)
+		return self._get_states()
+
+	def step(self, action):	
+		"""
+		User defined step_helper. Takes pybullet tool agent and action,
+		returns tuple of observation, reward, done status, and info.
+		A high level pybullet wrapper for the gym step function
+
+		:return observation, reward, done, info
+		""" 
+		arm = self.agent.get_tool_ids()[0]
+
+		# 1 stands for torque control
+		self.agent.set_tool_joint_states(arm, action, ctrl=1)
+
+		state = self._get_states()
+		reached = False
+		if np.sqrt(np.sum((np.array(state[0])) ** 2)) < 2e-4:
+			reached = True
+
+		return state, .1, reached, {}
+
+
+class PositionControl(Wrapper):
+
+	def __init__(self, agent):
+
+		super(PositionControl, self).__init__(agent)
+
+	def reset(self, scene, task, gui):
+		"""
+		:return initial state
+		"""
+		self.agent.setup_scene(scene, task, gui, reset=True)
+		return self._get_states()
+
+	def step(self, action):	
+		"""
+		User defined step_helper. Takes pybullet tool agent and action,
+		returns tuple of observation, reward, done status, and info.
+		A high level pybullet wrapper for the gym step function
+
+		:return observation, reward, done, info
+		""" 
+		arm = self.agent.get_tool_ids()[0]
 	
-	reached = False
-	eef_pos = agent.get_tool_pose(kuka)[0]
+		# Cheating to set correct joint positions without pi(s) = a		
+		goal = np.array([0.8, 0., 1.0])
+		import pybullet as p
+		cheat_action = p.calculateInverseKinematics(arm, 6,
+			goal, (0, 1, 0, 0), lowerLimits=self.agent.LOWER_LIMITS,
+			upperLimits=self.agent.UPPER_LIMITS, jointRanges=self.agent.JOINT_RANGE,
+			restPoses=self.agent.REST_POSE, jointDamping=self.agent.JOINT_DAMP)
 
-	if np.sqrt(np.sum((np.array(action[0])[:2] - np.array(eef_pos)[:2]) ** 2)) < 2e-5 and\
-		abs(action[0][2] - eef_pos[2]) < 0.025:
-		reached = True
+		# 2 for position control
+		# Note position gain high to push for accuracy
+		self.agent.set_tool_joint_states(arm, cheat_action, ctrl=2, positionGain=0.5)
 
-	return eef_pos, 1., reached, {}
+		state = self._get_states()
+		reached = False
+		if np.sqrt(np.sum((np.array(state[0])) ** 2)) < 2e-4:
+			reached = True
 
-# def init_weights():
-# 	# just fit the shape
-# 	# return np.random.random((2, 2))
-# 	return np.random.random((1, 3))
-
-# def predict(agent, weights):
-# 	# Simple matmul
-# 	pos = []
-# 	# return np.array(agent.get_tool_joint_states(kuka)).dot(weights)
-# 	return np.array([0.8, 0., 1.]), np.array([0, 1, 0, 0])
+		return state, 1., reached, {}
 

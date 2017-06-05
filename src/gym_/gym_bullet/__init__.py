@@ -32,7 +32,7 @@ num_episodes = _CONFIGS['num_episodes']
 agent = _CONFIGS['agent'] 
 real_time = _CONFIGS['real_time'] 
 task = _CONFIGS['task'] 
-step_func = _CONFIGS['step_function']
+wrapper = _CONFIGS['wrapper']
 fixed = _CONFIGS['fixed_gripper_orn']
 force_sensor = _CONFIGS['enable_force_sensor']
 init_pos = _CONFIGS['tool_positions']
@@ -46,10 +46,10 @@ step_limit = _CONFIGS['step_limit']
 reward_thresh = _CONFIGS['reward_thresh']
 
 if sys.version[0] == '2':
-    module = reduce(getattr, step_func.split("."), sys.modules[__name__])
+    module = reduce(getattr, wrapper.split("."), sys.modules[__name__])
 else:
     import functools
-    module = functools.reduce(getattr, step_func.split("."), sys.modules[__name__])
+    module = functools.reduce(getattr, wrapper.split("."), sys.modules[__name__])
 
 if agent == 'kuka':
 	# Change Fixed to True for keyboard
@@ -73,10 +73,9 @@ register(
 	entry_point='gym_bullet.envs:BulletEnv',
 	timestep_limit=step_limit,
 	reward_threshold=reward_thresh,
-	kwargs={'simulator': simulator, 'reset_func': module.reset,
-			'step_func': module.step, 'realTime': real_time, 
-			'time_step': time_step, 'record': record, 
-			'video': video}
-)
+	kwargs={'simulator': simulator, 'wrapper': module(agent),
+			'realTime': real_time, 'time_step': time_step, 
+			'record': record, 'video': video}
+	)
 
 

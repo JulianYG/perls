@@ -4,7 +4,7 @@
 	"scene": "basic",
 	"fixed_gripper_orn": true,
 
-	"enable_force_sensor": false,
+	"enable_force_sensor": true,
 	"tool_positions": [0.2],
 	"record": false,
 	"video": false,
@@ -14,7 +14,7 @@
 
 	"num_episodes": 1000,
 	"real_time": false,
-	"step_function": "ik",
+	"wrapper": "ik.TorqueControl",
 	"time_step": 0.001,
 	"step_limit": 100000,
 	"reward_thresh": 1000

@@ -59,6 +59,8 @@ class Tool(World):
 		pd, vd, f = 0.05, 1.0, self.MAX_FORCE
 		if not isinstance(tool_ids, list):
 			tool_ids = [tool_ids]
+
+		vals = np.reshape(vals, (len(tool_ids), self.nDOF))
 		assert len(tool_ids) == len(vals), \
 			'Specified tool ids not matching given joint values'
 
@@ -69,25 +71,30 @@ class Tool(World):
 
 		for tool_id, value in zip(tool_ids, vals):
 			num_joints = p.getNumJoints(tool_id)
+
 			assert num_joints == len(value), \
 				'Given tool not having right number of joints as given values'
 
 			for jointIndex in range(num_joints):
+				# Allow None or NaN in array
 				if not value[jointIndex]:
 					continue
+
 				if ctrl is Constant.VEL_CTRL:
 					p.setJointMotorControl2(tool_id, jointIndex, ctrl, 
 						targetVelocity=value[jointIndex], 
 						positionGain=pd, velocityGain=vd, force=f)
-					continue
-				if ctrl is Constant.TORQ_CTRL:
+
+				elif ctrl is Constant.TORQ_CTRL:
 					p.setJointMotorControl2(tool_id, jointIndex, ctrl,
-						positionGain=pd, velocityGain=vd, 
 						force=value[jointIndex])
-					continue
-				p.setJointMotorControl2(tool_id, jointIndex, ctrl,
-					targetPosition=value[jointIndex], targetVelocity=0, 
-					positionGain=pd, velocityGain=vd, force=f)
+				
+				elif ctrl is Constant.POS_CTRL:
+					p.setJointMotorControl2(tool_id, jointIndex, ctrl,
+						targetPosition=value[jointIndex], targetVelocity=0, 
+						positionGain=pd, velocityGain=vd, force=f)
+				else:
+					raise NotImplementedError('Unsupported control type')
 
 	def get_tool_joint_state(self, tool_joint_idx):
 		"""
@@ -189,7 +196,7 @@ class Tool(World):
 	def get_tool_pose(self, tool_id):
 		raise NotImplementedError('Each tool agent must re-implement this method.')
 
-	def _load_tools(self, pos):
+	def _load_tools(self, pos, reset):
 		raise NotImplementedError('Each tool agent must re-implement this method.')
 
 
@@ -260,15 +267,16 @@ class PR2(Tool):
 		p.setJointMotorControl2(gripper, 2, Constant.POS_CTRL, 
 			targetPosition=analog_slide, force=5.0)
 
-	def _load_tools(self, positions):
+	def _load_tools(self, positions, reset):
 
 		for i in range(len(positions)):
 			pos = positions[i]
 			pr2_gripper = p.loadURDF("pr2_gripper.urdf", pos, [0, 0, 0, 1])
 			# Setup the pr2_gripper
 			jointPositions = [0.550569, 0.000000, 0.549657, 0.000000]
-			for jointIndex in range(p.getNumJoints(pr2_gripper)):
-				p.resetJointState(pr2_gripper, jointIndex,jointPositions[jointIndex])
+			if reset:
+				for jointIndex in range(p.getNumJoints(pr2_gripper)):
+					p.resetJointState(pr2_gripper, jointIndex,jointPositions[jointIndex])
 
 			# Use -1 for the base, constrained within controller
 			pr2_cid = p.createConstraint(pr2_gripper, -1, -1, -1, p.JOINT_FIXED,

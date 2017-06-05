@@ -37,17 +37,18 @@ class World(object):
 		self.controllers = [e[0] for e in p.getVREvents()]
 		return 1
 
-	def setup_scene(self, scene, task, gui=True):
+	def setup_scene(self, scene, task, gui=True, reset=True):
 		self.init_control()
 		self._load_env(scene)
 		self.default_obj_cnt = p.getNumBodies()
-		self._load_tools(self.positions)
+		self._load_tools(self.positions, reset)
 		self._load_task(task)
 		self.loaded_obj = range(self.default_obj_cnt, p.getNumBodies())
 		p.setGravity(0, 0, -9.81)
-		if not gui:
-			for _ in range(100):
-				p.stepSimulation()
+
+		# Wait till reset finish, all joints on positions
+		for _ in range(1500):
+			p.stepSimulation()
 
 	def mark(self, text, position, color=[255,0,0], font_size=8, time=10):
 		try:

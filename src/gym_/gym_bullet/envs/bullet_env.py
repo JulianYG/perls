@@ -14,15 +14,14 @@ class BulletEnv(gym.Env):
 		'video.frames_per_second': 50
 	}
 
-	def __init__(self, simulator, reset_func, step_func, 
-		time_step, realTime, record, video):
+	def __init__(self, simulator, wrapper, time_step, 
+		realTime, record, video):
 
 	    self.simulator = simulator
-	    self.agent = simulator.agent
+	    self.agent = simulator.tool
 	    self.realTimeSimulation = realTime
 	    self._seed()
-	    self._reset_func = reset_func
-	    self._step_func = step_func
+	    self._wrapper = wrapper
 	    self.time_step = time_step
 	    # Setup simulator but not running
 	    self.simulator._setup(0)
@@ -46,11 +45,12 @@ class BulletEnv(gym.Env):
 		if not self.realTimeSimulation:
 			self.simulator.set_time_step(self.time_step)
 		self.tools = self.agent.get_tool_ids()
-		return self._reset_func(self.agent)
+		return self._wrapper.reset(self.simulator.scene,
+			self.simulator.task, self.simulator.gui)
 
 	def _step(self, action):
 		if not self.realTimeSimulation:
 			self.simulator.step_simulation()
-		return self._step_func(self.agent, action)
+		return self._wrapper.step(action)
 		
 
