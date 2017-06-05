@@ -19,6 +19,7 @@ class Tool(World):
 		super(Tool, self).__init__()
 		self.THRESHOLD = 1.3
 		self.FIX = True
+		self.close_grip = False
 		self.has_force_sensor = enableForceSensor
 
 	def set_force_sensor(self):
@@ -233,19 +234,23 @@ class PR2(Tool):
 		"""
 		A hard grip without analog slide.
 		"""
-		p.setJointMotorControl2(gripper, 0, Constant.POS_CTRL, 
-			targetPosition=0, force=5.0)
-		p.setJointMotorControl2(gripper, 2, Constant.POS_CTRL, 
-			targetPosition=0, force=5.0)
+		if not self.close_grip:
+			p.setJointMotorControl2(gripper, 0, Constant.POS_CTRL, 
+				targetPosition=0, force=5.0)
+			p.setJointMotorControl2(gripper, 2, Constant.POS_CTRL, 
+				targetPosition=0, force=5.0)
+			self.close_grip = True
 
 	def release(self, gripper):
 		"""
 		A forced release without analog slide.
 		"""
-		p.setJointMotorControl2(gripper, 0, Constant.POS_CTRL, 
-			targetPosition=self.gripper_max_joint, force=10)
-		p.setJointMotorControl2(gripper, 2, Constant.POS_CTRL, 
-			targetPosition=self.gripper_max_joint, force=10)
+		if self.close_grip:
+			p.setJointMotorControl2(gripper, 0, Constant.POS_CTRL, 
+				targetPosition=self.gripper_max_joint, force=10)
+			p.setJointMotorControl2(gripper, 2, Constant.POS_CTRL, 
+				targetPosition=self.gripper_max_joint, force=10)
+			self.close_grip = False
 
 	def slide_grasp(self, gripper, event):
 		# Setup gliders
@@ -275,7 +280,7 @@ class PR2(Tool):
 		self.solo = len(self.grippers) == 1
 
 	def _set_camera(self, uid):
-		p.resetDebugVisualizerCamera(0.4, 45, 90, 
+		p.resetDebugVisualizerCamera(0.4, 90, 45, 
 			p.getBasePositionAndOrientation(uid)[0])
 
 

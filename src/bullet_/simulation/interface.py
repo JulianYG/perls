@@ -7,7 +7,7 @@ from numpy import array
 import numpy as np
 
 from .utils import handler
-from .utils.misc import Constant
+from .utils.misc import Constant, Key
 
 
 class CtrlInterface(object):
@@ -238,61 +238,56 @@ class IKeyboard(CtrlInterface):
 			if e not in Constant.HOT_KEYS:
 				continue
 			if not agent.solo:
-				if e == 49 and (events[e] == p.KEY_IS_DOWN):
+				if Key.ONE(e) and (events[e] == p.KEY_IS_DOWN):
 					pseudo_event[0] = 0
-				elif e == 50 and (events[e] == p.KEY_IS_DOWN):
+				elif Key.TWO(e) and (events[e] == p.KEY_IS_DOWN):
 					pseudo_event[0] = 1
 
 			pseudo_event[2] = (0, 1, 0, 0)
 			pseudo_event[6] = {32: 1, 33: 0, 1: 0}
 
-			# Keyboard mappings:
-			# 1: 49  2: 50
-			# x: 120  y: 121 z: 122
-			# up: 65298 down: 65297 left: 65295 right: 65296
-			# c: 99 r: 114 o: 111
-
 			# Position control
-			if 120 in events and (events[120] == p.KEY_IS_DOWN):
-				if e == 65298 and (events[e] == p.KEY_IS_DOWN):
+			if Key.X in events and (events[Key.X] == p.KEY_IS_DOWN):
+				if Key.UP(e) and (events[e] == p.KEY_IS_DOWN):
 					self.pos[pseudo_event[0]][0] += 0.01
-				elif e == 65297 and (events[e] == p.KEY_IS_DOWN):
+				elif Key.DOWN(e) and (events[e] == p.KEY_IS_DOWN):
 					self.pos[pseudo_event[0]][0] -= 0.01
 
-			if 121 in events and (events[121] == p.KEY_IS_DOWN):
-				if e == 65296 and (events[e] == p.KEY_IS_DOWN):
+			if Key.Y in events and (events[Key.Y] == p.KEY_IS_DOWN):
+				if Key.LEFT(e) and (events[e] == p.KEY_IS_DOWN):
 					self.pos[pseudo_event[0]][1] += 0.01
-				if e == 65295 and (events[e] == p.KEY_IS_DOWN):
+				if Key.RIGHT(e) and (events[e] == p.KEY_IS_DOWN):
 					self.pos[pseudo_event[0]][1] -= 0.01	
 
-			if 122 in events and (events[122] == p.KEY_IS_DOWN):
-				if e == 65297 and (events[e] == p.KEY_IS_DOWN):
+			if Key.Z in events and (events[Key.Z] == p.KEY_IS_DOWN):
+				if Key.UP(e) and (events[e] == p.KEY_IS_DOWN):
 					self.pos[pseudo_event[0]][2] += 0.01 		
-				if e == 65298 and (events[e] == p.KEY_IS_DOWN):
+				if Key.DOWN(e) and (events[e] == p.KEY_IS_DOWN):
 					self.pos[pseudo_event[0]][2] -= 0.01
 
 			# Orientation control
-			if 111 in events and (events[111] == p.KEY_IS_DOWN):
-				if e == 65297 and (events[e] == p.KEY_IS_DOWN):
-					self.orn[pseudo_event[0]][1] -= 0.005
-				if e == 65298 and (events[e] == p.KEY_IS_DOWN):
-					self.orn[pseudo_event[0]][1] += 0.005
-				if e == 65295 and (events[e] == p.KEY_IS_DOWN):
-					self.orn[pseudo_event[0]][0] -= 0.005
-				if e == 65296 and (events[e] == p.KEY_IS_DOWN):
-					self.orn[pseudo_event[0]][0] += 0.005
+			if Key.O in events and (events[Key.O] == p.KEY_IS_DOWN):
+				if Key.PITCH_CCW(e) and (events[e] == p.KEY_IS_DOWN):
+					self.orn[pseudo_event[0]][1] -= 0.01
+				if Key.PITCH_CW(e) and (events[e] == p.KEY_IS_DOWN):
+					self.orn[pseudo_event[0]][1] += 0.01
+				if Key.ROLL_CCW(e) and (events[e] == p.KEY_IS_DOWN):
+					self.orn[pseudo_event[0]][0] -= 0.01
+				if Key.ROLL_CW(e) and (events[e] == p.KEY_IS_DOWN):
+					self.orn[pseudo_event[0]][0] += 0.01
 
 			# Gripper control
-			if 99 in events and (events[99] == p.KEY_IS_DOWN):
+			if Key.G in events and (events[Key.G] == p.KEY_IS_DOWN):
+				
 				# Using binary grippers for keyboard control
-				agent.grip(control_map[GRIPPER][pseudo_event[0]])
-				pseudo_event[3] = 1.0
-
-			if 114 in events and (events[114] == p.KEY_IS_DOWN):
-				# This for binary robot gripper
-				agent.release(control_map[GRIPPER][pseudo_event[0]])
-				# This for binary pr2 
-				pseudo_event[3] = 0.0
+				if agent.close_grip:
+					# This for binary robot gripper
+					agent.release(control_map[Constant.GRIPPER][pseudo_event[0]])
+					# This for binary pr2 
+					pseudo_event[3] = 0.0
+				else:
+					agent.grip(control_map[Constant.GRIPPER][pseudo_event[0]])
+					pseudo_event[3] = 1.0
 
 			# Update position
 			pseudo_event[1] = self.pos[pseudo_event[0]]

@@ -51,14 +51,18 @@ class Arm(Tool):
 			return -1
 
 	def grip(self, gripper):
-		for i in range(p.getNumJoints(gripper)):
-			p.setJointMotorControl2(gripper, i, Constant.POS_CTRL,
-									targetPosition=self.GRIPPER_CLOZ_POS[i], force=50)
+		if not self.close_grip:
+			for i in range(p.getNumJoints(gripper)):
+				p.setJointMotorControl2(gripper, i, Constant.POS_CTRL,
+										targetPosition=self.GRIPPER_CLOZ_POS[i], force=50)
+			self.close_grip = True
 
 	def release(self, gripper):
-		for i in range(p.getNumJoints(gripper)):
-			p.setJointMotorControl2(gripper, i, Constant.POS_CTRL,
-									targetPosition=self.GRIPPER_REST_POS[i], force=50)
+		if self.close_grip:
+			for i in range(p.getNumJoints(gripper)):
+				p.setJointMotorControl2(gripper, i, Constant.POS_CTRL,
+										targetPosition=self.GRIPPER_REST_POS[i], force=50)
+			self.close_grip = False
 
 	def slide_grasp(self, gripper, event):
 
@@ -250,7 +254,7 @@ class Sawyer(Arm):
 		return lambda x: x - np.pi / 4
 
 	def _set_camera(self, uid):
-		p.resetDebugVisualizerCamera(0.4, 30, -120, 
+		p.resetDebugVisualizerCamera(0.4, 60, -130, 
 			p.getBasePositionAndOrientation(uid)[0])
 
 
@@ -281,7 +285,7 @@ class Kuka(Arm):
 		return lambda x: -x
 
 	def _set_camera(self, uid):
-		p.resetDebugVisualizerCamera(0.4, 60, 90, 
+		p.resetDebugVisualizerCamera(0.9, 60, -15, 
 			p.getBasePositionAndOrientation(uid)[0])
 
 
