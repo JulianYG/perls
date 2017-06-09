@@ -52,6 +52,7 @@ class Arm(Tool):
 			return -1
 
 	def grip(self, gripper):
+
 		if not self.close_grip:
 			for i in range(p.getNumJoints(gripper)):
 				p.setJointMotorControl2(gripper, i, Constant.POS_CTRL,
@@ -245,8 +246,10 @@ class Sawyer(Arm):
 		self.arm_urdf = 'sawyer_robot/sawyer_description/urdf/sawyer_arm.urdf'
 		self.positions = [[0.45, ypos, 0.8] for ypos in pos]
 
-		self.GRIPPER_REST_POS = [0., 0.020833, 0., -0.020833, 0.]
-		self.GRIPPER_CLOZ_POS = [0., 0., 0., 0., 0.]
+		# self.GRIPPER_REST_POS = [0., 0.020833, 0., -0.020833, 0.]
+		# self.GRIPPER_CLOZ_POS = [0., 0., 0., 0., 0.]
+		self.GRIPPER_REST_POS = [0., 0.020833, -0.020833]
+		self.GRIPPER_CLOZ_POS = [0., -0., 0.]
 		self.ee_offset = 0.195
 
 	def _roll_map(self):

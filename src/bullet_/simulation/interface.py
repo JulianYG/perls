@@ -233,7 +233,7 @@ class IKeyboard(CtrlInterface):
 			time.sleep(0.01)
 
 	def _keyboard_event_handler(self, events, agent, control_map, pseudo_event):
-
+		
 		for e in (events):
 			if e not in Constant.HOT_KEYS:
 				continue
