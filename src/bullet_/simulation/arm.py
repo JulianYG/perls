@@ -233,7 +233,7 @@ class Sawyer(Arm):
 	def __init__(self, pos, fixed=False, enableForceSensor=False):
 		self.nDOF = 7
 		super(Sawyer, self).__init__(enableForceSensor,
-			gripper_file='rethink_ee_description/urdf/right_end_effector.urdf')
+			gripper_file='rethink_ee_description/urdf/electric_gripper/right_end_effector.urdf')
 		self.FIX = fixed
 
 		# Set boundaries on kuka arm
