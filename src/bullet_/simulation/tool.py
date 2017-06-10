@@ -288,7 +288,7 @@ class PR2(Tool):
 		self.solo = len(self.grippers) == 1
 
 	def _set_camera(self, uid):
-		p.resetDebugVisualizerCamera(0.4, 90, 45, 
+		p.resetDebugVisualizerCamera(0.4, 75, -40, 
 			p.getBasePositionAndOrientation(uid)[0])
 
 

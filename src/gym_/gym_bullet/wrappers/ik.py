@@ -14,7 +14,7 @@ class VelocityControl(Wrapper):
 		:return initial state
 		"""
 		self.agent.setup_scene(scene, task, gui, reset=True)
-		return self._get_states()
+		return self.states
 
 	# Make use of self.agent
 	def step(self, action):	
@@ -30,7 +30,7 @@ class VelocityControl(Wrapper):
 		# 0 for velocity control
 		self.agent.set_tool_joint_states(arm, action, ctrl=0)
 		
-		state = self._get_states()
+		state = self.states
 		reached = False
 		if np.sqrt(np.sum((np.array(state[0])) ** 2)) < 2e-3:
 			reached = True
@@ -51,7 +51,7 @@ class TorqueControl(Wrapper):
 
 		# Reset false to enable torque control 
 		self.agent.setup_scene(scene, task, gui, reset=False)
-		return self._get_states()
+		return self.states
 
 	def step(self, action):	
 		"""
@@ -66,7 +66,7 @@ class TorqueControl(Wrapper):
 		# 1 stands for torque control
 		self.agent.set_tool_joint_states(arm, action, ctrl=1)
 
-		state = self._get_states()
+		state = self.states
 		reached = False
 		if np.sqrt(np.sum((np.array(state[0])) ** 2)) < 2e-4:
 			reached = True
@@ -85,7 +85,7 @@ class PositionControl(Wrapper):
 		:return initial state
 		"""
 		self.agent.setup_scene(scene, task, gui, reset=True)
-		return self._get_states()
+		return self.states
 
 	def step(self, action):	
 		"""
@@ -109,7 +109,7 @@ class PositionControl(Wrapper):
 		# Note position gain high to push for accuracy
 		self.agent.set_tool_joint_states(arm, cheat_action, ctrl=2, positionGain=0.5)
 
-		state = self._get_states()
+		state = self.states
 		reached = False
 		if np.sqrt(np.sum((np.array(state[0])) ** 2)) < 2e-4:
 			reached = True

@@ -195,13 +195,12 @@ class BulletSimulator:
 			else:
 				p.setRealTimeSimulation(1)
 			
-			p.setInternalSimFlags(0)
 			# convenient for video recording
 		except p.error:
 			if self.vr:
 				raise Exception('Cannot detect running VR application. Please try again.')
 			else:
 				raise Exception('Cannot create pybullet GUI instance. Please try again.')
-		p.resetSimulation()
+		
 		
 
