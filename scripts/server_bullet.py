@@ -3,9 +3,9 @@ from collections import defaultdict
 import os, sys, getopt, json
 from os.path import join as pjoin
 
-path = os.path.split(os.path.abspath(os.getcwd()))
-rpath = '/'.join(path[: path.index('perls') + 1])
-sys.path.append(pjoin(rpath, 'src'))
+path = os.path.dirname(os.path.abspath(__file__))
+rpath = os.path.normpath(pjoin(path, '..'))
+sys.path.append(pjoin(path, '../src'))
 
 from bullet_ import simulation
 from comm import db

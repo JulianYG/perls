@@ -3,9 +3,9 @@ import redis
 import sys, os
 from os.path import join as pjoin
 
-path = os.path.split(os.path.abspath(os.getcwd()))
-rpath = '/'.join(path[: path.index('perls') + 1])
-sys.path.append(pjoin(rpath, 'src'))
+path = os.path.dirname(os.path.abspath(__file__))
+rpath = os.path.normpath(pjoin(path, '..'))
+sys.path.append(pjoin(path, '../src'))
 
 import rospy
 import intera_interface

@@ -18,7 +18,7 @@ class Tool(World):
 
 		super(Tool, self).__init__()
 		self.THRESHOLD = 1.3
-		self.FIX = True
+		self.FIX = False
 		self.close_grip = False
 		self.has_force_sensor = enableForceSensor
 
@@ -226,6 +226,7 @@ class PR2(Tool):
 		constraint_id = ctrl_map[Constant.CONSTRAINT][ctrl_id]
 		gripper_id = ctrl_map[Constant.GRIPPER][ctrl_id]
 		self._set_camera(gripper_id)
+
 		self.reach(constraint_id, event[1], event[2], fixed=False)
 		self.slide_grasp(gripper_id, event)
 		
@@ -233,7 +234,8 @@ class PR2(Tool):
 			event[1]) <= self.THRESHOLD * self.THRESHOLD else -1
 
 	def reach(self, tool_id, eef_pos, eef_orien, fixed, expedite=False):
-		# PR2 gripper follows VR controller, or keyboard		
+		# PR2 gripper follows VR controller, or keyboard
+
 		p.changeConstraint(tool_id, eef_pos, eef_orien,
 		 	maxForce=self.MAX_FORCE)
 
