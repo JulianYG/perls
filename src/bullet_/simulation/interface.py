@@ -82,11 +82,11 @@ class CtrlInterface(object):
 	def _signal_loop(self, signal, agent, control_map, obj_map):
 
 		# s = eval(signal)
-		if signal is SHUTDOWN_HOOK:
+		if signal is Constant.SHUTDOWN_HOOK:
 			raise KeyboardInterrupt('Server invokes shutdown')
-		elif signal is START_HOOK:
+		elif signal is Constant.START_HOOK:
 			print('Server is online')
-		elif isinstance(signal, tuple) and signal[0] is WARNING_HOOK:
+		elif isinstance(signal, tuple) and signal[0] is Constant.WARNING_HOOK:
 			agent.mark(*signal[1])
 		else:	
 			self._render_from_signal(agent, control_map, obj_map, signal)
@@ -102,17 +102,18 @@ class CtrlInterface(object):
 				if obj in agent.grippers:
 					# Change the gripper constraint if obj is pr2 gripper (move it)
 					if not agent.arms:
-						p.changeConstraint(control_map[CONSTRAINT][obj_map[GRIPPER][obj]], 
+						p.changeConstraint(
+							control_map[Constant.CONSTRAINT][obj_map[Constant.GRIPPER][obj]], 
 							pose[0], pose[1], maxForce=agent.MAX_FORCE)
 
 					# If robot arm instance, just set gripper close/release
 					# The same thing for pr2 gripper
-					agent.set_tool_joint_states([obj], [pose[2]], POS_CTRL)
+					agent.set_tool_joint_states([obj], [pose[2]], Constant.POS_CTRL)
 
 				if obj in agent.arms:
-					agent.set_tool_joint_states([obj], [pose[2]], POS_CTRL)
+					agent.set_tool_joint_states([obj], [pose[2]], Constant.POS_CTRL)
 
-	def _msg_wrapper(self, agent, obj_map, ctrl=POS_CTRL):
+	def _msg_wrapper(self, agent, obj_map, ctrl=Constant.POS_CTRL):
 
 		msg = {}
 		for ID in range(p.getNumBodies()):
@@ -121,11 +122,11 @@ class CtrlInterface(object):
 			# since each arm must have one gripper
 			if agent.arms:
 				# Use list to convert np.array cuz eval does not recognize array
-				if ID in obj_map[ARM] or ID in obj_map[GRIPPER]:
+				if ID in obj_map[Constant.ARM] or ID in obj_map[Constant.GRIPPER]:
 					# Sending over numpy array. Make sure the socket eval handles
 					msg[ID] += [agent.get_tool_joint_states(ID)[0][:, ctrl]]
 			if agent.grippers:
-				if ID in obj_map[GRIPPER]:
+				if ID in obj_map[Constant.GRIPPER]:
 					msg[ID] += [agent.get_tool_joint_states(ID)[0][:, ctrl]]
 
 		# print(sys.getsizeof(msg), 'message package size')
@@ -270,7 +271,7 @@ class IKeyboard(CtrlInterface):
 					self.orn = [[0,0,0],[0,0,0]]
 			if not gui:
 				p.stepSimulation()
-			
+
 			self.socket.broadcast_to_client(self._msg_wrapper(agent, obj_map))
 
 	def local_communicate(self, agent, gui=True):
