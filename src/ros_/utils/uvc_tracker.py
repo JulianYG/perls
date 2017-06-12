@@ -21,8 +21,9 @@ import rosparam
 import intera_interface
 import time
 
+
 from .camera import UVCCamera
-from .robot import Robot
+from ..robot import Robot
 
 # USB Camera matrix 
 # dimension (640, 480)

@@ -20,7 +20,7 @@ class Constant():
 	START_HOOK = 8
 	CTRL_HOOK = 9
 
-	HOT_KEYS = [32, 49, 50, 111, 120, 121, 122, 65295, 65296, 65297, 65298]
+	HOT_KEYS = [32, 49, 50, 120, 121, 122, 65295, 65296, 65297, 65298, 65306]
 
 
 class Key():
@@ -28,8 +28,10 @@ class Key():
 	X = 120
 	Y = 121
 	Z = 122
-	O = 111
+	S = p.B3G_SHIFT
 	G = 32
+	R = 100
+	CR = 102
 
 	@staticmethod
 	def ONE(e):
@@ -60,22 +62,5 @@ class Key():
 		return e == 32
 
 	@staticmethod
-	def PITCH_CCW(e):
-		return e == p.B3G_UP_ARROW
-
-	@staticmethod
-	def PITCH_CW(e):
-		return e == p.B3G_DOWN_ARROW
-
-	@staticmethod
-	def ROLL_CCW(e):
-		return e == p.B3G_LEFT_ARROW
-
-	@staticmethod
-	def ROLL_CW(e):
-		return e == p.B3G_RIGHT_ARROW
-
-	# up: 65298 down: 65297 left: 65295 right: 65296
-			# c: 99 r: 114 o: 111
-
-
+	def SHIFT(e):
+		return e == p.B3G_SHIFT

@@ -16,7 +16,8 @@ class Wrapper(object):
 	def reset(self, scene, task, gui):
 		raise NotImplementedError
 
-	def _get_states(self):
+	@property
+	def states(self):
 
 		"""
 		State defined as 14 DOF:

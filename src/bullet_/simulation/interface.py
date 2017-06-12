@@ -233,7 +233,7 @@ class IKeyboard(CtrlInterface):
 			time.sleep(0.01)
 
 	def _keyboard_event_handler(self, events, agent, control_map, pseudo_event):
-
+		
 		for e in (events):
 			if e not in Constant.HOT_KEYS:
 				continue
@@ -255,9 +255,9 @@ class IKeyboard(CtrlInterface):
 
 			if Key.Y in events and (events[Key.Y] == p.KEY_IS_DOWN):
 				if Key.LEFT(e) and (events[e] == p.KEY_IS_DOWN):
-					self.pos[pseudo_event[0]][1] += 0.01
+					self.pos[pseudo_event[0]][1] -= 0.01
 				if Key.RIGHT(e) and (events[e] == p.KEY_IS_DOWN):
-					self.pos[pseudo_event[0]][1] -= 0.01	
+					self.pos[pseudo_event[0]][1] += 0.01	
 
 			if Key.Z in events and (events[Key.Z] == p.KEY_IS_DOWN):
 				if Key.UP(e) and (events[e] == p.KEY_IS_DOWN):
@@ -266,15 +266,19 @@ class IKeyboard(CtrlInterface):
 					self.pos[pseudo_event[0]][2] -= 0.01
 
 			# Orientation control
-			if Key.O in events and (events[Key.O] == p.KEY_IS_DOWN):
-				if Key.PITCH_CCW(e) and (events[e] == p.KEY_IS_DOWN):
-					self.orn[pseudo_event[0]][1] -= 0.01
-				if Key.PITCH_CW(e) and (events[e] == p.KEY_IS_DOWN):
-					self.orn[pseudo_event[0]][1] += 0.01
-				if Key.ROLL_CCW(e) and (events[e] == p.KEY_IS_DOWN):
+			if Key.S in events and (events[Key.S] == p.KEY_IS_DOWN):
+				if Key.UP(e) and (events[e] == p.KEY_IS_DOWN):
+					self.orn[pseudo_event[0]][2] -= 0.01
+				if Key.DOWN(e) and (events[e] == p.KEY_IS_DOWN):
+					self.orn[pseudo_event[0]][2] += 0.01
+				if Key.LEFT(e) and (events[e] == p.KEY_IS_DOWN):
 					self.orn[pseudo_event[0]][0] -= 0.01
-				if Key.ROLL_CW(e) and (events[e] == p.KEY_IS_DOWN):
+				if Key.RIGHT(e) and (events[e] == p.KEY_IS_DOWN):
 					self.orn[pseudo_event[0]][0] += 0.01
+				if Key.R in events and (events[e] == p.KEY_IS_DOWN):
+					self.orn[pseudo_event[0]][1] -= 0.01
+				if Key.CR in events and (events[e] == p.KEY_IS_DOWN):
+					self.orn[pseudo_event[0]][1] += 0.01
 
 			# Gripper control
 			if Key.G in events and (events[Key.G] == p.KEY_IS_DOWN):
@@ -291,9 +295,11 @@ class IKeyboard(CtrlInterface):
 
 			# Update position
 			pseudo_event[1] = self.pos[pseudo_event[0]]
-			# Update orientation with limits
 
-			self.orn = [np.arcsin(np.sin(rad)) for rad in self.orn]
+			# Update orientation with limits
+			if hasattr(agent, 'UPPER_LIMITS') or hasattr(agent, 'LOWER_LIMITS'):
+				self.orn = [np.arcsin(np.sin(rad)) for rad in self.orn]
+
 			if not agent.FIX:
 				pseudo_event[2] = p.getQuaternionFromEuler(self.orn[pseudo_event[0]])
 

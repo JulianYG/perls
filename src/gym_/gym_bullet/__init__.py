@@ -3,8 +3,8 @@ from os.path import join as pjoin
 from .wrappers import *
 from gym.envs.registration import register
 
-path = os.path.split(os.path.abspath(os.getcwd()))
-rpath = '/'.join(path[: path.index('perls') + 1])
+path = os.path.dirname(os.path.abspath(__file__))
+rpath = os.path.normpath(pjoin(path, '../../..'))
 sys.path.append(pjoin(rpath, 'src'))
 
 from bullet_ import simulation

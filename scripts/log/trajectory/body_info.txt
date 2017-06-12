@@ -1,0 +1,19 @@
+0,plane
+1,table.urdf
+2,urdf_table
+3,Amazon Pod
+4,pr2_0
+5,pr2_1
+6,jenga.urdf
+7,jenga.urdf
+8,jenga.urdf
+9,jenga.urdf
+10,jenga.urdf
+11,jenga.urdf
+12,cube.urdf
+13,cube.urdf
+14,urdf_robot
+15,cube.urdf
+16,cube.urdf
+17,urdf_robot
+18,cube.urdf

@@ -52,6 +52,7 @@ class Arm(Tool):
 			return -1
 
 	def grip(self, gripper):
+
 		if not self.close_grip:
 			for i in range(p.getNumJoints(gripper)):
 				p.setJointMotorControl2(gripper, i, Constant.POS_CTRL,
@@ -188,7 +189,6 @@ class Arm(Tool):
 		# Setup constraints on grippers
 		for arm, gripper in zip(self.arms, self.grippers):
 			self.constraints.append(p.createConstraint(arm, self.nDOF - 1,
-													   # gripper, 0, p.JOINT_FIXED, [0,0,0], [0,0,0.05], [0,0,0],
 													   gripper, 0, p.JOINT_FIXED, [0, 0, 0], [0, 0, self.ee_offset],
 													   [0, 0, 0],
 													   parentFrameOrientation=[0, 0, 0, 1],
@@ -217,13 +217,11 @@ class Arm(Tool):
 
 	def _reset_robot(self, robot):
 		for jointIndex in range(p.getNumJoints(robot)):
-			# p.resetJointState(robot, jointIndex, self.REST_POSE[jointIndex])
 			p.setJointMotorControl2(robot, jointIndex, Constant.POS_CTRL,
 									self.REST_POSE[jointIndex], 0)
 
 	def _reset_robot_gripper(self, robot_gripper):
 		for jointIndex in range(p.getNumJoints(robot_gripper)):
-			# p.resetJointState(robot_gripper, jointIndex, self.GRIPPER_REST_POS[jointIndex])
 			p.setJointMotorControl2(robot_gripper, jointIndex,
 									Constant.POS_CTRL, self.GRIPPER_REST_POS[jointIndex], 0)
 
@@ -233,7 +231,7 @@ class Sawyer(Arm):
 	def __init__(self, pos, fixed=False, enableForceSensor=False):
 		self.nDOF = 7
 		super(Sawyer, self).__init__(enableForceSensor,
-			gripper_file='rethink_ee_description/urdf/right_end_effector.urdf')
+			gripper_file='rethink_ee_description/urdf/electric_gripper/right_end_effector.urdf')
 		self.FIX = fixed
 
 		# Set boundaries on kuka arm
@@ -245,8 +243,8 @@ class Sawyer(Arm):
 		self.arm_urdf = 'sawyer_robot/sawyer_description/urdf/sawyer_arm.urdf'
 		self.positions = [[0.45, ypos, 0.8] for ypos in pos]
 
-		self.GRIPPER_REST_POS = [0., 0.020833, 0., -0.020833, 0.]
-		self.GRIPPER_CLOZ_POS = [0., 0., 0., 0., 0.]
+		self.GRIPPER_REST_POS = [0., 0.020833, -0.020833]
+		self.GRIPPER_CLOZ_POS = [0., -0., 0.]
 		self.ee_offset = 0.195
 
 	def _roll_map(self):
@@ -278,7 +276,7 @@ class Kuka(Arm):
 		# Default joint damping is 0.1 for all joints
 		self.MAX_FORCE = 500
 		self.arm_urdf = 'kuka_iiwa/model_vr_limits.urdf'
-		self.positions = [[1.4, ypos, 0.6] for ypos in pos]
+		self.positions = [[1.4, ypos, 0.625] for ypos in pos]
 
 	def _roll_map(self):
 		return lambda x: x

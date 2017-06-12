@@ -38,6 +38,9 @@ class World(object):
 		return 1
 
 	def setup_scene(self, scene, task, gui=True, reset=True):
+		World.__init__(self)
+		p.setInternalSimFlags(0)
+		p.resetSimulation()
 		self.init_control()
 		self._load_env(scene)
 		self.default_obj_cnt = p.getNumBodies()
