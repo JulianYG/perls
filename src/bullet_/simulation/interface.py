@@ -215,15 +215,18 @@ class IKeyboard(CtrlInterface):
 	def client_communicate(self, agent, configs):
 
 		self.socket.connect_with_server()
-	
-		# p.connect(p.GUI)
-		# # Let the socket know controller IDs
 
+		# Let the socket know controller IDs
 		self.socket.broadcast_to_server(configs)
 
 		self.socket.broadcast_to_server(
 			(Constant.CTRL_HOOK, [0, 1])
 		)
+
+		if not agent.controllers:
+			tools = agent.get_tool_ids()
+			agent.set_virtual_controller(range(len(tools)))
+
 		control_map, obj_map = agent.create_control_mappings()
 		
 		while True:
@@ -237,7 +240,6 @@ class IKeyboard(CtrlInterface):
 			signal = self.socket.listen_to_server()
 			for s in signal:
 				s = eval(s)
-				print(s)
 				self._signal_loop(s, agent, control_map, obj_map)
 
 			time.sleep(0.01)
