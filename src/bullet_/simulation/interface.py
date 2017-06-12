@@ -31,7 +31,7 @@ class CtrlInterface(object):
 	def stop_remote_ctrl(self):
 		self.remote = False
 
-	def client_communicate(self, agent, task):
+	def client_communicate(self, agent):
 		raise NotImplementedError('Each interface must re-implement this method.')
 
 	def server_communicate(self, agent, scene, task, gui=True):
@@ -161,7 +161,7 @@ class ICmd(CtrlInterface):
 			if not gui:
 				p.stepSimulation()
 
-	def client_communicate(self):
+	def client_communicate(self, agent):
 
 		self.socket.connect_with_server()
 		
@@ -212,12 +212,15 @@ class IKeyboard(CtrlInterface):
 		super(IKeyboard, self).__init__(host, remote)
 		self.pos = []
 
-	def client_communicate(self):
+	def client_communicate(self, agent, configs):
 
 		self.socket.connect_with_server()
 	
-		p.connect(p.GUI)
-		# Let the socket know controller IDs
+		# p.connect(p.GUI)
+		# # Let the socket know controller IDs
+
+		self.socket.broadcast_to_server(configs)
+
 		self.socket.broadcast_to_server(
 			(Constant.CTRL_HOOK, [0, 1])
 		)
@@ -234,6 +237,7 @@ class IKeyboard(CtrlInterface):
 			signal = self.socket.listen_to_server()
 			for s in signal:
 				s = eval(s)
+				print(s)
 				self._signal_loop(s, agent, control_map, obj_map)
 
 			time.sleep(0.01)
@@ -383,7 +387,7 @@ class IVR(CtrlInterface):
 		# Default settings for camera
 		super(IVR, self).__init__(host, remote)
 
-	def client_communicate(self):
+	def client_communicate(self, agent):
 
 		self.socket.connect_with_server()
 

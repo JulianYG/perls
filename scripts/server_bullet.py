@@ -16,9 +16,11 @@ from .tool import PR2
 from .arm import Sawyer, Kuka
 from .interface import IVR, IKeyboard, ICmd
 from .simulator import BulletSimulator
+from .utils import build_util
 
 bullet_path = pjoin(rpath, 'src/bullet_')
-sys.path.append(bullet_path)
+# sys.path.append(bullet_path)
+
 TASK_DIR = pjoin(bullet_path, 'configs', 'task.json')
 SCENE_DIR = pjoin(bullet_path, 'configs', 'scene.json')
 RECORD_LOG_DIR = pjoin(bullet_path, 'log', 'record', 'trajectory')
@@ -28,7 +30,6 @@ def execute():
 	Default load settings from command line execution. 
 	May need a configuration file for this purpose
 	"""
-	
 	socket = db.RedisComm('localhost', port=6379)  # ip
 	socket.connect_with_client()
 
@@ -48,55 +49,10 @@ def execute():
 
 def run_server(config):
 
-	with open(TASK_DIR, 'r') as f:
-		task_repo = json.loads(f.read())
-	with open(SCENE_DIR, 'r') as f:
-		scene_repo = json.loads(f.read())
-
-	interface_type = config['interface']
-	agent = config['agent']
 	job = config['job']
-	video = config['video']
-	delay = config['delay']
-	task = config['task']
-	fixed = config['fixed_gripper_orn']
-	force_sensor = config['enable_force_sensor']
-	init_pos = config['tool_positions']
-	camera_info = config['camera']
-	gui = config['gui']
-	scene = config['scene']
 
-	record_file = config['record_file_name']
-	replay_file = config['replay_file_name']
+	simulator = build_util.build_by_config(config, bullet_path)
 
-	fn = record_file
-	if not record_file:
-		fn = '_'.join([interface_type, agent, task])
-
-	if agent == 'kuka':
-		# Change Fixed to True for keyboard
-		agent = Kuka(init_pos, fixed=fixed, enableForceSensor=force_sensor)
-	elif agent == 'sawyer':
-		agent = Sawyer(init_pos, fixed=fixed, enableForceSensor=force_sensor)
-	elif agent == 'pr2':
-		agent = PR2(init_pos, enableForceSensor=force_sensor)
-	else:
-		raise NotImplementedError('Invalid input: Model not recognized.')
-
-	host = db.RedisComm('localhost', port=6379)  # ip
-
-	if interface_type == 'vr':	# VR interface that takes VR events
-		interface = IVR(host, True)
-	elif interface_type == 'keyboard':	# Keyboard interface that takes keyboard events
-		interface = IKeyboard(host, True)
-	elif interface_type == 'cmd':	# Customized interface that takes any sort of command
-		interface = ICmd(host, True)
-	else:
-		raise NotImplementedError('Non-supported interface.')
-
-	simulator = BulletSimulator(agent, interface, 
-								task_repo[task], scene_repo[scene],
-								gui=gui)
 	if job == 'record':
 		simulator.run_as_server(fn, True, video)
 	elif job == 'replay':

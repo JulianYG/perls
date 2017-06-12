@@ -61,9 +61,11 @@ class BulletSimulator:
 			self.quit()		
 		return 0
 
-	def run_as_client(self):
+	def run_as_client(self, configs):
 		try:
-			self._interface.client_communicate()
+			self._setup(0)
+			self.tool.setup_scene(self.scene, self.task, self.gui)
+			self._interface.client_communicate(self.tool, configs)
 		except (KeyboardInterrupt, SystemExit) as e:
 			self.quit()
 		return 0
@@ -201,6 +203,5 @@ class BulletSimulator:
 				raise Exception('Cannot detect running VR application. Please try again.')
 			else:
 				raise Exception('Cannot create pybullet GUI instance. Please try again.')
-		
 		
 
