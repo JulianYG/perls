@@ -19,8 +19,6 @@ from .simulator import BulletSimulator
 from .utils import build_util
 
 bullet_path = pjoin(rpath, 'src/bullet_')
-# sys.path.append(bullet_path)
-
 TASK_DIR = pjoin(bullet_path, 'configs', 'task.json')
 SCENE_DIR = pjoin(bullet_path, 'configs', 'scene.json')
 RECORD_LOG_DIR = pjoin(bullet_path, 'log', 'record', 'trajectory')
@@ -51,13 +49,13 @@ def run_server(config):
 
 	job = config['job']
 
-	simulator = build_util.build_by_config(config, bullet_path)
+	simulator = build_util.build_by_config(config, bullet_path,
+		remote=True)
 
 	if job == 'record':
 		simulator.run_as_server(fn, True, video)
 	elif job == 'replay':
 		# Default view point setting
-		simulator.set_camera_view(*camera_info)
 		if os.path.isfile(pjoin(RECORD_LOG_DIR, replay_file)):
 			simulator.playback(fn, delay)
 		else:

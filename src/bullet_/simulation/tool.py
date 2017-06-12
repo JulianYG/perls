@@ -210,6 +210,7 @@ class PR2(Tool):
 		self.completed_task = {}
 		self.boxes = {}
 		self.positions = [[0.5, ypos, 0.7] for ypos in pos]
+		self.nDOF = 4
 
 	def get_tool_ids(self):
 		return self.grippers

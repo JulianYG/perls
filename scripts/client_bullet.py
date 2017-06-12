@@ -23,7 +23,7 @@ def run(*args):
 	_CONFIGS = io.read_config(CONFIG_DIR)
 
 	simulator = build_util.build_by_config(_CONFIGS, 
-		pjoin(rpath, 'src/bullet_'), remote=True)
+		pjoin(rpath, 'src/bullet_'), True)
 
 	try:
 		simulator.run_as_client(_CONFIGS)
