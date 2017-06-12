@@ -8,40 +8,26 @@ rpath = os.path.normpath(pjoin(path, '../../..'))
 sys.path.append(pjoin(rpath, 'src'))
 
 from bullet_ import simulation
-
 __package__ = 'bullet_.simulation'
 
-from .utils import io
-from .simulator import BulletSimulator
-
-from .arm import Sawyer, Kuka
+from .utils import io, build_util
 
 bullet_path = pjoin(rpath, 'src/bullet_')
-TASK_DIR = pjoin(bullet_path, 'configs', 'task.json')
-SCENE_DIR = pjoin(bullet_path, 'configs', 'scene.json')
-
-with open(TASK_DIR, 'r') as f:
-	task_repo = json.loads(f.read())
-with open(SCENE_DIR, 'r') as f:
-	scene_repo = json.loads(f.read())
 
 CONFIG_DIR = pjoin(rpath, 'src/gym_/config.json')
 _CONFIGS = io.read_config(CONFIG_DIR)
 
+# Simulator is only used for rendering
+# Since simulator is never run, it's ok to just pass None as interface
+simulator = build_util.build_by_config(_CONFIGS, bullet_path)
+
 num_episodes = _CONFIGS['num_episodes']
-agent = _CONFIGS['agent'] 
-real_time = _CONFIGS['real_time'] 
-task = _CONFIGS['task'] 
-wrapper = _CONFIGS['wrapper']
-fixed = _CONFIGS['fixed_gripper_orn']
-force_sensor = _CONFIGS['enable_force_sensor']
-init_pos = _CONFIGS['tool_positions']
-camera_info = _CONFIGS['camera']
-time_step = _CONFIGS['time_step']
-gui = _CONFIGS['gui']
+
 record = _CONFIGS['record']
 video = _CONFIGS['video']
-scene = _CONFIGS['scene']
+wrapper = _CONFIGS['wrapper']
+time_step = _CONFIGS['time_step']
+real_time = _CONFIGS['real_time'] 
 step_limit = _CONFIGS['step_limit']
 reward_thresh = _CONFIGS['reward_thresh']
 
@@ -51,29 +37,12 @@ else:
     import functools
     module = functools.reduce(getattr, wrapper.split("."), sys.modules[__name__])
 
-if agent == 'kuka':
-	# Change Fixed to True for keyboard
-	agent = Kuka(init_pos, fixed=fixed, enableForceSensor=force_sensor)
-elif agent == 'sawyer':
-	agent = Sawyer(init_pos, fixed=fixed, enableForceSensor=force_sensor)
-elif agent == 'pr2':
-	agent = PR2(init_pos, enableForceSensor=force_sensor)
-else:
-	raise NotImplementedError('Invalid input: Model not recognized.')
-
-# Simulator is only used for rendering
-# Since simulator is never run, it's ok to just pass None as interface
-simulator = BulletSimulator(agent, None, 
-	task_repo[task], scene_repo[scene], gui=gui,
-	log_dir=pjoin(os.getcwd(), 'monitor'))
-simulator.set_camera_view(*camera_info)
-
 register(
 	id='bullet-v0',
 	entry_point='gym_bullet.envs:BulletEnv',
 	timestep_limit=step_limit,
 	reward_threshold=reward_thresh,
-	kwargs={'simulator': simulator, 'wrapper': module(agent),
+	kwargs={'simulator': simulator, 'wrapper': module(simulator.tool),
 			'realTime': real_time, 'time_step': time_step, 
 			'record': record, 'video': video}
 	)
