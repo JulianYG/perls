@@ -79,6 +79,58 @@ class CtrlInterface(object):
 				task_monitor_handler(self.socket)
 			return 1
 
+	def _signal_loop(self, signal, agent, control_map, obj_map):
+
+		# s = eval(signal)
+		if signal is SHUTDOWN_HOOK:
+			raise KeyboardInterrupt('Server invokes shutdown')
+		elif signal is START_HOOK:
+			print('Server is online')
+		elif isinstance(signal, tuple) and signal[0] is WARNING_HOOK:
+			agent.mark(*signal[1])
+		else:	
+			self._render_from_signal(agent, control_map, obj_map, signal)
+
+	def _render_from_signal(self, agent, control_map, obj_map, signal):
+
+		# print(sys.getsizeof(signal), 'signal package size')
+		for obj, pose in signal.items():
+			if (obj not in agent.grippers) and (obj not in agent.arms):
+				p.resetBasePositionAndOrientation(obj, pose[0], pose[1])
+			else:
+				# Check if this is pr2 instance by checking arms (pr2 does not contain arms)
+				if obj in agent.grippers:
+					# Change the gripper constraint if obj is pr2 gripper (move it)
+					if not agent.arms:
+						p.changeConstraint(control_map[CONSTRAINT][obj_map[GRIPPER][obj]], 
+							pose[0], pose[1], maxForce=agent.MAX_FORCE)
+
+					# If robot arm instance, just set gripper close/release
+					# The same thing for pr2 gripper
+					agent.set_tool_joint_states([obj], [pose[2]], POS_CTRL)
+
+				if obj in agent.arms:
+					agent.set_tool_joint_states([obj], [pose[2]], POS_CTRL)
+
+	def _msg_wrapper(self, agent, obj_map, ctrl=POS_CTRL):
+
+		msg = {}
+		for ID in range(p.getNumBodies()):
+			msg[ID] = list(p.getBasePositionAndOrientation(ID)[:2])
+			# If containing arms, send back arm and gripper info
+			# since each arm must have one gripper
+			if agent.arms:
+				# Use list to convert np.array cuz eval does not recognize array
+				if ID in obj_map[ARM] or ID in obj_map[GRIPPER]:
+					# Sending over numpy array. Make sure the socket eval handles
+					msg[ID] += [agent.get_tool_joint_states(ID)[0][:, ctrl]]
+			if agent.grippers:
+				if ID in obj_map[GRIPPER]:
+					msg[ID] += [agent.get_tool_joint_states(ID)[0][:, ctrl]]
+
+		# print(sys.getsizeof(msg), 'message package size')
+		return msg
+
 
 class ICmd(CtrlInterface):
 
@@ -168,6 +220,7 @@ class IKeyboard(CtrlInterface):
 		self.socket.broadcast_to_server(
 			(Constant.CTRL_HOOK, [0, 1])
 		)
+		control_map, obj_map = agent.create_control_mappings()
 		
 		while True:
 			# Send to server
@@ -175,6 +228,13 @@ class IKeyboard(CtrlInterface):
 			# Make fake button events
 			event[6] = {1: 0}
 			self.socket.broadcast_to_server(event)
+
+			# Receive and render from server
+			signal = self.socket.listen_to_server()
+			for s in signal:
+				s = eval(s)
+				self._signal_loop(s, agent, control_map, obj_map)
+
 			time.sleep(0.01)
 
 	def server_communicate(self, agent, scene, task, gui=False):
@@ -210,8 +270,8 @@ class IKeyboard(CtrlInterface):
 					self.orn = [[0,0,0],[0,0,0]]
 			if not gui:
 				p.stepSimulation()
-
-			# self.socket.broadcast_to_client(self._msg_wrapper(agent, obj_map))
+			
+			self.socket.broadcast_to_client(self._msg_wrapper(agent, obj_map))
 
 	def local_communicate(self, agent, gui=True):
 		
