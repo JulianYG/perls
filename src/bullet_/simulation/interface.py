@@ -25,6 +25,7 @@ class CtrlInterface(object):
 		self.POSN = 1
 		self.AAX = 3
 		self.msg_holder = {}
+		self.control_id = None
 
 	def start_remote_ctrl(self):
 		self.remote = True
@@ -111,10 +112,11 @@ class CtrlInterface(object):
 
 					# If robot arm instance, just set gripper close/release
 					# The same thing for pr2 gripper
+					
 					agent.set_tool_joint_states([obj], [pose[2]], Constant.POS_CTRL)
 
 				if obj in agent.arms:
-					agent.set_tool_joint_states([obj], [pose[2]], Constant.POS_CTRL)
+					agent.set_tool_joint_states([obj], [pose], Constant.POS_CTRL)
 
 	def _msg_wrapper(self, tool_id, ids, agent, obj_map, ctrl=Constant.POS_CTRL):
 
@@ -246,12 +248,11 @@ class IKeyboard(CtrlInterface):
 				s = eval(s)
 				self._signal_loop(s, agent, control_map, obj_map)
 
-			# print(event)
-			# print(control_map)
-			p.resetDebugVisualizerCamera(0.4, 75, -40, 
-				p.getBasePositionAndOrientation(self.control_id)[0])
+			if self.control_id:
+				p.resetDebugVisualizerCamera(0.4, 75, -40, 
+					p.getBasePositionAndOrientation(self.control_id)[0])
 
-			# time.sleep(0.01)
+			time.sleep(0.005)
 
 	def server_communicate(self, agent, scene, task, gui=False):
 		
