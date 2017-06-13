@@ -112,7 +112,6 @@ class CtrlInterface(object):
 
 					# If robot arm instance, just set gripper close/release
 					# The same thing for pr2 gripper
-					
 					agent.set_tool_joint_states([obj], [pose[2]], Constant.POS_CTRL)
 
 				if obj in agent.arms:
