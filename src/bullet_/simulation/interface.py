@@ -95,7 +95,9 @@ class CtrlInterface(object):
 
 		# print(sys.getsizeof(signal), 'signal package size')
 		for obj, pose in signal.items():
-			if (obj not in agent.grippers) and (obj not in agent.arms):
+			if obj == -1:
+				self.control_id = pose
+			elif (obj not in agent.grippers) and (obj not in agent.arms):
 				p.resetBasePositionAndOrientation(obj, pose[0], pose[1])
 			else:
 				# Check if this is pr2 instance by checking arms (pr2 does not contain arms)
@@ -186,7 +188,7 @@ class ICmd(CtrlInterface):
 				s = eval(s)
 				self._signal_loop(s, agent, control_map, obj_map)
 
-			time.sleep(0.01)
+			# time.sleep(0.01)
 	# def local_communicate(self, agent, gui=True):
 
 	# 	link_info = agent.get_tool_link_states(-1)
@@ -238,11 +240,17 @@ class IKeyboard(CtrlInterface):
 
 			# Receive and render from server
 			signal = self.socket.listen_to_server()
+			
 			for s in signal:
 				s = eval(s)
 				self._signal_loop(s, agent, control_map, obj_map)
 
-			time.sleep(0.01)
+			# print(event)
+			# print(control_map)
+			p.resetDebugVisualizerCamera(0.4, 75, -40, 
+				p.getBasePositionAndOrientation(self.control_id)[0])
+
+			# time.sleep(0.01)
 
 	def server_communicate(self, agent, scene, task, gui=False):
 		
