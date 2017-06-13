@@ -298,7 +298,7 @@ class IKeyboard(CtrlInterface):
 				if i not in agent.arms and i not in agent.grippers:
 					orig_pos, orig_orn = self.msg_holder[i][:2]
 					pos, orn = p.getBasePositionAndOrientation(i)[:2]
-					if np.allclose(orig_pos, pos, rtol=1e-4) and np.allclose(orig_orn, orn, rtol=1e-4):
+					if np.allclose(orig_pos, pos, rtol=3e-5) and np.allclose(orig_orn, orn, rtol=3e-5):
 						continue
 					flow_lst.append(i)
 

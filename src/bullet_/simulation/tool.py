@@ -60,7 +60,7 @@ class Tool(World):
 		if not isinstance(tool_ids, list):
 			tool_ids = [tool_ids]
 
-		vals = np.reshape(vals, (len(tool_ids), self.nDOF))
+		vals = np.reshape(vals, (len(tool_ids), p.getNumJoints(tool_ids[0])))
 		assert len(tool_ids) == len(vals), \
 			'Specified tool ids not matching given joint values'
 
