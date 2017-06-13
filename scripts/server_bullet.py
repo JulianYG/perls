@@ -40,6 +40,7 @@ def execute():
 					# Make sure it's config
 					if isinstance(e, dict) and 'task' in e:
 						_CONFIGS = e
+			# del socket
 			run_server(_CONFIGS)
 	except KeyboardInterrupt:
 		socket.disconnect()
@@ -51,7 +52,7 @@ def run_server(config):
 
 	simulator = build_util.build_by_config(config, bullet_path,
 		remote=True)
-
+	simulator.gui = False
 	if job == 'record':
 		simulator.run_as_server(fn, True, video)
 	elif job == 'replay':

@@ -24,6 +24,7 @@ class CtrlInterface(object):
 		self.ORTN = 2
 		self.POSN = 1
 		self.AAX = 3
+		self.msg_holder = {}
 
 	def start_remote_ctrl(self):
 		self.remote = True
@@ -115,10 +116,10 @@ class CtrlInterface(object):
 				if obj in agent.arms:
 					agent.set_tool_joint_states([obj], [pose[2]], Constant.POS_CTRL)
 
-	def _msg_wrapper(self, agent, obj_map, ctrl=Constant.POS_CTRL):
+	def _msg_wrapper(self, tool_id, ids, agent, obj_map, ctrl=Constant.POS_CTRL):
 
-		msg = {}
-		for ID in range(p.getNumBodies()):
+		msg = {-1: tool_id}
+		for ID in ids:
 			msg[ID] = list(p.getBasePositionAndOrientation(ID)[:2])
 			# If containing arms, send back arm and gripper info
 			# since each arm must have one gripper
@@ -266,6 +267,11 @@ class IKeyboard(CtrlInterface):
 		self.orn = [[0,0,0],[0,0,0]]
 		pseudo_event = {0: 0, 3: 0.0, 6: {1: 0}}
 
+		curr_tool_id = control_map[Constant.GRIPPER][pseudo_event[0]]
+
+		# First include entire scene
+		self.msg_holder = self._msg_wrapper(curr_tool_id, range(p.getNumBodies()), agent, obj_map)
+
 		while True:
 			# if agent.controllers:
 			events = self.socket.listen_to_client()
@@ -286,7 +292,17 @@ class IKeyboard(CtrlInterface):
 			if not gui:
 				p.stepSimulation()
 
-			self.socket.broadcast_to_client(self._msg_wrapper(agent, obj_map))
+			curr_tool_id = control_map[Constant.GRIPPER][pseudo_event[0]]
+
+			flow_lst = self.arms + self.grippers
+			for i in range(p.getNumBodies()):
+				orig_pos, orig_orn = self.msg_holder[i][:2]
+				pos, orn = p.getBasePositionAndOrientation(i)[:2]
+				if np.allclose(orig_pos, pos, rtol=1e-4) and np.allclose(orig_orn, orn, rtol=1e-4):
+					continue
+				flow_lst.append(i)
+
+			self.socket.broadcast_to_client(self._msg_wrapper(curr_tool_id, flow_lst, agent, obj_map))
 
 	def local_communicate(self, agent, gui=True):
 		
