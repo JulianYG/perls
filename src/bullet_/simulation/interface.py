@@ -116,19 +116,18 @@ class CtrlInterface(object):
 
 	def _msg_wrapper(self, tool_id, ids, agent, obj_map, ctrl=Constant.POS_CTRL):
 
-		msg = {-1: tool_id}
+		msg = {-1: int(tool_id)}
 		for ID in ids:
-			msg[ID] = list(p.getBasePositionAndOrientation(ID)[:2])
 			# If containing arms, send back arm and gripper info
 			# since each arm must have one gripper
-			if agent.arms:
-				# Use list to convert np.array cuz eval does not recognize array
-				if ID in obj_map[Constant.ARM] or ID in obj_map[Constant.GRIPPER]:
-					# Sending over numpy array. Make sure the socket eval handles
-					msg[ID] += [agent.get_tool_joint_states(ID)[0][:, ctrl]]
-			if agent.grippers:
-				if ID in obj_map[Constant.GRIPPER]:
-					msg[ID] += [agent.get_tool_joint_states(ID)[0][:, ctrl]]
+			if agent.grippers and ID in obj_map[Constant.GRIPPER]:
+				msg[int(ID)] = list(p.getBasePositionAndOrientation(ID)[:2]) + \
+								[agent.get_tool_joint_states(ID)[0][:, ctrl]]
+
+			elif agent.arms and ID in obj_map[Constant.ARM]:
+				msg[int(ID)] = agent.get_tool_joint_states(ID)[0][:, ctrl]
+			else:
+				msg[int(ID)] = list(p.getBasePositionAndOrientation(ID)[:2])
 
 		# print(sys.getsizeof(msg), 'message package size')
 		return msg
@@ -286,13 +285,14 @@ class IKeyboard(CtrlInterface):
 
 			curr_tool_id = control_map[Constant.GRIPPER][pseudo_event[0]]
 
-			flow_lst = self.arms + self.grippers
+			flow_lst = agent.arms + agent.grippers
 			for i in range(p.getNumBodies()):
-				orig_pos, orig_orn = self.msg_holder[i][:2]
-				pos, orn = p.getBasePositionAndOrientation(i)[:2]
-				if np.allclose(orig_pos, pos, rtol=1e-4) and np.allclose(orig_orn, orn, rtol=1e-4):
-					continue
-				flow_lst.append(i)
+				if i not in agent.arms and i not in agent.grippers:
+					orig_pos, orig_orn = self.msg_holder[i][:2]
+					pos, orn = p.getBasePositionAndOrientation(i)[:2]
+					if np.allclose(orig_pos, pos, rtol=1e-4) and np.allclose(orig_orn, orn, rtol=1e-4):
+						continue
+					flow_lst.append(i)
 
 			self.socket.broadcast_to_client(self._msg_wrapper(curr_tool_id, flow_lst, agent, obj_map))
 
