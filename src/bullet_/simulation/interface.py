@@ -415,11 +415,12 @@ class IVR(CtrlInterface):
 		# Default settings for camera
 		super(IVR, self).__init__(host, remote)
 
-	def client_communicate(self, agent):
+	def client_communicate(self, agent, configs):
 
 		self.socket.connect_with_server()
+		self.socket.broadcast_to_server(configs)
 
-		p.connect(p.SHARED_MEMORY)
+		control_map, obj_map = agent.create_control_mappings()
 		
 		while True:
 			# Let the socket know controller IDs
@@ -430,6 +431,16 @@ class IVR(CtrlInterface):
 			events = p.getVREvents()
 			for event in (events):
 				self.socket.broadcast_to_server(event)
+
+			signal = self.socket.listen_to_server()
+			
+			for s in signal:
+				s = eval(s)
+				self._signal_loop(s, agent, control_map, obj_map)
+
+			if self.control_id:
+				p.resetDebugVisualizerCamera(0.4, 75, -40, 
+					p.getBasePositionAndOrientation(self.control_id)[0])
 			time.sleep(0.001)
 
 	def server_communicate(self, agent, scene, task, gui=False):
