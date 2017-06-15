@@ -119,7 +119,9 @@ class CtrlInterface(object):
 
 	def _msg_wrapper(self, tool_id, ids, agent, obj_map, ctrl=Constant.POS_CTRL):
 
-		msg = {-1: int(tool_id)}
+		msg = {}
+		if tool_id:
+			msg[-1] = int(tool_id)
 		for ID in ids:
 			# If containing arms, send back arm and gripper info
 			# since each arm must have one gripper
@@ -446,6 +448,9 @@ class IVR(CtrlInterface):
 
 		skip_flag = agent.redundant_control()
 
+		# First include entire scene
+		self.msg_holder = self._msg_wrapper(None, range(p.getNumBodies()), agent, obj_map)
+
 		while True:
 			events = self.socket.listen_to_client()
 			for event in events:
@@ -463,6 +468,19 @@ class IVR(CtrlInterface):
 					raise KeyboardInterrupt
 			if not gui:
 				p.stepSimulation()
+
+
+			flow_lst = agent.arms + agent.grippers
+			for i in range(p.getNumBodies()):
+				if i not in agent.arms and i not in agent.grippers:
+					orig_pos, orig_orn = self.msg_holder[i][:2]
+					pos, orn = p.getBasePositionAndOrientation(i)[:2]
+					if np.allclose(orig_pos, pos, rtol=3e-5) and np.allclose(orig_orn, orn, rtol=3e-5):
+						continue
+					flow_lst.append(i)
+
+			self.socket.broadcast_to_client(self._msg_wrapper(None, flow_lst, agent, obj_map))
+
 
 	def local_communicate(self, agent, gui=True):
 		control_map, _ = agent.create_control_mappings()
