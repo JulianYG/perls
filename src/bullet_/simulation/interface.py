@@ -271,7 +271,8 @@ class IKeyboard(CtrlInterface):
 		curr_tool_id = control_map[Constant.GRIPPER][pseudo_event[0]]
 
 		# First include entire scene
-		self.msg_holder = self._msg_wrapper(curr_tool_id, range(p.getNumBodies()), agent, obj_map)
+		self.msg_holder = self._msg_wrapper(curr_tool_id, 
+			range(p.getNumBodies()), agent, obj_map)
 
 		while True:
 			# if agent.controllers:
@@ -300,11 +301,13 @@ class IKeyboard(CtrlInterface):
 				if i not in agent.arms and i not in agent.grippers:
 					orig_pos, orig_orn = self.msg_holder[i][:2]
 					pos, orn = p.getBasePositionAndOrientation(i)[:2]
-					if np.allclose(orig_pos, pos, rtol=3e-5) and np.allclose(orig_orn, orn, rtol=3e-5):
+					if np.allclose(orig_pos, pos, rtol=3e-5) and np.allclose(orig_orn, 
+						orn, rtol=3e-5):
 						continue
 					flow_lst.append(i)
 
-			self.socket.broadcast_to_client(self._msg_wrapper(curr_tool_id, flow_lst, agent, obj_map))
+			self.socket.broadcast_to_client(self._msg_wrapper(curr_tool_id, 
+				flow_lst, agent, obj_map))
 
 	def local_communicate(self, agent, gui=True):
 		
