@@ -85,9 +85,6 @@ class VR(object):
 		e = eval(msg['data'])
 		pos, orn = e[1], e[2]
 
-		if self.vr_initial_pos is None:
-			self.vr_initial_pos = pos
-
 		# control the gripper
 		if e[6][33] & p.VR_BUTTON_WAS_TRIGGERED:
 			self.arm.slide_grasp(0)
@@ -98,52 +95,56 @@ class VR(object):
 			self.vr_initial_pos = np.array(list(e[1]))
 			self.controller.put_item(rest_pose.values()[::-1])
 
-		rel_pos = np.array(pos) - np.array(self.vr_initial_pos)
-
-		if np.sum(rel_pos ** 2) >= 2.0:
-			print(rel_pos, 'wrong o')
-			return
-
-		self.arm_target_pos = self.arm_initial_pos + rel_pos
-
-		# Use pybullet for now...
-		sim_target_pos = sim_initial_pos + rel_pos
-
-		t = time.time() - self.prev_time
-
-		self.arm_joint_pos = list(p.calculateInverseKinematics(sawyer, 6, 
-						sim_target_pos, (0, 1, 0, 0), lowerLimits=LOWER_LIMITS, 
-						upperLimits=UPPER_LIMITS, jointRanges=JOINT_RANGE, 
-						restPoses=REST_POSE, jointDamping=[0.1] * 7))
-
-		jpos = self.arm.get_joint_angles().values()[::-1]
-
-		if not FIXED:
-			x, y, _ = p.getEulerFromQuaternion(orn)
-
-			self.arm_joint_pos[5] = np.clip(x, LOWER_LIMITS[5], UPPER_LIMITS[5])
-			self.arm_joint_pos[6] = np.clip(y, LOWER_LIMITS[6], UPPER_LIMITS[6])
-
-		for i in range(7):
-
-			p.setJointMotorControl2(sawyer,
-				i,
-				p.POSITION_CONTROL,
-				targetVelocity = 0,
-				targetPosition=self.arm_joint_pos[i],
-				force = 500, 
-				positionGain=0.05,
-				velocityGain = 1.)
-
 		if e[6][32] & p.VR_BUTTON_IS_DOWN:
-			print('ha')
-			# self.controller.put_item((self.arm_joint_pos, t))
+			self.vr_initial_pos = pos
+
+			rel_pos = np.array(pos) - np.array(self.vr_initial_pos)
+
+			if np.sum(rel_pos ** 2) >= 2.0:
+				print(rel_pos, 'wrong o')
+				return
+
+			self.arm_target_pos = self.arm_initial_pos + rel_pos
+
+			# Use pybullet for now...
+			sim_target_pos = sim_initial_pos + rel_pos
+
+			t = time.time() - self.prev_time
+
+			self.arm_joint_pos = list(p.calculateInverseKinematics(sawyer, 6, 
+							sim_target_pos, (0, 1, 0, 0), lowerLimits=LOWER_LIMITS, 
+							upperLimits=UPPER_LIMITS, jointRanges=JOINT_RANGE, 
+							restPoses=REST_POSE, jointDamping=[0.1] * 7))
+
+			jpos = self.arm.get_joint_angles().values()[::-1]
+
+			if not FIXED:
+				x, y, _ = p.getEulerFromQuaternion(orn)
+
+				self.arm_joint_pos[5] = np.clip(x, LOWER_LIMITS[5], UPPER_LIMITS[5])
+				self.arm_joint_pos[6] = np.clip(y, LOWER_LIMITS[6], UPPER_LIMITS[6])
+
+			for i in range(7):
+
+				p.setJointMotorControl2(sawyer,
+					i,
+					p.POSITION_CONTROL,
+					targetVelocity = 0,
+					targetPosition=self.arm_joint_pos[i],
+					force = 500, 
+					positionGain=0.05,
+					velocityGain = 1.)
+
+
+			self.controller.put_item((self.arm_joint_pos, t))
+
+			self.prev_time = time.time()
 
 		if e[6][32] & p.VR_BUTTON_WAS_RELEASED:
-			# self.vr_initial_pos = pos
+			
 			print('ya')
 
-		self.prev_time = time.time()
+		
 
 def run():
 	vr = VR()
