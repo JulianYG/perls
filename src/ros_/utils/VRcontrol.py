@@ -95,7 +95,7 @@ class RobotController(object):
         self.control_durations = [None, None]
 
         # reset to base position
-        self.reset()
+        # self.reset()
 
         ### Redis setup for accepting commands over a Redis channel. ###
         # self.redis_interface = redis.StrictRedis(host=redis_host, port=redis_port, db=redis_db)
@@ -110,6 +110,9 @@ class RobotController(object):
 
         # this is used to remember the velocity from the last minjerk update
         self.v_mj = np.zeros(self.num_joints)
+
+        # break state
+        self.break_state = False
 
     def _redis_handler(self, message):
         """
@@ -127,7 +130,17 @@ class RobotController(object):
         """
         This function just resets the arm to the rest position.
         """
-        self.limb.move_to_neutral()
+        self.control_points = [None, None, None]
+        self.control_durations = [None, None]
+        self.command_queue = Queue(maxsize=3)
+        self.v_mj = np.zeros(self.num_joints)
+
+        # wait for control loop to terminate
+        self.break_state = True
+        while self.break_state:
+            pass
+
+        # self.limb.move_to_neutral()
 
     def _minjerk_computation(self):
         """
@@ -382,6 +395,10 @@ class RobotController(object):
 
         while True:
 
+            if self.break_state:
+                self.break_state = False
+                return  
+
             # if no new points, maintain current position by writing 0 to all joint velocities
             if self.command_queue.empty():
                 self.limb.set_joint_velocities(dict(zip(self.joint_names, [0.0] * self.num_joints)))
@@ -449,6 +466,10 @@ class RobotController(object):
                 # print('haha')
                 # enforce the control rate
                 control_rate.sleep()
+
+                if self.break_state:
+                    self.break_state = False
+                    return
 
 
 

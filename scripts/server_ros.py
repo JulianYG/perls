@@ -102,13 +102,14 @@ class VR(object):
 		if e[6][32] & p.KEY_WAS_TRIGGERED:
 			self.vr_initial_pos = pos
 			self.engaged = True
-			self.controller.reset()
+			# self.controller.reset()
 			# self.prev_time = time.time()
 			print('pressed')
 
 		if self.engaged:
 			rel_pos = np.array(pos) - np.array(self.vr_initial_pos)
-
+			print(rel_pos)
+			
 			if np.sum(rel_pos ** 2) >= 2.0:
 				print(rel_pos, 'wrong o')
 				return
@@ -148,6 +149,7 @@ class VR(object):
 			
 		if e[6][32] & p.VR_BUTTON_WAS_RELEASED:
 			self.engaged = False
+			self.controller.reset()
 			print('released')
 		self.prev_time = time.time()
 
