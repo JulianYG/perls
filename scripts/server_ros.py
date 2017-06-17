@@ -80,7 +80,7 @@ class VR(object):
 		self.client_thread = self.pubsub.run_in_thread(sleep_time=0.1)
 
 		self.prev_time = time.time()
-		
+
 		while True:
 			self.controller.control_loop()
 
@@ -101,6 +101,7 @@ class VR(object):
 
 		if e[6][32] & p.KEY_WAS_TRIGGERED:
 			self.vr_initial_pos = pos
+			self.arm_initial_pos = np.array(list(self.arm.get_tool_pose()[0]))
 			self.engaged = True
 			self.controller.reset()
 			# self.prev_time = time.time()
