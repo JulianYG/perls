@@ -60,6 +60,8 @@ class VR(object):
 		self.r = redis.StrictRedis(host='localhost', port=6379, db=0)
 		self.pubsub = self.r.pubsub()
 
+		self.engaged = False
+
 	def turn_on(self):
 
 		self.arm.set_init_positions(rest_pose)
@@ -97,7 +99,10 @@ class VR(object):
 
 		if e[6][32] & p.KEY_WAS_TRIGGERED:
 			self.vr_initial_pos = pos
+			self.engaged = True
+			print('pressed')
 
+		if self.engaged:
 			rel_pos = np.array(pos) - np.array(self.vr_initial_pos)
 
 			if np.sum(rel_pos ** 2) >= 2.0:
@@ -136,14 +141,13 @@ class VR(object):
 					velocityGain = 1.)
 
 
-			# self.controller.put_item((self.arm_joint_pos, t))
-			print('pressed')
+			self.controller.put_item((self.arm_joint_pos, t))
+			
 			self.prev_time = time.time()
 
 		if e[6][32] & p.VR_BUTTON_WAS_RELEASED:
-			
+			self.engaged = False
 			print('released')
-
 		
 
 def run():
