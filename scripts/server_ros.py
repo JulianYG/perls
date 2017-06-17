@@ -121,6 +121,11 @@ class VR(object):
 
 		jpos = self.arm.get_joint_angles().values()[::-1]
 
+		x, y, _ = p.getEulerFromQuaternion(orn)
+
+		self.arm_joint_pos[5] = np.clip(x, LOWER_LIMITS[5], UPPER_LIMITS[5])
+		self.arm_joint_pos[6] = np.clip(y, LOWER_LIMITS[6], UPPER_LIMITS[6])
+
 		for i in range(7):
 
 			p.setJointMotorControl2(sawyer,
