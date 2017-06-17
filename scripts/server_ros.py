@@ -95,7 +95,7 @@ class VR(object):
 			self.vr_initial_pos = np.array(list(e[1]))
 			self.controller.put_item(rest_pose.values()[::-1])
 
-		if e[6][32] & p.VR_BUTTON_IS_DOWN:
+		if e[6][32] & p.KEY_WAS_TRIGGERED:
 			self.vr_initial_pos = pos
 
 			rel_pos = np.array(pos) - np.array(self.vr_initial_pos)
@@ -136,13 +136,13 @@ class VR(object):
 					velocityGain = 1.)
 
 
-			self.controller.put_item((self.arm_joint_pos, t))
-
+			# self.controller.put_item((self.arm_joint_pos, t))
+			print('pressed')
 			self.prev_time = time.time()
 
 		if e[6][32] & p.VR_BUTTON_WAS_RELEASED:
 			
-			print('ya')
+			print('released')
 
 		
 
