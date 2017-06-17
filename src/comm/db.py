@@ -41,8 +41,10 @@ class RedisComm(Comm):
 
     def listen_to_server(self):
         events = []
+        print(self.signal_queue.qsize())
         while not self.signal_queue.empty():
             events.append(self.signal_queue.get())
+        print(len(events), 'len')
         return events
 
     def connect_with_client(self):
