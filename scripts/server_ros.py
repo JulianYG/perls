@@ -55,7 +55,6 @@ class VR(object):
 		gripper = intera_interface.Gripper('right')
 
 		self.arm = Robot(limb, gripper)
-
 		self.controller = RobotController(rate=100)
 
 		self.r = redis.StrictRedis(host='localhost', port=6379, db=0)
@@ -136,11 +135,25 @@ class VR(object):
 				positionGain=0.05,
 				velocityGain = 1.)
 
-		self.controller.put_item((self.arm_joint_pos, t))
+		if e[6][32] & p.VR_BUTTON_IS_DOWN:
+			print('ha')
+			# self.controller.put_item((self.arm_joint_pos, t))
+
+		if e[6][32] & p.VR_BUTTON_WAS_RELEASED:
+			# self.vr_initial_pos = pos
+			print('ya')
+
 		self.prev_time = time.time()
 
-vr = VR()
-vr.turn_on()
+def run():
+	vr = VR()
+	vr.turn_on()
 
-vr.start()
+	vr.start()
+
+if __name__ == '__main__':
+	run()
+
+
+
 
