@@ -80,7 +80,9 @@ class VR(object):
 		self.client_thread = self.pubsub.run_in_thread(sleep_time=0.1)
 
 		self.prev_time = time.time()
-		self.controller.control_loop()
+		
+		while True:
+			self.controller.control_loop()
 
 	def _event_handler(self, msg):
 
@@ -100,6 +102,8 @@ class VR(object):
 		if e[6][32] & p.KEY_WAS_TRIGGERED:
 			self.vr_initial_pos = pos
 			self.engaged = True
+			self.controller.reset()
+			# self.prev_time = time.time()
 			print('pressed')
 
 		if self.engaged:
@@ -140,15 +144,12 @@ class VR(object):
 					positionGain=0.05,
 					velocityGain = 1.)
 
-
 			self.controller.put_item((self.arm_joint_pos, t))
 			
-			self.prev_time = time.time()
-
 		if e[6][32] & p.VR_BUTTON_WAS_RELEASED:
 			self.engaged = False
 			print('released')
-		
+		self.prev_time = time.time()
 
 def run():
 	vr = VR()
