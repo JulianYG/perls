@@ -99,15 +99,18 @@ class VR(object):
 			self.vr_initial_pos = np.array(list(e[1]))
 			self.controller.put_item(rest_pose.values()[::-1])
 
-		self.arm_rel_pos = self.arm.get_relative_pose()['position']
-		rel_pose = np.array([self.arm_rel_pos.y, self.arm_rel_pos.x, self.arm_rel_pos.z])
-
 		# self.arm_target = self.arm_init + (vr_now - vr_init)
 		rel_pos = np.array(pos) - np.array(self.vr_initial_pos)
 
+
+		if np.sum(rel_pos ** 2) >= 2.0:
+			print(rel_pos, 'wrong o')
+			return
 		# sim_rel_pos = np.array([rel_pos[1], rel_pos[0], rel_pos[2]])
 
 		self.arm_target_pos = self.arm_initial_pos + rel_pos
+
+
 
 		# Use pybullet for now...
 		sim_target_pos = sim_initial_pos + rel_pos
