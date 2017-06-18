@@ -75,6 +75,7 @@ class RobotController(object):
             self._path_thresh[jnt] = path_error
 
         # Create PID controllers per joint.
+        print("PID Controllers")
         self._pid = dict()
         for jnt in self.joint_names:
             self._pid[jnt] = intera_control.PID()
@@ -82,6 +83,10 @@ class RobotController(object):
             self._pid[jnt].set_ki(self._dyn.config[jnt + '_ki'])
             self._pid[jnt].set_kd(self._dyn.config[jnt + '_kd'])
             self._pid[jnt].initialize()
+            print("{} : {} {} {}".format(jnt, self._dyn.config[jnt + '_kp'], 
+                                              self._dyn.config[jnt + '_ki'], 
+                                              self._dyn.config[jnt + '_kd']))
+
 
         # Set joint state publishing to specified control rate
         self._pub_rate = rospy.Publisher(
@@ -91,8 +96,11 @@ class RobotController(object):
         self._pub_rate.publish(self.control_rate)
 
         ### keep array of control points and durations ###
-        self.control_points = [None, None, None]
-        self.control_durations = [None, None]
+        # self.control_points = [None, None, None]
+        # self.control_durations = [None, None]
+
+        self.control_points = [None, None]
+        self.control_durations = [None]
 
         # reset to base position
         # self.reset()
@@ -130,8 +138,11 @@ class RobotController(object):
         """
         This function just resets the arm to the rest position.
         """
-        self.control_points = [None, None, None]
-        self.control_durations = [None, None]
+        # self.control_points = [None, None, None]
+        # self.control_durations = [None, None]
+        self.control_points = [None, None]
+        self.control_durations = [None]
+
         self.command_queue = Queue(maxsize=3)
         self.v_mj = np.zeros(self.num_joints)
 
@@ -157,7 +168,8 @@ class RobotController(object):
 
         (rows, k) = np.shape(points_array)
 
-        assert(rows == 3)
+        # assert(rows == 3)
+        assert(rows == 2)
 
         N = rows - 1  # N minus 1 because points array includes x_0
         m_coeffs = np.zeros(shape=(k, 7))
@@ -171,12 +183,13 @@ class RobotController(object):
         t = duration_array[0]
 
         t0 = duration_array[0]
-        t1 = duration_array[1]
+        # t1 = duration_array[1]
         d0 = points_array[1] - points_array[0]
-        d1 = points_array[2] - points_array[1]
+        # d1 = points_array[2] - points_array[1]
         v0 = d0 / t0
-        v1 = d1 / t1
-        gv = np.where(np.multiply(v0, v1) >= 1e-10, 0.5 * (v0 + v1), np.zeros(k))  # 0 + eps
+        # v1 = d1 / t1
+        # gv = np.where(np.multiply(v0, v1) >= 1e-10, 0.5 * (v0 + v1), np.zeros(k))  # 0 + eps
+        gv = np.where(v0 >= 1e-5, v0, np.zeros(k))  # 0 + eps
         ga = np.zeros(k)
 
         A = (gx - (x + v * t + (a / 2.0) * t * t)) / (t * t * t)
@@ -201,129 +214,6 @@ class RobotController(object):
         m_coeffs[:, 6] = t
 
         return m_coeffs
-
-    # def _minjerk_computation(self, points_array, duration_array=None):
-    #     """
-    #     NOTE: This function was taken from the Intera SDK. We must include the
-    #     copyright notice from minjerk.py, if we wish to use this.
-
-    #     Compute the min-jerk coefficients for a given set for user-supplied control pts
-
-    #     params:
-    #        points_array: array of user-supplied control points
-    #            numpy.array of size N by k
-    #            N is the number of control points
-    #            k is the number of dimensions for each point
-    #        duration_array: array of user-supplied control duration of ech segment
-    #            numpy.array of size N-1
-    #            N is the number of control points
-
-    #     returns:
-    #       m_coeffs:  An array of coefficients of shape (num_joints, 7)
-    #     """
-    #     (rows, k) = np.shape(points_array)
-
-    #     assert(rows == 3)
-
-    #     N = rows - 1  # N minus 1 because points array includes x_0
-    #     m_coeffs = np.zeros(shape=(k, 7))
-    #     x = points_array[0]
-    #     v = np.zeros(k)
-    #     a = np.zeros(k)
-
-    #     assert(duration_array is not None)
-
-    #     gx = points_array[1]
-    #     t = duration_array[0]
-
-    #     t0 = duration_array[0]
-    #     t1 = duration_array[1]
-    #     d0 = points_array[1] - points_array[0]
-    #     d1 = points_array[2] - points_array[1]
-    #     v0 = d0 / t0
-    #     v1 = d1 / t1
-    #     gv = np.where(np.multiply(v0, v1) >= 1e-10, 0.5 * (v0 + v1), np.zeros(k))  # 0 + eps
-    #     ga = np.zeros(k)
-
-    #     A = (gx - (x + v * t + (a / 2.0) * t * t)) / (t * t * t)
-    #     B = (gv - (v + a * t)) / (t * t)
-    #     C = (ga - a) / t
-
-    #     a0 = x
-    #     a1 = v
-    #     a2 = a / 2.0
-    #     a3 = 10 * A - 4 * B + 0.5 * C
-    #     a4 = (-15 * A + 7 * B - C) / t
-    #     a5 = (6 * A - 3 * B + 0.5 * C) / (t * t)
-
-    #     m_coeffs[:, 0] = a0
-    #     m_coeffs[:, 1] = a1
-    #     m_coeffs[:, 2] = a2
-    #     m_coeffs[:, 3] = a3
-    #     m_coeffs[:, 4] = a4
-    #     m_coeffs[:, 5] = a5
-    #     m_coeffs[:, 6] = t
-
-    #     return m_coeffs
-
-    # def _minjerk_coeffs(self, p1, p2, duration):
-    #     """
-    #     This function does minjerk interpolation between two sets of joint angles.
-    #     It returns the coefficients for the smooth polynomial interpolation functions.
-
-    #     :param p1: An ordered array of joint angles at the beginning of the time interval.
-    #     :param p2: An ordered array of joint angles at the end of the time interval.
-    #     :param duration: Time it should take to move from p1 to p2.
-
-    #     :return: An array of coefficients of shape (num_joints, 7)
-    #     """
-
-    #     return self._minjerk_computation(np.array([p1, p2]), [duration])[:, 0, :]
-
-    # def _minjerk_points(self, coeffs, num_pts):
-    #     """
-    #     Uses the minjerk @coeffs to return @num_pts interpolated points between two control points,
-    #     including the start point.
-
-    #     :param coeffs: minjerk coefficients of shape num_joints by 7
-    #     :param num_pts: number of desired interpolated points between the
-    #                     two control points, including the start point
-
-    #     :return: array of interpolated points of shape (num_joints, num_pts)
-    #     """
-
-    #     num_joints, _ = coeffs.shape
-
-    #     # absolute time between start and end points
-    #     tm = coeffs[:, 6]
-
-    #     # make sure all the segment times are equal
-    #     assert(np.array_equal(tm, tm[0] * np.ones(num_joints)))
-
-    #     # generate evenly spaced points from [0, 1)
-    #     t_pts = np.linspace(0, 1, num_pts, endpoint=False)
-
-    #     # convert percentage times to absolute times
-    #     t = (t_pts * tm[0]).reshape((-1, 1))
-
-    #     # use a clever matrix multiplication to return all interpolated points at once
-    #     t_mat = np.concatenate([np.ones((num_pts, 1)), t, np.power(t, 2), np.power(t, 3), np.power(t, 4), np.power(t, 5)], axis=1)
-    #     A = coeffs[:, :6]
-    #     return A.dot(t_mat.T)
-
-    # def interpolate(self, points_array, duration_array, num_pts):
-    #     """
-    #     This function does minjerk interpolation between the new position and the last position, returning
-    #     num_pts number of points.
-
-    #     :param points_array: An 2-D array of joint angles to move to, [p(t-1), p(t), p(t+1)]
-    #     :param duration: The amount of time in seconds that it should take to move there from the last position.
-    #     :param num_pts: The number of desired interpolated points, including the last position.
-    #     :return: Array of interpolated points of shape (num_joints, num_pts)
-    #     """
-    #     coeffs = self._minjerk_computation(points_array, duration_array=duration_array)
-    #     # coeffs = self._minjerk_coeffs(self.last_pos, new_pos, duration)
-    #     return self._minjerk_points(coeffs, num_pts)
 
     def minjerk_t(self, coeffs, t):
         """
@@ -416,9 +306,13 @@ class RobotController(object):
             self.control_durations.append(duration)
 
             if self.control_points[0] is None:
-                self.limb.set_joint_velocities(dict(zip(self.joint_names, [0.0] * self.num_joints)))
-                control_rate.sleep()
-                continue
+                self.control_points[0] = self.control_points[1]
+                # self.control_points[0] = self.control_points[2]
+                # self.control_points[1] = self.control_points[2]
+                # self.control_durations[0] = self.control_durations[1]
+                # self.limb.set_joint_velocities(dict(zip(self.joint_names, [0.0] * self.num_joints)))
+                # control_rate.sleep()
+                # continue
 
             # do minjerk interpolation to determine the new trajectory
             # current_coeffs = self._minjerk_coeffs(self.last_pos, new_pos, duration)
