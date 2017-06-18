@@ -37,7 +37,7 @@ for jointIndex in range(7):
 	p.resetJointState(sawyer, jointIndex, REST_POSE[jointIndex])
 
 p.setRealTimeSimulation(1)
-sim_initial_pos = p.getLinkState(sawyer, 6)[0]
+
 
 rospy.init_node('server')
 
@@ -59,6 +59,7 @@ class VR(object):
 
 		self.r = redis.StrictRedis(host='localhost', port=6379, db=0)
 		self.pubsub = self.r.pubsub()
+		self.sim_initial_pos = p.getLinkState(sawyer, 6)[0]
 
 		self.engaged = False
 
@@ -101,24 +102,20 @@ class VR(object):
 
 		if e[6][32] & p.KEY_WAS_TRIGGERED:
 			self.vr_initial_pos = pos
-			self.arm_initial_pos = np.array(list(self.arm.get_tool_pose()[0]))
 			self.engaged = True
-			# self.controller.reset()
-			# self.prev_time = time.time()
-			print('pressed')
+			self.controller.reset()
 
 		if self.engaged:
 			rel_pos = np.array(pos) - np.array(self.vr_initial_pos)
-			print(rel_pos)
 			
 			if np.sum(rel_pos ** 2) >= 2.0:
-				print(rel_pos, 'wrong o')
+				print(rel_pos, 'Out of range!')
 				return
 
 			self.arm_target_pos = self.arm_initial_pos + rel_pos
 
 			# Use pybullet for now...
-			sim_target_pos = sim_initial_pos + rel_pos
+			sim_target_pos = self.sim_initial_pos + rel_pos
 
 			t = time.time() - self.prev_time
 
@@ -131,7 +128,6 @@ class VR(object):
 
 			if not FIXED:
 				x, y, _ = p.getEulerFromQuaternion(orn)
-
 				self.arm_joint_pos[5] = np.clip(x, LOWER_LIMITS[5], UPPER_LIMITS[5])
 				self.arm_joint_pos[6] = np.clip(y, LOWER_LIMITS[6], UPPER_LIMITS[6])
 
@@ -150,8 +146,27 @@ class VR(object):
 			
 		if e[6][32] & p.VR_BUTTON_WAS_RELEASED:
 			self.engaged = False
-			self.controller.reset()
-			print('released')
+		
+			
+		if not self.engaged:
+
+			poss = self.arm.get_joint_angles().values()[::-1]
+			self.sim_initial_pos = p.getLinkState(sawyer, 6)[0]
+			self.arm_initial_pos = np.array(list(self.arm.get_tool_pose()[0]))
+
+			# Sync the current robot state with simulation state
+			for i in range(7):
+				p.setJointMotorControl2(sawyer,
+						i,
+						p.POSITION_CONTROL,
+						targetVelocity = 0,
+						targetPosition=poss[i],
+						force = 5000, 
+						positionGain=0.5,
+						velocityGain = 1.)
+				p.resetJointState(sawyer, i, 
+					poss[i], 0)
+
 		self.prev_time = time.time()
 
 def run():
