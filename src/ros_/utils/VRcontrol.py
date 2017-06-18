@@ -105,13 +105,6 @@ class RobotController(object):
         # reset to base position
         # self.reset()
 
-        ### Redis setup for accepting commands over a Redis channel. ###
-        # self.redis_interface = redis.StrictRedis(host=redis_host, port=redis_port, db=redis_db)
-        # self.redis_pubsub = self.redis_interface.pubsub()
-        # self.redis_channel = redis_channel
-        # self.redis_pubsub.subscribe(**{self.redis_channel: self._redis_handler})
-        # self.redis_thread = self.redis_pubsub.run_in_thread(sleep_time=0.001)
-
         # TODO: make sure command queue allows us to do asynch polling
         self.command_queue = Queue(maxsize=3)
         assert(self.command_queue is not None)
@@ -138,20 +131,16 @@ class RobotController(object):
         """
         This function just resets the arm to the rest position.
         """
-        # self.control_points = [None, None, None]
-        # self.control_durations = [None, None]
-        self.control_points = [None, None]
-        self.control_durations = [None]
 
+        self.control_points = [None] * 3
+        self.control_durations = [None] * 2
         self.command_queue = Queue(maxsize=3)
         self.v_mj = np.zeros(self.num_joints)
 
         # wait for control loop to terminate
         self.break_state = True
         while self.break_state:
-            pass
-
-        # self.limb.move_to_neutral()
+            continue
 
     def _minjerk_computation(self):
         """
@@ -282,7 +271,6 @@ class RobotController(object):
         # helps us keep the specified control rate
         control_rate = rospy.Rate(self.control_rate)
 
-
         while True:
 
             if self.break_state:
@@ -364,23 +352,6 @@ class RobotController(object):
                 if self.break_state:
                     self.break_state = False
                     return
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

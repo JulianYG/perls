@@ -85,6 +85,10 @@ class VR(object):
 		while True:
 			self.controller.control_loop()
 
+	@property
+	def joint_positions(self):
+		return self.arm.get_joint_angles().values()[::-1]
+
 	def _event_handler(self, msg):
 
 		e = eval(msg['data'])
@@ -119,17 +123,13 @@ class VR(object):
 
 			t = time.time() - self.prev_time
 
+			# Get current gripper orientation
+			gripper_orn = p.getLinkState(sawyer, 6)[1]
+
 			self.arm_joint_pos = list(p.calculateInverseKinematics(sawyer, 6, 
-							sim_target_pos, (0, 1, 0, 0), lowerLimits=LOWER_LIMITS, 
-							upperLimits=UPPER_LIMITS, jointRanges=JOINT_RANGE, 
-							restPoses=REST_POSE, jointDamping=[0.1] * 7))
-
-			jpos = self.arm.get_joint_angles().values()[::-1]
-
-			if not FIXED:
-				x, y, _ = p.getEulerFromQuaternion(orn)
-				self.arm_joint_pos[5] = np.clip(x, LOWER_LIMITS[5], UPPER_LIMITS[5])
-				self.arm_joint_pos[6] = np.clip(y, LOWER_LIMITS[6], UPPER_LIMITS[6])
+				sim_target_pos, gripper_orn, lowerLimits=LOWER_LIMITS, 
+				upperLimits=UPPER_LIMITS, jointRanges=JOINT_RANGE, 
+				restPoses=REST_POSE, jointDamping=[0.1] * 7))
 
 			for i in range(7):
 
@@ -140,19 +140,31 @@ class VR(object):
 					targetPosition=self.arm_joint_pos[i],
 					force = 500, 
 					positionGain=0.05,
-					velocityGain = 1.)
+					velocityGain=1.)
 
 			self.controller.put_item((self.arm_joint_pos, t))
 			
 		if e[6][32] & p.VR_BUTTON_WAS_RELEASED:
 			self.engaged = False
 		
-			
 		if not self.engaged:
 
-			poss = self.arm.get_joint_angles().values()[::-1]
+			if not FIXED:
+			
+				jpos = self.joint_positions
+
+				x, y, _ = p.getEulerFromQuaternion(orn)
+				jpos[5] = np.clip(x, LOWER_LIMITS[5], UPPER_LIMITS[5])
+				jpos[6] = np.clip(y, LOWER_LIMITS[6], UPPER_LIMITS[6])
+				
+				# self.controller.put_item((jpos, t))
+				# instead of using control loop, directly set joint positions
+				self.arm.set_joint_positions({'right_j5': jpos[5], 'right_j6': jpos[6]})
+			
 			self.sim_initial_pos = p.getLinkState(sawyer, 6)[0]
 			self.arm_initial_pos = np.array(list(self.arm.get_tool_pose()[0]))
+
+			jpos = self.joint_positions
 
 			# Sync the current robot state with simulation state
 			for i in range(7):
@@ -160,12 +172,12 @@ class VR(object):
 						i,
 						p.POSITION_CONTROL,
 						targetVelocity = 0,
-						targetPosition=poss[i],
+						targetPosition=jpos[i],
 						force = 5000, 
 						positionGain=0.5,
 						velocityGain = 1.)
 				p.resetJointState(sawyer, i, 
-					poss[i], 0)
+					jpos[i], 0)
 
 		self.prev_time = time.time()
 
