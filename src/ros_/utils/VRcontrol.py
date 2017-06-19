@@ -124,8 +124,8 @@ class RobotController(object):
         """
         This function just resets the arm to the rest position.
         """
-        self.control_points = [None] * 3
-        self.control_durations = [None] * 2
+        self.control_points = [None] * 2
+        self.control_durations = [None] * 1
         self.command_queue = Queue(maxsize=3)
         self.v_mj = np.zeros(self.num_joints)
 

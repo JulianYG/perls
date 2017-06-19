@@ -104,20 +104,25 @@ class VRSawyer(object):
 			self.arm.set_init_positions(rest_pose)
 			self.vr_initial_pos = np.array(list(event[1]))
 			self.controller.put_item(rest_pose.values()[::-1])
+
+		# Control arm engage
 		if event[6][32] & p.KEY_WAS_TRIGGERED:
 			self.vr_initial_pos = event[1]
 			self.engaged = True
 			self.controller.reset()
 
+		if event[6][32] & p.VR_BUTTON_WAS_RELEASED:
+			self.engaged = False
+
 	def _event_handler(self, msg):
 
 		e = eval(msg['data'])
 		pos, orn = e[1], e[2]
-		self.controller_initial_orn = orn
-
+		
 		self.gripper_controller(e)
 
 		if self.engaged:
+
 			rel_pos = np.array(pos) - np.array(self.vr_initial_pos)
 			
 			if np.sum(rel_pos ** 2) >= 2.0:
@@ -134,7 +139,7 @@ class VRSawyer(object):
 			# Get current gripper orientation
 			gripper_orn = p.getLinkState(sawyer, 6)[1]
 
-			self.arm_joint_pos = p.calculateInverseKinematics(sawyer, 6, 
+			arm_joint_pos = p.calculateInverseKinematics(sawyer, 6, 
 				sim_target_pos, gripper_orn, lowerLimits=LOWER_LIMITS, 
 				upperLimits=UPPER_LIMITS, jointRanges=JOINT_RANGE, 
 				restPoses=REST_POSE, jointDamping=[0.1] * 7)
@@ -145,19 +150,16 @@ class VRSawyer(object):
 					i,
 					p.POSITION_CONTROL,
 					targetVelocity = 0,
-					targetPosition=self.arm_joint_pos[i],
+					targetPosition=arm_joint_pos[i],
 					force = 500, 
 					positionGain=0.05,
 					velocityGain=1.)
 
-			self.controller.put_item((self.arm_joint_pos, t))
-			
-		if e[6][32] & p.VR_BUTTON_WAS_RELEASED:
-			self.engaged = False
+			self.controller.put_item((arm_joint_pos, t))
+			self.controller_initial_orn = orn
 
-		if not self.engaged:
-
-			if not FIXED:
+		else:
+			if not FIXED and self.controller_initial_orn:
 				# Choose to only move relatively
 				x, y, _ = p.getEulerFromQuaternion(orn)
 				x_ini, y_ini, _ = p.getEulerFromQuaternion(self.controller_initial_orn)
@@ -165,14 +167,21 @@ class VRSawyer(object):
 				gripper_rel_orn = np.array([x, y]) - np.array([x_ini, y_ini])
 
 				# x for joint 6, y for joint 5
-				gripper_target_orn = np.clip(self.gripper_orn + gripper_rel_orn, 
-					LOWER_LIMITS[5:7], UPPER_LIMITS[5:7])[::-1]
+				gripper_target_orn = np.clip(self.gripper_orn + gripper_rel_orn[::-1], 
+					LOWER_LIMITS[5:7], UPPER_LIMITS[5:7])
 				
+				# print(gripper_target_orn)
 				# instead of using control loop, directly set joint positions
-				self.arm.plan_joint_positions(
-					dict(right_j5=gripper_target_orn[0], 
-						 right_j6=gripper_target_orn[1]))
-			
+				# self.arm.plan_joint_positions(
+				# 	dict(right_j5=gripper_target_orn[0], 
+				# 		 right_j6=gripper_target_orn[1]))
+				t = time.time() - self.prev_time
+				jpos = self.joint_positions
+				jpos[5] = gripper_target_orn[0] / 2
+				jpos[6] = gripper_target_orn[1]
+				self.controller.put_item((jpos, t))
+
+
 			self.sim_initial_pos = p.getLinkState(sawyer, 6)[0]
 			self.arm_initial_pos = np.array(list(self.arm.get_tool_pose()[0]))
 
