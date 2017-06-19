@@ -52,11 +52,6 @@ class RobotController(object):
         # control rate in Hz
         self.control_rate = rate
 
-        # TODO: do we need the gripper?
-        # get the gripper
-        # self.gripper_name = '_'.join([limb, 'gripper'])
-        # self.gripper = intera_interface.Gripper(limb)
-
         # ordered list of joint names
         self.joint_names = self.limb.joint_names()
         self.num_joints = len(self.joint_names)
@@ -75,7 +70,7 @@ class RobotController(object):
             self._path_thresh[jnt] = path_error
 
         # Create PID controllers per joint.
-        print("PID Controllers")
+        # print("PID Controllers")
         self._pid = dict()
         for jnt in self.joint_names:
             self._pid[jnt] = intera_control.PID()
@@ -83,10 +78,9 @@ class RobotController(object):
             self._pid[jnt].set_ki(self._dyn.config[jnt + '_ki'])
             self._pid[jnt].set_kd(self._dyn.config[jnt + '_kd'])
             self._pid[jnt].initialize()
-            print("{} : {} {} {}".format(jnt, self._dyn.config[jnt + '_kp'], 
-                                              self._dyn.config[jnt + '_ki'], 
-                                              self._dyn.config[jnt + '_kd']))
-
+            # print("{} : {} {} {}".format(jnt, self._dyn.config[jnt + '_kp'], 
+            #                                   self._dyn.config[jnt + '_ki'], 
+            #                                   self._dyn.config[jnt + '_kd']))
 
         # Set joint state publishing to specified control rate
         self._pub_rate = rospy.Publisher(
@@ -126,12 +120,10 @@ class RobotController(object):
             self.command_queue.get()
         self.command_queue.put(item)
 
-
     def reset(self):
         """
         This function just resets the arm to the rest position.
         """
-
         self.control_points = [None] * 3
         self.control_durations = [None] * 2
         self.command_queue = Queue(maxsize=3)
