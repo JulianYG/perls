@@ -26,7 +26,7 @@ LOWER_LIMITS = [-3.05, -3.82, -3.05, -3.05, -2.98, -2.98, -4.71]
 UPPER_LIMITS = [3.05, 2.28, 3.05, 3.05, 2.98, 2.98, 4.71]
 JOINT_RANGE = [6.1, 6.1, 6.1, 6.1, 5.96, 5.96, 9.4]	
 
-FIXED = True
+FIXED = False
 
 p.connect(p.GUI)
 sawyer = p.loadURDF('sawyer_robot/sawyer_description/urdf/sawyer_arm.urdf',
@@ -72,6 +72,9 @@ class VR(object):
 		# Initialize reference frame positions
 		self.arm_initial_pos = np.array(list(self.arm.get_tool_pose()[0]))
 
+		self.init_gripper_pos = self.gripper_pos
+
+
 	def start(self):
 
 		self.pubsub.subscribe(**{'event_channel': self._event_handler})
@@ -86,8 +89,12 @@ class VR(object):
 			self.controller.control_loop()
 
 	@property
+	def gripper_pos(self):
+		return np.array(self.joint_positions[-2:])
+
+	@property
 	def joint_positions(self):
-		return self.arm.get_joint_angles().values()[::-1]
+		return np.array(self.arm.get_joint_angles().values()[::-1])
 
 	def _event_handler(self, msg):
 
@@ -109,6 +116,8 @@ class VR(object):
 			self.engaged = True
 			self.controller.reset()
 
+		self.gripper_delta = np.array(p.getEulerFromQuaternion(p.getLinkState(sawyer, 6)[1])[:2]) - self.init_gripper_pos
+
 		if self.engaged:
 			rel_pos = np.array(pos) - np.array(self.vr_initial_pos)
 			
@@ -126,10 +135,12 @@ class VR(object):
 			# Get current gripper orientation
 			gripper_orn = p.getLinkState(sawyer, 6)[1]
 
-			self.arm_joint_pos = list(p.calculateInverseKinematics(sawyer, 6, 
+
+
+			self.arm_joint_pos = p.calculateInverseKinematics(sawyer, 6, 
 				sim_target_pos, gripper_orn, lowerLimits=LOWER_LIMITS, 
 				upperLimits=UPPER_LIMITS, jointRanges=JOINT_RANGE, 
-				restPoses=REST_POSE, jointDamping=[0.1] * 7))
+				restPoses=REST_POSE, jointDamping=[0.1] * 7)
 
 			for i in range(7):
 
@@ -146,20 +157,26 @@ class VR(object):
 			
 		if e[6][32] & p.VR_BUTTON_WAS_RELEASED:
 			self.engaged = False
-		
+			self.init_gripper_pos = self.gripper_pos
+
 		if not self.engaged:
 
 			if not FIXED:
-			
+				
 				jpos = self.joint_positions
 
 				x, y, _ = p.getEulerFromQuaternion(orn)
-				jpos[5] = np.clip(x, LOWER_LIMITS[5], UPPER_LIMITS[5])
-				jpos[6] = np.clip(y, LOWER_LIMITS[6], UPPER_LIMITS[6])
+
+				gripper_rel_pos = np.array([x, y]) - self.init_gripper_pos + self.gripper_delta
+
+				gripper_target = self.gripper_pos + gripper_rel_pos
+
+				jpos[5] = np.clip(gripper_target[1] + np.pi / 4, LOWER_LIMITS[5], UPPER_LIMITS[5])
+				jpos[6] = np.clip(gripper_target[0], LOWER_LIMITS[6], UPPER_LIMITS[6])
 				
 				# self.controller.put_item((jpos, t))
 				# instead of using control loop, directly set joint positions
-				self.arm.set_joint_positions({'right_j5': jpos[5], 'right_j6': jpos[6]})
+				self.arm.plan_joint_positions({'right_j5': jpos[5], 'right_j6': jpos[6]})
 			
 			self.sim_initial_pos = p.getLinkState(sawyer, 6)[0]
 			self.arm_initial_pos = np.array(list(self.arm.get_tool_pose()[0]))
@@ -169,13 +186,13 @@ class VR(object):
 			# Sync the current robot state with simulation state
 			for i in range(7):
 				p.setJointMotorControl2(sawyer,
-						i,
-						p.POSITION_CONTROL,
-						targetVelocity = 0,
-						targetPosition=jpos[i],
-						force = 5000, 
-						positionGain=0.5,
-						velocityGain = 1.)
+					i,
+					p.POSITION_CONTROL,
+					targetVelocity = 0,
+					targetPosition=jpos[i],
+					force = 5000, 
+					positionGain=0.5,
+					velocityGain = 1.)
 				p.resetJointState(sawyer, i, 
 					jpos[i], 0)
 
