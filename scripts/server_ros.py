@@ -149,9 +149,9 @@ class VRSawyer(object):
 				p.setJointMotorControl2(sawyer,
 					i,
 					p.POSITION_CONTROL,
-					targetVelocity = 0,
+					targetVelocity=0,
 					targetPosition=arm_joint_pos[i],
-					force = 500, 
+					force=500, 
 					positionGain=0.05,
 					velocityGain=1.)
 
