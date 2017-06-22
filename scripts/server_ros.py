@@ -149,9 +149,9 @@ class VRSawyer(object):
 				p.setJointMotorControl2(sawyer,
 					i,
 					p.POSITION_CONTROL,
-					targetVelocity = 0,
+					targetVelocity=0,
 					targetPosition=arm_joint_pos[i],
-					force = 500, 
+					force=500, 
 					positionGain=0.05,
 					velocityGain=1.)
 
@@ -169,18 +169,15 @@ class VRSawyer(object):
 				# x for joint 6, y for joint 5
 				gripper_target_orn = np.clip(self.gripper_orn + gripper_rel_orn[::-1], 
 					LOWER_LIMITS[5:7], UPPER_LIMITS[5:7])
-				
-				# print(gripper_target_orn)
-				# instead of using control loop, directly set joint positions
-				# self.arm.plan_joint_positions(
-				# 	dict(right_j5=gripper_target_orn[0], 
-				# 		 right_j6=gripper_target_orn[1]))
+
 				t = time.time() - self.prev_time
 				jpos = self.joint_positions
-				jpos[5] = gripper_target_orn[0] / 2
-				jpos[6] = gripper_target_orn[1] / 2
-				self.controller.put_item((jpos, t))
 
+				# Needs scaling
+				jpos[5] = gripper_target_orn[0] / 2
+				jpos[6] = gripper_target_orn[1] / 2				
+
+				self.controller.put_item((jpos, t))
 
 			self.sim_initial_pos = p.getLinkState(sawyer, 6)[0]
 			self.arm_initial_pos = np.array(list(self.arm.get_tool_pose()[0]))
@@ -194,7 +191,7 @@ class VRSawyer(object):
 					p.POSITION_CONTROL,
 					targetVelocity = 0,
 					targetPosition=jpos[i],
-					force = 5000, 
+					force=500, 
 					positionGain=0.5,
 					velocityGain = 1.)
 				p.resetJointState(sawyer, i, 

@@ -9,6 +9,7 @@ import numpy as np
 from .utils import handler
 from .utils.misc import Constant, Key
 
+from .checker import TaskChecker
 
 class CtrlInterface(object):
 	"""
@@ -17,7 +18,7 @@ class CtrlInterface(object):
 	that connects inputs from elsewhere such as ROS / openAI to 
 	the pybullet node.
 	"""
-	def __init__(self, host, remote):
+	def __init__(self, host, remote, task_name=''):
 		self.remote = remote
 		self.socket = host
 		self.BTTN = 6
@@ -26,6 +27,7 @@ class CtrlInterface(object):
 		self.AAX = 3
 		self.msg_holder = {}
 		self.control_id = None
+		self.task_name = task_name
 
 	def start_remote_ctrl(self):
 		self.remote = True
@@ -43,6 +45,7 @@ class CtrlInterface(object):
 		raise NotImplementedError('Each interface must re-implement this method.')
 
 	def communicate(self, agent, scene, task, gui):
+		self._checker = TaskChecker(self.task_name, agent.name_dic)
 		if self.remote:
 			self.server_communicate(agent, scene, task, gui=gui)
 		else:
@@ -112,9 +115,11 @@ class CtrlInterface(object):
 
 					# If robot arm instance, just set gripper close/release
 					# The same thing for pr2 gripper
+					# print(obj,'haha', p.getBodyInfo(obj), pose)
 					agent.set_tool_joint_states([obj], [pose[2]], Constant.POS_CTRL)
 
 				if obj in agent.arms:
+					# print(obj, 'nono', p.getBodyInfo(obj), pose)
 					agent.set_tool_joint_states([obj], [pose], Constant.POS_CTRL)
 
 	def _msg_wrapper(self, tool_id, ids, agent, obj_map, ctrl=Constant.POS_CTRL):
@@ -140,8 +145,8 @@ class CtrlInterface(object):
 
 class ICmd(CtrlInterface):
 
-	def __init__(self, host, remote):
-		super(ICmd, self).__init__(host, remote)
+	def __init__(self, host, remote, task_name):
+		super(ICmd, self).__init__(host, remote, task_name)
 
 	def server_communicate(self, agent, scene, task, gui=True):
 		
@@ -212,9 +217,9 @@ class ICmd(CtrlInterface):
 
 class IKeyboard(CtrlInterface):
 
-	def __init__(self, host, remote):
+	def __init__(self, host, remote, task_name):
 		# Default settings for camera
-		super(IKeyboard, self).__init__(host, remote)
+		super(IKeyboard, self).__init__(host, remote, task_name)
 		self.pos = []
 
 	def client_communicate(self, agent, configs):
@@ -320,13 +325,15 @@ class IKeyboard(CtrlInterface):
 		agent.set_virtual_controller(range(len(tools)))
 		control_map, _ = agent.create_control_mappings()
 		pseudo_event = {0: 0, 3: 0.0}
-
-		while True:
+		done, success = False, False
+		while not done:
 			events = p.getKeyboardEvents()
 			self._keyboard_event_handler(events, agent, control_map, pseudo_event)	
 			if not gui:
 				p.stepSimulation()
 			time.sleep(0.01)
+			done, success = self._checker.check_done()
+		return success
 
 	def _keyboard_event_handler(self, events, agent, control_map, pseudo_event):
 		
@@ -414,9 +421,9 @@ class IKeyboard(CtrlInterface):
 
 class IVR(CtrlInterface):
 
-	def __init__(self, host, remote):
+	def __init__(self, host, remote, task_name):
 		# Default settings for camera
-		super(IVR, self).__init__(host, remote)
+		super(IVR, self).__init__(host, remote, task_name)
 
 	def client_communicate(self, agent, configs):
 
@@ -435,8 +442,18 @@ class IVR(CtrlInterface):
 			for event in (events):
 				self.socket.broadcast_to_server(event)
 
+
+				if event[6][33] & p.VR_BUTTON_WAS_TRIGGERED:
+					print('close')
+
+				if event[6][33] & p.VR_BUTTON_WAS_RELEASED:
+					print('release')
+
 			signal = self.socket.listen_to_server()
-			
+
+
+
+
 			for s in signal:
 				s = eval(s)
 				self._signal_loop(s, agent, control_map, obj_map)
@@ -495,10 +512,10 @@ class IVR(CtrlInterface):
 
 			self.socket.broadcast_to_client(self._msg_wrapper(None, flow_lst, agent, obj_map))
 
-
 	def local_communicate(self, agent, gui=True):
 		control_map, _ = agent.create_control_mappings()
-		while True:
+		done, success = False, False
+		while not done:
 			events = p.getVREvents()
 			skip_flag = agent.redundant_control()
 			for event in (events):
@@ -513,6 +530,8 @@ class IVR(CtrlInterface):
 					continue
 			if not gui:
 				p.stepSimulation()
+			done, success = self._checker.check_done()
+		return success
 
 	
 

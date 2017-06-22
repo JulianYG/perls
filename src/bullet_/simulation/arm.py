@@ -41,7 +41,12 @@ class Arm(Tool):
 		arm_id = ctrl_map[Constant.ARM][ctrl_id]
 		gripper_id = ctrl_map[Constant.GRIPPER][ctrl_id]
 		self._set_camera(gripper_id)
-		self.slide_grasp(gripper_id, event)
+
+		if event[3] < 0.5:
+			self.grip(gripper_id)
+		else:
+			self.release(gripper_id)
+		# self.slide_grasp(gripper_id, event)
 
 		# Allows robot arm control by VR controllers
 		if self.get_tool_control_deviation(arm_id, event[1]) < self.THRESHOLD:
@@ -173,9 +178,15 @@ class Arm(Tool):
 			else:
 				gripper_id = p.loadURDF(self.gripper_file, (0, 0, 0.9))
 			self.grippers.append(gripper_id)
+			arm_str = p.getBodyInfo(arm_id)[1]
+			gripper_str = p.getBodyInfo(gripper_id)[1]
+			if isinstance(arm_str, bytes):
+				arm_str = arm_str.decode('utf-8')
+			if isinstance(gripper_str, bytes):
+				gripper_str = gripper_str.decode('utf-8')
 
-			self.name_dic[arm_id] = '{}_{}'.format(p.getBodyInfo(arm_id)[1], i)
-			self.name_dic[gripper_id] = '{}_{}'.format(p.getBodyInfo(gripper_id)[1], i)
+			self.name_dic['{}_{}'.format(arm_str, i)] = arm_id
+			self.name_dic['{}_{}'.format(gripper_str, i)] = gripper_id
 
 		# Setup initial conditions for both arms
 		if reset:
@@ -243,15 +254,15 @@ class Sawyer(Arm):
 		self.arm_urdf = 'sawyer_robot/sawyer_description/urdf/sawyer_arm.urdf'
 		self.positions = [[0.45, ypos, 0.8] for ypos in pos]
 
-		self.GRIPPER_REST_POS = [0., 0.020833, -0.020833]
-		self.GRIPPER_CLOZ_POS = [0., -0., 0.]
+		self.GRIPPER_CLOZ_POS = [0., 0.020833, -0.020833]
+		self.GRIPPER_REST_POS = [0., -0., 0.]
 		self.ee_offset = 0.195
 
 	def _roll_map(self):
 		return lambda x: x
 
 	def _pitch_map(self):
-		return lambda x: x - np.pi / 4
+		return lambda x: x 
 
 	def _set_camera(self, uid):
 		p.resetDebugVisualizerCamera(0.4, 60, -130, 

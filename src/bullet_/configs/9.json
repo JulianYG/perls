@@ -9,7 +9,7 @@
 	"fixed_gripper_orn": false,
 	"server_ip": "172.24.68.162",
 	"enable_force_sensor": false,
-	"tool_positions": [0.4, -0.7],
+	"tool_positions": [0.4],
 	"replay_file_name": null, 
 	"record_file_name": null,
 	"gui": true,

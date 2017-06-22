@@ -287,7 +287,7 @@ class PR2(Tool):
 
 			self.grippers.append(pr2_gripper)
 			self.constraints.append(pr2_cid)
-			self.name_dic[pr2_gripper] = 'pr2_{}'.format(i)
+			self.name_dic['pr2_{}'.format(i)] = pr2_gripper
 		self.solo = len(self.grippers) == 1
 
 	def _set_camera(self, uid):
