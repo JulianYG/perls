@@ -77,7 +77,12 @@ class World(object):
 					obj_pose[0], obj_pose[1], 
 					obj_pose[2], useFixedBase=obj_pose[3]
 				)
-			self.name_dic[ob] = p.getBodyInfo(ob)[1]
+			name_str = p.getBodyInfo(ob)[1]
+			if name_str in self.name_dic:
+				self.name_dic[name_str + str(ob)] = ob
+			else:
+
+				self.name_dic[name_str] = ob
 
 	def _load_task(self, task):
 		for obj_pose in task:
@@ -85,7 +90,13 @@ class World(object):
 				ob = p.loadSDF(obj_pose[0])
 			else:
 				ob = p.loadURDF(*obj_pose)
-			self.name_dic[ob] = p.getBodyInfo(ob)[1]
+			name_str = p.getBodyInfo(ob)[1]
+
+			if name_str in self.name_dic:
+				self.name_dic[name_str + str(ob)] = ob
+			else:
+
+				self.name_dic[name_str] = ob
 
 
 

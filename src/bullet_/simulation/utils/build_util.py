@@ -55,13 +55,6 @@ def build_by_config(configs, work_dir, remote=False):
 	gui = configs.get('gui', True)
 	scene = configs.get('scene', '')
 
-	record_file = configs.get('record_file_name', 'test')
-	replay_file = configs.get('replay_file_name', 'test')
-
-	fn = record_file
-	if not record_file:
-		fn = '_'.join([interface_type, agent, task])
-
 	if agent == 'kuka':
 		# Change Fixed to True for keyboard
 		agent = Kuka(init_pos, fixed=fixed, enableForceSensor=force_sensor)
@@ -76,13 +69,13 @@ def build_by_config(configs, work_dir, remote=False):
 	socket = db.RedisComm(ip) if remote else None
 	
 	if interface_type == 'vr':	# VR interface that takes VR events
-		interface = IVR(socket, remote)
+		interface = IVR(socket, remote, task)
 		vr = True
 	elif interface_type == 'keyboard':	# Keyboard interface that takes keyboard events
-		interface = IKeyboard(socket, remote)
+		interface = IKeyboard(socket, remote, task)
 		vr = False
 	elif interface_type == 'cmd':	# Customized interface that takes any sort of command
-		interface = ICmd(socket, remote)
+		interface = ICmd(socket, remote, task)
 		vr = False
 	else:
 		print('Interface registered as Nonetype.')

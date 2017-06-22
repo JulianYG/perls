@@ -174,8 +174,8 @@ class Arm(Tool):
 				gripper_id = p.loadURDF(self.gripper_file, (0, 0, 0.9))
 			self.grippers.append(gripper_id)
 
-			self.name_dic[arm_id] = '{}_{}'.format(p.getBodyInfo(arm_id)[1], i)
-			self.name_dic[gripper_id] = '{}_{}'.format(p.getBodyInfo(gripper_id)[1], i)
+			self.name_dic['{}_{}'.format(p.getBodyInfo(arm_id)[1], i)] = arm_id
+			self.name_dic['{}_{}'.format(p.getBodyInfo(gripper_id)[1], i)] = gripper_id
 
 		# Setup initial conditions for both arms
 		if reset:
