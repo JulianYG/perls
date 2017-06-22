@@ -17,7 +17,8 @@ from .utils import io
 
 class BulletSimulator:
 
-	def __init__(self, agent, interface, task, scene, gui=True, vr=False, log_dir=''):
+	def __init__(self, agent, interface, task, scene, gui=True, vr=False, 
+		log_dir=''):
 		# Default settings for camera
 		self.FOCAL_POINT = (0., 0., 0.)
 		self.YAW = 35.
@@ -30,6 +31,7 @@ class BulletSimulator:
 		self.vr = vr
 		self.gui = gui
 		self.logIds = []
+
 		self.task = task
 		self.scene = scene
 		self._interface = interface
@@ -59,7 +61,7 @@ class BulletSimulator:
 				self.scene, self.task, self.gui)
 		except (KeyboardInterrupt, SystemExit) as e:
 			self.quit()		
-		return 0
+		self.quit()
 
 	def run_as_client(self, configs):
 		try:
@@ -68,7 +70,7 @@ class BulletSimulator:
 			self._interface.client_communicate(self.tool, configs)
 		except (KeyboardInterrupt, SystemExit) as e:
 			self.quit()
-		return 0
+		self.quit()
 
 	def playback(self, file, delay=0.0001):
 		self._setup(1)
@@ -143,14 +145,13 @@ class BulletSimulator:
 					pjoin(self.VIDEO_DIR, filename + '.mp4')))
 			else:
 				print('Video cannot be saved without simulation in GUI. Please check your config')
-		else:
-			# Record everything
-			self.logIds.append(p.startStateLogging(p.STATE_LOGGING_GENERIC_ROBOT,
-				pjoin(self.TRAJECTORY_LOG_DIR, filename + '.bin')))
-			self.logIds.append(p.startStateLogging(p.STATE_LOGGING_VR_CONTROLLERS, 
-				pjoin(self.CONTROL_LOG_DIR, filename + '.bin')))
-			self.logIds.append(p.startStateLogging(p.STATE_LOGGING_CONTACT_POINTS,
-				pjoin(self.CONTACT_LOG_DIR, filename + '.bin')))
+		# Record everything
+		self.logIds.append(p.startStateLogging(p.STATE_LOGGING_GENERIC_ROBOT,
+			pjoin(self.TRAJECTORY_LOG_DIR, filename + '.bin')))
+		self.logIds.append(p.startStateLogging(p.STATE_LOGGING_VR_CONTROLLERS, 
+			pjoin(self.CONTROL_LOG_DIR, filename + '.bin')))
+		self.logIds.append(p.startStateLogging(p.STATE_LOGGING_CONTACT_POINTS,
+			pjoin(self.CONTACT_LOG_DIR, filename + '.bin')))
 
 	def _replay(self, log, delay=0.0005):
 
