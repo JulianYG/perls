@@ -132,7 +132,7 @@ class VRSawyer(object):
 			self.arm_target_pos = self.arm_initial_pos + rel_pos
 
 			# Use pybullet for now...
-			sim_target_pos = self.sim_initial_pos + rel_pos
+			sim_target_pos = self.sim_initial_pos + rel_pos * 2
 
 			t = time.time() - self.prev_time
 
@@ -178,7 +178,7 @@ class VRSawyer(object):
 				t = time.time() - self.prev_time
 				jpos = self.joint_positions
 				jpos[5] = gripper_target_orn[0] / 2
-				jpos[6] = gripper_target_orn[1]
+				jpos[6] = gripper_target_orn[1] / 2
 				self.controller.put_item((jpos, t))
 
 
