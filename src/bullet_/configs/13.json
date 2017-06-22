@@ -1,7 +1,7 @@
 {
-	"interface": "keyboard", 
+	"interface": "vr", 
 	"agent": "sawyer",
-	"job": "replay", 
+	"job": "run", 
 	"video": true, 
 	"delay": 0.0001, 
 	"task": "kitchen", 
@@ -11,8 +11,8 @@
 	"server_ip": "172.24.68.162",
 	"enable_force_sensor": false,
 	"tool_positions": [-0.7],
-	"replay_file_name": "testf", 
-	"record_file_name": "testf",
+	"replay_file_name": "badsim", 
+	"record_file_name": "badsim",
 	"gui": true,
 
 	"camera": [0, 0, 0, 0, -35, 50, 4, 600, 540]

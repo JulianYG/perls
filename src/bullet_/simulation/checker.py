@@ -19,7 +19,7 @@ class TaskChecker(object):
 	def check_done(self):
 
 		if self._task == 'kitchen':	
-				
+			
 			table_id = self._body_info['table.urdf']
 			white_plate_id = self._body_info['plate_white']
 			blue_plate_id = self._body_info['plate_blue']

@@ -78,10 +78,11 @@ class World(object):
 					obj_pose[2], useFixedBase=obj_pose[3]
 				)
 			name_str = p.getBodyInfo(ob)[1]
+			if isinstance(name_str, bytes):
+				name_str = name_str.decode('utf-8')
 			if name_str in self.name_dic:
 				self.name_dic[name_str + str(ob)] = ob
 			else:
-
 				self.name_dic[name_str] = ob
 
 	def _load_task(self, task):
@@ -91,11 +92,11 @@ class World(object):
 			else:
 				ob = p.loadURDF(*obj_pose)
 			name_str = p.getBodyInfo(ob)[1]
-
+			if isinstance(name_str, bytes):
+				name_str = name_str.decode('utf-8')
 			if name_str in self.name_dic:
 				self.name_dic[name_str + str(ob)] = ob
 			else:
-
 				self.name_dic[name_str] = ob
 
 

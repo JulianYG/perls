@@ -3,7 +3,7 @@ import sys, os
 from os.path import join as pjoin
 sys.path.append(os.path.abspath(pjoin(os.path.dirname(__file__))))
 
-from misc import Constant
+from .misc import Constant
 
 class IllegalOperation(Exception):
 	def __init__(self, link):
