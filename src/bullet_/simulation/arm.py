@@ -41,7 +41,12 @@ class Arm(Tool):
 		arm_id = ctrl_map[Constant.ARM][ctrl_id]
 		gripper_id = ctrl_map[Constant.GRIPPER][ctrl_id]
 		self._set_camera(gripper_id)
-		self.slide_grasp(gripper_id, event)
+
+		if event[3] < 0.5:
+			self.grip(gripper_id)
+		else:
+			self.release(gripper_id)
+		# self.slide_grasp(gripper_id, event)
 
 		# Allows robot arm control by VR controllers
 		if self.get_tool_control_deviation(arm_id, event[1]) < self.THRESHOLD:

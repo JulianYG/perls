@@ -112,9 +112,11 @@ class CtrlInterface(object):
 
 					# If robot arm instance, just set gripper close/release
 					# The same thing for pr2 gripper
+					# print(obj,'haha', p.getBodyInfo(obj), pose)
 					agent.set_tool_joint_states([obj], [pose[2]], Constant.POS_CTRL)
 
 				if obj in agent.arms:
+					# print(obj, 'nono', p.getBodyInfo(obj), pose)
 					agent.set_tool_joint_states([obj], [pose], Constant.POS_CTRL)
 
 	def _msg_wrapper(self, tool_id, ids, agent, obj_map, ctrl=Constant.POS_CTRL):
@@ -430,8 +432,18 @@ class IVR(CtrlInterface):
 			for event in (events):
 				self.socket.broadcast_to_server(event)
 
+
+				if event[6][33] & p.VR_BUTTON_WAS_TRIGGERED:
+					print('close')
+
+				if event[6][33] & p.VR_BUTTON_WAS_RELEASED:
+					print('release')
+
 			signal = self.socket.listen_to_server()
-			
+
+
+
+
 			for s in signal:
 				s = eval(s)
 				self._signal_loop(s, agent, control_map, obj_map)

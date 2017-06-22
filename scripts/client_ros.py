@@ -10,7 +10,9 @@ p.connect(p.SHARED_MEMORY)
 r = redis.StrictRedis(host='172.24.68.162', port=6379)
 
 while True:
+    cur = time.time()
     events = p.getVREvents()
     for e in (events):
         r.publish('event_channel', e)
-    time.sleep(0.2)
+    diff = time.time() - cur
+    time.sleep(0.2 - diff)
