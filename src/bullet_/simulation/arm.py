@@ -242,7 +242,8 @@ class Sawyer(Arm):
 	def __init__(self, pos, fixed=False, enableForceSensor=False):
 		self.nDOF = 7
 		super(Sawyer, self).__init__(enableForceSensor,
-			gripper_file='rethink_ee_description/urdf/electric_gripper/right_standard_narrow_round.urdf')
+			gripper_file='rethink_ee_description/urdf/'
+			'electric_gripper/right_standard_narrow_round.urdf')
 		self.FIX = fixed
 
 		# Set boundaries on kuka arm
@@ -256,6 +257,9 @@ class Sawyer(Arm):
 
 		self.GRIPPER_REST_POS = [0., 0.020833, 0, -0.020833, 0]
 		self.GRIPPER_CLOZ_POS = [0., -0., 0., 0., 0.]
+
+		# # For use without padding tip
+		# self.GRIPPER_REST_POS = [0., 0.020833, -0.020833]
 		self.ee_offset = 0.155
 
 	def _roll_map(self):
