@@ -332,7 +332,7 @@ class IKeyboard(CtrlInterface):
 			if not gui:
 				p.stepSimulation()
 			time.sleep(0.01)
-			done, success = self._checker.check_done()
+			done, success = self._checker.check_status()
 		return success
 
 	def _keyboard_event_handler(self, events, agent, control_map, pseudo_event):
@@ -429,7 +429,6 @@ class IVR(CtrlInterface):
 
 		self.socket.connect_with_server()
 		self.socket.broadcast_to_server(configs)
-
 		control_map, obj_map = agent.create_control_mappings()
 		
 		while True:
@@ -441,18 +440,7 @@ class IVR(CtrlInterface):
 			events = p.getVREvents()
 			for event in (events):
 				self.socket.broadcast_to_server(event)
-
-
-				if event[6][33] & p.VR_BUTTON_WAS_TRIGGERED:
-					print('close')
-
-				if event[6][33] & p.VR_BUTTON_WAS_RELEASED:
-					print('release')
-
 			signal = self.socket.listen_to_server()
-
-
-
 
 			for s in signal:
 				s = eval(s)
@@ -500,7 +488,6 @@ class IVR(CtrlInterface):
 			if not gui:
 				p.stepSimulation()
 
-
 			flow_lst = agent.arms + agent.grippers
 			for i in range(p.getNumBodies()):
 				if i not in agent.arms and i not in agent.grippers:
@@ -530,10 +517,43 @@ class IVR(CtrlInterface):
 					continue
 			if not gui:
 				p.stepSimulation()
-			done, success = self._checker.check_done()
+			done, success = self._checker.check_status()
 		return success
 
-	
+class IPhone(CtrlInterface):
+
+	def __init__(self, host, remote, task_name):
+		# Default settings for camera
+		super(IPhone, self).__init__(host, remote, task_name)
+
+	def local_communicate(self, agent, gui=True):
+
+		self.socket.connect_to_channel('orientation_channel')
+		
+		tools = agent.get_tool_ids()
+		# Set same number of controllers as number of arms/grippers
+		agent.set_virtual_controller(range(len(tools)))
+		control_map, _ = agent.create_control_mappings()
+		pseudo_event = {0: 0, 3: 0.0}
+
+		done, success = False, False
+		while not done:
+			events = self.socket.listen_to_channel('orientation_channel')
+			skip_flag = agent.redundant_control()
+			for event in (events):
+				try:
+					if skip_flag:
+						if event[0] == agent.controllers[1]:
+							break
+						agent.control(event, control_map)
+					else:
+						agent.control(event, control_map)
+				except handler.IllegalOperation:
+					continue
+			if not gui:
+				p.stepSimulation()
+			done, success = self._checker.check_status()
+		return success
 
 
 

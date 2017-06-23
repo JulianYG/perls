@@ -23,6 +23,10 @@ class RedisComm(Comm):
         self.pubsub = self.terminal.pubsub()
         self.event_queue = q(buffer_size)
         self.signal_queue = q(buffer_size)
+        self.channel_queue = q(buffer_size)
+
+    def broadcast_to_channel(self, channel, message):
+        return self.terminal.publish(channel, message)
 
     def broadcast_to_client(self, message):
         return self.terminal.publish('signal_channel', message)
@@ -33,23 +37,31 @@ class RedisComm(Comm):
     def listen_to_client(self):
         events = []
         # TODO: Check if / while, which one is better
-        # print(self.event_queue.qsize())
         while not self.event_queue.empty():
             events.append(self.event_queue.get())
-        # print(len(events), 'len')
         return events
 
     def listen_to_server(self):
         events = []
-        print(self.signal_queue.qsize())
         while not self.signal_queue.empty():
             events.append(self.signal_queue.get())
-        print(len(events), 'len')
         return events
 
-    def connect_with_client(self):
+    def listen_to_channel(self):
+        events = []
+        while not self.channel_queue.empty():
+            events.append(self.channel_queue.get())
+        return events
+
+    def connect_to_channel(self, channel):
+        self.pubsub.subscribe(**{channel: self._event_handler})
+        # Start thread
+        channel_thread = self.pubsub.run_in_thread(sleep_time=0.001)
+        self.threads.append(channel_thread)
+
+    def connect_with_client(self, channel='event_channel'):
         if not self.connected_with_client:
-            self.pubsub.subscribe(**{'event_channel': self._event_handler})
+            self.pubsub.subscribe(**{channel: self._event_handler})
 
             # Start thread
             client_thread = self.pubsub.run_in_thread(sleep_time=0.001)
@@ -63,9 +75,9 @@ class RedisComm(Comm):
                     self.connected_with_client = True
                     break
 
-    def connect_with_server(self):
+    def connect_with_server(self, channel='signal_channel'):
         if not self.connected_with_server:
-            self.pubsub.subscribe(**{'signal_channel': self._signal_handler})
+            self.pubsub.subscribe(**{channel: self._signal_handler})
             server_thread = self.pubsub.run_in_thread(sleep_time=0.001)
             self.threads.append(server_thread)
 

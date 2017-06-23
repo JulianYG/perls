@@ -18,7 +18,7 @@ class TaskChecker(object):
 
 		self._start_time = time.time()
 
-	def check_done(self):
+	def check_status(self):
 
 		if self._task == 'kitchen':	
 
