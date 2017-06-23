@@ -8,7 +8,9 @@
 
 - [Sawyer Robot URDF modified for Bullet](https://www.dropbox.com/s/tcpjef3iyym64of/sawyer_robot.zip?dl=0)
 
-- [Tray and Cube URDFs](https://www.dropbox.com/s/zrv93quaaum40cc/sorting_cubes.zip?dl=0)
+- [Sorting Cube Task URDFs](https://www.dropbox.com/s/ppb1jj0fc8f4ipl/sorting_cubes.zip?dl=0)
+
+- [Serving Dinner Task URDFs](https://www.dropbox.com/s/o3sv5oiqhd7xbp8/serving.zip?dl=0)
 
 - [Shape Sorter URDFs](https://www.dropbox.com/s/vh0asw5rl67xta5/shape_sorter.zip?dl=0)
 

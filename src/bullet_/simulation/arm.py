@@ -61,7 +61,7 @@ class Arm(Tool):
 		if not self.close_grip:
 			for i in range(p.getNumJoints(gripper)):
 				p.setJointMotorControl2(gripper, i, Constant.POS_CTRL,
-										targetPosition=self.GRIPPER_CLOZ_POS[i], force=50)
+										targetPosition=self.GRIPPER_CLOZ_POS[i], force=500)
 			self.close_grip = True
 
 	def release(self, gripper):
@@ -78,12 +78,12 @@ class Arm(Tool):
 		if event[6][33] & p.VR_BUTTON_WAS_TRIGGERED:
 			for i in range(p.getNumJoints(gripper)):
 				p.setJointMotorControl2(gripper, i, Constant.POS_CTRL,
-										targetPosition=self.GRIPPER_CLOZ_POS[i], force=50)
+										targetPosition=self.GRIPPER_CLOZ_POS[i], force=500)
 
 		if event[6][33] & p.VR_BUTTON_WAS_RELEASED:
 			for i in range(p.getNumJoints(gripper)):
 				p.setJointMotorControl2(gripper, i, Constant.POS_CTRL,
-										targetPosition=self.GRIPPER_REST_POS[i], force=50)
+										targetPosition=self.GRIPPER_REST_POS[i], force=500)
 
 	def reach(self, arm_id, eef_pos, eef_orien, fixed, ctrl=Constant.POS_CTRL,
 			  null_space=True, expedite=False):

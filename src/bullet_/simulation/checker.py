@@ -16,10 +16,12 @@ class TaskChecker(object):
 		self._task = task_name
 		self._body_info = name_dic
 
+		self._start_time = time.time()
+
 	def check_done(self):
 
 		if self._task == 'kitchen':	
-			
+
 			table_id = self._body_info['table.urdf']
 			white_plate_id = self._body_info['plate_white']
 			blue_plate_id = self._body_info['plate_blue']
@@ -63,6 +65,28 @@ class TaskChecker(object):
 						np.allclose(np.abs(pan_2_orn[:2]), flat_orn, atol=1e-5, rtol=0.):
 						print("Task Success")
 						return True, True
+		elif self._task == 'stacking':
+
+			table_id = self._body_info['table.urdf']
+
+			cube_small_white_id = self._body_info['cube_small_white']
+			cube_small_blue_id = self._body_info['cube_small_blue'] 
+			cube_small_red_id = self._body_info['cube_small_red'] 
+			cube_small_yellow_id = self._body_info['cube_small_yellow'] 
+			cube_small_green_id = self._body_info['cube_small_green'] 
+			cube_small_purple_id = self._body_info['cube_small_purple']
+
+			time_lapse = time.time() - self._start_time
+			if time_lapse > 40:
+				return True, False
+
+			if p.getContactPoints(table_id, cube_small_red_id) and \
+				p.getContactPoints(cube_small_red_id, cube_small_yellow_id) and \
+				p.getContactPoints(cube_small_yellow_id, cube_small_green_id) and \
+				p.getContactPoints(cube_small_green_id, cube_small_blue_id) and \
+				p.getContactPoints(cube_small_blue_id, cube_small_purple_id):
+
+				return True, True
 
 		return False, False
 
