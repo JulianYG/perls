@@ -3,6 +3,7 @@ __package__ = 'bullet_.simulation'
 
 import numpy as np
 import pybullet as p
+import time
 
 from .utils import handler
 from .utils.misc import Constant
@@ -42,9 +43,9 @@ class Arm(Tool):
 		gripper_id = ctrl_map[Constant.GRIPPER][ctrl_id]
 		self._set_camera(gripper_id)
 
-		if event[3] < 0.5:
+		if event[3] == 1 and not self.close_grip:
 			self.grip(gripper_id)
-		else:
+		elif event[3] == 0 and self.close_grip:
 			self.release(gripper_id)
 		# self.slide_grasp(gripper_id, event)
 
@@ -57,7 +58,6 @@ class Arm(Tool):
 			return -1
 
 	def grip(self, gripper):
-
 		if not self.close_grip:
 			for i in range(p.getNumJoints(gripper)):
 				p.setJointMotorControl2(gripper, i, Constant.POS_CTRL,
@@ -254,8 +254,8 @@ class Sawyer(Arm):
 		self.arm_urdf = 'sawyer_robot/sawyer_description/urdf/sawyer_arm.urdf'
 		self.positions = [[0.45, ypos, 0.8] for ypos in pos]
 
-		self.GRIPPER_CLOZ_POS = [0., 0.020833, -0.020833]
-		self.GRIPPER_REST_POS = [0., -0., 0.]
+		self.GRIPPER_REST_POS = [0., 0.020833, -0.020833]
+		self.GRIPPER_CLOZ_POS = [0., -0., 0.]
 		self.ee_offset = 0.195
 
 	def _roll_map(self):

@@ -270,7 +270,7 @@ class IKeyboard(CtrlInterface):
 
 		end_effector_poses = agent.get_tool_poses(tools)
 		self.pos = end_effector_poses[:, 0]
-		self.orn = [[0,0,0],[0,0,0]]
+		self.orn = [[0,0,0], [0,0,0]]
 		pseudo_event = {0: 0, 3: 0.0, 6: {1: 0}}
 
 		curr_tool_id = control_map[Constant.GRIPPER][pseudo_event[0]]
@@ -384,16 +384,11 @@ class IKeyboard(CtrlInterface):
 					self.orn[pseudo_event[0]][1] += 0.01
 
 			# Gripper control
-			if Key.G in events and (events[Key.G] == p.KEY_IS_DOWN):
-				
+			if Key.G in events and (events[Key.G] == p.KEY_WAS_RELEASED):
 				# Using binary grippers for keyboard control
 				if agent.close_grip:
-					# This for binary robot gripper
-					agent.release(control_map[Constant.GRIPPER][pseudo_event[0]])
-					# This for binary pr2 
 					pseudo_event[3] = 0.0
 				else:
-					agent.grip(control_map[Constant.GRIPPER][pseudo_event[0]])
 					pseudo_event[3] = 1.0
 
 			# Update position
@@ -415,7 +410,7 @@ class IKeyboard(CtrlInterface):
 			except handler.IllegalOperation as e:
 				if self.socket:
 					handler.illegal_operation_handler(e, self.socket)
-				self.orn = [[0,0,0],[0,0,0]]
+				self.orn = [[0,0,0], [0,0,0]]
 				continue
 
 
