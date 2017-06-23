@@ -10,7 +10,7 @@ __package__ = 'bullet_.simulation'
 
 from .tool import PR2
 from .arm import Kuka, Sawyer
-from .interface import IVR, IKeyboard, ICmd
+from .interface import IVR, IKeyboard, ICmd, IPhone
 from .simulator import BulletSimulator
 from .utils import io
 from .utils.misc import Constant
@@ -68,19 +68,19 @@ def build_by_config(configs, work_dir, remote=False):
 
 	socket = db.RedisComm(ip) if remote else None
 	
+	vr = False
 	if interface_type == 'vr':	# VR interface that takes VR events
 		interface = IVR(socket, remote, task)
 		vr = True
 	elif interface_type == 'keyboard':	# Keyboard interface that takes keyboard events
 		interface = IKeyboard(socket, remote, task)
-		vr = False
 	elif interface_type == 'cmd':	# Customized interface that takes any sort of command
 		interface = ICmd(socket, remote, task)
-		vr = False
+	elif interface_type == 'phone':
+		interface = IPhone(db.RedisComm('localhost'), remote, task)
 	else:
 		print('Interface registered as Nonetype.')
 		interface = None
-		vr = False
 
 	simulator = BulletSimulator(agent, interface, 
 								task_repo[task], scene_repo[scene],
