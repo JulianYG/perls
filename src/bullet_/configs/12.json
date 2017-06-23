@@ -1,5 +1,5 @@
 {
-	"interface": "keyboard", 
+	"interface": "phone", 
 	"agent": "sawyer",
 	"job": "record", 
 	"video": false, 

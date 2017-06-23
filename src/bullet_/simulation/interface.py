@@ -153,7 +153,7 @@ class ICmd(CtrlInterface):
 		self.socket.connect_with_client()
 
 		while True:
-			events = self.socket.listen_to_client()
+			events = self.socket.listen_to_channel('event_channel')
 			for event in events:
 				event = eval(event)
 				try:
@@ -191,7 +191,7 @@ class ICmd(CtrlInterface):
 			self.socket.broadcast_to_server(event)
 
 			# Receive and render from server
-			signal = self.socket.listen_to_server()
+			signal = self.socket.listen_to_channel('signal_channel')
 			for s in signal:
 				s = eval(s)
 				self._signal_loop(s, agent, control_map, obj_map)
@@ -247,7 +247,7 @@ class IKeyboard(CtrlInterface):
 			self.socket.broadcast_to_server(event)
 
 			# Receive and render from server
-			signal = self.socket.listen_to_server()
+			signal = self.socket.listen_to_channel('signal_channel')
 			
 			for s in signal:
 				s = eval(s)
@@ -281,7 +281,7 @@ class IKeyboard(CtrlInterface):
 
 		while True:
 			# if agent.controllers:
-			events = self.socket.listen_to_client()
+			events = self.socket.listen_to_channel('event_channel')
 			for event in events:
 				e = eval(event)
 				return_status = self._event_loop(e, scene, task, agent, gui)
@@ -435,7 +435,7 @@ class IVR(CtrlInterface):
 			events = p.getVREvents()
 			for event in (events):
 				self.socket.broadcast_to_server(event)
-			signal = self.socket.listen_to_server()
+			signal = self.socket.listen_to_channel('signal_channel')
 
 			for s in signal:
 				s = eval(s)
@@ -452,7 +452,7 @@ class IVR(CtrlInterface):
 
 		# First get the controller IDs
 		while not agent.controllers:
-			events = self.socket.listen_to_client()
+			events = self.socket.listen_to_channel('event_channel')
 			for event in events:
 				event = eval(event)
 				if isinstance(event, tuple):
@@ -466,7 +466,7 @@ class IVR(CtrlInterface):
 		self.msg_holder = self._msg_wrapper(None, range(p.getNumBodies()), agent, obj_map)
 
 		while True:
-			events = self.socket.listen_to_client()
+			events = self.socket.listen_to_channel('event_channel')
 			for event in events:
 				event = eval(event)
 				return_status = self._event_loop(event, scene, task, 
@@ -505,7 +505,6 @@ class IVR(CtrlInterface):
 					if skip_flag:
 						if event[0] == agent.controllers[1]:
 							break
-						agent.control(event, control_map)
 					else:
 						agent.control(event, control_map)
 				except handler.IllegalOperation:
@@ -524,7 +523,7 @@ class IPhone(CtrlInterface):
 	def local_communicate(self, agent, gui=True):
 
 		self.socket.connect_to_channel('orientation_channel')
-		
+
 		tools = agent.get_tool_ids()
 		# Set same number of controllers as number of arms/grippers
 		agent.set_virtual_controller(range(len(tools)))
@@ -534,15 +533,24 @@ class IPhone(CtrlInterface):
 		done, success = False, False
 		while not done:
 			events = self.socket.listen_to_channel('orientation_channel')
+
 			skip_flag = agent.redundant_control()
 			for event in (events):
 				try:
 					if skip_flag:
 						if event[0] == agent.controllers[1]:
 							break
-						agent.control(event, control_map)
 					else:
-						agent.control(event, control_map)
+						roll, pitch, yaw, sens = [float(x) for x in event.split(' ')]
+						if not agent.FIX:
+							pseudo_event[2] = p.getQuaternionFromEuler([roll, pitch, yaw])
+						end_effector_poses = agent.get_tool_poses(tools)
+						
+						self.pos = end_effector_poses[:, 0]
+						pseudo_event[1] = self.pos[pseudo_event[0]]
+						
+						agent.control(pseudo_event, control_map)
+
 				except handler.IllegalOperation:
 					continue
 			if not gui:
