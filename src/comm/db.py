@@ -81,7 +81,10 @@ class RedisComm(Comm):
 
     def _channel_handler(self, msg):
         packet = msg['data']
-        channel_queue = self.channel_queues[msg['channel']]
+        channel_name = msg['channel']
+        if isinstance(msg['channel'], bytes):
+            channel_name = msg['channel'].decode('utf-8')
+        channel_queue = self.channel_queues[channel_name]
         if isinstance(packet, str) or isinstance(packet, bytes):
             if not channel_queue.full():
                 channel_queue.put(packet)
