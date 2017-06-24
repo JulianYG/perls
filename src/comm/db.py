@@ -22,8 +22,7 @@ class RedisComm(Comm):
         self.threads = []
         self._buffer_size = buffer_size
         self.pubsub = self.terminal.pubsub()
-        self.channel_queues = dict(event_channel=q(buffer_size),
-            signal_channel=q(buffer_size))
+        self.channel_queues = dict()
 
     def broadcast_to_channel(self, channel, message):
         return self.terminal.publish(channel, message)
@@ -39,7 +38,7 @@ class RedisComm(Comm):
         queue = self.channel_queues[channel]
         while not queue.empty():
             events.append(queue.get())
-        print(events)
+        # print(events)
         return events
 
     def connect_to_channel(self, channel):
@@ -51,6 +50,7 @@ class RedisComm(Comm):
 
     def connect_with_client(self, channel='event_channel'):
         if not self.connected_with_client:
+            self.channel_queues[channel] = q(self._buffer_size)
             self.pubsub.subscribe(**{channel: self._channel_handler})
 
             # Start thread
@@ -67,6 +67,7 @@ class RedisComm(Comm):
 
     def connect_with_server(self, channel='signal_channel'):
         if not self.connected_with_server:
+            self.channel_queues[channel] = q(self._buffer_size)
             self.pubsub.subscribe(**{channel: self._channel_handler})
             server_thread = self.pubsub.run_in_thread(sleep_time=0.001)
             self.threads.append(server_thread)

@@ -35,7 +35,7 @@ def execute():
 		while 1:
 			_CONFIGS = {}
 			while not _CONFIGS:
-				for event in socket.listen_to_client():
+				for event in socket.listen_to_channel('event_channel'):
 					e = eval(event)
 					# Make sure it's config
 					if isinstance(e, dict) and 'task' in e:
@@ -52,7 +52,7 @@ def run_server(config):
 
 	simulator = build_util.build_by_config(config, bullet_path,
 		remote=True)
-	simulator.gui = False
+	simulator.gui = True
 	simulator.vr = False
 	if job == 'record':
 		simulator.run_as_server(fn, True, video)
