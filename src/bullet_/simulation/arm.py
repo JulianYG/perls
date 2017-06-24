@@ -272,7 +272,6 @@ class Sawyer(Arm):
 		p.resetDebugVisualizerCamera(0.4, 60, -130, 
 			p.getBasePositionAndOrientation(uid)[0])
 
-
 class Kuka(Arm):
 
 	def __init__(self, pos, enableForceSensor=False, fixed=False):

@@ -532,8 +532,8 @@ class IPhone(CtrlInterface):
 		# Set same number of controllers as number of arms/grippers
 		agent.set_virtual_controller(range(len(tools)))
 		control_map, _ = agent.create_control_mappings()
-		pseudo_event = {0: 0, 3: 0.0}
-
+		pseudo_event = {0: 0, 2: (0, 1, 0, 0), 3: 0.0}
+		pseudo_event[6] = {32: 1, 33: 0, 1: 0}
 		done, success = False, False
 		while not done:
 			events = self.socket.listen_to_channel('orientation_channel')
@@ -546,8 +546,11 @@ class IPhone(CtrlInterface):
 							break
 					else:
 						roll, pitch, yaw, sens = [float(x) for x in event.split(' ')]
+						orn_euler = np.array([roll, -pitch, yaw], 
+							dtype=np.float32) * np.pi / 180.
 						if not agent.FIX:
-							pseudo_event[2] = p.getQuaternionFromEuler([roll, pitch, yaw])
+							pseudo_event[2] = p.getQuaternionFromEuler(
+								np.arcsin(np.sin(orn_euler * sens)))
 						end_effector_poses = agent.get_tool_poses(tools)
 						
 						self.pos = end_effector_poses[:, 0]

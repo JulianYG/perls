@@ -6,7 +6,7 @@
 	"delay": 0.000, 
 	"task": "stacking", 
 	"scene": "default",
-	"fixed_gripper_orn": true,
+	"fixed_gripper_orn": false,
 	"server_ip": "172.24.68.162",
 	"enable_force_sensor": false,
 	"tool_positions": [-0.5],

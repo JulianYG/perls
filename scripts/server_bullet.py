@@ -52,7 +52,7 @@ def run_server(config):
 
 	simulator = build_util.build_by_config(config, bullet_path,
 		remote=True)
-	simulator.gui = True
+	simulator.gui = False
 	simulator.vr = False
 	if job == 'record':
 		simulator.run_as_server(fn, True, video)

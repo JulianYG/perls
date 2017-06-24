@@ -67,7 +67,6 @@ def build_by_config(configs, work_dir, remote=False):
 		agent = None
 
 	socket = db.RedisComm(ip) if remote else None
-	print(socket)
 	vr = False
 	if interface_type == 'vr':	# VR interface that takes VR events
 		interface = IVR(socket, remote, task)
