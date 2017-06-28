@@ -1,0 +1,12 @@
+cube_small_white,6
+cube_small_yellow,9
+right_electric_gripper_0,5
+Amazon Pod,3
+cube_small_green,10
+table.urdf,1
+cube_small_purple,11
+plane,0
+sawyer_0,4
+cube_small_blue,7
+urdf_table,2
+cube_small_red,8

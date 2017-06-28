@@ -1,0 +1,14 @@
+0,plane
+1,table.urdf
+2,urdf_table
+3,Amazon Pod
+4,sawyer_0
+5,wsg50_with_gripper_0
+6,sawyer_1
+7,wsg50_with_gripper_1
+8,slate.urdf
+9,slate.urdf
+10,slate.urdf
+11,slate.urdf
+12,slate.urdf
+13,slate.urdf

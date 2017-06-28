@@ -14,7 +14,7 @@
 
 	"num_episodes": 1000,
 	"real_time": false,
-	"wrapper": "ik.TorqueControl",
+	"wrapper": "ik.PositionControl",
 	"time_step": 0.001,
 	"step_limit": 100000,
 	"reward_thresh": 1000

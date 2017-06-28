@@ -1,11 +1,11 @@
 import pybullet as p
-from bullet_.simulation.utils.io import parse_log as plog
+from sim_.simulation.utils.io import parse_log as plog
 import numpy as np
 # from IPython import embed
 
 
 class Postprocess(object):
-    def __init__(self, objects_fname="bullet_/log/trajectory/body_info.txt"):
+    def __init__(self, objects_fname="sim_/log/trajectory/body_info.txt"):
 
         # get mapping between object ids and object names
         self.object_map = {}
@@ -84,7 +84,7 @@ class Postprocess(object):
 
 if __name__ == "__main__":
 
-    f_name = "bullet_/log/trajectory/keyboard_sawyer_hanoi.bin"
+    f_name = "sim_/log/trajectory/keyboard_sawyer_hanoi.bin"
     pp = Postprocess()
     log1 = pp.parse_log(f_name, None, verbose=False)
     log2 = pp.parse_log(f_name, None, verbose=False, objects=["sawyer", "gripper"])

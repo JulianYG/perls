@@ -13,7 +13,7 @@ class VelocityControl(Wrapper):
 		"""
 		:return initial state
 		"""
-		self.agent.setup_scene(scene, task, gui, reset=True)
+		self.agent.build(scene, task, gui, reset=True)
 		return self.states
 
 	# Make use of self.agent
@@ -50,7 +50,7 @@ class TorqueControl(Wrapper):
 		"""
 
 		# Reset false to enable torque control 
-		self.agent.setup_scene(scene, task, gui, reset=False)
+		self.agent.build(scene, task, gui, reset=False)
 		return self.states
 
 	def step(self, action):	
@@ -84,7 +84,7 @@ class PositionControl(Wrapper):
 		"""
 		:return initial state
 		"""
-		self.agent.setup_scene(scene, task, gui, reset=True)
+		self.agent.build(scene, task, gui, reset=True)
 		return self.states
 
 	def step(self, action):	

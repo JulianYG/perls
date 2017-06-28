@@ -25,10 +25,10 @@ def execute(*args):
 			
 			# Toy example: IK
 			# Position Control
-			# action = ([0.8, 0, 1.0], (0, 1, 0, 0))
+			action = ([0.8, 0, 1.0], (0, 1, 0, 0))
 
 			# Torque control
-			action = np.array([900, 200, 300, 400, 500, 600, 100], dtype=np.float32)
+			# action = np.array([900, 200, 300, 400, 500, 600, 100], dtype=np.float32)
 
 			# Velocity control
 			# action = [np.array([0.2, -0.02, 0., -0.5, 0.1, 0., 0.3], dtype=np.float32)]

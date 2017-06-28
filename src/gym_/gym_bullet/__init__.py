@@ -8,11 +8,11 @@ rpath = os.path.normpath(pjoin(path, '../../..'))
 sys.path.append(pjoin(rpath, 'src'))
 
 from bullet_ import simulation
-__package__ = 'bullet_.simulation'
+__package__ = 'sim_.simulation'
 
 from .utils import io, build_util
 
-bullet_path = pjoin(rpath, 'src/bullet_')
+bullet_path = pjoin(rpath, 'src/sim_')
 
 CONFIG_DIR = pjoin(rpath, 'src/gym_/config.json')
 _CONFIGS = io.read_config(CONFIG_DIR)

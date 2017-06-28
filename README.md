@@ -43,7 +43,7 @@ You can connect to the VR app using pybullet to add robots from URDF or SDF file
 - Setup:
 Currently modifying `App_SharedMemoryPhysics_VR` project under `0_Bullet3Solution` to setup our own environment. Shared memory is defined. Controller buttons behavior: `pr2_gripper (bodyID = 0)`? Only need to define ground plane and gripper behavior in cpp files. The rest can be added through pybullet, as demonstrated in Desktop python script.
 
-This readme file is composed by two parts. First part is instructions on using the built VR environment, and the second part is documentation on three relevant scripts: `model.py`, `VRcontrol.py`, and `engine.py`.
+This readme file is composed by two parts. First part is instructions on using the built VR environment, and the second part is documentation on three relevant scripts: `model.py`, `VRcontrol.py`, and `bulletphysicsengine.py`.
 
 ### Bullet-VR Demo instructions
 

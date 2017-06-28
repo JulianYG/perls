@@ -1,0 +1,18 @@
+{
+	"interface": "phone", 
+	"agent": "sawyer",
+	"job": "record", 
+	"video": false, 
+	"delay": 0.000, 
+	"task": "stacking", 
+	"scene": "default",
+	"fixed_gripper_orn": false,
+	"server_ip": "172.24.68.162",
+	"enable_force_sensor": false,
+	"tool_positions": [-0.5],
+	"replay_file_name": "stack", 
+	"record_file_name": "stack",
+	"gui": true,
+
+	"camera": [0.8, -0.2, 1, 0, -90, 120, 1, 600, 540]
+}

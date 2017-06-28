@@ -24,7 +24,7 @@ import tf
 from cv_bridge import CvBridge, CvBridgeError
 
 from os.path import join as pjoin
-sys.path.append(pjoin(os.getcwd(), 'ros_'))
+sys.path.append(pjoin(os.getcwd(), 'real_'))
 from robot import Robot
 import time
 import numpy as np
@@ -131,8 +131,8 @@ class GraspSawyer(object):
 
     def _solve_external_camera(self, gripper_init_pos):
 
-        if not os.path.exists('ros_/calib_data/extern_invR.p') or \
-            not os.path.exists('ros_/calib_data/extern_T.p'):
+        if not os.path.exists('real_/calib_data/extern_invR.p') or \
+            not os.path.exists('real_/calib_data/extern_T.p'):
             found = False
             while not found:
                 found, usbCamCornerPoints, _ = self._get_external_points()
@@ -168,8 +168,8 @@ class GraspSawyer(object):
 
     def _calibrate_head_camera(self):
         
-        if not os.path.exists('ros_/calib_data/head_R.p') or \
-            not os.path.exists('ros_/calib_data/head_T.p'):
+        if not os.path.exists('real_/calib_data/head_R.p') or \
+            not os.path.exists('real_/calib_data/head_T.p'):
 
             self._get_head_camera_points()
 
@@ -204,8 +204,8 @@ class GraspSawyer(object):
 
     def _calibrate_wrist_camera(self):
 
-        if not os.path.exists('ros_/calib_data/wrist_invR.p') or \
-            not os.path.exists('ros_/calib_data/wrist_T.p'):
+        if not os.path.exists('real_/calib_data/wrist_invR.p') or \
+            not os.path.exists('real_/calib_data/wrist_T.p'):
 
             self._get_wrist_camera_points()
 
@@ -268,9 +268,9 @@ class GraspSawyer(object):
 
     def calibrate_stereo(self, camera):
 
-        if not os.path.exists('ros_/calib_data/fundamental.p') or \
-            (not os.path.exists('ros_/calib_data/usb_intrinsic.p') or not \
-                os.path.exists('ros_/calib_data/usb_distortion.p')):
+        if not os.path.exists('real_/calib_data/fundamental.p') or \
+            (not os.path.exists('real_/calib_data/usb_intrinsic.p') or not \
+                os.path.exists('real_/calib_data/usb_distortion.p')):
             # Fill in points
             self._get_stereo_points(camera)
 
@@ -392,7 +392,7 @@ class GraspSawyer(object):
             if not robotFoundPattern or not usb_found:
                 raw_input('One camera did not find pattern...'
                     ' Please re-adjust checkerboard position and press Enter.')
-                cv2.imwrite('ros_/calib_data/failures/{}.jpg'.format(time_stamp), cv_image)
+                cv2.imwrite('real_/calib_data/failures/{}.jpg'.format(time_stamp), cv_image)
                 return
             elif len(self.head_camera_corner_points) < self._calibration_iter:
                 time.sleep(1)
@@ -403,8 +403,8 @@ class GraspSawyer(object):
                     self.head_camera_corner_points.append(np.reshape(robot_points, (self._numCornerPoints, 2)))
                 elif camera == 'right_hand_camera':
                     self.wrist_camera_corner_points.append(np.reshape(robot_points, (self._numCornerPoints, 2)))
-                cv2.imwrite('ros_/calib_data/camera/{}.jpg'.format(time_stamp), usb_img)
-                cv2.imwrite('ros_/calib_data/{}/{}.jpg'.format(camera, time_stamp), cv_image)
+                cv2.imwrite('real_/calib_data/camera/{}.jpg'.format(time_stamp), usb_img)
+                cv2.imwrite('real_/calib_data/{}/{}.jpg'.format(camera, time_stamp), cv_image)
                 raw_input('Successfully read one point.'
                     ' Re-adjust the checkerboard and press Enter to Continue...')
                 return
@@ -597,14 +597,14 @@ class GraspSawyer(object):
             time.sleep(1)
 
     @staticmethod
-    def _write_params(data, direct='ros_/calib_data/'):
+    def _write_params(data, direct='real_/calib_data/'):
         
         for name, mat in data.items():
             with open('{}/{}.p'.format(direct, name), 'wb') as f:
                 pickle.dump(mat, f)
 
     @staticmethod
-    def _read_params(names, direct='ros_/calib_data/'):
+    def _read_params(names, direct='real_/calib_data/'):
 
         data = {}
         for name in names:
