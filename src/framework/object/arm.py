@@ -5,7 +5,7 @@ from ..utils import math_util
 
 class Arm(Tool):
 
-    def __init__(self, engine, path,
+    def __init__(self, tid, engine, path,
                  pos, orn, null_space,
                  gripper):
         """
@@ -14,7 +14,7 @@ class Arm(Tool):
         :param pos: initial position vec3 float cartesian
         :param orn: initial orientation vec4 float quat
         """
-        Tool.__init__(self, engine, path, pos, orn, fixed=True)
+        Tool.__init__(self, tid, engine, path, pos, orn, fixed=True)
 
         # Reset pose is defined in subclasses
         self._gripper = gripper

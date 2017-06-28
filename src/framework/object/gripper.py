@@ -5,7 +5,7 @@ from ..utils import math_util
 
 class PrismaticGripper(Tool):
 
-    def __init__(self, engine, path, pos, orn, left, right):
+    def __init__(self, tid, engine, path, pos, orn, left, right):
         """
         Initialization.
         :param path: asset file path
@@ -14,7 +14,7 @@ class PrismaticGripper(Tool):
         :param left: left tip link index, as specified in asset file
         :param right: right tip link index
         """
-        Tool.__init__(self, engine, path, pos, orn, False)
+        Tool.__init__(self, tid, engine, path, pos, orn, False)
 
         # Need to be specified in child class
         self._left_finger_idx = left

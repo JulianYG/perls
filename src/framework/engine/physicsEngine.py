@@ -2,7 +2,6 @@ import pybullet as p
 import numpy as np
 import os
 from .base import FakeEngine
-from ..utils import io_util
 
 
 class GazeboEngine(FakeEngine):
@@ -381,13 +380,19 @@ class BulletPhysicsEngine(FakeEngine):
 
     def add_body_text_marker(self, text, pos, font_size, color,
                              uid, lid, time):
-        p.addUserDebugText(text, pos, textColorRGB=tuple(color),
-                           textSize=float(font_size),
-                           lifeTime=time,
-                           # Not using textOrientation for now
-                           parentObjectUniqueId=uid,
-                           parentLinkIndex=lid,
-                           physicsClientId=self._physics_server_id)
+        mid = p.addUserDebugText(
+            text, pos, textColorRGB=tuple(color),
+            textSize=float(font_size),
+            lifeTime=time,
+            # Not using textOrientation for now
+            parentObjectUniqueId=uid,
+            parentLinkIndex=lid,
+            physicsClientId=self._physics_server_id)
+        return mid
+
+    def remove_body_text_marker(self, marker_id):
+        p.removeUserDebugItem(marker_id,
+                              physicsClientId=self._physics_server_id)
 
     def apply_force_to_body(self, uid, lid, force, pos, ref):
         try:
@@ -580,3 +585,4 @@ class BulletPhysicsEngine(FakeEngine):
                     p.setRealTimeSimulation(1, physicsClientId=self._physics_server_id)
                     return False
         return True
+

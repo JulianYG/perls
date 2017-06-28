@@ -156,8 +156,11 @@ def parse_gripper_elem(gripper_elem):
         pos, orn = elem.find('pos'), elem.find('orn')
         # Grippers are not fixed by default,
         # but you can change them by calling gripper.fix=(orn,pos)
+        tid = int(asset.attrib.get('id', i))
         gripper.append(
-            dict(# Allow path to be none for gripper (has default)
+            dict(
+                tid=tid,
+                # Allow path to be none for gripper (has default)
                 path=asset.attrib.get('path', None),
                 # Allow none pos/orn to use default as well
                 pos=[float(f) for
@@ -167,8 +170,7 @@ def parse_gripper_elem(gripper_elem):
                 # But must specify type for gripper
                 type=elem.attrib['type'],
                 # ID refers to controll id
-                name='{}_{}'.format(elem.attrib['name'],
-                                    asset.attrib.get('id', i)),
+                name='{}_{}'.format(elem.attrib['name'], tid),
                 fixed=str2bool(elem.attrib.get('fixed', False))))
 
     return gripper
@@ -192,8 +194,10 @@ def parse_arm_elem(arm_elem):
         pos, orn = elem.find('pos'), elem.find('orn')
         # Arm must have at least one gripper.
         gripper_elem = elem.find('gripper')
+        tid = int(asset.attrib.get('id', i))
         arm.append(
             dict(
+                tid=tid,
                 path=asset.attrib.get('path', None),
                 pos=[float(f) for
                      f in pos.text.split(' ')] if 
@@ -202,8 +206,7 @@ def parse_arm_elem(arm_elem):
                      f in orn.text.split(' ')] if 
                 orn is not None else (0., 0., 0., 1.),
                 type=elem.attrib['type'],
-                name='{}_{}'.format(elem.attrib['name'],
-                                    asset.attrib.get('id', i)),
+                name='{}_{}'.format(elem.attrib['name'], tid),
                 gripper=parse_gripper_elem([gripper_elem])[0]
             )
         )
@@ -243,6 +246,7 @@ def parse_disp(file_path):
     disp_name = root.attrib['name']
     frame_attrib = root.find('./view/frame').attrib
     option_attrib = root.find('./view/option').attrib
+    control_attrib = root.find('./control').attrib
 
     frame_type = frame_attrib['type']
     frame_info = [frame_type]
@@ -258,10 +262,12 @@ def parse_disp(file_path):
         frame_info += [frame_attrib.get('ip', '127.0.0.1'),
                        int(frame_attrib.get('port', 6667))]
 
-    control_type = root.find('./control').attrib['type']
+    control_type = control_attrib['type']
+    sensitivity = float(control_attrib.get('sensitivity', 1.))
+    rate = int(control_attrib.get('rate', 100))
     options = dict((k, str2bool(v)) for (k, v) in option_attrib.items())
 
-    return disp_name, frame_info, options, control_type
+    return disp_name, frame_info, options, control_type, sensitivity, rate
 
 
 def parse_config(file_path):

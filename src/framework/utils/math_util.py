@@ -10,6 +10,10 @@ def approximate(val, n_digits):
                     dtype=np.float32)
 
 
+def rand_bigint():
+    return np.random.randint(low=500, high=10000)
+
+
 def vec(values):
     return np.array(values, dtype=np.float32)
 

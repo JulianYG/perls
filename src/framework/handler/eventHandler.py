@@ -1,10 +1,9 @@
-from .interruptHandler import InterruptHandler
+from .base import InterruptHandler
 
-
-class ControlEventHandler(InterruptHandler):
+class MouseEventHandler(InterruptHandler):
 
     pass
 
-class NullHandler(ControlEventHandler):
+class AssetHandler(InterruptHandler):
 
     pass

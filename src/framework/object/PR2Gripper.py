@@ -3,12 +3,13 @@ from .gripper import PrismaticGripper
 
 class PR2Gripper(PrismaticGripper):
 
-    def __init__(self, engine,
+    def __init__(self, tool_id,
+                 engine,
                  path=None,
                  pos=(0., 0., 0.6),
                  orn=(0., 0., 0., 1)):
         path = path or 'pr2_gripper.urdf'
-        PrismaticGripper.__init__(self, engine, path, pos, orn, 1, 3)
+        PrismaticGripper.__init__(self, tool_id, engine, path, pos, orn, 1, 3)
 
     def reset(self):
         self.joint_states = ([0, 2],

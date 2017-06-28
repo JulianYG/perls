@@ -1,5 +1,0 @@
-
-class InterruptHandler(object):
-
-    pass
-

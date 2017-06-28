@@ -22,8 +22,9 @@ class Body(object):
         orn = orn or (0., 0., 0., 1.)
         self._engine = engine
         self._model_path = path
+        self._text_markers = dict()
         self._fixed = fixed
-        self._cid = []      # No children constraints initially
+        self._cid = list()      # No children constraints initially
         self._uid, self._links, self._joints = \
             self._engine.load_asset(path, pos, orn, fixed)
     ###
@@ -220,7 +221,7 @@ class Body(object):
         return self._engine.get_body_attachment(self._uid)[1]
 
     ###
-    # Shape infos
+    # Visual infos
     @property
     def visual_shape(self):
         """
@@ -240,12 +241,14 @@ class Body(object):
         # TODO
         return
 
-    def remove(self):
+    @property
+    def mark(self):
         """
-        Remove current object instance from environment
-        :return: None
+        Text mark getter. Get all marked texts info on this body
+        :return: dictionary of dictionaries of info:
+        [{id: {text_string, font_size, color, life_time}}, {}, ...]
         """
-        self._engine.delete_body(self._uid)
+        return self._text_markers
 
     @fix.setter
     def fix(self, (pos, orn)):
@@ -344,8 +347,8 @@ class Body(object):
         :return: None
         """
         #TODO: add if/else for changing constraint
-        parent_orn = parent_orn or [0., 1., 0., 0.]
-        child_orn = child_orn or [0., 1, 0., 0.]
+        parent_orn = parent_orn or [0., 0., 0., 1.]
+        child_orn = child_orn or [0., 0, 0., 1.]
         self._cid.append(
             self._engine.set_body_attachment(
                 self._uid, lid, child_uid, child_lid,
@@ -382,6 +385,48 @@ class Body(object):
     def collision_shape(self, *args):
         # TODO
         pass
+        
+    @mark.setter
+    def mark(self, (text, font_size, color, lid, time)):
+        """
+        Add marker text to this body.
+        ### Note: 
+        Use None for lid for base link!
+        :param text: text string to display
+        :param font_size: float scalar of text size.
+        By default is 2.5
+        :param color: RGB color, vec3 float in [0,1]. 
+        By default is red
+        :param time: float time to display, 0 for permanent.
+        By default is 10 seconds
+        :param lid: link id to display on this body
+        :return: None
+        """
+        # Need a few tricks to hack link index for base
+
+        mid = self._engine.add_body_text_marker(
+            text, self.kinematics['pos'][lid or 0],
+            font_size, color, self.uid, lid or -1, time
+        )
+        self._text_markers[mid] = dict(
+            text=text, size=font_size, color=color, time=time)
+
+    @mark.deleter
+    def mark(self):
+        """
+        Delete all markers on this body
+        :return: None
+        """
+        for mid in self._text_markers.keys():
+            self._engine.remove_body_text_marker(mid)
+        self._text_markers = dict()
+
+    def remove(self):
+        """
+        Remove current object instance from environment
+        :return: None
+        """
+        self._engine.delete_body(self._uid)
 
     def get_neighbors(self, uidB, dist_thresh, lidB=-1):
         """
@@ -397,26 +442,7 @@ class Body(object):
         return [self._engine.get_body_surroundings(
             self._uid, lid,
             uidB, lidB, dist_thresh) for lid in self._links]
-
-    def mark(self, text, font_size=2.5, color=(1.,0,0), lid=None, time=10.):
-        """
-        Add marker text to this body.
-        :param text: text string to display
-        :param font_size: float scalar of text size.
-        By default is 2.5
-        :param color: RGB color, vec3 float in [0,1]. 
-        By default is red
-        :param time: float time to display, 0 for permanent.
-        By default is 10 seconds
-        :param lid: link id to display on this body
-        :return: None
-        """
-        # Need a few tricks to hack link index for base
-        self._engine.add_body_text_marker(
-            text, self.kinematics['pos'][lid or 0],
-            font_size, color, self.uid, lid or -1, time
-        )
-
+        
     def apply_force(self, force, pos, ref='abs', lid=-1):
         """
         Apply a force to body. Only available when explicitly 
@@ -479,13 +505,23 @@ class Body(object):
 
 class Tool(Body):
 
-    def __init__(self, engine, path, pos, orn, fixed):
-        
+    def __init__(self, t_id, engine, path, pos, orn, fixed):
+
+        self._tool_id = t_id
         Body.__init__(self, engine, path, pos, orn, fixed)
 
         self._close_grip = False
         self._dof = len(self._joints)
         self._tip_offset = math_util.zero_vec(3)
+
+    @property
+    def tid(self):
+        """
+        A tool id specifically assigned to this tool.
+        Used for control.
+        :return: interger tool id
+        """
+        return self._tool_id
 
     @property
     def joint_specs(self):
@@ -627,17 +663,34 @@ class Tool(Body):
         raise NotImplementedError('Method <grasp> not implemented for tool')
 
     def pick_and_place(self, pick_pos, place_pos,
-                       pick_orn=None, place_orn=None):
+                       pick_orn=None, place_orn=None,
+                       **kwargs):
         """
         Pick on given positions and place it elsewhere
         :param pick_pos: vec3 float cartesian
         :param place_pos: vec3 float cartesian
         :param pick_orn: vec4 float quaternion
         :param place_orn: vec4 float quaternion
+        :param kwargs: User can specify reaching/leaving
+        behavior with five stages 'hover', 'attend', 
+        'carry', 'release', and 'leave'. 
+        The values are designated pos, orn
+        This is especially
+        useful on real robot case to achieve higher 
+        success rate.
         :return: None
         """
+        if kwargs['hover']:
+            self.tool_pos, self.tool_orn = kwargs['hover']
         self.reach(pick_pos, pick_orn)
+        if kwargs['attend']:
+            self.tool_pos, self.tool_orn = kwargs['attend']
         self.grasp(None)
+        if kwargs['carry']:
+            self.tool_pos, self.tool_orn = kwargs['carry']
         self.reach(place_pos, place_orn)
+        if kwargs['release']:
+            self.tool_pos, self.tool_orn = kwargs['release']
         self.grasp(None)
-
+        if kwargs['leave']:
+            self.tool_pos, self.tool_orn = kwargs['leave']

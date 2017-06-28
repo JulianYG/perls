@@ -3,12 +3,13 @@ from .gripper import PrismaticGripper
 
 class WSG50Gripper(PrismaticGripper):
 
-    def __init__(self, engine,
+    def __init__(self,
+                 tool_id, engine,
                  path=None,
                  pos=(0., 0., 0.6),
                  orn=(0., 0., 0., 1)):
         path = path or 'gripper/wsg50_one_motor_gripper_new_free_base.sdf'
-        PrismaticGripper.__init__(self, engine, path, pos, orn, 4, 6)
+        PrismaticGripper.__init__(self, tool_id, engine, path, pos, orn, 4, 6)
 
     def reset(self):
         self.joint_states = ([1, 2, 3, 4, 6],

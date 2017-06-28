@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<disp name="example_gui">
+	<view>
+		<frame name="first person human demo" 
+			type="cmd" args="0" options=""/>
+		<option
+			gui_panel="False" 
+			shadow="False"
+			wire_frame="False"
+			vr_teleporting="False"
+			vr_picking="False"
+            vr_render_controllers="False"
+            rendering="True"
+            keyboard_shortcut="False"
+            mouse_picking="True"/> 
+	</view>
+	<control type="keyboard"/>
+</disp>

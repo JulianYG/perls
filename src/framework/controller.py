@@ -165,10 +165,12 @@ class SimulationController(object):
 
     def kill(self, server_id=0):
         """
-        Kill the simulation, whatsoever the current status is.
+        Kill the simulation, whatsoever the current status is. The 
+        difference from <stop> is that this method erases 
+        the given simulation from the program.
         :param server_id: physics server id (a.k.a. simulation id,
         configuration id)) to kill.
         :return: None
         """
-        pass
+        self._thread_pool[server_id] = None
 
