@@ -6,8 +6,8 @@ from xml.etree import ElementTree
 singleton_elem = ElementTree.Element(0)
 
 
-class EnvTree(object):
-
+class _EnvTree:
+    # TODO: is there any way to generate attr by string
     def __init__(self, env, tool, scene):
         self._env = env
         self._arm, self._gripper = tool
@@ -41,10 +41,76 @@ class EnvTree(object):
         return self._scene
 
 
+class _ConfigTree:
+
+    def __init__(self, c_id,
+                 model_desc, view_desc,
+                 name, engine,
+                 version, job, async,
+                 step, max_time):
+        self._conf_id = c_id
+        self._model_desc = model_desc
+        self._view_desc = view_desc
+        self._max_run_time = max_time
+        self._version = version
+        self._job = job
+        self._async = async
+        self._name = name
+        self._engine = engine
+        self._step_size = step
+
+    @property
+    def id(self):
+        return self._conf_id
+
+    @property
+    def max_run_time(self):
+        return self._max_run_time
+
+    @property
+    def version(self):
+        return self._version
+
+    @property
+    def job(self):
+        return self._job
+
+    @property
+    def async(self):
+        return self._async
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def engine(self):
+        return self._engine
+
+    @property
+    def step_size(self):
+        return self._step_size
+
+    @property
+    def model_desc(self):
+        return self._model_desc
+
+    @property
+    def view_desc(self):
+        return self._view_desc
+
+
 def str2bool(string):
     return string.lower() == 'true' if isinstance(string, str) else string
 
-  
+
+def err(*message):
+    with open('error.log', 'a+') as f:
+        for msg in message:
+            f.write(msg)
+            f.write('\n\n')
+
+
 def parse_env(file_path):
     """
     Parse the given environment description file
@@ -71,7 +137,7 @@ def parse_env(file_path):
     scene_title = root.find('./scene').attrib['name']
     scene = parse_body_elem(scene_elem)
 
-    tree = EnvTree(env, (arm, gripper), (scene_title, scene))
+    tree = _EnvTree(env, (arm, gripper), (scene_title, scene))
     return tree
 
 
@@ -102,7 +168,9 @@ def parse_gripper_elem(gripper_elem):
                 type=elem.attrib['type'],
                 # ID refers to controll id
                 name='{}_{}'.format(elem.attrib['name'],
-                                    asset.attrib.get('id', i))))
+                                    asset.attrib.get('id', i)),
+                fixed=str2bool(elem.attrib.get('fixed', False))))
+
     return gripper
 
 
@@ -128,9 +196,11 @@ def parse_arm_elem(arm_elem):
             dict(
                 path=asset.attrib.get('path', None),
                 pos=[float(f) for
-                     f in pos.text.split(' ')] if pos is not None else None,
+                     f in pos.text.split(' ')] if 
+                pos is not None else (0., 0., 0.8),
                 orn=[float(f) for
-                     f in orn.text.split(' ')] if orn is not None else None,
+                     f in orn.text.split(' ')] if 
+                orn is not None else (0., 0., 0., 1.),
                 type=elem.attrib['type'],
                 name='{}_{}'.format(elem.attrib['name'],
                                     asset.attrib.get('id', i)),
@@ -152,9 +222,11 @@ def parse_body_elem(body_elem):
                 path=asset.attrib['path'],
                 record=str2bool(elem.attrib.get('record', False)),
                 pos=[float(f) for   # Allow default pos
-                     f in pos.text.split(' ')] if pos is not None else None,
+                     f in pos.text.split(' ')] if
+                pos is not None else (0., 0., 0),
                 orn=[float(f) for   # Allow default orn
-                     f in orn.text.split(' ')] if orn is not None else None,
+                     f in orn.text.split(' ')] if
+                orn is not None else (0., 0., 0., 1.),
                 fixed=str2bool(elem.attrib.get('fixed', False)),
                 # Default id is 0 since first time for each new object
                 name='{}_{}'.format(elem.attrib['name'],
@@ -169,30 +241,59 @@ def parse_disp(file_path):
     root = xml.getroot()
 
     disp_name = root.attrib['name']
-    frame_elem = root.find('./view/frame')
-    option_elem = root.find('./view/option')
+    frame_attrib = root.find('./view/frame').attrib
+    option_attrib = root.find('./view/option').attrib
 
-    frame_type = frame_elem.attrib['type']
+    frame_type = frame_attrib['type']
     frame_info = [frame_type]
     if frame_type == 'gui':
-        frame_info += [int(frame_elem.attrib.get('key', 0)),
-                       frame_elem.attrib.get('flag', '')]
+        frame_info += [int(frame_attrib.get('key', 0)),
+                       frame_attrib.get('flag', '')]
     elif frame_type == 'vr':
-        frame_info.append(int(frame_elem.attrib.get('key', 0)))
+        frame_info.append(int(frame_attrib.get('key', 0)))
     elif frame_type == 'udp':
-        frame_info += [frame_elem.attrib.get('ip', 'localhost'),
-                       int(frame_elem.attrib.get('port', 1234))]
+        frame_info += [frame_attrib.get('ip', 'localhost'),
+                       int(frame_attrib.get('port', 1234))]
     elif frame_type == 'tcp':
-        frame_info += [frame_elem.attrib.get('ip', '127.0.0.1'),
-                       int(frame_elem.attrib.get('port', 6667))]
+        frame_info += [frame_attrib.get('ip', '127.0.0.1'),
+                       int(frame_attrib.get('port', 6667))]
 
     control_type = root.find('./control').attrib['type']
+    options = dict((k, str2bool(v)) for (k, v) in option_attrib.items())
 
-    return disp_name, frame_info, option_elem.attrib, control_type
+    return disp_name, frame_info, options, control_type
 
 
 def parse_config(file_path):
-    pass
+    trees = list()
+    xml = ElementTree.parse(file_path)
+    root = xml.getroot()
 
-# print parse_env('../../env.xml')
+    configs = root.findall('./config')
+
+    for conf in configs:
+
+        model_desc = conf.find('./env').text
+        view_desc = conf.find('./disp').text
+
+        config_name = conf.attrib['name']
+        conf_id = int(conf.attrib['id'])
+        simulation_attrib = conf.find('./build/simulator').attrib
+        property_attrib = conf.find('./build/property').attrib
+
+        engine = simulation_attrib.get('engine', 'bullet')
+        min_version = simulation_attrib.get('version', '20170101')
+        job = conf.find('./build/job').get('name', 'run')
+        async = str2bool(property_attrib.get('async', False))
+
+        step_size = float(property_attrib.get(
+            'step_size', 0.001)) if async else None
+        max_run_time = int(float(property_attrib.get(
+            'max_run_time', 300)))
+        # Append one configuration
+        trees.append(_ConfigTree(conf_id,
+            model_desc, view_desc, config_name, engine,
+            min_version, job, async, step_size, max_run_time))
+
+    return trees
 

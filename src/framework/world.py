@@ -49,9 +49,9 @@ class World(object):
     def build(self):
         """
         Build the world
-        :return: 0 if success, -1 if failure
+        :return: None
         """
-        return self.load_xml(self._description)
+        self.load_xml(self._description)
 
     def load_body(self, file_path, pos, orn,
                   fixed=False, record=False):
@@ -77,18 +77,16 @@ class World(object):
         :return: None
         """
         parse_tree = io_util.parse_env(file_name)
-
         self.name_str = parse_tree.env['title']
-
-        # TODO: Think if there's other stuff to conf
-        self._engine.configure_environment(parse_tree.env['gravity'])
-
         for gripper in parse_tree.gripper:
             gripper_body = self.GRIPPER_TYPE[gripper['type']](
                 self._engine,
                 path=gripper['path'],
-                pos=gripper['pos'], orn=gripper['orn']
-            )
+                pos=gripper['pos'], orn=gripper['orn'])
+
+            if gripper['fixed']:
+                gripper_body.fix = (gripper['pos'], gripper['orn'])
+
             self.bodies[gripper_body.uid] = gripper_body
             self.tracking_bodies.append(gripper_body.uid)
 
@@ -96,8 +94,7 @@ class World(object):
             gripper_spec = arm['gripper']
             gripper_body = self.GRIPPER_TYPE[gripper_spec['type']](
                 self._engine,
-                path=gripper_spec['path']
-            )
+                path=gripper_spec['path'])
             self.bodies[gripper_body.uid] = gripper_body
 
             # TODO: confirm this is necessary
@@ -107,8 +104,8 @@ class World(object):
                 path=arm['path'],
                 pos=arm['pos'], orn=arm['orn'],
                 null_space=False,
-                gripper=gripper_body
-            )
+                gripper=gripper_body)
+
             self.bodies[arm_body.uid] = arm_body
             self.tracking_bodies.append(arm_body.uid)
 
@@ -120,4 +117,8 @@ class World(object):
             self.bodies[asset_body.uid] = asset_body
             if asset['record']:
                 self.tracking_bodies.append(asset_body.uid)
+
+        # TODO: Think if there's other stuff to conf
+        # Add gravity after everything is loaded
+        self._engine.configure_environment(parse_tree.env['gravity'])
 

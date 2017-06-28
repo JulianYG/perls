@@ -4,7 +4,7 @@ from .view import View
 from .adapter import Adapter
 from .engine import physicsEngine
 from .utils import io_util
-import thread
+import threading
 
 # TODO: framework should only contain base class controller
 # from .controller import Controller
@@ -14,16 +14,17 @@ class SimulationController(object):
     """
     The controller in MVC architecture.
     """
-    def __init__(self, model_desc, view_desc,
-                 config_batch):
+
+    ENGINE_DIC = dict(bullet=physicsEngine.BulletPhysicsEngine,
+                      mujoco=physicsEngine.MujocoEngine,
+                      gazebo=physicsEngine.GazeboEngine)
+
+    def __init__(self, config_batch):
         """
         Initialize the controller
-        :param model_desc: the view part of the design,
-        which refers to the control/display interface.
-        :param view_desc: the model part of the design,
-        which refers to the setup of simulation world.
         :param config_batch: the file path of configuration,
-        in xml format. 
+        in xml format. It contains path to both env description
+        and view description.
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         Note: Currently only able to run in multiple physics 
         servers without GUI, along with async simulation.
@@ -73,27 +74,25 @@ class SimulationController(object):
 
         # If there are multiple configurations, we need to examine
         # if the rest are not GUI frame, and all should be async
-        loaded_async = True
-
-        for i in range(len(configs)):
+        num_configs = len(configs)
+        for i in range(num_configs):
             conf = configs[i]
             assert i == conf.id, 'Error loading configuration: invalid id.'
-            if not conf.async or not loaded_async \
-                    or conf.view.frame != 'direct':
+
+            # Perform loading
+            world, disp, pe = self.load_config(conf)
+            if num_configs > 1 and pe.info['real_time']:
                 print('Currently only support multiple instances '
                       'of non-GUI frame and asynchronous simulation. '
                       'GUI or synchronous frame can only run as '
-                      'single simulation instance.')
-                return
-            # Update the comparator for the next checking
-            loaded_async = conf.async
-            # Perform loading
-            self._physics_servers[conf.id] = self.load_config(conf)
+                      'single simulation instance. \nSimulation '
+                      'configuration %d build skipped with error.' % i)
+                pe.status = 'error'
+            else:
+                # TODO: Change all print statements to log.info/error
+                print('Simulation configuration %d build success.' % i)
 
-            # step_size = 0.001,
-            # job = 'run', async = False,
-            # max_run_time = 10e6
-            # Shared_Memory needs key as well!
+            self._physics_servers[conf.id] = (world, disp, pe)
 
     @staticmethod
     def load_config(conf):
@@ -107,21 +106,15 @@ class SimulationController(object):
         Note conf.id must be natural numbers in increasing order 
         starting from 0, as in [0, 1, 2, 3, ...]
         :param conf: configuration to load.
+        Currently only support three types of engines: 
+        Bullet Physics, Mujoco, and Gazebo.
         :return: loaded tuple (world, display, physics engine)
         """
-        if conf.engine == 'bullet':
-            pe = physicsEngine.BulletPhysicsEngine(
-                conf.max_run_time, conf.frame,
-                conf.job, conf.async, conf.step_size)
-        elif conf.engine == 'mujoco':
-            pe = physicsEngine.MujocoEngine()
-        elif conf.engine == 'gazebo':
-            pe = physicsEngine.GazeboEngine()
-        else:
-            raise NotImplementedError(
-                'Currently only support three types of engines: '
-                'Bullet Physics, Mujoco, and Gazebo.')
-
+        # Initialize physics engine
+        pe = SimulationController.ENGINE_DIC[conf.engine](
+            conf.id,
+            conf.max_run_time, conf.job,
+            conf.async, conf.step_size)
         world = World(conf.model_desc, pe)
         disp = View(conf.view_desc, Adapter(world), pe)
 
@@ -139,11 +132,12 @@ class SimulationController(object):
         if len(self._physics_servers) < 2:
             print('Cannot call <start_all> for less than 2 instances.')
             return
-
         for s_id in range(len(self._physics_servers)):
             # Dispatch to new threads
-            t = thread.start_new_thread(self.start, (s_id,))
+            # t = thread.start_new_thread(self.start, (s_id,))
+            t = threading.Thread(target=self.start, args=(s_id,))
             self._thread_pool.append(t)
+            t.start()
 
     def start(self, server_id=0):
         """
@@ -153,10 +147,9 @@ class SimulationController(object):
         :return: None
         """
         # First build the simulation
-        world, display, _ = self._physics_servers[server_id]
+        world, display, pe = self._physics_servers[server_id]
         display.build()
         world.build()
-
         # Finally start
         display.start()
 

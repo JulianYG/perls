@@ -22,7 +22,8 @@ class View:
         self._init_time_stamp = None
         self._simulation_server_id = []
         self._frame = 'off'
-        self._event_handler = NullHandler
+        self._event_handler = NullHandler()
+        # self._cmd_handler = NullHandler()
 
     @property
     def info(self):
@@ -44,27 +45,34 @@ class View:
     def build(self):
         """
         Construct the display 
-        :return: Physics server ID.
-        """
-        status = self._engine.load_simulation()
-        self._init_time_stamp = util.get_time_stamp()
-        return
-
-    def start(self):
-        """
-        Configure and start the simulation display
         :return: None
         """
         self.name_str, frame_info, option_dic, control_type = \
             io_util.parse_disp(self._description)
         self._frame = frame_info[0]
+        # Set up control event interruption handlers
+        self._event_handler = control_type
+        # TODO
+        # self._cmd_handler =
+        # Configure display, connect to bullet physics server
         self._engine.configure_display(frame_info, option_dic)
-        elapsed_time = util.get_elapsed_time(
-                self._init_time_stamp)
-        done = False
-        while not done:
-            done = self._engine.step()
 
+    def start(self):
+        """
+        Configure and start the simulation display.
+        Note this can only be called after world is built,
+        since it requires adapter to talk to the world.
+        :return: None
+        """
+        self._engine.load_simulation()
+        done = False
+        # Some preparation jobs for control
+        # self._adapter.set_control_label
+
+        self._init_time_stamp = util.get_time_stamp()
+        while not done:
+            elt = util.get_elapsed_time(self._init_time_stamp)
+            done = self._engine.step(elapsed_time=elt)
 
     def control_interrupt(self):
         pass

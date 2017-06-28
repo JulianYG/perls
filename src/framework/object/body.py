@@ -8,8 +8,8 @@ class Body(object):
     """
     def __init__(self,
                  engine, path,
-                 pos=(0., 0., 0.),
-                 orn=(0., 0., 0., 1.),
+                 pos=None,
+                 orn=None,
                  fixed=False):
         """
         :param path: body model path (urdf, sdf, xml, mjcf, etc.)
@@ -18,13 +18,14 @@ class Body(object):
         :param fixed: if using a fixed base for the object. Not 
         enabled for SDF files 
         """
+        pos = pos or (0., 0., 0.)
+        orn = orn or (0., 0., 0., 1.)
         self._engine = engine
         self._model_path = path
         self._fixed = fixed
         self._cid = []      # No children constraints initially
         self._uid, self._links, self._joints = \
             self._engine.load_asset(path, pos, orn, fixed)
-
     ###
     # Basic info
     @property
@@ -479,7 +480,9 @@ class Body(object):
 class Tool(Body):
 
     def __init__(self, engine, path, pos, orn, fixed):
+        
         Body.__init__(self, engine, path, pos, orn, fixed)
+
         self._close_grip = False
         self._dof = len(self._joints)
         self._tip_offset = math_util.zero_vec(3)
