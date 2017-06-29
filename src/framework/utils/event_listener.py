@@ -17,7 +17,12 @@ DEVICE_TYPE = dict(controller=1,
                    head_mount=2,
                    generic=4)
 
-KEY_STATUS = {1: 'pressed', 2: 'triggered', 4: 'released'}
+KEY_STATUS = {1: 'holding',
+              2: 'triggered',
+              3: 'pressing',
+              4: 'releasing',
+
+              }
 
 KEY_LABEL = {65284: 'rst', # F5 for reset
 
