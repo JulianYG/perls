@@ -107,11 +107,13 @@ class PrismaticGripper(Tool):
         :param orn: vec4 float quaternion
         :return: delta between target and actual pose
         """
-        base_pos = self.position_transform(pos, orn or self.tool_orn)
+        if orn is None:
+            orn = self.tool_orn
+        base_pos = self.position_transform(pos, orn)
         # Use constraint to move gripper for simulation,
         # to avoid boundary mixing during collision
-        self.track(base_pos, orn or self.tool_orn, 200)
-        orn_delta = self.tool_orn - (orn or self.tool_orn)
+        self.track(base_pos, orn, 200)
+        orn_delta = self.tool_orn - orn
         pos_delta = self.tool_pos - pos
         return pos_delta, orn_delta
 

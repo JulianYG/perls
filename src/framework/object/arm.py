@@ -176,9 +176,11 @@ class Arm(Tool):
         :param orn: vec4 float quaternion
         :return: delta between target and actual pose
         """
-        target_pos = self.position_transform(pos, orn or self.tool_orn)
-        self._move_to(target_pos, orn or self.tool_orn)
-        orn_delta = self.tool_orn - (orn or self.tool_orn)
+        if orn is None:
+            orn = self.tool_orn
+        target_pos = self.position_transform(pos, orn)
+        self._move_to(target_pos, orn)
+        orn_delta = self.tool_orn - orn
         pos_delta = self.tool_pos - pos
         return pos_delta, orn_delta
 

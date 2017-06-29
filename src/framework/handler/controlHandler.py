@@ -40,28 +40,27 @@ class KeyboardEventHandler(InterruptHandler):
             key = int(long_key)
             label = event_listener.KEY_LABEL.get(key, None)
 
-            print(key, label, const)
             status = event_listener.KEY_STATUS[int(const)]
 
             # Using multiple if's to allow simultaneous key pressing
-            if key in range(48, 58):
+            if key in range(48, 58) and status == 'releasing':
                 # 'id' key_type
                 self._signal['tid'] = int(key) - 48
-            if label == 'tool':
+            if label == 'tool' and status == 'releasing':
                 self._signal['tid'] += event_listener.HOT_KEY[key]
-            if label == 'key':
+            if label == 'key' and status == 'releasing':
                 self._signal[label] = event_listener.HOT_KEY[key]
-            if label == 'rst' and status == 'released':
+            if label == 'rst' and status == 'pressing':
                 # TODO: F5 for reset
                 pass
 
-            if label == 'grasp' and status == 'released':
+            if label == 'grasp' and status == 'releasing':
                 ins.append((label, None))
-            if label == 'pos' and status == 'pressed':
+            if label == 'pos' and status == 'holding':
                 self._internal_pos += event_listener.HOT_KEY[key] * self._sens
                 ins.append(('reach', (self._internal_pos,
                                       math_util.euler2quat(self._internal_orn))))
-            if label == 'orn' and status == 'pressed':
+            if label == 'orn' and status == 'holding':
                 self._internal_orn += event_listener.HOT_KEY[key] * self._sens
                 ins.append(('reach', (math_util.zero_vec(3),
                                       math_util.euler2quat(self._internal_orn))))

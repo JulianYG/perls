@@ -99,6 +99,7 @@ class World(object):
                 math_util.rand_bigint(),
                 self._engine,
                 path=gripper_spec['path'])
+
             # Note here not appending gripper into tools since
             # we can only operate it through the arm
             # TODO: confirm this is necessary
@@ -128,6 +129,7 @@ class World(object):
 
         # TODO: Think if there's other stuff to conf
         # Add gravity after everything is loaded
+        print(self.tools.keys())
         self._engine.configure_environment(parse_tree.env['gravity'])
 
     def get_tool(self, t_id, key=None):
@@ -147,10 +149,13 @@ class World(object):
         individual grippers)
         :return: the Tool instance associated with the id
         """
-        if key:
-            tool = self.tools['%s%d' % (key, t_id)]
-        else:
+        key_id = '%s%d' % (key, t_id)
+        if not key or key_id not in self.tools:
+            print('Selected tool %s does not exist. Using default instead.' % key_id)
             tool = self.tools[self.tools.keys()[0]]
+        else:
+            tool = self.tools[key_id]            
+            
         # Mark the current using tool
         tool.mark = ('controlling', 2.5, (1.,0,0), None, 1.)
         return tool

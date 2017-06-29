@@ -499,28 +499,28 @@ class BulletPhysicsEngine(FakeEngine):
     ###
     # Arm related methods
     def solve_ik(self, uid, lid, pos, damping, orn=None):
-        if orn:
+        if orn is None:
             return p.calculateInverseKinematics(
-                uid, lid, pos, orn, jointDamping=damping,
+                uid, lid, pos, jointDamping=damping,
                 physicsClientId=self._physics_server_id)
         else:
             return p.calculateInverseKinematics(
-                uid, lid, pos, jointDamping=damping,
+                uid, lid, pos, orn, jointDamping=damping,
                 physicsClientId=self._physics_server_id)
 
     def solve_ik_null_space(self, uid, lid, pos,
                             lower, upper, ranges,
                             rest, damping, orn=None):
-        if orn:
+        if orn is None:
             return p.calculateInverseKinematics(
-                uid, lid, pos, orn,
+                uid, lid, pos,
                 lowerLimits=tuple(lower), upperLimits=tuple(upper),
                 jointRanges=tuple(ranges), restPoses=rest,
                 jointDamping=tuple(damping),
-                physicsClientId=self._physics_server_id)
+                physicsClientId=self._physics_server_id)   
         else:
             return p.calculateInverseKinematics(
-                uid, lid, pos,
+                uid, lid, pos, orn,
                 lowerLimits=tuple(lower), upperLimits=tuple(upper),
                 jointRanges=tuple(ranges), restPoses=rest,
                 jointDamping=tuple(damping),

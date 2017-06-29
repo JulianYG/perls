@@ -21,7 +21,7 @@ KEY_STATUS = {1: 'holding',
               2: 'triggered',
               3: 'pressing',
               4: 'releasing',
-
+              6: 'pre-pressed',
               }
 
 KEY_LABEL = {65284: 'rst', # F5 for reset
@@ -64,7 +64,7 @@ HOT_KEY = {65284: None, # F5
            114: _Z_POS_VEC,  # R
            102: _Z_NEG_VEC,  # F
            103: 'g',
-           104: 'm',
+           109: 'm',
            44: -1,  # ,
            46: 1,  # .
            # 48 - 57 corresponds to their own values - 48.
