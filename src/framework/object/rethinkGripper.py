@@ -15,13 +15,6 @@ class RethinkGripper(PrismaticGripper):
         orn = (0., 0., 0., 1.) if orn is None else orn
         super(RethinkGripper, self).__init__(tool_id, engine, path, pos, orn, 1, 3)
 
-    def reset(self):
-        self.joint_states = ([1, 3],
-                             [self.joint_specs['upper'][1],
-                              self.joint_specs['lower'][3]],
-                             'position', {})
-        PrismaticGripper.reset(self)
-
     def grasp(self, slide=-1):
         if slide > -1:
             slide = float(slide)

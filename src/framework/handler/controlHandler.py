@@ -23,7 +23,7 @@ class KeyboardEventHandler(InterruptHandler):
 
         # Keep a private orientation vec to simulate
         # effect of absolute orientation
-        self._orn = math_util.zero_vec(3)
+        self._sig_orn = math_util.zero_vec(3)
 
     @property
     def signal(self):
@@ -63,11 +63,12 @@ class KeyboardEventHandler(InterruptHandler):
                 ins.append(
                     ('reach', (event_listener.HOT_KEY[key] * self._sens, None)))
             if label == 'orn' and status == 'holding':
-                self._orn += event_listener.HOT_KEY[key] * self._sens
-
+                self._sig_orn += event_listener.HOT_KEY[key] * self._sens
+                # TODO: Think about needs clipping here or not
+                # self._sig_orn.clip(min=-3.14159, max=3.14159, out=self._sig_orn)
                 # Don't touch position, only orientation
                 ins.append(('reach', (math_util.zero_vec(3),
-                                      math_util.euler2quat(self._orn))))
+                                      math_util.euler2quat(self._sig_orn))))
         self._signal['instruction'] = ins
         return self._signal
 
@@ -84,11 +85,6 @@ class AppEventHandler(InterruptHandler):
 
     def __init__(self, ip='localhost', port=6379, rate=100):
         super(AppEventHandler, self).__init__(rate)
-        # Use relative position
-        self._internal_pos = math_util.zero_vec(3)
-        # But use absolute orientation
-        self._internal_orn = math_util.zero_vec(3)
-
         self._comm = network.RedisComm(ip, port)
 
     @property
@@ -96,26 +92,25 @@ class AppEventHandler(InterruptHandler):
         self._signal['cmd'] = list()
         ins = list()
 
+        # id_event = event_listener.listen_to_redis(self._comm.get_channel('tool_id'))
+
         events = event_listener.listen_to_redis(self._comm.get_channel('iphone'))
         time.sleep(1. / self._rate)
 
         for event in events:
-            roll, pitch, yaw, sens = [float(x) for x in event.split(' ')]
-            self._internal_orn = math_util.zero_vec(3)
 
+            tid = event['id']
+            grasp = event['grasp']
+            r_pos = event['pos']
+            a_orn = event['orn']
+            rst = event['rst']
+            # engage =
 
-            orn_euler = np.array([roll, -pitch, yaw],
-                                 dtype=np.float32) * np.pi / 180.
-            if not agent.FIX:
-                pseudo_event[2] = p.getQuaternionFromEuler(
-                    np.arcsin(np.sin(orn_euler * sens)))
-            end_effector_poses = agent.get_tool_poses(tools)
-
-            self.pos = end_effector_poses[:, 0]
-            pseudo_event[1] = self.pos[pseudo_event[0]]
-
-            agent.control(pseudo_event, control_map)
+            sig_pos = [float(x) for x in r_pos.split(' ')]
+            sig_orn = math_util.process_orn_signal(
+                *[float(x) for x in a_orn.split(' ')])
+            ins.append(('reach', (sig_pos, sig_orn)))
 
         self._signal['instruction'] = ins
-    
+        return self._signal
     

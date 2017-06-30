@@ -2,6 +2,7 @@ from pybullet import (getKeyboardEvents,
                       getVREvents,
                       getMouseEvents)
 from math_util import vec
+import ast
 
 _X_POS_VEC = vec((.001, .0, .0))
 _X_NEG_VEC = vec((-.001, .0, .0))
@@ -106,6 +107,11 @@ def listen_to_redis(queue):
     # TODO: construct socket class
     events = list()
     while not queue.empty():
-        events.append(queue.get())
+        item = queue.get()
+        # parses into AST (Source Tree),
+        # only evaluates/returns if it's literal,
+        # so no safety issue
+        signal_dic = ast.literal_eval(item)
+        events.append(signal_dic)
     return events
 

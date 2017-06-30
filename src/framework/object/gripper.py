@@ -116,6 +116,11 @@ class PrismaticGripper(Tool):
     ###
     #  High level functionalities
     def reset(self):
+        """
+        Release gripper for reset
+        :return: None
+        """
+        self.grasp(0)
         self._engine.update()
 
     def hang(self):

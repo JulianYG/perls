@@ -122,6 +122,8 @@ class Adapter(object):
                     r_pos, a_orn = value
                     i_pos, _ = self._states['tool'][tool.tid]
 
+                    # Orientation is always relative to the
+                    # world frame, that is, absolute
                     if a_orn is None:
                         a_orn = tool.tool_orn
 

@@ -28,6 +28,10 @@ def orn_diff(quat1, quat2):
     return quat2euler(quat1) - quat2euler(quat2)
     
 
+def orn_add(quat1, quat2):
+    return quat2euler(quat1) + quat2euler(quat2)
+
+
 def quat2mat(quaternion):
     q = np.array(quaternion, dtype=np.float32, copy=True)
     n = np.dot(q, q)
@@ -71,4 +75,10 @@ def quat_mul(quaternion0, quaternion1):
 
 def get_transformed_pos(pos, translation, rotation):
     return rotation.dot(pos - translation)
+
+
+def process_orn_signal(roll, pitch, yaw, sens):
+    orn_euler = np.array([roll, -pitch, yaw],
+                         dtype=np.float32) * np.pi / 180.
+    return orn_euler * sens
 

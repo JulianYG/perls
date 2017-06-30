@@ -13,13 +13,6 @@ class PR2Gripper(PrismaticGripper):
         orn = (0., 0., 0., 1.) if orn is None else orn
         super(PR2Gripper, self).__init__(tool_id, engine, path, pos, orn, 1, 3)
 
-    def reset(self):
-        self.joint_states = ([0, 2],
-                             [self.joint_specs['upper'][0],
-                              self.joint_specs['upper'][2]],
-                             'position', {})
-        PrismaticGripper.reset(self)
-
     def grasp(self, slide=-1):
         if slide != -1:
             slide = float(slide)

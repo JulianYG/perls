@@ -179,7 +179,6 @@ def parse_gripper_elem(gripper_elem):
                 fixed=str2bool(elem.attrib.get('fixed', False)),
                 traction=float(elem.attrib.get('traction', 200.))
             ))
-
     return gripper
 
 

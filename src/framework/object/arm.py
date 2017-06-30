@@ -177,7 +177,6 @@ class Arm(Tool):
         Reset tool to initial positions
         :return: None
         """
-        print(self._tip_offset)
         # Reset gripper
         if self._gripper:
             self._gripper.reset()
