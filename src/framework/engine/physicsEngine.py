@@ -424,24 +424,11 @@ class BulletPhysicsEngine(FakeEngine):
 
     def get_body_attachment(self, uid):
 
-        attaching, attached = [], []
+        attached = list()
         # cid starts from 1
         for cid in range(1, p.getNumConstraints(self._physics_server_id) + 1):
             info = p.getConstraintInfo(cid, physicsClientId=self._physics_server_id)
-            if info[0] == uid:
-                attaching.append({
-                    (info[2], cid):
-                        dict(
-                            parentJointIdx=info[1],
-                            childLinkIndex=info[3],
-                            type=info[4],
-                            jointAxis=info[5],
-                            parentJointPvt=info[6],
-                            childJointPvt=info[7],
-                            parentJointOrn=info[8],
-                            childJointOrn=info[9],
-                            maxForce=info[10])
-                })
+
             if info[2] == uid:
                 attached.append({
                     (info[0], cid):
@@ -456,7 +443,7 @@ class BulletPhysicsEngine(FakeEngine):
                             childJointOrn=info[9],
                             maxForce=info[10])
                 })
-        return attaching, attached
+        return attached
 
     def set_body_attachment(self, parent_uid, parent_lid,
                             child_uid, child_lid,
@@ -465,15 +452,20 @@ class BulletPhysicsEngine(FakeEngine):
                             parent_pos=(0., 0., 0.),
                             child_pos=(0., 0., 0.),
                             **kwargs):
-        parent_orn = kwargs.get('parentFrameOrientation', None) or (0., 0., 0., 1)
-        child_orn = kwargs.get('childFrameOrientation', None) or (0., 0., 0., 1)
+        parent_orn = kwargs.get('parentFrameOrientation', None)
+        if parent_orn is None:
+            parent_orn = (0., 0., 0., 1)
+
+        child_orn = kwargs.get('childFrameOrientation', None)
+        if child_orn is None:
+            child_orn = (0., 0., 0., 1)
         try:
             return p.createConstraint(parent_uid, parent_lid,
                                       child_uid, child_lid,
                                       BulletPhysicsEngine.INV_JOINT_TYPES[jtype],
-                                      jaxis, parent_pos, child_pos,
-                                      parentFrameOrientation=parent_orn,
-                                      childFrameOrientation=child_orn,
+                                      jaxis, tuple(parent_pos), tuple(child_pos),
+                                      parentFrameOrientation=tuple(parent_orn),
+                                      childFrameOrientation=tuple(child_orn),
                                       physicsClientId=self._physics_server_id)
         except p.error:
             self.status = BulletPhysicsEngine.STATUS[-1]
@@ -486,7 +478,7 @@ class BulletPhysicsEngine(FakeEngine):
         # Pybullet needs tuple form
         try:
             p.changeConstraint(cid, jointChildPivot=tuple(pos),
-                               jointChildFrameOrientation=orn,
+                               jointChildFrameOrientation=tuple(orn),
                                maxForce=force,
                                physicsClientId=self._physics_server_id)
         except p.error:

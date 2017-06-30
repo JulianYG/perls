@@ -8,10 +8,13 @@ from .handler.eventHandler import AssetHandler
 
 
 class View:
-    
+    """
+    The view part of the model
+    """
     HANDLER_DIC = dict(keyboard=KeyboardEventHandler,
                        vive=ViveEventHandler,
-                       phone=AppEventHandler)
+                       phone=AppEventHandler,
+                       off=NullHandler)
     
     def __init__(self, desc, adapter, engine):
         """
@@ -29,8 +32,9 @@ class View:
         self._init_time_stamp = None
         self._simulation_server_id = []
         self._frame = 'off'
+        self._control_type = 'off'
         self._control_handler = NullHandler()
-        self._event_handler = AssetHandler(0,0)
+        self._event_handler = AssetHandler()
 
     @property
     def info(self):
@@ -44,6 +48,7 @@ class View:
         return dict(
             name=self.name_str,
             frame=self._frame,
+            control=self._control_type,
             run_time=util.get_elapsed_time(
                 self._init_time_stamp),
             server=self._simulation_server_id,
@@ -55,17 +60,18 @@ class View:
         :return: None
         """
         self.name_str, frame_info, option_dic, \
-            control_type, sensitivity, rate = \
+            self._control_type, sensitivity, rate = \
             io_util.parse_disp(self._description)
         self._frame = frame_info[0]
         # Set up control event interruption handlers
         # TODO
-        self._control_handler = self.HANDLER_DIC[control_type](
+        self._control_handler = self.HANDLER_DIC[self._control_type](
             sensitivity, rate
         )
 
-        # Disable keyboard shortcuts for keyboard control
-        if control_type == 'keyboard':
+        # Special case for keyboard control
+        if self._control_type == 'keyboard':
+            # Disable keyboard shortcuts for keyboard control
             option_dic['keyboard_shortcut'] = False
 
         # Configure display, connect to bullet physics server
@@ -78,12 +84,19 @@ class View:
         since it requires adapter to talk to the world.
         :return: None
         """
+        # Special case for keyboard control again
+        if self._control_type == 'keyboard':
+            # setup initial states for relative comp
+            tool_states = self._adapter.get_world_states(
+                ('tool', 'pose'))[0]
+            self._adapter.states = tool_states
+
         self._engine.load_simulation()
         done = False
         # Some preparation jobs for control
         # self._adapter.set_control_label
 
-        self._init_time_stamp = util.get_time_stamp()
+        self._init_time_stamp = util.get_abs_time()
         while not done:
             elt = util.get_elapsed_time(self._init_time_stamp)
             # Run into interruption

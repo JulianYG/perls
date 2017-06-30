@@ -1,11 +1,13 @@
 import time
-import datetime
 
 
-def get_time_stamp():
+def get_abs_time():
 
     return time.time()
 
+def get_time_stamp():
+
+    return time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
 
 def get_elapsed_time(start=None):
 

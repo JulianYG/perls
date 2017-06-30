@@ -10,10 +10,9 @@ class World(object):
     """
     The basic scene setup in simulation 
     """
-
     GRIPPER_TYPE = dict(pr2=PR2Gripper.PR2Gripper,
-                       rethink=rethinkGripper.RethinkGripper,
-                       wsg=WSG50Gripper.WSG50Gripper)
+                        rethink=rethinkGripper.RethinkGripper,
+                        wsg=WSG50Gripper.WSG50Gripper)
 
     ARM_TYPE = dict(sawyer=sawyer.Sawyer, kuka=kuka.Kuka)
 
@@ -27,9 +26,12 @@ class World(object):
         self.name_str = 'hello_world'
         self._description = desc_file
         self._engine = engine
+        self._target_bodies = list()
+        self._tools, self._bodies = dict(), dict()
 
-        self.tracking_bodies = list()
-        self.tools, self.bodies = dict(), dict()
+        # world specific attributes
+        self._gravity = math_util.zero_vec(3)
+        self._traction = 200
 
     @property
     def info(self):
@@ -40,11 +42,56 @@ class World(object):
         {name, tools, tracking bodies, all bodies (assets).
         TODO: user activities, body time stamps}
         """
-        return dict(name=self.name_str,
-                    tools=[t.name for t in self.tools],
-                    tracking_bodies=[b.name for b in self.tracking_bodies],
-                    assets=self.bodies.keys(),
-                    )
+        return dict(
+            name=self.name_str,
+            tools=[t.name for t in self._tools],
+            tracking_bodies=[b.name for b in self._target_bodies],
+            assets=self._bodies.keys(),
+        )
+
+    @property
+    def gravity(self):
+        """
+        Get gravitational property of the world
+        :return: vec3 float gravity
+        """
+        return self._gravity
+
+    @property
+    def traction(self):
+        """
+        Get the traction force on tracking bodies 
+        in the world
+        :return: float force in Newton
+        """
+        return self._traction
+
+    @property
+    def body(self):
+        """
+        Get the full list of bodies in the world
+        :return: list of Body instances
+        """
+        return self._bodies
+
+    @property
+    def tool(self):
+        """
+        Get the tool list containing tools
+        :return: list of Tool instances, can be 
+        either grippers or arms, or even hands
+        """
+        return self._tools
+
+    @property
+    def target(self):
+        """
+        Get the list of tracked bodies in the world, 
+        that is, being recorded.
+        :return: A list of target bodies, this is 
+        a subset of all bodies in the world
+        """
+        return self._target_bodies
 
     def build(self):
         """
@@ -64,11 +111,11 @@ class World(object):
         :param record: if record info of this body, boolean
         :return: None
         """
-        #TODO: depend on tool type
+        # TODO: depend on tool type
         body = Body(self._engine, file_path, pos, orn, fixed)
         if record:
-            self.tracking_bodies.append(body.uid)
-        self.bodies[body.uid] = body
+            self._target_bodies.append(body.uid)
+        self._bodies[body.uid] = body
 
     def load_xml(self, file_name):
         """
@@ -80,7 +127,7 @@ class World(object):
         self.name_str = parse_tree.env['title']
         for gripper in parse_tree.gripper:
             gripper_body = self.GRIPPER_TYPE[gripper['type']](
-                gripper['tid'],
+                gripper['id'],
                 self._engine,
                 path=gripper['path'],
                 pos=gripper['pos'],
@@ -88,10 +135,14 @@ class World(object):
 
             if gripper['fixed']:
                 gripper_body.fix = (gripper['pos'], gripper['orn'])
+            else:
+                self._traction = gripper['traction']
+                gripper_body.traction = self._traction
+                gripper_body.hang()
 
-            self.tools['g%d' % gripper_body.tid] = gripper_body
+            self._tools[gripper_body.tid] = gripper_body
 
-            self.tracking_bodies.append(gripper_body.uid)
+            self._target_bodies.append(gripper_body.uid)
 
         for arm in parse_tree.arm:
             gripper_spec = arm['gripper']
@@ -103,18 +154,18 @@ class World(object):
             # Note here not appending gripper into tools since
             # we can only operate it through the arm
             # TODO: confirm this is necessary
-            self.tracking_bodies.append(gripper_body.uid)
+            self._target_bodies.append(gripper_body.uid)
             arm_body = self.ARM_TYPE[arm['type']](
-                arm['tid'],
+                arm['id'],
                 self._engine,
                 path=arm['path'],
                 pos=arm['pos'], orn=arm['orn'],
                 null_space=False,
                 gripper=gripper_body)
 
-            self.tools['m%d' % arm_body.tid] = arm_body
+            self._tools[arm_body.tid] = arm_body
 
-            self.tracking_bodies.append(arm_body.uid)
+            self._target_bodies.append(arm_body.uid)
 
         for asset in parse_tree.scene:
             asset_body = Body(self._engine,
@@ -123,16 +174,16 @@ class World(object):
                               orn=asset['orn'],
                               fixed=asset['fixed'])
 
-            self.bodies[asset_body.name] = asset_body
+            self._bodies[asset_body.name] = asset_body
             if asset['record']:
-                self.tracking_bodies.append(asset_body.uid)
+                self._target_bodies.append(asset_body.uid)
 
         # TODO: Think if there's other stuff to conf
         # Add gravity after everything is loaded
-        print(self.tools.keys())
-        self._engine.configure_environment(parse_tree.env['gravity'])
+        self._gravity = parse_tree.env['gravity']
+        self._engine.configure_environment(self._gravity)
 
-    def get_tool(self, t_id, key=None):
+    def get_tool(self, _id, key=None):
         """
         Get the tool by id. Note this id corresponds to the 
         id given in env xml file, and for robot arms, 
@@ -140,7 +191,7 @@ class World(object):
         User can also use ',' and '.' to cyclically go to the 
         last/next id in the same type of tools. 
         Note: User must specify at least one tool in xml.
-        :param t_id: integer id number
+        :param _id: integer id number
         :param key: character to choose from types of tools,
         For gripper or robot arm, hit 'g' before selecting numbers
         to choose from grippers, 'm' for arms, and 'h' 
@@ -149,14 +200,14 @@ class World(object):
         individual grippers)
         :return: the Tool instance associated with the id
         """
-        key_id = '%s%d' % (key, t_id)
-        if not key or key_id not in self.tools:
-            print('Selected tool %s does not exist. Using default instead.' % key_id)
-            tool = self.tools[self.tools.keys()[0]]
+        t_id = '%s%d' % (key, _id)
+        if not key or t_id not in self._tools:
+            print('Selected tool %s does not exist. Using default instead.' % t_id)
+            tool = self._tools[self._tools.keys()[0]]
         else:
-            tool = self.tools[key_id]            
+            tool = self._tools[t_id]
             
         # Mark the current using tool
-        tool.mark = ('controlling', 2.5, (1.,0,0), None, 1.)
+        tool.mark = ('controlling', 2.5, (1.,0,0), None, .2)
         return tool
 

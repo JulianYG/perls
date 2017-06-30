@@ -1,7 +1,6 @@
 from pybullet import (getKeyboardEvents,
                       getVREvents,
                       getMouseEvents)
-import pybullet as p
 from math_util import vec
 
 _X_POS_VEC = vec((.001, .0, .0))
@@ -21,18 +20,22 @@ KEY_STATUS = {1: 'holding',
               2: 'triggered',
               3: 'pressing',
               4: 'releasing',
+              5: 'error',
               6: 'pre-pressed',
+              7: 'invalid'
               }
 
 KEY_LABEL = {65284: 'rst', # F5 for reset
 
-             # Orientation control
+             # 6dof Orientation control
              65295: 'orn',  # 'roll_counterclockwise', <--
              65296: 'orn',  # 'roll_clockwise', -->
-             65297: 'orn',  # 'yaw_up', ^
-             65298: 'orn',  # 'yaw_down', v
+             65297: 'orn',  # 'pitch_up', ^
+             65298: 'orn',  # 'pitch_down', v
+             113: 'orn',  # 'yaw_left', Q
+             101: 'orn',  # 'yaw_right, E
 
-             # Position control
+             # 6dof Position control
              119: 'pos',  # 'x_forward', W
              115: 'pos',  # 'x_backward', S
              97: 'pos',   # 'y_left', A
@@ -51,10 +54,12 @@ KEY_LABEL = {65284: 'rst', # F5 for reset
 
 HOT_KEY = {65284: None, # F5
            # Orientation control
-           65295: _X_NEG_VEC,  # <--
-           65296: _X_POS_VEC,  # -->
+           65295: _X_NEG_VEC,  # <^
+           65296: _X_POS_VEC,  # ^>
            65297: _Y_POS_VEC,  # ^
            65298: _Y_NEG_VEC,  # v
+           113: _Z_NEG_VEC,  # <--
+           101: _Z_POS_VEC,  # -->
            # Position control
            32: None,  # Space
            119: _X_POS_VEC,  # W
@@ -75,18 +80,32 @@ HOT_KEY = {65284: None, # F5
 # for keyboard control (GUI)
 
 
-def listen_to_keyboard(id=0):
-    return getKeyboardEvents(physicsClientId=id)
+def listen_to_keyboard(ps_id=0):
+    return getKeyboardEvents(physicsClientId=ps_id)
 
 
-def listen_to_mouse(id=0):
-    return getMouseEvents(physicsClientId=id)
+def listen_to_mouse(ps_id=0):
+    return getMouseEvents(physicsClientId=ps_id)
 
 
-def listen_to_vive(dtype, id=0):
+def listen_to_vive(dtype, ps_id=0):
     t = 0
     for device in (dtype,):
         t |= DEVICE_TYPE[device]
     return getVREvents(deviceTypeFilter=t,
-                       physicsClientId=id)
+                       physicsClientId=ps_id)
+
+
+def listen_to_redis(queue):
+    """
+    Listen to a connected and subscribed redis server
+    :param queue: the registered queue that 
+    receives data from callback function
+    :return: 
+    """
+    # TODO: construct socket class
+    events = list()
+    while not queue.empty():
+        events.append(queue.get())
+    return events
 

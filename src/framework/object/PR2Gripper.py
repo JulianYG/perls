@@ -6,10 +6,12 @@ class PR2Gripper(PrismaticGripper):
     def __init__(self, tool_id,
                  engine,
                  path=None,
-                 pos=(0., 0., 0.6),
-                 orn=(0., 0., 0., 1)):
+                 pos=None,
+                 orn=None):
         path = path or 'pr2_gripper.urdf'
-        PrismaticGripper.__init__(self, tool_id, engine, path, pos, orn, 1, 3)
+        pos = (0., 0., 0.7) if pos is None else pos
+        orn = (0., 0., 0., 1.) if orn is None else orn
+        super(PR2Gripper, self).__init__(tool_id, engine, path, pos, orn, 1, 3)
 
     def reset(self):
         self.joint_states = ([0, 2],

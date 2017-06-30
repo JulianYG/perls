@@ -1,12 +1,11 @@
 
 class InterruptHandler(object):
 
-    def __init__(self, sensitivity, rate):
+    def __init__(self, rate):
 
         self._rate = rate
-        self._sens = sensitivity
-        self._signal = dict(tid=0, key=None,
-                            cmd=list(), instruction=list())
+        self._signal = dict(
+            tid=0, key=None, cmd=list(), instruction=list())
 
     # TODO: Add remote some time in the future
     # @property
@@ -34,8 +33,8 @@ class NullHandler(InterruptHandler):
     """
     Singleton placeholder
     """
-    def __init__(self):
-        InterruptHandler.__init__(self, 1., 0.)
+    def __init__(self, a=None, b=None):
+        super(NullHandler, self).__init__(0.)
 
     def _parse_interrupt(self):
         return 0

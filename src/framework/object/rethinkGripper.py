@@ -6,11 +6,14 @@ class RethinkGripper(PrismaticGripper):
     def __init__(self, tool_id,
                  engine,
                  path=None,
-                 pos=(0., 0., 0.5),
-                 orn=(0., 0., 0., 1)):
+                 pos=None,
+                 orn=None):
         path = path or 'rethink_ee_description/urdf/' \
                        'electric_gripper/right_standard_narrow_round.urdf'
-        PrismaticGripper.__init__(self, tool_id, engine, path, pos, orn, 1, 3)
+        pos = (0., 0., 0.7) if pos is None else pos
+        # Exactly align with world frame
+        orn = (0., 0., 0., 1.) if orn is None else orn
+        super(RethinkGripper, self).__init__(tool_id, engine, path, pos, orn, 1, 3)
 
     def reset(self):
         self.joint_states = ([1, 3],

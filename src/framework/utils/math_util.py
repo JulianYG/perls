@@ -9,6 +9,8 @@ def approximate(val, n_digits):
     return np.array([float('%.{}g'.format(n_digits) % v) for v in val],
                     dtype=np.float32)
 
+def transform(poseA, poseB):
+    return p.multiplyTransforms(poseA[0], poseA[1], poseB[0], poseB[1])
 
 def rand_bigint():
     return np.random.randint(low=500, high=10000)
@@ -20,6 +22,23 @@ def vec(values):
 
 def zero_vec(size):
     return np.zeros(size, dtype=np.float32)
+
+
+def orn_diff(quat1, quat2):
+    return quat2euler(quat1) - quat2euler(quat2)
+    
+
+def quat2mat(quaternion):
+    q = np.array(quaternion, dtype=np.float32, copy=True)
+    n = np.dot(q, q)
+    if n < _EPS:
+        return np.identity(3)
+    q *= math.sqrt(2.0 / n)
+    q = np.outer(q, q)
+    return np.array([
+        [1.0 - q[2, 2] - q[3, 3], q[1, 2] - q[3, 0], q[1, 3] + q[2, 0]],
+        [q[1, 2] + q[3, 0], 1.0 - q[1, 1] - q[3, 3], q[2, 3] - q[1, 0]],
+        [q[1, 3] - q[2, 0], q[2, 3] + q[1, 0], 1.0 - q[1, 1] - q[2, 2]]])
 
 
 def quat2euler(quaternion):
@@ -52,17 +71,4 @@ def quat_mul(quaternion0, quaternion1):
 
 def get_transformed_pos(pos, translation, rotation):
     return rotation.dot(pos - translation)
-
-
-def get_rotation_from_quaternion(quaternion):
-    q = np.array(quaternion, dtype=np.float32, copy=True)
-    n = np.dot(q, q)
-    if n < _EPS:
-        return np.identity(3)
-    q *= math.sqrt(2.0 / n)
-    q = np.outer(q, q)
-    return np.array([
-        [1.0 - q[2, 2] - q[3, 3], q[1, 2] - q[3, 0], q[1, 3] + q[2, 0]],
-        [q[1, 2] + q[3, 0], 1.0 - q[1, 1] - q[3, 3], q[2, 3] - q[1, 0]],
-        [q[1, 3] - q[2, 0], q[2, 3] + q[1, 0], 1.0 - q[1, 1] - q[2, 2]]])
 

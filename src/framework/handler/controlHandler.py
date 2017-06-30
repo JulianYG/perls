@@ -2,6 +2,7 @@ from .base import InterruptHandler
 import time
 from ..utils import math_util
 from ..utils import event_listener
+from ..utils import network
 
 
 class CmdEventHandler(InterruptHandler):
@@ -16,12 +17,13 @@ class KeyboardEventHandler(InterruptHandler):
     """
     Handler for keyboard events/signal
     """
-    def __init__(self, sensitivity, rate=1000):
-        InterruptHandler.__init__(self, sensitivity, rate)
-        # Use relative position
-        self._internal_pos = math_util.zero_vec(3)
-        # But use absolute orientation
-        self._internal_orn = math_util.zero_vec(3)
+    def __init__(self, sensitivity, rate=100):
+        super(KeyboardEventHandler, self).__init__(rate)
+        self._sens = sensitivity
+
+        # Keep a private orientation vec to simulate
+        # effect of absolute orientation
+        self._orn = math_util.zero_vec(3)
 
     @property
     def signal(self):
@@ -55,26 +57,20 @@ class KeyboardEventHandler(InterruptHandler):
                 pass
 
             if label == 'grasp' and status == 'releasing':
-                ins.append((label, None))
-            if label == 'pos' and status == 'holding':
-                self._internal_pos += event_listener.HOT_KEY[key] * self._sens
-                ins.append(('reach', (self._internal_pos,
-                                      math_util.euler2quat(self._internal_orn))))
-            if label == 'orn' and status == 'holding':
-                self._internal_orn += event_listener.HOT_KEY[key] * self._sens
-                ins.append(('reach', (math_util.zero_vec(3),
-                                      math_util.euler2quat(self._internal_orn))))
+                ins.append((label, -1))
 
+            if label == 'pos' and status == 'holding':
+                ins.append(
+                    ('reach', (event_listener.HOT_KEY[key] * self._sens, None)))
+            if label == 'orn' and status == 'holding':
+                self._orn += event_listener.HOT_KEY[key] * self._sens
+
+                # Don't touch position, only orientation
+                ins.append(('reach', (math_util.zero_vec(3),
+                                      math_util.euler2quat(self._orn))))
         self._signal['instruction'] = ins
         return self._signal
 
-    def _map_pos(self, pos):
-
-        pass
-
-    def _map_orn(self, orn):
-
-        pass
 
 class ViveEventHandler(InterruptHandler):
 
@@ -82,5 +78,44 @@ class ViveEventHandler(InterruptHandler):
 
 
 class AppEventHandler(InterruptHandler):
+    """
+    Handler for keyboard events/signal
+    """
 
-    pass
+    def __init__(self, ip='localhost', port=6379, rate=100):
+        super(AppEventHandler, self).__init__(rate)
+        # Use relative position
+        self._internal_pos = math_util.zero_vec(3)
+        # But use absolute orientation
+        self._internal_orn = math_util.zero_vec(3)
+
+        self._comm = network.RedisComm(ip, port)
+
+    @property
+    def signal(self):
+        self._signal['cmd'] = list()
+        ins = list()
+
+        events = event_listener.listen_to_redis(self._comm.get_channel('iphone'))
+        time.sleep(1. / self._rate)
+
+        for event in events:
+            roll, pitch, yaw, sens = [float(x) for x in event.split(' ')]
+            self._internal_orn = math_util.zero_vec(3)
+
+
+            orn_euler = np.array([roll, -pitch, yaw],
+                                 dtype=np.float32) * np.pi / 180.
+            if not agent.FIX:
+                pseudo_event[2] = p.getQuaternionFromEuler(
+                    np.arcsin(np.sin(orn_euler * sens)))
+            end_effector_poses = agent.get_tool_poses(tools)
+
+            self.pos = end_effector_poses[:, 0]
+            pseudo_event[1] = self.pos[pseudo_event[0]]
+
+            agent.control(pseudo_event, control_map)
+
+        self._signal['instruction'] = ins
+    
+    

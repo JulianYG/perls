@@ -14,5 +14,5 @@
             keyboard_shortcut="False"
             mouse_picking="False"/> 
 	</view>
-	<control type="keyboard" sensitivity="10" rate="1000"/>
+	<control type="keyboard" sensitivity="20" rate="1000"/>
 </disp>

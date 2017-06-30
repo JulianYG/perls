@@ -6,14 +6,16 @@ class WSG50Gripper(PrismaticGripper):
     def __init__(self,
                  tool_id, engine,
                  path=None,
-                 pos=(0., 0., 0.6),
-                 orn=(0., 0., 0., 1)):
+                 pos=None,
+                 orn=None):
         path = path or 'gripper/wsg50_one_motor_gripper_new_free_base.sdf'
-        PrismaticGripper.__init__(self, tool_id, engine, path, pos, orn, 4, 6)
+        pos = (0., 0., 0.7) if pos is None else pos
+        orn = (0., 0., 0., 1.) if orn is None else orn
+        super(WSG50Gripper, self).__init__(tool_id, engine, path, pos, orn, 4, 6)
 
     def reset(self):
         self.joint_states = ([1, 2, 3, 4, 6],
-                             [0., 0., 0.,
+                             [-0.01130, 0, 0.0,
                               self.joint_specs['lower'][4],
                               self.joint_specs['lower'][6]],
                              'position', {})
@@ -24,7 +26,7 @@ class WSG50Gripper(PrismaticGripper):
         if slide > -1:
             slide = float(slide)
             self.joint_states = ([1, 2, 3, 4, 6],
-                                 [0., 0., 0.,
+                                 [-0.01130, -0.20, 0.20,
                                   self.joint_specs['upper'][4] * slide,
                                   self.joint_specs['upper'][6] * slide],
                                  'position', {})
@@ -36,7 +38,7 @@ class WSG50Gripper(PrismaticGripper):
             if self._close_grip:
                 # Release in this case
                 self.joint_states = ([1, 2, 3, 4, 6],
-                                 [0., 0., 0.,
+                                 [-0.01130, -20, 20,
                                   self.joint_specs['lower'][4],
                                   self.joint_specs['lower'][6]],
                                  'position', {})
@@ -44,7 +46,7 @@ class WSG50Gripper(PrismaticGripper):
             else:
                 # Close in this case
                 self.joint_states = ([1, 2, 3, 4, 6],
-                                 [0., 0., 0.,
+                                 [-0.01130, 20, -20,
                                   self.joint_specs['upper'][4],
                                   self.joint_specs['upper'][6]],
                                  'position', {})

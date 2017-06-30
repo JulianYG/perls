@@ -134,8 +134,13 @@ def parse_env(file_path):
     arm = parse_arm_elem(arm_elem)
 
     # Scene info
-    scene_title = root.find('./scene').attrib['name']
-    scene = parse_body_elem(scene_elem)
+    scene = root.find('./scene')
+    scene_title = 'Blank'
+    if scene is not None:
+        scene_title = scene.attrib['name']
+        scene = parse_body_elem(scene_elem)
+    else:
+        scene = list()
 
     tree = _EnvTree(env, (arm, gripper), (scene_title, scene))
     return tree
@@ -159,7 +164,7 @@ def parse_gripper_elem(gripper_elem):
         tid = int(asset.attrib.get('id', i))
         gripper.append(
             dict(
-                tid=tid,
+                id=tid,
                 # Allow path to be none for gripper (has default)
                 path=asset.attrib.get('path', None),
                 # Allow none pos/orn to use default as well
@@ -171,7 +176,9 @@ def parse_gripper_elem(gripper_elem):
                 type=elem.attrib['type'],
                 # ID refers to controll id
                 name='{}_{}'.format(elem.attrib['name'], tid),
-                fixed=str2bool(elem.attrib.get('fixed', False))))
+                fixed=str2bool(elem.attrib.get('fixed', False)),
+                traction=float(elem.attrib.get('traction', 200.))
+            ))
 
     return gripper
 
@@ -197,7 +204,7 @@ def parse_arm_elem(arm_elem):
         tid = int(asset.attrib.get('id', i))
         arm.append(
             dict(
-                tid=tid,
+                id=tid,
                 path=asset.attrib.get('path', None),
                 pos=[float(f) for
                      f in pos.text.split(' ')] if 

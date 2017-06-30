@@ -24,9 +24,10 @@ class Body(object):
         self._model_path = path
         self._text_markers = dict()
         self._fixed = fixed
-        self._cid = list()      # No children constraints initially
+        self._children = dict()      # No children constraints initially
         self._uid, self._links, self._joints = \
             self._engine.load_asset(path, pos, orn, fixed)
+
     ###
     # Basic info
     @property
@@ -44,7 +45,16 @@ class Body(object):
         :return: vec4 numpy float array of orientation of body
         """
         return self._engine.get_body_orientation(self._uid, type='quaternion')
-
+    
+    @property
+    def pose(self):
+        """
+        An extra level of abstraction to get 
+        position and orientation.
+        :return: (pos, orn) tuple
+        """
+        return self.pos, self.orn
+    
     @property
     def uid(self):
         """
@@ -57,9 +67,9 @@ class Body(object):
     def cid(self):
         """
         Get constraints of body
-        :return: list of current constraints with this body
+        :return: list of current constraint IDs associated with this body
         """
-        return self._cid
+        return [self._children[k]['cid'] for k in self._children.keys()]
 
     @property
     def fix(self):
@@ -204,13 +214,13 @@ class Body(object):
         """
         Get info of attach_children children bodies B's on this parent body A
         :return: a list of attach_children bodies dict of dicts
-        The key of the big dict is a tuple of (uid_child, cid)
-        [{(uid_B0, cid_0): j_0 A, j_0 B, type, jAxis, jPivotA, jPivotB, jOrnA,
+        The key of the big dict is child body uid.
+        [{uid_B0: cid_0, j_0 A, j_0 B, type, jAxis, jPivotA, jPivotB, jOrnA,
             jOrnB, maxForce}, 
-         {(uid_B1, cid_1): j_1 A, ...}, 
+         {uid_B1: cid_1, j_1 A, ...}, 
          ...]
         """
-        return self._engine.get_body_attachment(self._uid)[0]
+        return self._children
 
     @property
     def attach_parent(self):
@@ -218,7 +228,7 @@ class Body(object):
         Get the parent body B this child body A is attach_parent to
         :return: Parent B
         """
-        return self._engine.get_body_attachment(self._uid)[1]
+        return self._engine.get_body_attachment(self._uid)
 
     ###
     # Visual infos
@@ -257,20 +267,27 @@ class Body(object):
         :param pos: position vec3 float cartesian to fix at
         :return: None
         """
-        cid = self._engine.set_body_attachment(
-            self._uid, -1, -1, -1,
-            child_pos=pos, childFrameOrientation=orn)
-        self._cid.append(cid)
+        pos = self.pos if pos is None else pos
+        orn = self.orn if orn is None else orn
+        self.attach_children = (
+            -1, -1, -1, 'fixed', [0.,0.,0.],
+            [0.,0.,0.], pos, None, orn)
         self._fixed = True
 
     @fix.deleter
     def fix(self):
-        if self.attach_children:
-            for dic in self.attach_children:
-                if dic.keys()[0][0] == -1:
-                    cid = dic.keys()[0][1]
-                    self._engine.remove_body_attachment(cid)
-                    self._cid.remove(cid)
+        """
+        Unfix the item. Note that this is special because 
+        for normal fix, this body A should be child, and 
+        would be attach to parent -- the world. However, 
+        pybullet wants body A as parent and world as 
+        child (presumably this is relative). Need to treat 
+        those cases separately.
+        :return: None
+        """
+        if -1 in self._children:
+            self._engine.remove_body_attachment(
+                self._children[-1]['cid'])
 
     @pos.setter
     def pos(self, pos):
@@ -346,25 +363,40 @@ class Body(object):
         [j_0 A, j_0 B, type, jAxis, jPivotA, jPivotB, jOrnA, jOrnB]
         :return: None
         """
-        #TODO: add if/else for changing constraint
-        parent_orn = parent_orn or [0., 0., 0., 1.]
-        child_orn = child_orn or [0., 0, 0., 1.]
-        self._cid.append(
-            self._engine.set_body_attachment(
-                self._uid, lid, child_uid, child_lid,
-                jtype, jaxis, parent_pos, child_pos,
-                parentFrameOrientation=parent_orn,
-                childFrameOrientation=child_orn))
+        # TODO: add if/else for changing constraint
+        if parent_orn is None:
+            parent_orn = [0., 0., 0., 1.]
+        if child_orn is None:
+            child_orn = [0., 0, 0., 1.]
+
+        cid = self._engine.set_body_attachment(
+            self._uid, lid, child_uid, child_lid,
+            jtype, jaxis, parent_pos, child_pos,
+            parentFrameOrientation=parent_orn,
+            childFrameOrientation=child_orn)
+
+        self._children[child_uid] = dict(
+            cid=cid, parentJointIdx=lid,
+            childLinkIndex=child_lid,
+            type=jtype, jointAxis=jaxis,
+            parentJointPvt=parent_pos,
+            childJointPvt=child_pos,
+            parentJointOrn=parent_orn,
+            childJointOrn=child_orn)
 
     @attach_children.deleter
     def attach_children(self):
         """
-        Remove all attach_children bodies on this body
+        Remove all children body constraints 
+        on this body.
         :return: None
         """
-        for cid in self._cid:
-            self._engine.remove_body_attachment(cid)
-        self._cid = []
+        for child in self._children.keys():
+            # Exclude world frame
+            if child != -1:
+                self._engine.remove_body_attachment(
+                    self._children[child]['cid'])
+                del self._children[child]
 
     @visual_shape.setter
     def visual_shape(self, (qid, sid, tid, rgba, spec)):
@@ -484,23 +516,21 @@ class Body(object):
     def track(self, pos, orn, max_force):
         """
         Follow the given pos/orn with given max force
+        with the base link
         :return: None
         """
-        # Need to fix to world frame first
+        # Cannot move if fixed already
         if self._fixed:
             print('Fix-based body cannot track.')
             return
-        cid = None
-        if not self.attach_children:
-            cid = self._engine.set_body_attachment(
-                self._uid, -1, -1, -1,
-                child_pos=pos, childFrameOrientation=orn)
-            self._cid.append(cid)
+        # Need to constrain to world frame first
+        if -1 not in self.attach_children:
+            self.attach_children = (
+                -1, -1, -1, 'fixed', [0., 0., 0.],
+                [0., 0., 0.], pos, None, orn)
         else:
-            for dic in self.attach_children:
-                if dic.keys()[0][0] == -1:
-                    cid = dic.keys()[0][1]
-        self._engine.move_body(cid, pos, orn, max_force)
+            cid = self.attach_children[-1]['cid']
+            self._engine.move_body(cid, pos, orn, max_force)
 
 
 class Tool(Body):
@@ -508,7 +538,7 @@ class Tool(Body):
     def __init__(self, t_id, engine, path, pos, orn, fixed):
 
         self._tool_id = t_id
-        Body.__init__(self, engine, path, pos, orn, fixed)
+        super(Tool, self).__init__(engine, path, pos, orn, fixed)
 
         self._close_grip = False
         self._dof = len(self._joints)
@@ -521,7 +551,7 @@ class Tool(Body):
         Used for control.
         :return: interger tool id
         """
-        return self._tool_id
+        return 't{}'.format(self._tool_id)
 
     @property
     def joint_specs(self):
@@ -646,12 +676,27 @@ class Tool(Body):
 
     def reach(self, pos, orn):
         """
-        Reach given position and orientation
+        Reach given position and orientation.
+        Note that this method does not perform 
+        position transform, and sets the position and 
+        orientation individually.
+        To achieve high accuracy finger-tip manipulation,
+        use <pinpoint> method instead.
         :param pos: vec3 float in cartesian
         :param orn: vec4 float quaternion
         :return: Delta difference between target and actual (pos, orn)
         """
         raise NotImplementedError('Method <reach> not implemented for tool. '
+                                  'Method is tool-specific')
+
+    def pinpoint(self, pos, orn):
+        """
+        Accurately reach to given position and orientation.
+        :param pos: vec3 float in cartesian
+        :param orn: vec4 float quaternion
+        :return: None
+        """
+        raise NotImplementedError('Method <pinpoint> not implemented for tool. '
                                   'Method is tool-specific')
 
     def grasp(self, slide):
