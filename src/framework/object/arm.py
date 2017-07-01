@@ -27,7 +27,7 @@ class Arm(Tool):
         """
         A tool id specifically assigned to this tool.
         Used for control.
-        :return: interger tool id
+        :return: integer tool id
         """
         return 'm{}'.format(self._tool_id)
 
@@ -99,6 +99,7 @@ class Arm(Tool):
 
     ###
     # Helper functions
+
     def position_transform(self, pos, orn):
         """
         Helper function to convert position between 
@@ -136,7 +137,6 @@ class Arm(Tool):
         damps = specs['damping']
 
         if self._null_space:
-
             lower_limits = math_util.vec(specs['lower'])
             upper_limits = math_util.vec(specs['upper'])
             ranges = upper_limits - lower_limits
@@ -161,7 +161,8 @@ class Arm(Tool):
                  velocityGains=(1.,) * self._dof))
 
     ###
-    #  High level functionalities
+    #  High level functionality
+
     def reset(self):
         """
         Reset tool to initial positions
@@ -189,24 +190,29 @@ class Arm(Tool):
 
         self._engine.update()
 
-    def reach(self, pos, orn=None):
+    def reach(self, pos=None, orn=None):
         """
         Reach to given pose. 
         Note this operation sets position first, then 
         adjust to orientation by rotation end effector,
-        so the position is not accurate in a sens
+        so the position is not accurate in a sense.
+        For accurate control, call <pinpoint> instead.
         :param pos: vec3 float cartesian
         :param orn: vec3 float quaternion
         :return: delta between target and actual pose
         """
         orn_delta = math_util.zero_vec(3)
-        self.tool_pos = pos
+        pos_delta = math_util.zero_vec(3)
+
+        if pos is not None:
+            self._move_to(pos, orn)
+            # self.tool_pos = pos
+            pos_delta = self.tool_pos - pos
 
         if orn is not None:
             self.tool_orn = orn
             orn_delta = math_util.quat_diff(self.tool_orn, orn)
 
-        pos_delta = self.tool_pos - pos
         return pos_delta, orn_delta
 
     def pinpoint(self, pos, orn=None):
@@ -231,4 +237,3 @@ class Arm(Tool):
         :return: None
         """
         self._gripper.grasp(slide)
-
