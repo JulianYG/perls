@@ -1,5 +1,4 @@
-from .utils import math_util, util
-from collections import defaultdict
+from .utils import math_util
 
 
 class Adapter(object):
@@ -8,6 +7,7 @@ class Adapter(object):
     is needed, since model directly 
     writes into view
     """
+
     _INQUIRY_DIC = dict(
         tool=['pose', 'v', 'omega',
               # TODO
@@ -49,8 +49,17 @@ class Adapter(object):
         :return: None
         """
         for tid, init_pose in states.items():
-            if tid not in self._states['tool']:
-                self._states['tool'][tid] = init_pose
+            self._states['tool'][tid] = init_pose
+
+    def reset(self):
+        """
+        Reset the adapter states
+        :return: None
+        """
+        # Special case for keyboard control again on Model side
+        # setup initial states for relative comp
+        self.states = self.get_world_states(
+            ('tool', 'pose'))[0]
 
     def update_world(self, update_info):
         pass
@@ -61,7 +70,7 @@ class Adapter(object):
     def get_world_states(self, *args):
         """
         Get world states by attribute name
-        :param name: list of string tuples indicating what 
+        :param args: list of string tuples indicating what
         kind of inquiry (key), and what attributes 
         to get (value).
         :return: states dictionary of given 
@@ -116,27 +125,38 @@ class Adapter(object):
             for ins in instructions:
                 # Use None for no value
                 method, value = ins
-                if method == 'reset':
-                    tool.reset()
+
+                # Note this reset does not reset the elapsed
+                # run time. The user is forced to finish the
+                # task in limited amount of time.
+                if method == 'rst':
+                    self._world.reset()
+                    # Update the states again
+                    self.reset()
+                    # TODO: add reset
                 elif method == 'reach':
                     r_pos, a_orn = value
                     i_pos, _ = self._states['tool'][tool.tid]
 
                     # Orientation is always relative to the
                     # world frame, that is, absolute
-                    if a_orn is None:
-                        a_orn = tool.tool_orn
+                    # if a_orn is None:
+                    #     a_orn = tool.orn
 
                     # TODO: orn may need clipping
-                    r = math_util.quat2mat(a_orn)
+                    r = math_util.quat2mat(tool.orn)
                     # print(math_util.quat2euler(tool.tool_orn),
                     #       math_util.quat2euler(tool.orn),
                     #       math_util.quat2euler((0,0,0.707,0.707)))
+                    # TODO: do we need to use orn? Yes for robot
                     d_pos = r.dot(r_pos)
+                    # d_pos = r_pos
+
                     # Increment to get absolute pos
                     i_pos += d_pos
 
                     # TODO: consider losing control, too far away
+                    # TODO: do we need thresholding?
                     tool.reach(i_pos, a_orn)
                 elif method == 'grasp':
                     tool.grasp(value)

@@ -100,6 +100,16 @@ class World(object):
         """
         self.load_xml(self._description)
 
+    def reset(self):
+        """
+        Reset the world to its initial conditions
+        :return: None
+        """
+        for tool in self._tools.values():
+            tool.reset()
+        for body in self._bodies.values():
+            body.reset()
+
     def load_body(self, file_path, pos, orn,
                   fixed=False, record=False):
         """
@@ -125,6 +135,7 @@ class World(object):
         """
         parse_tree = io_util.parse_env(file_name)
         self.name_str = parse_tree.env['title']
+
         for gripper in parse_tree.gripper:
             gripper_body = self.GRIPPER_TYPE[gripper['type']](
                 gripper['id'],
@@ -132,7 +143,6 @@ class World(object):
                 path=gripper['path'],
                 pos=gripper['pos'],
                 orn=gripper['orn'])
-
             if gripper['fixed']:
                 gripper_body.fix = (gripper['pos'], gripper['orn'])
             else:
@@ -140,8 +150,10 @@ class World(object):
                 gripper_body.traction = self._traction
                 gripper_body.hang()
 
+            # Tools are labeled by tool_id's
             self._tools[gripper_body.tid] = gripper_body
 
+            # Target bodies are listed as a bunch of uid's
             self._target_bodies.append(gripper_body.uid)
 
         for arm in parse_tree.arm:
@@ -155,16 +167,16 @@ class World(object):
             # we can only operate it through the arm
             # TODO: confirm this is necessary
             self._target_bodies.append(gripper_body.uid)
+
             arm_body = self.ARM_TYPE[arm['type']](
                 arm['id'],
                 self._engine,
                 path=arm['path'],
                 pos=arm['pos'], orn=arm['orn'],
-                null_space=False,
+                null_space=arm['null_space'],
                 gripper=gripper_body)
 
             self._tools[arm_body.tid] = arm_body
-
             self._target_bodies.append(arm_body.uid)
 
         for asset in parse_tree.scene:
@@ -210,4 +222,3 @@ class World(object):
         # Mark the current using tool
         tool.mark = ('controlling', 2.5, (1.,0,0), None, .2)
         return tool
-

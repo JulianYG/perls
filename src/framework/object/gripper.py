@@ -32,6 +32,16 @@ class PrismaticGripper(Tool):
         return 'g{}'.format(self._tool_id)
 
     @property
+    def fix(self):
+        """
+        Definition of fixed is a little bit different here.
+        Fix is relative to the robot arm end effector.
+        Gripper, as a tool, cannot be 'fixed' in the sense
+        that it cannot move at all.
+        """
+        return False if -1 in self.attach_children else True
+
+    @property
     def left_finger(self):
         return self._left_finger_idx
 
@@ -120,6 +130,9 @@ class PrismaticGripper(Tool):
         Release gripper for reset
         :return: None
         """
+        pos, orn, _ = self._init_state
+        if not self.fix:
+            self.track(pos, orn, self._max_force)
         self.grasp(0)
         self._engine.update()
 

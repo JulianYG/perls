@@ -63,8 +63,8 @@ HOT_KEY = {65284: None, # F5
            101: _Z_POS_VEC,  # -->
            # Position control
            32: None,  # Space
-           119: _X_POS_VEC,  # W
-           115: _X_NEG_VEC,  # S
+           119: _X_NEG_VEC,  # W
+           115: _X_POS_VEC,  # S
            97: _Y_NEG_VEC,  # A
            100: _Y_POS_VEC,  # D
            114: _Z_POS_VEC,  # R
@@ -74,22 +74,21 @@ HOT_KEY = {65284: None, # F5
            44: -1,  # ,
            46: 1,  # .
            # 48 - 57 corresponds to their own values - 48.
-          }
-
+           }
 
 # TODO: All use id as 0 for now, assuming one server
 # for keyboard control (GUI)
 
 
-def listen_to_keyboard(ps_id=0):
+def listen_to_bullet_keyboard(ps_id=0):
     return getKeyboardEvents(physicsClientId=ps_id)
 
 
-def listen_to_mouse(ps_id=0):
+def listen_to_bullet_mouse(ps_id=0):
     return getMouseEvents(physicsClientId=ps_id)
 
 
-def listen_to_vive(dtype, ps_id=0):
+def listen_to_bullet_vive(dtype, ps_id=0):
     t = 0
     for device in (dtype,):
         t |= DEVICE_TYPE[device]
@@ -99,8 +98,8 @@ def listen_to_vive(dtype, ps_id=0):
 
 def listen_to_redis(queue):
     """
-    Listen to a connected and subscribed redis server
-    :param queue: the registered queue that 
+    Listen to a connected and subscribed redis queue
+    :param queue: the registered queue that
     receives data from callback function
     :return: 
     """

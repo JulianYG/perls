@@ -32,20 +32,13 @@ class Arm(Tool):
         return 'm{}'.format(self._tool_id)
 
     @property
-    def pos(self):
+    def null_space(self):
         """
-        Get the raw position of robot (end effector pos)
-        :return: vec3 float cartesian
+        Property saying if the robot is using null space to 
+        solve IK
+        :return: Boolean
         """
-        return self.kinematics['pos'][self._end_idx]
-
-    @property
-    def orn(self):
-        """
-        Get the orientation of robot end effector
-        :return: vec4 float quaternion
-        """
-        return self.kinematics['orn'][self._end_idx]
+        return self._null_space
 
     @property
     def tool_pos(self):
@@ -65,13 +58,14 @@ class Arm(Tool):
         """
         return self._gripper.tool_orn
 
-    @pos.setter
-    def pos(self, pos):
-        self._move_to(pos, None)
-
-    @orn.setter
-    def orn(self, orn):
-        self.tool_orn = orn
+    @null_space.setter
+    def null_space(self, use_ns):
+        """
+        Set robot to use null space IK solver or not
+        :param use_ns: True/false
+        :return: None
+        """
+        self._null_space = use_ns
 
     @tool_pos.setter
     def tool_pos(self, pos):
@@ -187,7 +181,7 @@ class Arm(Tool):
                  0, 'fixed',
                  [0., 0., 0.], self._tip_offset,
                  [0., 0., 0.],
-                 # Can use [0., 0., 0.707, 0.707] for child orn
+                 # TODO: Check if can use [0., 0., 0.707, 0.707] for child orn
                  [0., 0., 0., 1.], [0., 0., 0., 1.])
         # Reset arm
         self.joint_states = \
@@ -210,13 +204,13 @@ class Arm(Tool):
         :return: delta between target and actual pose
         """
         orn_delta = math_util.zero_vec(3)
-        self.pos = pos
+        self.tool_pos = pos
 
         if orn is not None:
-            self.orn = orn
+            self.tool_orn = orn
             orn_delta = math_util.orn_diff(self.tool_orn, orn)
 
-        pos_delta = self.pos - pos
+        pos_delta = self.tool_pos - pos
         return pos_delta, orn_delta
 
     def pinpoint(self, pos, orn=None):

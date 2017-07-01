@@ -69,7 +69,7 @@ class View:
             sensitivity, rate
         )
 
-        # Special case for keyboard control
+        # Special case for keyboard control on View side
         if self._control_type == 'keyboard':
             # Disable keyboard shortcuts for keyboard control
             option_dic['keyboard_shortcut'] = False
@@ -84,21 +84,18 @@ class View:
         since it requires adapter to talk to the world.
         :return: None
         """
-        # Special case for keyboard control again
-        if self._control_type == 'keyboard':
-            # setup initial states for relative comp
-            tool_states = self._adapter.get_world_states(
-                ('tool', 'pose'))[0]
-            self._adapter.states = tool_states
+        # Boot the adapter to talk with world (model)
+        self._adapter.reset()
 
+        # Some preparation jobs for control
         self._engine.load_simulation()
         done = False
-        # Some preparation jobs for control
-        # self._adapter.set_control_label
-
         self._init_time_stamp = util.get_abs_time()
+
+        # Start control loop
         while not done:
             elt = util.get_elapsed_time(self._init_time_stamp)
+
             # Run into interruption
             self._control_interrupt()
             done = self._engine.step(elapsed_time=elt)
@@ -108,8 +105,9 @@ class View:
         signal = self._control_handler.signal
         self._adapter.react(signal)
 
+        # GUI frame allow user to interact with the world
+        # dynamically, and vividly
         if self._frame == 'gui':
             info = self._event_handler.signal
             if info:
                 self._adapter.update_world(info)
-

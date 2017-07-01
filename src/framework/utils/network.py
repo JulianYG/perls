@@ -1,4 +1,9 @@
 import redis
+import sys
+if sys.version[0] == '2':
+    from queue import Queue
+else:
+    from Queue import Queue
 
 
 class RedisComm(object):
@@ -16,8 +21,15 @@ class RedisComm(object):
 
         self.channel_queues = dict()
 
-    def get_channel(self, name):
-        return self.channel_queues[name]
+    @property
+    def channels(self):
+        """
+        Get all channels this server is currently
+        connected to
+        :return: dictionary where keys are channel names,
+        and values are the queues.
+        """
+        return self.channel_queues
 
     def broadcast_to_channel(self, channel, message):
         return self.terminal.publish(channel, message)
@@ -30,12 +42,15 @@ class RedisComm(object):
         # print(events)
         return events
 
-    def connect_to_channel(self, channel):
-        self.channel_queues[channel] = q(self._buffer_size)
-        self.pubsub.subscribe(**{channel: self._channel_handler})
-        # Start thread
-        channel_thread = self.pubsub.run_in_thread(sleep_time=0.001)
-        self.threads.append(channel_thread)
+    def connect_to_channel(self, channels):
+        if not isinstance(channels, list):
+            channels = [channels]
+        for channel in channels:
+            self.channel_queues[channel] = Queue(self._buffer_size)
+            self.pubsub.subscribe(**{channel: self._channel_handler})
+            # Start thread
+            channel_thread = self.pubsub.run_in_thread(sleep_time=0.001)
+            self.threads.append(channel_thread)
 
     def _channel_handler(self, msg):
         packet = msg['data']

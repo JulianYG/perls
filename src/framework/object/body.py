@@ -20,6 +20,9 @@ class Body(object):
         """
         pos = pos or (0., 0., 0.)
         orn = orn or (0., 0., 0., 1.)
+
+        # Store original info for reset
+        self._init_state = (pos, orn, fixed)
         self._engine = engine
         self._model_path = path
         self._text_markers = dict()
@@ -77,10 +80,7 @@ class Body(object):
         Check if this instance use fixed base
         :return: fixed base or not
         """
-        if not self.attach_parent:
-            return self._fixed
-        else:
-            return self._fixed or self.attach_parent[0].keys()[0][0] != -1
+        return self._fixed
 
     @property
     def name(self):
@@ -453,6 +453,19 @@ class Body(object):
             self._engine.remove_body_text_marker(mid)
         self._text_markers = dict()
 
+    def reset(self):
+        """
+        Reset body to its original pose/fix condition.
+        Note currently this cannot remove body attachments
+        :return: None
+        """
+        del self.fix
+        pos, orn, fixed = self._init_state
+        if not fixed:
+            self._engine.set_body_pose(self._uid, pos, orn)
+        else:
+            self.fix = (pos, orn)
+
     def remove(self):
         """
         Remove current object instance from environment
@@ -666,13 +679,6 @@ class Tool(Body):
 
     ###
     #  High level functionalities
-    def reset(self):
-        """
-        Reset tool to initial positions
-        :return: None
-        """
-        raise NotImplementedError('Method <reset> not implemented for tool. '
-                                  'Method is tool-specific')
 
     def reach(self, pos, orn):
         """
