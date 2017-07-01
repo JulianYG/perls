@@ -154,7 +154,7 @@ class Adapter(object):
 
                     # Increment to get absolute pos
                     i_pos += d_pos
-
+                    print(i_pos)
                     # TODO: consider losing control, too far away
                     # TODO: do we need thresholding?
 
@@ -162,8 +162,8 @@ class Adapter(object):
                     pos_diff, orn_diff = tool.reach(i_pos, a_orn)
                     print(math_util.rms(pos_diff), math_util.rms(orn_diff))
                     # If the tool is out of reach, update the adapter states
-                    if math_util.rms(pos_diff) > 0.5 or \
-                                    math_util.rms(orn_diff) > 0.1:
+                    if math_util.rms(pos_diff) > 1.5 or \
+                       math_util.rms(orn_diff) > 0.1:
                         self.reset()
                 elif method == 'grasp':
                     tool.grasp(value)

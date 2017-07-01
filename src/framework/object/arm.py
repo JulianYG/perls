@@ -71,16 +71,12 @@ class Arm(Tool):
     def tool_pos(self, pos):
         """
         Set the tool to given pose.
-        Note setting position does not keep previous 
-        orientation by forcing it to (0, 1, 0, 0)
-        To preserve orientation, use 
-        higher level methods such as <reach>
         :param pos: vec3 float in cartesian space,
         referring to the position between the gripper fingers
         :return: None
         """
         target_pos = self.position_transform(pos, self.tool_orn)
-        self._move_to(target_pos, None)
+        self._move_to(target_pos, self.tool_orn)
 
     @tool_orn.setter
     def tool_orn(self, orn):
