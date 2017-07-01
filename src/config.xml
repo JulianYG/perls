@@ -6,7 +6,7 @@
 			<job name="run"/>
 			<property async="False" step_size="0.001" max_run_time="10e6"/>
 		</build>
-		<env>test.xml</env>
+		<env>env.xml</env>
 		<disp>disp.xml</disp>
 	</config>
 

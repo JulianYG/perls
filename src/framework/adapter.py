@@ -130,10 +130,11 @@ class Adapter(object):
                 # run time. The user is forced to finish the
                 # task in limited amount of time.
                 if method == 'rst':
+                    print('Resetting...')
                     self._world.reset()
                     # Update the states again
                     self.reset()
-                    # TODO: add reset
+                    print('World is reset.')
                 elif method == 'reach':
                     r_pos, a_orn = value
                     i_pos, _ = self._states['tool'][tool.tid]

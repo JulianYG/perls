@@ -1,5 +1,5 @@
 
-from .body import Tool
+from .body import Tool, Body
 from ..utils import math_util
 
 
@@ -31,7 +31,7 @@ class PrismaticGripper(Tool):
         """
         return 'g{}'.format(self._tool_id)
 
-    @property
+    @Body.fix.getter
     def fix(self):
         """
         Definition of fixed is a little bit different here.

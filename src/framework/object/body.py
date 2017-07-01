@@ -538,9 +538,10 @@ class Body(object):
             return
         # Need to constrain to world frame first
         if -1 not in self.attach_children:
-            self.attach_children = (
-                -1, -1, -1, 'fixed', [0., 0., 0.],
-                [0., 0., 0.], pos, None, orn)
+            self.fix = (pos, orn)
+            # self.attach_children = (
+            #     -1, -1, -1, 'fixed', [0., 0., 0.],
+            #     [0., 0., 0.], pos, None, orn)
         else:
             cid = self.attach_children[-1]['cid']
             self._engine.move_body(cid, pos, orn, max_force)
