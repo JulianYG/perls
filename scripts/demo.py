@@ -26,8 +26,9 @@ def execute(*args):
 	record_file = _CONFIGS['record_file_name']
 	replay_file = _CONFIGS['replay_file_name']
 	video = _CONFIGS['video']
+	# interface_type = _CONFIGS['interface']
 
-	fn = record_file or '_'.join([interface_type, agent, task])
+	# fn = record_file or '_'.join([interface_type, agent, task])
 
 	simulator = build_util.build_by_config(_CONFIGS, WORK_DIR)
 
