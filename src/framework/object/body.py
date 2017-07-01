@@ -48,7 +48,7 @@ class Body(object):
         Get base position of the body
         :return: numpy array [x, y, z] position of object
         """
-        return self._engine.get_body_position(self._uid)
+        return self._engine.get_body_scene_position(self._uid)
 
     @property
     def orn(self):
@@ -56,7 +56,7 @@ class Body(object):
         Get base orientation of the body in quaternion form
         :return: vec4 numpy float array of orientation of body
         """
-        return self._engine.get_body_orientation(self._uid, type='quaternion')
+        return self._engine.get_body_scene_orientation(self._uid, type='quaternion')
     
     @property
     def pose(self):
@@ -355,7 +355,7 @@ class Body(object):
         :param pos: object position in (x, y, z)
         :return: None
         """
-        self._engine.set_body_pose(self._uid, pos, self.orn)
+        self._engine.set_body_scene_pose(self._uid, pos, self.orn)
 
     @orn.setter
     def orn(self, orn):
@@ -365,7 +365,7 @@ class Body(object):
         euler form
         :return: None
         """
-        self._engine.set_body_pose(self._uid, self.pos, orn)
+        self._engine.set_body_scene_pose(self._uid, self.pos, orn)
 
     @v.setter
     def v(self, velocity):
@@ -534,7 +534,7 @@ class Body(object):
         del self.fix
         pos, orn, fixed = self._init_state
         if not fixed:
-            self._engine.set_body_pose(self._uid, pos, orn)
+            self._engine.set_body_scene_pose(self._uid, pos, orn)
         else:
             self.fix = (pos, orn)
 

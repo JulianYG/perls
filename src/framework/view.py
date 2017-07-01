@@ -59,7 +59,7 @@ class View:
         Construct the display 
         :return: None
         """
-        self.name_str, frame_info, option_dic, \
+        self.name_str, frame_info, camera_info, option_dic, \
             self._control_type, sensitivity, rate = \
             io_util.parse_disp(self._description)
         self._frame = frame_info[0]
@@ -75,7 +75,7 @@ class View:
             option_dic['keyboard_shortcut'] = False
 
         # Configure display, connect to bullet physics server
-        self._engine.configure_display(frame_info, option_dic)
+        self._engine.configure_display(frame_info, camera_info, option_dic)
 
     def start(self):
         """

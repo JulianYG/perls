@@ -214,7 +214,7 @@ class World(object):
         """
         t_id = '%s%d' % (key, _id)
         if not key or t_id not in self._tools:
-            print('Selected tool %s does not exist. Using default instead.' % t_id)
+            # print('Selected tool %s does not exist. Using default instead.' % t_id)
             tool = self._tools[self._tools.keys()[0]]
         else:
             tool = self._tools[t_id]

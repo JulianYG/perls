@@ -1,7 +1,14 @@
+#!/usr/bin/env/ python
+
 import pybullet as p
 import numpy as np
 import os
 from .base import FakeEngine
+
+__author__ = 'Julian Gao'
+__email__ = 'julianyg@stanford.edu'
+__license__ = 'private'
+__version__ = '0.1'
 
 
 class GazeboEngine(FakeEngine):
@@ -44,7 +51,7 @@ class BulletPhysicsEngine(FakeEngine):
 
     def __init__(self, e_id, max_run_time,
                  job='run', async=False, step_size=0.001,
-                 interface=None):
+                 view=None):
         """
         Initialize the physics engine.
         :param async: boolean: indicate if run 
@@ -81,6 +88,8 @@ class BulletPhysicsEngine(FakeEngine):
             self._step_size = None
             self._max_run_time = max_run_time
         self._job = job
+        self._camera_params = dict()
+
         self._status = BulletPhysicsEngine.STATUS[1]
         self._error_message = list()
 
@@ -95,7 +104,7 @@ class BulletPhysicsEngine(FakeEngine):
         :return: A dictionary of information of this 
         world.
         {version/name, status, real time, id, step size (if async), 
-        running job, max running time}
+        running job, camera info, max running time}
         """
         info_dic = dict(
             name='{}\t{}'.format(
@@ -105,6 +114,7 @@ class BulletPhysicsEngine(FakeEngine):
             real_time=self._real_time,
             id=self.engine_id,
             job=self._job,
+            camera_info=self._camera_params,
             max_run_time=self._max_run_time)
         if not self._real_time:
             info_dic['step_size'] = self._step_size
@@ -151,11 +161,11 @@ class BulletPhysicsEngine(FakeEngine):
 
     ###
     # Body related methods
-    def get_body_position(self, uid):
+    def get_body_scene_position(self, uid):
         return np.array(p.getBasePositionAndOrientation(
             uid, physicsClientId=self._physics_server_id)[0])
 
-    def get_body_orientation(self, uid, type):
+    def get_body_scene_orientation(self, uid, type):
 
         orn = p.getBasePositionAndOrientation(
             uid, physicsClientId=self._physics_server_id)[1]
@@ -166,7 +176,7 @@ class BulletPhysicsEngine(FakeEngine):
         else:
             print('Unrecognized orientation form.')
 
-    def set_body_pose(self, uid, pos, orn):
+    def set_body_scene_pose(self, uid, pos, orn):
         status = 0
         try:
             p.resetBasePositionAndOrientation(
@@ -544,7 +554,7 @@ class BulletPhysicsEngine(FakeEngine):
             print('Cannot start physics engine %d '
                   'in error state.' % self.engine_id)
 
-    def configure_display(self, frame_args, config):
+    def configure_display(self, frame_args, camera_kwargs, config):
 
         if self._type_check(frame_args[0]) == 0:
             # Convert to bullet constant
@@ -558,6 +568,9 @@ class BulletPhysicsEngine(FakeEngine):
                 p.configureDebugVisualizer(
                     BulletPhysicsEngine.DISP_CONF[name],
                     switch, physicsClientId=self._physics_server_id)
+
+            # Set camera parameters
+            self._camera_params = camera_kwargs
 
     def update(self, max_steps=1000):
         for _ in range(max_steps):
@@ -573,8 +586,13 @@ class BulletPhysicsEngine(FakeEngine):
                     return False
             else:
                 if elapsed_time < self._max_run_time:
+                    p.resetDebugVisualizerCamera(
+                        self._camera_params['distance'],
+                        self._camera_params['yaw'],
+                        self._camera_params['pitch'],
+                        self._camera_params['focus'],
+                        self._physics_server_id)
                     # TODO: Figure out why this is not useful in <load_simulation>
                     p.setRealTimeSimulation(1, physicsClientId=self._physics_server_id)
                     return False
         return True
-

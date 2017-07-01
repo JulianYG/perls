@@ -8,6 +8,7 @@ class Adapter(object):
     writes into view
     """
 
+    # Storing inquiry legend
     _INQUIRY_DIC = dict(
         tool=['pose', 'v', 'omega',
               # TODO
@@ -21,7 +22,10 @@ class Adapter(object):
     )
 
     def __init__(self, model):
-
+        """
+        Initialize the adapter with given model
+        :param model: the world
+        """
         self._world = model
 
         # space to store useful states
@@ -141,14 +145,9 @@ class Adapter(object):
 
                     # Orientation is always relative to the
                     # world frame, that is, absolute
-                    # if a_orn is None:
-                    #     a_orn = tool.orn
-
                     # TODO: orn may need clipping
                     r = math_util.quat2mat(tool.orn)
-                    # print(math_util.quat2euler(tool.tool_orn),
-                    #       math_util.quat2euler(tool.orn),
-                    #       math_util.quat2euler((0,0,0.707,0.707)))
+
                     # TODO: do we need to use orn? Yes for robot
                     d_pos = r.dot(r_pos)
                     # d_pos = r_pos
@@ -158,9 +157,15 @@ class Adapter(object):
 
                     # TODO: consider losing control, too far away
                     # TODO: do we need thresholding?
-                    tool.reach(i_pos, a_orn)
+
+                    # Thresholding
+                    pos_diff, orn_diff = tool.reach(i_pos, a_orn)
+                    print(math_util.rms(pos_diff), math_util.rms(orn_diff))
+                    # If the tool is out of reach, update the adapter states
+                    if math_util.rms(pos_diff) > 0.5 or \
+                                    math_util.rms(orn_diff) > 0.1:
+                        self.reset()
                 elif method == 'grasp':
                     tool.grasp(value)
                 elif method == 'pick_and_place':
                     tool.pick_and_place(*value)
-

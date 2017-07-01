@@ -274,7 +274,16 @@ def parse_disp(file_path):
     rate = int(control_attrib.get('rate', 100))
     options = dict((k, str2bool(v)) for (k, v) in option_attrib.items())
 
-    return disp_name, frame_info, options, control_type, sensitivity, rate
+    camera_attrib = root.find('./view/camera').attrib
+    camera_info = dict(egocentric=str2bool(camera_attrib.get('ego', False)),
+                       pitch=float(camera_attrib.get('pitch', -35.)),
+                       yaw=float(camera_attrib.get('yaw', 50.)),
+                       focus=[float(x) for
+                              x in camera_attrib.get('focus', '0 0 0').split(' ')],
+                       distance=float(camera_attrib.get('distance', 4)))
+
+    return disp_name, frame_info, camera_info, options, \
+           control_type, sensitivity, rate
 
 
 def parse_config(file_path):

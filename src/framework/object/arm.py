@@ -208,7 +208,7 @@ class Arm(Tool):
 
         if orn is not None:
             self.tool_orn = orn
-            orn_delta = math_util.orn_diff(self.tool_orn, orn)
+            orn_delta = math_util.quat_diff(self.tool_orn, orn)
 
         pos_delta = self.tool_pos - pos
         return pos_delta, orn_delta

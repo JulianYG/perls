@@ -5,12 +5,18 @@ import math
 _EPS = np.finfo(float).eps * 4.
 
 
+def rms(vec):
+    return np.sqrt(np.sum(vec ** 2))
+
+
 def approximate(val, n_digits):
     return np.array([float('%.{}g'.format(n_digits) % v) for v in val],
                     dtype=np.float32)
 
+
 def transform(poseA, poseB):
     return p.multiplyTransforms(poseA[0], poseA[1], poseB[0], poseB[1])
+
 
 def rand_bigint():
     return np.random.randint(low=500, high=10000)
@@ -24,9 +30,18 @@ def zero_vec(size):
     return np.zeros(size, dtype=np.float32)
 
 
-def orn_diff(quat1, quat2):
-    return quat2euler(quat1) - quat2euler(quat2)
-    
+def pose_diff(pose1, pose2):
+
+    pos1, orn1 = pose1
+    pos2, orn2 = pose2
+    pos_xdiff = np.sqrt(np.sum((pos1 - pos2) ** 2))
+    orn_xdiff = np.sqrt(np.sum(quat_diff(orn1, orn2) ** 2))
+    return pos_xdiff, orn_xdiff
+
+
+def euler_diff(e1, e2):
+    return e1 - e2
+
 
 def orn_add(quat1, quat2):
     return quat2euler(quat1) + quat2euler(quat2)
@@ -73,6 +88,10 @@ def quat_mul(quaternion0, quaternion1):
         x1 * y0 - y1 * x0 + z1 * w0 + w1 * z0], dtype=np.float32)
 
 
+def quat_diff(quat1, quat2):
+    return quat2euler(quat1) - quat2euler(quat2)
+
+
 def get_transformed_pos(pos, translation, rotation):
     return rotation.dot(pos - translation)
 
@@ -81,4 +100,3 @@ def process_orn_signal(roll, pitch, yaw, sens):
     orn_euler = np.array([roll, -pitch, yaw],
                          dtype=np.float32) * np.pi / 180.
     return orn_euler * sens
-
