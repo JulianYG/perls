@@ -1,4 +1,11 @@
+#!/usr/bin/env python
+
 from ..utils import math_util
+
+__author__ = 'Julian Gao'
+__email__ = 'julianyg@stanford.edu'
+__license__ = 'private'
+__version__ = '0.1'
 
 
 class Body(object):
@@ -12,6 +19,8 @@ class Body(object):
                  orn=None,
                  fixed=False):
         """
+        :param engine: The physics engine used to simulate
+         this tool.
         :param path: body model path (urdf, sdf, xml, mjcf, etc.)
         :param pos: initial position of object
         :param orn: initial orientation of object
@@ -107,7 +116,7 @@ class Body(object):
         return self._engine.get_body_angular_velocity(self._uid)
 
     ###
-    # Link related infos
+    # Link related information
     @property
     def kinematics(self):
         """
@@ -171,14 +180,64 @@ class Body(object):
         return info_dic
 
     ###
-    # Joint related infos
+    # Joint related information
     @property
     def joint_specs(self):
-        raise NotImplementedError('Method <joint_specs> not implemented for body')
+        """
+        Get joints info of the body.
+        :return: a dictionary of lists of
+        {name, joint type, pos_idx, vel_idx, damping,
+        friction, lower, upper, max_force, max_vel},
+        where the keys are info names, and
+        values are arranged in link indices order.
+        """
+        info_dict = dict(
+            name=[],
+            jtype=[],
+            pos_idx=[],
+            vel_idx=[],
+            damping=[],
+            friction=[],
+            lower=[],
+            upper=[],
+            max_force=[],
+            max_vel=[]
+        )
+        for jid in self._joints:
+            info = self._engine.get_body_joint_info(self._uid, jid)
+            info_dict['name'].append(info[1])
+            info_dict['jtype'].append(info[2])
+            info_dict['pos_idx'].append(info[3])
+            info_dict['vel_idx'].append(info[4])
+            info_dict['damping'].append(info[6])
+            info_dict['friction'].append(info[7])
+            info_dict['lower'].append(info[8])
+            info_dict['upper'].append(info[9])
+            info_dict['max_force'].append(info[10])
+            info_dict['max_vel'].append(info[11])
+        return info_dict
 
     @property
     def joint_states(self):
-        raise NotImplementedError('Method <joint_states> not implemented for body')
+        """
+        Get joint states of the body
+        :return: a dictionary of dictionaries of
+        {joint_index: {pos, v, wrench (vec6), motor_torque}}
+        where motor_torque is the applied motor torque
+        during last simulation step.
+        Note that force and motor_torque are only
+        available for non real time simulation.
+        """
+        info_dict = {}
+        for jid in self._joints:
+            info = self._engine.get_body_joint_state(self._uid, jid)
+            info_dict[jid] = dict(
+                pos=info[0],
+                v=info[1],
+                wrench=list(info[2]),
+                motor_torque=info[3]
+            )
+        return info_dict
 
     ###
     # Relation info with other bodies in space
@@ -231,7 +290,7 @@ class Body(object):
         return self._engine.get_body_attachment(self._uid)
 
     ###
-    # Visual infos
+    # Visual information
     @property
     def visual_shape(self):
         """
@@ -332,9 +391,22 @@ class Body(object):
         else:
             print('Cannot set angular velocity for fixed body')
 
+    # Base level control functionality
     @joint_states.setter
-    def joint_states(self, (jid, value, ctype)):
-        raise NotImplementedError('Method <joint_states> not implemented for body')
+    def joint_states(self, (jid, value, ctype, kwargs)):
+        """
+        Taken joint index(es), value(s), as well as control type
+        (ctype) among position, velocity, and torque,
+        set the control. The jid and value can be lists
+        of the same length. kwargs is a dictionary
+        :return: None
+        """
+        max_forces = tuple(self.joint_specs['max_force'][j] for j in jid)
+        if kwargs:
+            kwargs['forces'] = kwargs.get('forces', None) or max_forces
+        else:
+            kwargs = dict(forces=max_forces)
+        self._engine.set_body_joint_state(self._uid, jid, value, ctype, kwargs)
 
     @dynamics.setter
     def dynamics(self, info):
@@ -533,7 +605,7 @@ class Body(object):
         :return: None
         """
         # Cannot move if fixed already
-        if self._fixed:
+        if self.fix:
             print('Fix-based body cannot track.')
             return
         # Need to constrain to world frame first
@@ -548,12 +620,31 @@ class Body(object):
 
 
 class Tool(Body):
-
+    """
+    The abstracted level of tools in the world. Can be
+    a gripper, a robot arm, a robot, or even hand.
+    """
     def __init__(self, t_id, engine, path, pos, orn, fixed):
-
+        """
+        Initialize the tool.
+        :param t_id: A different id for tool other than its
+        inherited body uid, for control purpose. The id
+        is in the form of '%s%d', where s is 'm' for arm,
+        'b' for robot, 'g' for gripper, and 'h' for hand
+        (some haptic device).
+        :param engine: The physics engine used to simulate
+         this tool.
+        :param path: the asset model file path of this tool.
+        :param pos: initial position vec3 float cartesian
+        :param orn: initial orientation vec4 float quaternion
+        :param fixed: indicating whether the tool is fixed,
+        default False for gripper, True for robot arm.
+        """
         self._tool_id = t_id
         super(Tool, self).__init__(engine, path, pos, orn, fixed)
 
+        # The ultimate purpose for tool is to manipulate objects,
+        # so close grip is universal for all tools
         self._close_grip = False
         self._dof = len(self._joints)
         self._tip_offset = math_util.zero_vec(3)
@@ -563,67 +654,9 @@ class Tool(Body):
         """
         A tool id specifically assigned to this tool.
         Used for control.
-        :return: interger tool id
+        :return: integer tool id
         """
         return 't{}'.format(self._tool_id)
-
-    @property
-    def joint_specs(self):
-        """
-        Get joints info of the tool.
-        :return: a dictionary of lists of
-        {name, jtype, pos_idx, vel_idx, damping, 
-        friction, lower, upper, max_force, max_vel}, 
-        where the keys are info names, and 
-        values are arranged in link indices order.
-        """
-        info_dict = dict(
-            name=[],
-            jtype=[],
-            pos_idx=[],
-            vel_idx=[],
-            damping=[],
-            friction=[],
-            lower=[],
-            upper=[],
-            max_force=[],
-            max_vel=[]
-        )
-        for jid in self._joints:
-            info = self._engine.get_body_joint_info(self._uid, jid)
-            info_dict['name'].append(info[1])
-            info_dict['jtype'].append(info[2])
-            info_dict['pos_idx'].append(info[3])
-            info_dict['vel_idx'].append(info[4])
-            info_dict['damping'].append(info[6])
-            info_dict['friction'].append(info[7])
-            info_dict['lower'].append(info[8])
-            info_dict['upper'].append(info[9])
-            info_dict['max_force'].append(info[10])
-            info_dict['max_vel'].append(info[11])
-        return info_dict
-
-    @property
-    def joint_states(self):
-        """
-        Get joint states of the tool
-        :return: a dictionary of dictionaries of 
-        {joint_index: {pos, v, wrench (vec6), motor_torque}}
-        where motor_torque is the applied motor torque
-        during last simulation step.
-        Note that force and motor_torque are only 
-        available for non real time simulation.
-        """
-        info_dict = {}
-        for jid in self._joints:
-            info = self._engine.get_body_joint_state(self._uid, jid)
-            info_dict[jid] = dict(
-                pos=info[0],
-                v=info[1],
-                wrench=list(info[2]),
-                motor_torque=info[3]
-            )
-        return info_dict
 
     @property
     def tool_pos(self):
@@ -642,23 +675,7 @@ class Tool(Body):
         raise NotImplementedError('Method <tool_orn> not implemented for tool')
 
     ###
-    #  Low level functionalities
-
-    @joint_states.setter
-    def joint_states(self, (jid, value, ctype, kwargs)):
-        """
-        Taken joint index(es), value(s), as well as control type 
-        (ctype) among position, velocity, and torque, 
-        set the control. The jid and value can be lists 
-        of the same length. kwargs is a dictionary
-        :return: None
-        """
-        max_forces = tuple(self.joint_specs['max_force'][j] for j in jid)
-        if kwargs:
-            kwargs['forces'] = kwargs.get('forces', None) or max_forces
-        else:
-            kwargs = dict(forces=max_forces)
-        self._engine.set_body_joint_state(self._uid, jid, value, ctype, kwargs)
+    #  Low level control functionality
 
     @tool_pos.setter
     def tool_pos(self, pos):
@@ -679,7 +696,7 @@ class Tool(Body):
         raise NotImplementedError('Method <tool_orn> not implemented for tool')
 
     ###
-    #  High level functionalities
+    #  High level control functionality
 
     def reach(self, pos, orn):
         """
