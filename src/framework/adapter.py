@@ -55,9 +55,9 @@ class Adapter(object):
         for tid, init_pose in states.items():
             self._states['tool'][tid] = init_pose
 
-    def update_states(self):
+    def reset(self):
         """
-        Update the adapter states
+        Reset the adapter states
         :return: None
         """
         # Special case for keyboard control again on Model side
@@ -137,7 +137,7 @@ class Adapter(object):
                     print('Resetting...')
                     self._world.reset()
                     # Update the states again
-                    self.update_states()
+                    self.reset()
                     print('World is reset.')
                 elif method == 'reach':
                     r_pos, a_orn = value
@@ -149,28 +149,22 @@ class Adapter(object):
                     r = math_util.quat2mat(tool.orn)
 
                     # TODO: do we need to use orn? Yes for robot
+                    d_pos = r.dot(r_pos)
+                    # d_pos = r_pos
 
-                    
+                    # Increment to get absolute pos
+                    i_pos += d_pos
+                    print(i_pos)
+                    # TODO: consider losing control, too far away
+                    # TODO: do we need thresholding?
 
-                    if r_pos is not None:
-                        d_pos = r.dot(r_pos)
-                        # d_pos = r_pos
-
-                        # Increment to get absolute pos
-                        i_pos += d_pos
-
-                        # TODO: consider losing control, too far away
-
-                        # Threshold
-                        pos_diff, orn_diff = tool.reach(i_pos, None)
-                    else:
-                        pos_diff, orn_diff = tool.reach(None, a_orn)
-
+                    # Thresholding
+                    pos_diff, orn_diff = tool.reach(i_pos, a_orn)
                     print(math_util.rms(pos_diff), math_util.rms(orn_diff))
                     # If the tool is out of reach, update the adapter states
-                    # if math_util.rms(pos_diff) > 1.5 or \
-                    #    math_util.rms(orn_diff) > 0.1:
-                    #     self.update_states()
+                    if math_util.rms(pos_diff) > 1.5 or \
+                       math_util.rms(orn_diff) > 0.1:
+                        self.reset()
                 elif method == 'grasp':
                     tool.grasp(value)
                 elif method == 'pick_and_place':

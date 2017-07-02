@@ -5,10 +5,6 @@ import math
 _EPS = np.finfo(float).eps * 4.
 
 
-def near(vec1, vec2):
-    return np.allclose(vec1, vec2, rtol=1e-3)
-
-
 def rms(vec):
     return np.sqrt(np.sum(vec ** 2))
 

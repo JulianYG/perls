@@ -15,5 +15,5 @@
             mouse_picking="False"/>
         <camera ego="False" pitch="-35" yaw="50" focus="0 0 0" distance="4"/>
 	</view>
-	<control type="keyboard" sensitivity="5" rate="1000"/>
+	<control type="keyboard" sensitivity="20" rate="1000"/>
 </disp>

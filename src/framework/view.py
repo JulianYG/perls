@@ -85,7 +85,7 @@ class View:
         :return: None
         """
         # Boot the adapter to talk with world (model)
-        self._adapter.update_states()
+        self._adapter.reset()
 
         # Some preparation jobs for control
         self._engine.load_simulation()

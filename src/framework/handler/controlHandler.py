@@ -71,9 +71,11 @@ class KeyboardEventHandler(InterruptHandler):
                     ('reach', (event_listener.HOT_KEY[key] * self._sens, None)))
             if label == 'orn' and status == 'holding':
                 self._sig_orn += event_listener.HOT_KEY[key] * self._sens
-
+                # TODO: Think about needs clipping here or not
+                # self._sig_orn.clip(min=-3.14159, max=3.14159, out=self._sig_orn)
                 # Don't touch position, only orientation
-                ins.append(('reach', (None, math_util.euler2quat(self._sig_orn))))
+                ins.append(('reach', (math_util.zero_vec(3),
+                                      math_util.euler2quat(self._sig_orn))))
         self._signal['instruction'] = ins
         return self._signal
 
