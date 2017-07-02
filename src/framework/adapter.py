@@ -55,9 +55,9 @@ class Adapter(object):
         for tid, init_pose in states.items():
             self._states['tool'][tid] = init_pose
 
-    def reset(self):
+    def update_states(self):
         """
-        Reset the adapter states
+        Update the adapter states
         :return: None
         """
         # Special case for keyboard control again on Model side
@@ -75,12 +75,12 @@ class Adapter(object):
         """
         Get world states by attribute name
         :param args: list of string tuples indicating what
-        kind of inquiry (key), and what attributes 
+        kind of inquiry (key), and what attributes
         to get (value).
-        :return: states dictionary of given 
+        :return: states dictionary of given
         inquiry. Keys are ids, values are states.
         For example, [('body', 'pose')]
-        It will return a list of dictionaries in the same 
+        It will return a list of dictionaries in the same
         order as inquiry list.
         """
         state_list = list()
@@ -100,7 +100,7 @@ class Adapter(object):
 
     def react(self, signal):
         """
-        React only take care of motion related 
+        React only take care of motion related
         control, that is manipulating a tool.
         :param signal: dictionary signal
         :return: None
@@ -136,35 +136,49 @@ class Adapter(object):
                 if method == 'rst':
                     print('Resetting...')
                     self._world.reset()
+
                     # Update the states again
-                    self.reset()
+                    self.update_states()
                     print('World is reset.')
                 elif method == 'reach':
+                    # Cartesian, quaternion
                     r_pos, a_orn = value
                     i_pos, _ = self._states['tool'][tool.tid]
 
                     # Orientation is always relative to the
                     # world frame, that is, absolute
-                    # TODO: orn may need clipping
                     r = math_util.quat2mat(tool.orn)
 
-                    # TODO: do we need to use orn? Yes for robot
-                    d_pos = r.dot(r_pos)
-                    # d_pos = r_pos
+                    if r_pos is not None:
+                        # Increment to get absolute pos
+                        # Take account of rotation
+                        i_pos += r.dot(r_pos)
+                        pos_diff, orn_diff = tool.reach(i_pos, None)
+                    else:
+                        ###
+                        # Note: clipping does not happen here because
+                        # arm and gripper are treated in the same way.
+                        # Clipping would result in gripper not able to
+                        # change orn. However, clipping here would give
+                        # arm perfect response. Currently the arm end
+                        # effector will switch position when reaching its
+                        # limit. This is trade-off, sadly.
+                        pos_diff, orn_diff = tool.reach(None, a_orn)
 
-                    # Increment to get absolute pos
-                    i_pos += d_pos
-                    print(i_pos)
-                    # TODO: consider losing control, too far away
-                    # TODO: do we need thresholding?
+                    # Update state orientation all the time
+                    # Note by intuition, position should be updated too.
+                    # However, due to the limitation of IK, this will
+                    # cause robot arm act weirdly.
+                    state_pose = self._states['tool'][tool.tid]
+                    self._states['tool'][tool.tid] = \
+                        (state_pose[0], tool.tool_orn)
 
-                    # Thresholding
-                    pos_diff, orn_diff = tool.reach(i_pos, a_orn)
-                    print(math_util.rms(pos_diff), math_util.rms(orn_diff))
                     # If the tool is out of reach, update the adapter states
-                    if math_util.rms(pos_diff) > 1.5 or \
-                       math_util.rms(orn_diff) > 0.1:
-                        self.reset()
+                    # TODO: make the threshold configs
+                    # if math_util.rms(pos_diff) > 1.5 or \
+                    #    math_util.rms(orn_diff) > 5.0:
+                    #     self.update_states()
+
                 elif method == 'grasp':
                     tool.grasp(value)
                 elif method == 'pick_and_place':

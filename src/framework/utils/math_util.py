@@ -5,8 +5,18 @@ import math
 _EPS = np.finfo(float).eps * 4.
 
 
-def rms(vec):
-    return np.sqrt(np.sum(vec ** 2))
+def rms(vector):
+    return np.sqrt(np.sum(vector ** 2))
+
+
+def joint_clip(joint_pos, joint_spec):
+
+    joint_pos = np.clip(
+        joint_pos,
+        a_min=joint_spec['lower'][-3:],
+        a_max=joint_spec['upper'][-3:],
+        out=joint_pos)
+    return np.arcsin(np.sin(joint_pos))
 
 
 def approximate(val, n_digits):

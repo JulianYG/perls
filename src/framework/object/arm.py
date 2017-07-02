@@ -27,14 +27,14 @@ class Arm(Tool):
         """
         A tool id specifically assigned to this tool.
         Used for control.
-        :return: interger tool id
+        :return: integer tool id
         """
         return 'm{}'.format(self._tool_id)
 
     @property
     def null_space(self):
         """
-        Property saying if the robot is using null space to 
+        Property saying if the robot is using null space to
         solve IK
         :return: Boolean
         """
@@ -51,8 +51,8 @@ class Arm(Tool):
     @property
     def tool_orn(self):
         """
-        Get the orientation of the gripper attached at 
-        robot end effector link. There should exist 
+        Get the orientation of the gripper attached at
+        robot end effector link. There should exist
         some offset based on robot's rest pose.
         :return: vec4 float quaternion in Cartesian
         """
@@ -83,15 +83,21 @@ class Arm(Tool):
         """
         Set the tool to given orientation.
         Note setting orientation does not keep previous
-        position. Due to the limitation of common 
-        robot arms, it preserves [roll, pitch] but 
+        position. Due to the limitation of common
+        robot arms, it preserves [roll, pitch] but
         abandons [yaw].
-        :param orn: vec4 float in quaternion form
+        :param orn: vec4 float in quaternion form,
+        or vec3 float in euler form
         :return: None
         """
-        x, y, _ = math_util.quat2euler(orn)
+        orn = math_util.quat2euler(orn)
+
+        # Check if needs clip
+        x, y, _ = math_util.joint_clip(orn, self.joint_specs)
+
+        # Set the joints
         self.joint_states = (
-            # Use last two dofs
+            # Use last two DOFs
             self._joints[-2:],
             [y, x], 'position',
             dict(positionGains=(.05,) * 2,
@@ -99,10 +105,11 @@ class Arm(Tool):
 
     ###
     # Helper functions
+
     def position_transform(self, pos, orn):
         """
-        Helper function to convert position between 
-        fingers of gripper to position on robot 
+        Helper function to convert position between
+        fingers of gripper to position on robot
         end effector link
         :param pos: vec3 float cartesian world frame
         :param orn: vec4 float quaternion world frame
@@ -136,7 +143,6 @@ class Arm(Tool):
         damps = specs['damping']
 
         if self._null_space:
-
             lower_limits = math_util.vec(specs['lower'])
             upper_limits = math_util.vec(specs['upper'])
             ranges = upper_limits - lower_limits
@@ -161,7 +167,8 @@ class Arm(Tool):
                  velocityGains=(1.,) * self._dof))
 
     ###
-    #  High level functionalities
+    #  High level functionality
+
     def reset(self):
         """
         Reset tool to initial positions
@@ -189,29 +196,33 @@ class Arm(Tool):
 
         self._engine.update()
 
-    def reach(self, pos, orn=None):
+    def reach(self, pos=None, orn=None):
         """
-        Reach to given pose. 
-        Note this operation sets position first, then 
+        Reach to given pose.
+        Note this operation sets position first, then
         adjust to orientation by rotation end effector,
-        so the position is not accurate in a sens
+        so the position is not accurate in a sense.
+        For accurate control, call <pinpoint> instead.
         :param pos: vec3 float cartesian
         :param orn: vec3 float quaternion
         :return: delta between target and actual pose
         """
         orn_delta = math_util.zero_vec(3)
-        self.tool_pos = pos
+        pos_delta = math_util.zero_vec(3)
+
+        if pos is not None:
+            self._move_to(pos, orn)
+            pos_delta = self.tool_pos - pos
 
         if orn is not None:
             self.tool_orn = orn
             orn_delta = math_util.quat_diff(self.tool_orn, orn)
 
-        pos_delta = self.tool_pos - pos
         return pos_delta, orn_delta
 
     def pinpoint(self, pos, orn=None):
         """
-        Accurately reach to the given pose. 
+        Accurately reach to the given pose.
         Note this operation sets position and orientation
         and the same time, keeping neither previous
         position nor previous orientation
@@ -231,4 +242,3 @@ class Arm(Tool):
         :return: None
         """
         self._gripper.grasp(slide)
-

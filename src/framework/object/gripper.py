@@ -145,7 +145,7 @@ class PrismaticGripper(Tool):
             -1, -1, -1, 'fixed', [0., 0., 0.],
             [0., 0., 0.], self.pos, None, self.orn)
 
-    def reach(self, pos, orn=None):
+    def reach(self, pos=None, orn=None):
         """
         Reach to given pose approximately
         :param pos: vec3 float cartesian at base
@@ -153,13 +153,18 @@ class PrismaticGripper(Tool):
         :return: delta between target and actual pose
         """
         orn_delta = math_util.zero_vec(3)
+        pos_delta = math_util.zero_vec(3)
+
         if orn is None:
             orn = self.tool_orn
         # Use constraint to move gripper for simulation,
         # to avoid boundary mixing during collision
         self.track(pos, orn, self._max_force)
+
         orn_delta = math_util.quat_diff(self.tool_orn, orn)
-        pos_delta = self.tool_pos - pos
+        if pos is not None:
+            pos_delta = self.tool_pos - pos
+
         return pos_delta, orn_delta
 
     def pinpoint(self, pos, orn=None):
