@@ -43,7 +43,7 @@ class _EnvTree:
 
 class _ConfigTree:
 
-    def __init__(self, c_id,
+    def __init__(self, c_id, build,
                  model_desc, view_desc,
                  name, engine,
                  version, job, async,
@@ -58,6 +58,11 @@ class _ConfigTree:
         self._name = name
         self._engine = engine
         self._step_size = step
+        self._build = build
+
+    @property
+    def build(self):
+        return self._build
 
     @property
     def id(self):
@@ -295,6 +300,7 @@ def parse_config(file_path):
 
     for conf in configs:
 
+        build = conf.find('./build').attrib['type']
         model_desc = conf.find('./env').text
         view_desc = conf.find('./disp').text
 
@@ -313,7 +319,7 @@ def parse_config(file_path):
         max_run_time = int(float(property_attrib.get(
             'max_run_time', 300)))
         # Append one configuration
-        trees.append(_ConfigTree(conf_id,
+        trees.append(_ConfigTree(conf_id, build,
             model_desc, view_desc, config_name, engine,
             min_version, job, async, step_size, max_run_time))
 

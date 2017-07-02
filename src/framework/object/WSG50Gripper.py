@@ -16,13 +16,17 @@ class WSG50Gripper(PrismaticGripper):
     def grasp(self, slide=-1):
         if slide > -1:
             slide = float(slide)
+            # TODO: figure out why the finger slides
             self.joint_states = ([1, 2, 3, 4, 6],
-                                 # [-0.011130, -0.206421,
-								 # 0.205143, -0.009999, -0.010055],
-                                 [0., 0, 0,
+                                 [self.joint_specs['upper'][1] +
+                                  slide * (self.joint_specs['upper'][1] -
+                                           self.joint_specs['lower'][1]),
+                                  0, 0,
                                   self.joint_specs['upper'][4] * slide,
                                   self.joint_specs['upper'][6] * slide],
                                  'position', {})
+            print(self.joint_states['pos'])
+
             if slide == 0.:
                 self._close_grip = False
             elif slide == 1.:
@@ -31,9 +35,8 @@ class WSG50Gripper(PrismaticGripper):
             if self._close_grip:
                 # Release in this case
                 self.joint_states = ([1, 2, 3, 4, 6],
-                                  #    [-0.011130, -0.206421,
-								 # 0.205143, -0.009999, -0.010055],
-                                 [0., -5, 5,
+                                 [self.joint_specs['upper'][1],
+                                  -0.22, 0.22,
                                   self.joint_specs['lower'][4],
                                   self.joint_specs['lower'][6]],
                                  'position', {})
@@ -41,10 +44,8 @@ class WSG50Gripper(PrismaticGripper):
             else:
                 # Close in this case
                 self.joint_states = ([1, 2, 3, 4, 6],
-                                     # [0.6855956234759611,
-                                     #  -0.7479294372303137, 0.05054599996976922,
-                                     #  0.049838105678835724],
-                                 [0., 5, -5,
+                                 [self.joint_specs['lower'][1],
+                                  0.72, -0.72,
                                   self.joint_specs['upper'][4],
                                   self.joint_specs['upper'][6]],
                                  'position', {})

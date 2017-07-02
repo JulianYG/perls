@@ -50,8 +50,7 @@ class BulletPhysicsEngine(FakeEngine):
                      mouse_picking=10)
 
     def __init__(self, e_id, max_run_time,
-                 job='run', async=False, step_size=0.001,
-                 view=None):
+                 job='run', async=False, step_size=0.001):
         """
         Initialize the physics engine.
         :param async: boolean: indicate if run 
@@ -66,9 +65,9 @@ class BulletPhysicsEngine(FakeEngine):
         simulation step
         :param job: specify the run, choose string among
         'run, record, and replay'
-        :param interface: #TODO
         """
-        self._version = p.getAPIVersion()
+        self._version = 'perls version {}, bullet version {}'.\
+            format(__version__, p.getAPIVersion())
         self._real_time = not async
 
         # physics server id, a.k.a. simulation id.
@@ -88,8 +87,6 @@ class BulletPhysicsEngine(FakeEngine):
             self._step_size = None
             self._max_run_time = max_run_time
         self._job = job
-        self._camera_params = dict()
-
         self._status = BulletPhysicsEngine.STATUS[1]
         self._error_message = list()
 
@@ -103,8 +100,9 @@ class BulletPhysicsEngine(FakeEngine):
         Get the basic info description of the world.
         :return: A dictionary of information of this 
         world.
-        {version/name, status, real time, id, step size (if async), 
-        running job, camera info, max running time}
+        {version/name, status, real time, id,
+        step size (if async), running job, camera info,
+        max running time}
         """
         info_dic = dict(
             name='{}\t{}'.format(
@@ -114,7 +112,7 @@ class BulletPhysicsEngine(FakeEngine):
             real_time=self._real_time,
             id=self.engine_id,
             job=self._job,
-            camera_info=self._camera_params,
+            camera_info=self.camera,
             max_run_time=self._max_run_time)
         if not self._real_time:
             info_dic['step_size'] = self._step_size
@@ -124,9 +122,30 @@ class BulletPhysicsEngine(FakeEngine):
     def status(self):
         return self._status
 
+    @property
+    def camera(self):
+        info = p.getDebugVisualizerCamera(self._physics_server_id)
+        return dict(
+            frame_width=info[0], frame_height=info[1],
+            view_mat=np.array(info[2], dtype=np.float32).reshape((4, 4)),
+            projection_mat=np.array(info[3], dtype=np.float32).reshape((4, 4)),
+            up=np.where(info[4])[0][0],
+            yaw=info[8], pitch=info[9], focal_len=info[11],
+            focus=info[12],
+        )
+
     @status.setter
     def status(self, stat):
         self._status = stat
+
+    @camera.setter
+    def camera(self, params):
+        p.resetDebugVisualizerCamera(
+            params['distance'],
+            params['yaw'],
+            params['pitch'],
+            params['focus'],
+            self._physics_server_id)
 
     ###
     # General environment related methods
@@ -176,6 +195,14 @@ class BulletPhysicsEngine(FakeEngine):
         else:
             print('Unrecognized orientation form.')
 
+    def get_body_camera_position(self):
+
+        return None
+
+    def get_body_camera_orientation(self, uid, type):
+
+        return None
+
     def set_body_scene_pose(self, uid, pos, orn):
         status = 0
         try:
@@ -216,18 +243,21 @@ class BulletPhysicsEngine(FakeEngine):
         return p.getVisualShapeData(
             uid, physicsClientId=self._physics_server_id)
 
-    def set_body_visual_shape(self, uid, qid,
-                              shapeId=p.GEOM_BOX,
-                              textureId=None,
-                              rgbaColor=(1,1,1,1),
-                              specColor=(1,1,1)):
+    def set_body_visual_shape(
+            self, uid, texture, qid, shape_id=p.GEOM_BOX,
+            rgba_color=(1,1,1,1), spec_color=(1,1,1)):
         try:
-            return p.changeVisualShape(
-                uid, qid, shapeId, textureId, rgbaColor,
-                specColor, physicsClientId=self._physics_server_id)
+            texture_id = p.loadTexture(texture, self._physics_server_id)
+            p.changeVisualShape(
+                uid, qid, shape_id, texture_id, rgba_color,
+                spec_color, physicsClientId=self._physics_server_id)
+            return texture_id
         except p.error:
             self.status = BulletPhysicsEngine.STATUS[-1]
             self._error_message.append(p.error.message)
+
+    def change_loaded_texture(self, texture_id, pixels, w, h):
+        p.changeTexture(texture_id, pixels, w, h, self._physics_server_id)
 
     def get_body_linear_velocity(self, uid):
         return np.array(p.getBaseVelocity(
@@ -543,6 +573,10 @@ class BulletPhysicsEngine(FakeEngine):
                 return -1
         return 0
 
+    def get_camera_position(self):
+        view_matrix = self.camera['view_mat']
+        return np.linalg.inv(view_matrix)[3, :3]
+
     def load_simulation(self):
         if self.status == 'pending':
             # p.setRealTimeSimulation(int(self._real_time), physicsClientId=self._physics_server_id)
@@ -550,11 +584,19 @@ class BulletPhysicsEngine(FakeEngine):
                 p.setTimeStep(float(self._step_size), physicsClientId=self._physics_server_id)
             self.status = BulletPhysicsEngine.STATUS[0]
             print('Starting simulation server %d, status: %s' % (self.engine_id, self.status))
+
+            # if self._job == 'run':
+            #
+            #
+            # elif self._job == 'replay':
+
+
+
         else:
             print('Cannot start physics engine %d '
                   'in error state.' % self.engine_id)
 
-    def configure_display(self, frame_args, camera_kwargs, config):
+    def configure_display(self, frame_args, config):
 
         if self._type_check(frame_args[0]) == 0:
             # Convert to bullet constant
@@ -569,15 +611,11 @@ class BulletPhysicsEngine(FakeEngine):
                     BulletPhysicsEngine.DISP_CONF[name],
                     switch, physicsClientId=self._physics_server_id)
 
-            # Set camera parameters
-            self._camera_params = camera_kwargs
-
     def update(self, max_steps=1000):
         for _ in range(max_steps):
             p.stepSimulation(self._physics_server_id)
 
     def step(self, elapsed_time=0):
-
         if self.status == 'running':
             if not self._real_time:
                 if self._step_count < self._max_run_time:
@@ -586,12 +624,7 @@ class BulletPhysicsEngine(FakeEngine):
                     return False
             else:
                 if elapsed_time < self._max_run_time:
-                    p.resetDebugVisualizerCamera(
-                        self._camera_params['distance'],
-                        self._camera_params['yaw'],
-                        self._camera_params['pitch'],
-                        self._camera_params['focus'],
-                        self._physics_server_id)
+
                     # TODO: Figure out why this is not useful in <load_simulation>
                     p.setRealTimeSimulation(1, physicsClientId=self._physics_server_id)
                     return False

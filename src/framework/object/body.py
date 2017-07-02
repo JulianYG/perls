@@ -36,7 +36,8 @@ class Body(object):
         self._model_path = path
         self._text_markers = dict()
         self._fixed = fixed
-        self._children = dict()      # No children constraints initially
+        self._children = dict() # No children constraints initially
+        self._texture = dict()  # No texture initially
         self._uid, self._links, self._joints = \
             self._engine.load_asset(path, pos, orn, fixed)
 
@@ -228,15 +229,14 @@ class Body(object):
         Note that force and motor_torque are only
         available for non real time simulation.
         """
-        info_dict = {}
+        info_dict = dict(pos=list(), v=list(), wrench=list(),
+                         motor_torque=list())
         for jid in self._joints:
             info = self._engine.get_body_joint_state(self._uid, jid)
-            info_dict[jid] = dict(
-                pos=info[0],
-                v=info[1],
-                wrench=list(info[2]),
-                motor_torque=info[3]
-            )
+            info_dict['pos'].append(info[0])
+            info_dict['v'].append(info[1])
+            info_dict['wrench'].append(math_util.vec(info[2])),
+            info_dict['motor_torque'].append(info[3])
         return info_dict
 
     ###
@@ -471,19 +471,25 @@ class Body(object):
                 del self._children[child]
 
     @visual_shape.setter
-    def visual_shape(self, (qid, sid, tid, rgba, spec)):
+    def visual_shape(self, (path, name, qid, sid, rgba, spec)):
         """
         Reset visual shape data to change the texture of a shape. 
         Currently only affects the software renderer (getCameraImage), 
         does not show up on OpenGL window
+        :param path: the path of texture file (png, jpg, etc)
+        :param name: a string of name to associate with the texture,
+        suggested to be something recognizable, like 'sky', 'rainbow'.
         :param qid: joint index
         :param sid: shape index ()
-        :param tid: texture unique index
         :param rgba: vec4 in range [0, 1]. No transparent alpha yet
         :param spec: RGB 0-100 vec3
         :return: None
         """
-        self._engine.set_body_visual_shape(self._uid, qid, sid, tid, rgba, spec)
+        texture_id = self._engine.set_body_visual_shape(
+            self._uid, path, qid, sid, rgba, spec)
+
+        # Store the texture name with corresponding texture id
+        self._texture[name] = texture_id
 
     @collision_shape.setter
     def collision_shape(self, *args):
@@ -597,6 +603,19 @@ class Body(object):
             self._engine.apply_torque_to_body(
                 self._uid, lid, torque, pos, ref)
             return 0
+
+    def change_texture(self, name, pixels, width, height):
+        """
+        Change the loaded texture
+        :param name: the same name used loading the texture
+        :param pixels: the pixel values of entire RGB image,
+        typically shape of [rgbVal, w, h, 3]
+        :param width: integer value indicating image area width
+        :param height: integer value indicating image area height
+        :return: None
+        """
+        self._engine.change_loaded_texture(
+            self._texture[name], pixels, width, height)
 
     def track(self, pos, orn, max_force):
         """

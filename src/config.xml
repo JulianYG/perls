@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <batch>
 	<config name="default" id="0">
-		<build>
+		<build type="Debug">
 			<simulator engine="bullet" version="20170601"/>
 			<job name="run"/>
 			<property async="False" step_size="0.001" max_run_time="10e6"/>

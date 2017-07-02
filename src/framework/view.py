@@ -75,7 +75,10 @@ class View:
             option_dic['keyboard_shortcut'] = False
 
         # Configure display, connect to bullet physics server
-        self._engine.configure_display(frame_info, camera_info, option_dic)
+        self._engine.configure_display(frame_info, option_dic)
+
+        # Setup camera
+        self._engine.camera = camera_info
 
     def start(self):
         """
@@ -91,6 +94,8 @@ class View:
         self._engine.load_simulation()
         done = False
         self._init_time_stamp = util.get_abs_time()
+
+        # TODO: wait for pybullet setTimeOut
 
         # Start control loop
         while not done:

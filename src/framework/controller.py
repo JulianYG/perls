@@ -4,6 +4,7 @@ from .view import View
 from .adapter import Adapter
 from .engine import physicsEngine
 from .utils import io_util
+from .tool import debugger, tester
 import threading
 
 # TODO: framework should only contain base class controller
@@ -90,7 +91,8 @@ class SimulationController(object):
                 pe.status = 'error'
             else:
                 # TODO: Change all print statements to log.info/error
-                print('Simulation configuration %d build success.' % i)
+                print('Simulation configuration {} build success.'
+                      'Build type: {}'.format(i, conf.build))
 
             self._physics_servers[conf.id] = (world, disp, pe)
 
@@ -116,9 +118,14 @@ class SimulationController(object):
             conf.max_run_time, conf.job,
             conf.async, conf.step_size)
         world = World(conf.model_desc, pe)
-        disp = View(conf.view_desc, Adapter(world), pe)
-
-        return world, disp, pe
+        display = View(conf.view_desc, Adapter(world), pe)
+        if conf.build == 'debug':
+            world = debugger.ModelDebugger(world)
+            display = debugger.ViewDebugger(display)
+        elif conf.build == 'test':
+            world = tester.ModelTester(world)
+            display = tester.ViewTester(display)
+        return world, display, pe
 
     def start_all(self):
         """

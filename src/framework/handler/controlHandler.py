@@ -71,7 +71,6 @@ class KeyboardEventHandler(InterruptHandler):
                     ('reach', (event_listener.HOT_KEY[key] * self._sens, None)))
             if label == 'orn' and status == 'holding':
                 self._sig_orn += event_listener.HOT_KEY[key] * self._sens
-
                 # Don't touch position, only orientation (quat)
                 ins.append(('reach', (None, math_util.euler2quat(self._sig_orn))))
         self._signal['instruction'] = ins
