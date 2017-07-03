@@ -65,8 +65,10 @@ class View:
         Construct the display 
         :return: None
         """
-        self.name_str, frame_info, camera_info, option_dic, \
-            self._control_type, sensitivity, rate = \
+        # Setup camera is for replay function
+        # camera dict: flen, yaw, pitch, focus
+        self.name_str, frame_info, camera_info, \
+            option_dic, self._control_type, sensitivity, rate = \
             io_util.parse_disp(self._description)
         self._frame = frame_info[0]
         # Set up control event interruption handlers
@@ -81,10 +83,7 @@ class View:
             option_dic['keyboard_shortcut'] = False
 
         # Configure display, connect to bullet physics server
-        self._engine.configure_display(frame_info, option_dic)
-
-        # Setup camera
-        self._engine.camera = camera_info
+        self._engine.configure_display(frame_info, camera_info, option_dic)
 
     def start(self):
         """
@@ -107,6 +106,8 @@ class View:
 
         if state == -1:
             logerr('Error loading simulation', FONT.disp)
+            self.exit_routine()
+            return
         elif state == 1:
             self.exit_routine()
             loginfo('Replay finished. Exiting...', FONT.disp)
@@ -127,7 +128,9 @@ class View:
 
             # Perform control interruption first
             self._control_interrupt()
-            time_up = self._engine.step(elapsed_time=elt)
+            time_up = self._engine.step(
+                # TODO update camera info
+                None, elapsed_time=elt)
 
             # Next check task completion, communicate
             # with the model
@@ -158,6 +161,9 @@ class View:
             info = self._event_handler.signal
             if info:
                 self._adapter.update_world(info)
+
+                # Allow changing camera view
+
 
     def _checker_interrupt(self):
         """

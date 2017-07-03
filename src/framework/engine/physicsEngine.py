@@ -6,6 +6,7 @@ import os, time
 import os.path as osp
 from .base import FakeEngine
 from ..utils import util
+from ..utils import math_util
 from ..utils.io_util import (FONT,
                              parse_log,
                              loginfo,
@@ -96,6 +97,7 @@ class BulletPhysicsEngine(FakeEngine):
             self._max_run_time = max_run_time
         self._job = job
         self._status = BulletPhysicsEngine.STATUS[1]
+        self._frame = None
 
         self._error_message = list()
         self._record_video = video
@@ -154,8 +156,11 @@ class BulletPhysicsEngine(FakeEngine):
     @property
     def camera(self):
         info = p.getDebugVisualizerCamera(self._physics_server_id)
+        cam_pos, cam_orn = self._get_camera_pose()
+
         return dict(
             frame_width=info[0], frame_height=info[1],
+            pos=cam_pos, orn=cam_orn,
             view_mat=np.array(info[2], dtype=np.float32).reshape((4, 4)),
             projection_mat=np.array(info[3], dtype=np.float32).reshape((4, 4)),
             up=np.where(info[4])[0][0],
@@ -178,12 +183,25 @@ class BulletPhysicsEngine(FakeEngine):
 
     @camera.setter
     def camera(self, params):
-        p.resetDebugVisualizerCamera(
-            params['distance'],
-            params['yaw'],
-            params['pitch'],
-            params['focus'],
-            self._physics_server_id)
+        if self._frame == 'gui':
+            p.resetDebugVisualizerCamera(
+                params['flen'],
+                params['yaw'],
+                params['pitch'],
+                params['focus'],
+                self._physics_server_id
+            )
+        elif self._frame == 'vr':
+            cam_pos, cam_orn = self._get_camera_pose()
+            p.setVRCameraState(
+                rootPosition=cam_pos,
+                rootOrientation=cam_orn,
+                physicsClientId=self._physics_server_id
+            )
+        else:
+            loginfo('Cannot set camera under frame type <{}>.'.
+                    format(self._frame),
+                    FONT.warning)
 
     @record_name.setter
     def record_name(self, name):
@@ -192,7 +210,33 @@ class BulletPhysicsEngine(FakeEngine):
         self._record_name = name or self._record_name
 
     ###
+    #  Helper functions
+
+    def _get_camera_pose(self):
+        view_matrix = self.camera['view_mat']
+        transformation_matrix = np.linalg.inv(view_matrix)
+
+        # TODO: Check the orientation correctness
+        return transformation_matrix[3, :3], \
+               math_util.mat2quat(transformation_matrix[:3, :3])
+
+    def _type_check(self):
+        """
+        Check if frame and async match
+        :return: 0 if success, -1 if failure
+        """
+        if self._real_time:
+            if BulletPhysicsEngine.FRAME_TYPES[self._frame] == 2:
+                self.status = BulletPhysicsEngine.STATUS[-1]
+                err_msg = 'CMD mode only supports async simulation.'
+                self._error_message.append(err_msg)
+                logerr(err_msg, FONT.control)
+                return -1
+        return 0
+
+    ###
     # General environment related methods
+
     def configure_environment(self, gravity, *_):
         p.setGravity(0., 0., - gravity * 9.8, self._physics_server_id)
 
@@ -607,22 +651,6 @@ class BulletPhysicsEngine(FakeEngine):
     ###
     # General display related methods
 
-    def _type_check(self, frame):
-        """
-        Check if frame and async match
-        :return: 0 if success, -1 if failure
-        """
-        if self._real_time:
-            if BulletPhysicsEngine.FRAME_TYPES[frame] == 2:
-                self.status = BulletPhysicsEngine.STATUS[-1]
-                self._error_message.append('CMD mode only supports async simulation.')
-                return -1
-        return 0
-
-    def get_camera_position(self):
-        view_matrix = self.camera['view_mat']
-        return np.linalg.inv(view_matrix)[3, :3]
-
     def load_simulation(self, target_uids):
         if self.status == 'pending':
 
@@ -664,28 +692,31 @@ class BulletPhysicsEngine(FakeEngine):
                         )
                     )
 
-                # Record the egocentric camera pose
-                self._logging_id.append(
-                    p.startStateLogging(
-                        p.STATE_LOGGING_VR_CONTROLLERS,
-                        osp.join(self._log_path['device'],
-                                 '{}_{}.bin'.format(
-                                     self._record_name, time_stamp)),
-                        deviceTypeFilter=p.VR_DEVICE_HMD,
-                        physicsClientId = self._physics_server_id
+                if self._frame == 'vr':
+                    # Record the egocentric camera pose
+                    self._logging_id.append(
+                        p.startStateLogging(
+                            p.STATE_LOGGING_VR_CONTROLLERS,
+                            osp.join(self._log_path['device'],
+                                     '{}_{}.bin'.format(
+                                         self._record_name, time_stamp)),
+                            deviceTypeFilter=p.VR_DEVICE_HMD,
+                            physicsClientId = self._physics_server_id
+                        )
                     )
-                )
                 return 0
 
             elif self._job == 'replay':
 
                 objects = osp.join(self._log_path['trajectory'],
-                                      '{}.bin'.format(self._record_name))
+                                   '{}.bin'.format(self._record_name))
                 device = osp.join(self._log_path['device'],
-                                      '{}.bin'.format(self._record_name))
+                                  '{}.bin'.format(self._record_name))
 
                 # Can change verbosity later
                 obj_log = parse_log(objects, verbose=False)
+
+                # TODO: set camera angle for GUI/HMD
 
                 for record in obj_log:
                     # time_stamp = float(record[1])
@@ -695,26 +726,28 @@ class BulletPhysicsEngine(FakeEngine):
                     p.resetBasePositionAndOrientation(obj, pos, orn)
                     n_joints = p.getNumJoints(obj)
                     for i in range(n_joints):
-                        jointInfo = p.getJointInfo(obj, i)
-                        qid = jointInfo[3]
+                        joint_info = p.getJointInfo(obj, i)
+                        qid = joint_info[3]
                         if qid > -1:
                             p.resetJointState(obj, i, record[qid - 7 + 17])
 
                     # TODO: think about changing delay
-                    time.sleep(1e-5)
+                    time.sleep(1e-4)
 
                 # TODO: figure out using HMD log to revive FPS
                 return 1
         else:
             logerr('Cannot start physics engine %d '
                    'in error state.' % self.engine_id, FONT.disp)
-        return -1
+            return -1
+        return 0
 
-    def configure_display(self, frame_args, config):
+    def configure_display(self, frame_args, camera_args, config):
+        self._frame = frame_args[0]
 
-        if self._type_check(frame_args[0]) == 0:
+        if self._type_check() == 0:
             # Convert to bullet constant
-            frame_args[0] = BulletPhysicsEngine.FRAME_TYPES[frame_args[0]]
+            frame_args[0] = BulletPhysicsEngine.FRAME_TYPES[self._frame]
             # The core step: connect to bullet physics server
             self._physics_server_id = p.connect(*frame_args)
             p.setInternalSimFlags(0, self._physics_server_id)
@@ -725,11 +758,17 @@ class BulletPhysicsEngine(FakeEngine):
                     BulletPhysicsEngine.DISP_CONF[name],
                     switch, physicsClientId=self._physics_server_id)
 
+            # Setup camera
+            self.camera = camera_args
+        else:
+            logerr('Incompatible frame type <{}>.'.
+                   format(self._frame), FONT.disp)
+
     def update(self, max_steps=1000):
         for _ in range(max_steps):
             p.stepSimulation(self._physics_server_id)
 
-    def step(self, elapsed_time=0):
+    def step(self, camera_info, elapsed_time=0):
         if self.status == 'running':
             if not self._real_time:
                 if self._step_count < self._max_run_time:
@@ -738,6 +777,9 @@ class BulletPhysicsEngine(FakeEngine):
                     return False
             else:
                 if elapsed_time < self._max_run_time:
+
+                    # TODO: think about how to control camera at run time
+                    # self.camera = camera_info
 
                     # TODO: Figure out why this is not useful in <load_simulation>
                     p.setRealTimeSimulation(1, physicsClientId=self._physics_server_id)

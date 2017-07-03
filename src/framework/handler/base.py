@@ -24,10 +24,6 @@ class InterruptHandler(object):
     def signal(self):
         return self._signal
 
-    def _parse_interrupt(self):
-        raise NotImplementedError('<_parse_interrupt> is not '
-                                  'implemented for this class')
-
 
 class NullHandler(InterruptHandler):
     """
@@ -35,7 +31,3 @@ class NullHandler(InterruptHandler):
     """
     def __init__(self, a=None, b=None):
         super(NullHandler, self).__init__(0.)
-
-    def _parse_interrupt(self):
-        return 0
-

@@ -383,7 +383,7 @@ def parse_disp(file_path):
                        yaw=float(camera_attrib.get('yaw', 50.)),
                        focus=[float(x) for
                               x in camera_attrib.get('focus', '0 0 0').split(' ')],
-                       distance=float(camera_attrib.get('distance', 4)))
+                       flen=float(camera_attrib.get('focal_len', 4)))
 
     return disp_name, frame_info, camera_info, options, \
         control_type, sensitivity, rate

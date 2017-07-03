@@ -78,8 +78,15 @@ class KeyboardEventHandler(InterruptHandler):
 
 
 class ViveEventHandler(InterruptHandler):
+    """
+    Handles VR controller events/signal
+    """
+    def __init__(self, rate):
+        super(ViveEventHandler, self).__init__(rate)
 
-    pass
+    @property
+    def signal(self):
+        pass
 
 
 class AppEventHandler(InterruptHandler):
@@ -111,7 +118,7 @@ class AppEventHandler(InterruptHandler):
             elif label_id == 5:
                 # Scale by sensitivity
                 orn = value[:3] * value[3]
-                ins.append(('reach', (math_util.zero_vec(3), orn)))
+                ins.append(('reach', (None, orn)))
 
         self._signal['instruction'] = ins
         return self._signal
