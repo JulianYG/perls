@@ -1,5 +1,7 @@
 from .utils import math_util
-
+from .utils.io_util import (FONT,
+                            logerr,
+                            loginfo)
 
 class Adapter(object):
     """
@@ -18,7 +20,7 @@ class Adapter(object):
               # 'force', 'wrench', 'shape',
               'name', 'tid',
               'contact'],
-        env=['gravity', 'traction', ]
+        env=['gravity', 'traction', 'target']
     )
 
     def __init__(self, model):
@@ -64,6 +66,14 @@ class Adapter(object):
         # setup initial states for relative comp
         self.states = self.get_world_states(
             ('tool', 'pose'))[0]
+
+    def check_world_states(self):
+        """
+        Check the world states to see if the task
+        is completed.
+        :return: done, success
+        """
+        return False, 0
 
     def update_world(self, update_info):
         pass
@@ -123,7 +133,8 @@ class Adapter(object):
                 elif method == 'joint_states':
                     tool.joint_states = value
                 else:
-                    print('Unrecognized command type. Skipped')
+                    loginfo('Unrecognized command type. Skipped',
+                            FONT.ignore)
 
             # Next perform high level instructions
             for ins in instructions:
@@ -134,12 +145,12 @@ class Adapter(object):
                 # run time. The user is forced to finish the
                 # task in limited amount of time.
                 if method == 'rst':
-                    print('Resetting...')
+                    loginfo('Resetting...', FONT.model)
                     self._world.reset()
 
                     # Update the states again
                     self.update_states()
-                    print('World is reset.')
+                    loginfo('World is reset.', FONT.model)
                 elif method == 'reach':
                     # Cartesian, quaternion
                     r_pos, a_orn = value

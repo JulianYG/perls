@@ -1,17 +1,14 @@
-from ..world import World
 
 
-class Debugger(object):
-
-    def __init__(self):
-        pass
-
-
-class ModelDebugger(Debugger):
+class ModelDebugger(object):
 
     def __init__(self, world):
 
         self._world = world
+
+    @property
+    def info(self):
+        return self._world.info
 
     def build(self):
         self._world.build()
@@ -34,10 +31,14 @@ class ModelDebugger(Debugger):
         return tool
 
 
-class ViewDebugger(Debugger):
+class ViewDebugger(object):
 
     def __init__(self, display):
         self._display = display
+
+    @property
+    def info(self):
+        return self._display.info
 
     def build(self):
         self._display.build()
@@ -54,8 +55,7 @@ class ViewDebugger(Debugger):
     def run(self):
 
         while True:
-
             self._display._control_interrupt()
             self._display._engine.step(elapsed_time=0)
 
-            print()
+            # print()

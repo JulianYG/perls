@@ -4,6 +4,9 @@ from .view import View
 from .adapter import Adapter
 from .engine import physicsEngine
 from .utils import io_util
+from .utils.io_util import (FONT,
+                            loginfo,
+                            logerr)
 from .tool import debugger, tester
 import threading
 
@@ -15,7 +18,6 @@ class SimulationController(object):
     """
     The controller in MVC architecture.
     """
-
     ENGINE_DIC = dict(bullet=physicsEngine.BulletPhysicsEngine,
                       mujoco=physicsEngine.MujocoEngine,
                       gazebo=physicsEngine.GazeboEngine)
@@ -83,16 +85,17 @@ class SimulationController(object):
             # Perform loading
             world, disp, pe = self.load_config(conf)
             if num_configs > 1 and pe.info['real_time']:
-                print('Currently only support multiple instances '
-                      'of non-GUI frame and asynchronous simulation. '
-                      'GUI or synchronous frame can only run as '
-                      'single simulation instance. \nSimulation '
-                      'configuration %d build skipped with error.' % i)
+                logerr('Currently only support multiple instances '
+                       'of non-GUI frame and asynchronous simulation. '
+                       'GUI or synchronous frame can only run as '
+                       'single simulation instance. \nSimulation '
+                       'configuration %d build skipped with error.' % i,
+                       FONT.control)
                 pe.status = 'error'
             else:
-                # TODO: Change all print statements to log.info/error
-                print('Simulation configuration {} build success.'
-                      'Build type: {}'.format(i, conf.build))
+                loginfo('Simulation configuration {} build success.'
+                        'Build type: {}'.format(i, conf.build),
+                        FONT.control)
 
             self._physics_servers[conf.id] = (world, disp, pe)
 
@@ -115,16 +118,30 @@ class SimulationController(object):
         # Initialize physics engine
         pe = SimulationController.ENGINE_DIC[conf.engine](
             conf.id,
-            conf.max_run_time, conf.job,
-            conf.async, conf.step_size)
+            conf.max_run_time,
+            conf.job,
+            conf.video,
+            conf.async,
+            conf.step_size,
+            log_dir=conf.log
+        )
         world = World(conf.model_desc, pe)
         display = View(conf.view_desc, Adapter(world), pe)
+
         if conf.build == 'debug':
             world = debugger.ModelDebugger(world)
             display = debugger.ViewDebugger(display)
         elif conf.build == 'test':
             world = tester.ModelTester(world)
             display = tester.ViewTester(display)
+
+        # Give record name for physics engine
+        if conf.job == 'record' or conf.job == 'replay':
+            pe.record_name = \
+                conf.record_name or \
+                '{}_{}'.format(world.info['name'],
+                               display.info['name'])
+
         return world, display, pe
 
     def start_all(self):
@@ -137,11 +154,11 @@ class SimulationController(object):
         :return: None
         """
         if len(self._physics_servers) < 2:
-            print('Cannot call <start_all> for less than 2 instances.')
+            logerr('Cannot call <start_all> for less than 2 instances.',
+                   FONT.control)
             return
         for s_id in range(len(self._physics_servers)):
             # Dispatch to new threads
-            # t = thread.start_new_thread(self.start, (s_id,))
             t = threading.Thread(target=self.start, args=(s_id,))
             self._thread_pool.append(t)
             t.start()
@@ -158,7 +175,12 @@ class SimulationController(object):
         display.build()
         world.build()
         # Finally start
-        display.start()
+        try:
+            display.start()
+        except KeyboardInterrupt:
+            loginfo('User exits the program by ctrl+c.',
+                    FONT.warning)
+            display.exit_routine()
 
     def stop(self, server_id=0):
         """

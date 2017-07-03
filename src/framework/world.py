@@ -4,6 +4,7 @@ from .object.body import Body
 from .utils import io_util, math_util
 from .object import PR2Gripper, rethinkGripper, WSG50Gripper
 from .object import sawyer, kuka
+from .handler import taskHandler
 
 
 class World(object):
@@ -32,6 +33,8 @@ class World(object):
         # world specific attributes
         self._gravity = math_util.zero_vec(3)
         self._traction = 200
+
+        self._checker = None
 
     @property
     def info(self):
@@ -135,6 +138,9 @@ class World(object):
         """
         parse_tree = io_util.parse_env(file_name)
         self.name_str = parse_tree.env['title']
+
+        # Load task completion checker
+        self._checker = taskHandler.Checker(self.name_str)
 
         for gripper in parse_tree.gripper:
             gripper_body = self.GRIPPER_TYPE[gripper['type']](

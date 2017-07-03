@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
 from ..utils import math_util
+from ..utils.io_util import (FONT,
+                             logerr,
+                             loginfo)
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
@@ -377,7 +380,8 @@ class Body(object):
         if not self.fix:
             self._engine.set_body_linear_velocity(self._uid, velocity)
         else:
-            print('Cannot set linear velocity for fixed body')
+            logerr('Cannot set linear velocity for fixed body',
+                   FONT.model)
 
     @omega.setter
     def omega(self, velocity):
@@ -389,7 +393,8 @@ class Body(object):
         if not self.fix:
             self._engine.set_body_angular_velocity(self._uid, velocity)
         else:
-            print('Cannot set angular velocity for fixed body')
+            logerr('Cannot set angular velocity for fixed body',
+                   FONT.model)
 
     # Base level control functionality
     @joint_states.setter
@@ -578,7 +583,8 @@ class Body(object):
         :return: -1 if failure, 0 if success
         """
         if lid not in self._links:
-            print('Invalid link index to apply force on.')
+            logerr('Invalid link index to apply force on.',
+                   FONT.model)
             return -1
         else:
             self._engine.apply_force_to_body(
@@ -597,7 +603,8 @@ class Body(object):
         :return: -1 if failure, 0 if success
         """
         if lid not in self._links:
-            print('Invalid link index to apply force on.')
+            logerr('Invalid link index to apply force on.',
+                   FONT.model)
             return -1
         else:
             self._engine.apply_torque_to_body(
@@ -625,7 +632,8 @@ class Body(object):
         """
         # Cannot move if fixed already
         if self.fix:
-            print('Fix-based body cannot track.')
+            loginfo('Fix-based body cannot track.',
+                    FONT.warning)
             return
         # Need to constrain to world frame first
         if -1 not in self.attach_children:

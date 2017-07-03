@@ -3,7 +3,7 @@
 	<config name="default" id="0">
 		<build type="Debug">
 			<simulator engine="bullet" version="20170601"/>
-			<job name="run"/>
+			<job name="run" video="False" log_path="" filename="perls_record_2017-07-03-07/59/26"/>
 			<property async="False" step_size="0.001" max_run_time="10e6"/>
 		</build>
 		<env>test.xml</env>

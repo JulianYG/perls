@@ -25,8 +25,6 @@ class WSG50Gripper(PrismaticGripper):
                                   self.joint_specs['upper'][4] * slide,
                                   self.joint_specs['upper'][6] * slide],
                                  'position', {})
-            print(self.joint_states['pos'])
-
             if slide == 0.:
                 self._close_grip = False
             elif slide == 1.:

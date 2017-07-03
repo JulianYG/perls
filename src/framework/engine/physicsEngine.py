@@ -2,8 +2,14 @@
 
 import pybullet as p
 import numpy as np
-import os
+import os, time
+import os.path as osp
 from .base import FakeEngine
+from ..utils import util
+from ..utils.io_util import (FONT,
+                             parse_log,
+                             loginfo,
+                             logerr)
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
@@ -50,7 +56,9 @@ class BulletPhysicsEngine(FakeEngine):
                      mouse_picking=10)
 
     def __init__(self, e_id, max_run_time,
-                 job='run', async=False, step_size=0.001):
+                 job='run', video=False,
+                 async=False, step_size=0.001,
+                 log_dir=''):
         """
         Initialize the physics engine.
         :param async: boolean: indicate if run 
@@ -78,8 +86,8 @@ class BulletPhysicsEngine(FakeEngine):
         if async:
             self._step_size = step_size
             if not isinstance(max_run_time, int):
-                print('Need to specify integer max time steps '
-                      'for asynchronous simulation!')
+                logerr('Need to specify integer max time steps '
+                      'for asynchronous simulation!', FONT.control)
                 return
             self._max_run_time = int(max_run_time)
             self._step_count = 0
@@ -88,7 +96,25 @@ class BulletPhysicsEngine(FakeEngine):
             self._max_run_time = max_run_time
         self._job = job
         self._status = BulletPhysicsEngine.STATUS[1]
+
         self._error_message = list()
+        self._record_video = video
+        self._logging_id = list()
+
+        self._record_name = 'perls_record'
+
+        # Initialize logging paths
+        log_dir = log_dir or \
+            osp.abspath(osp.join(osp.dirname(__file__), '../../log'))
+        self._log_path = dict(
+            device=osp.join(log_dir, 'device'),
+            trajectory=osp.join(log_dir, 'trajectory'),
+            video=osp.join(log_dir, 'video')
+        )
+        # If not exist, create the paths
+        for path in self._log_path.values():
+            if not osp.exists(path):
+                os.makedirs(path)
 
     @property
     def version(self):
@@ -102,7 +128,7 @@ class BulletPhysicsEngine(FakeEngine):
         world.
         {version/name, status, real time, id,
         step size (if async), running job, camera info,
-        max running time}
+        log info, record file name, max running time}
         """
         info_dic = dict(
             name='{}\t{}'.format(
@@ -112,7 +138,10 @@ class BulletPhysicsEngine(FakeEngine):
             real_time=self._real_time,
             id=self.engine_id,
             job=self._job,
-            camera_info=self.camera,
+            record_name=self._record_name,
+            log_info=self._log_path,
+            camera_info=self.camera
+            if self._status == 'running' else {},
             max_run_time=self._max_run_time)
         if not self._real_time:
             info_dic['step_size'] = self._step_size
@@ -134,6 +163,15 @@ class BulletPhysicsEngine(FakeEngine):
             focus=info[12],
         )
 
+    @property
+    def record_name(self):
+        """
+        Get the base name string of record file, either
+        to save to or load from
+        :return: String
+        """
+        return self._record_name
+
     @status.setter
     def status(self, stat):
         self._status = stat
@@ -147,6 +185,12 @@ class BulletPhysicsEngine(FakeEngine):
             params['focus'],
             self._physics_server_id)
 
+    @record_name.setter
+    def record_name(self, name):
+
+        # If name is empty string, use default name still
+        self._record_name = name or self._record_name
+
     ###
     # General environment related methods
     def configure_environment(self, gravity, *_):
@@ -156,11 +200,11 @@ class BulletPhysicsEngine(FakeEngine):
         pos, orn, fixed):
         uid = -1
         try:
-            if os.path.basename(file_path).split('.')[1] == 'urdf':
+            if osp.basename(file_path).split('.')[1] == 'urdf':
                 uid = p.loadURDF(file_path,
                                  basePosition=pos, baseOrientation=orn,
                                  useFixedBase=fixed, physicsClientId=self._physics_server_id)
-            elif os.path.basename(file_path).split('.')[1] == 'sdf':
+            elif osp.basename(file_path).split('.')[1] == 'sdf':
                 uid = p.loadSDF(file_path, physicsClientId=self._physics_server_id)[0]
                 p.resetBasePositionAndOrientation(
                     uid, pos, orn, physicsClientId=self._physics_server_id)
@@ -193,7 +237,7 @@ class BulletPhysicsEngine(FakeEngine):
         elif type == 'euler':
             return np.array(p.getEulerFromQuaternion(orn))
         else:
-            print('Unrecognized orientation form.')
+            loginfo('Unrecognized orientation form.', FONT.ignore)
 
     def get_body_camera_position(self):
 
@@ -210,8 +254,8 @@ class BulletPhysicsEngine(FakeEngine):
                 uid, pos, orn, physicsClientId=self._physics_server_id)
         except p.error:
             status = -1
-            print('BulletPhysicsEngine captured exception: ',
-                  p.error.message)
+            logerr('BulletPhysicsEngine captured exception: ' + \
+                  p.error.message, FONT.model)
             self.status = BulletPhysicsEngine.STATUS[-1]
             self._error_message.append(p.error.message)
         return status
@@ -372,8 +416,8 @@ class BulletPhysicsEngine(FakeEngine):
                                  physicsClientId=self._physics_server_id)
         except p.error:
             status = -1
-            print('BulletPhysicsEngine captured exception: ',
-                  p.error.message)
+            logerr('BulletPhysicsEngine captured exception: ' + \
+                  p.error.message, FONT.model)
             self.status = BulletPhysicsEngine.STATUS[-1]
             self._error_message.append(p.error.message)
         return status
@@ -443,7 +487,8 @@ class BulletPhysicsEngine(FakeEngine):
                 p.applyExternalForce(uid, lid, force, pos, p.LINK_FRAME,
                                      physicsClientId=self._physics_server_id)
             else:
-                print('Unrecognized reference frame. Choose abs or rel')
+                loginfo('Unrecognized reference frame. Choose abs or rel',
+                        FONT.ignore)
         except p.error:
             self.status = BulletPhysicsEngine.STATUS[-1]
             self._error_message.append(p.error.message)
@@ -457,7 +502,8 @@ class BulletPhysicsEngine(FakeEngine):
                 p.applyExternalTorque(uid, lid, torque, pos, p.LINK_FRAME,
                                       physicsClientId=self._physics_server_id)
             else:
-                print('Unrecognized reference frame. Choose abs or rel')
+                loginfo('Unrecognized reference frame. Choose abs or rel',
+                        FONT.ignore)
         except p.error:
             self.status = BulletPhysicsEngine.STATUS[-1]
             self._error_message.append(p.error.message)
@@ -577,24 +623,90 @@ class BulletPhysicsEngine(FakeEngine):
         view_matrix = self.camera['view_mat']
         return np.linalg.inv(view_matrix)[3, :3]
 
-    def load_simulation(self):
+    def load_simulation(self, target_uids):
         if self.status == 'pending':
+
             # p.setRealTimeSimulation(int(self._real_time), physicsClientId=self._physics_server_id)
             if not self._real_time:
                 p.setTimeStep(float(self._step_size), physicsClientId=self._physics_server_id)
+
+            # Set status to running
             self.status = BulletPhysicsEngine.STATUS[0]
-            print('Starting simulation server %d, status: %s' % (self.engine_id, self.status))
+            loginfo('Starting simulation server {}, status: {}'.
+                    format(self.engine_id, self.status), FONT.warning)
 
-            # if self._job == 'run':
-            #
-            #
-            # elif self._job == 'replay':
+            if self._job == 'record':
+                assert self._record_name, \
+                    'Must provide record file name!'
+                time_stamp = util.get_full_time_stamp()
 
+                # Record only objects that are tracked
+                self._logging_id.append(
+                    p.startStateLogging(
+                        p.STATE_LOGGING_GENERIC_ROBOT,
+                        osp.join(self._log_path['trajectory'],
+                                 '{}_{}.bin'.format(
+                                     self._record_name, time_stamp)),
+                        objectUniqueIds=target_uids,
+                        physicsClientId=self._physics_server_id
+                    )
+                )
 
+                # Record mp4 video if indicated
+                if self._record_video:
+                    self._logging_id.append(
+                        p.startStateLogging(
+                            p.STATE_LOGGING_VIDEO_MP4,
+                            osp.join(self._log_path['video'],
+                                     '{}_{}.mp4'.format(
+                                         self._record_name, time_stamp)),
+                            physicsClientId=self._physics_server_id
+                        )
+                    )
+
+                # Record the egocentric camera pose
+                self._logging_id.append(
+                    p.startStateLogging(
+                        p.STATE_LOGGING_VR_CONTROLLERS,
+                        osp.join(self._log_path['device'],
+                                 '{}_{}.bin'.format(
+                                     self._record_name, time_stamp)),
+                        deviceTypeFilter=p.VR_DEVICE_HMD,
+                        physicsClientId = self._physics_server_id
+                    )
+                )
+
+            elif self._job == 'replay':
+
+                objects = osp.join(self._log_path['trajectory'],
+                                      '{}.bin'.format(self._record_name))
+                device = osp.join(self._log_path['device'],
+                                      '{}.bin'.format(self._record_name))
+
+                # Can change verbosity later
+                obj_log = parse_log(self._record_name, verbose=False)
+
+                for record in obj_log:
+                    # time_stamp = float(record[1])
+                    obj = record[2]
+                    pos = record[3: 6]
+                    orn = record[6: 10]
+                    p.resetBasePositionAndOrientation(obj, pos, orn)
+                    n_joints = p.getNumJoints(obj)
+                    for i in range(n_joints):
+                        jointInfo = p.getJointInfo(obj, i)
+                        qid = jointInfo[3]
+                        if qid > -1:
+                            p.resetJointState(obj, i, record[qid - 7 + 17])
+
+                    # TODO: think about changing delay
+                    time.sleep(1e-5)
+
+                # TODO: figure out using HMD log to revive FPS
 
         else:
-            print('Cannot start physics engine %d '
-                  'in error state.' % self.engine_id)
+            logerr('Cannot start physics engine %d '
+                  'in error state.' % self.engine_id, FONT.disp)
 
     def configure_display(self, frame_args, config):
 
@@ -629,3 +741,16 @@ class BulletPhysicsEngine(FakeEngine):
                     p.setRealTimeSimulation(1, physicsClientId=self._physics_server_id)
                     return False
         return True
+
+    def stop(self):
+
+        # Stop state logging if any
+        for lid in self._logging_id:
+            p.stopStateLogging(lid, self._physics_server_id)
+
+        # Shutdown simulation
+        p.resetSimulation(self._physics_server_id)
+        p.disconnect(self._physics_server_id)
+
+        self.status = 'finished'
+        loginfo('Physics engine stopped.', FONT.warning)

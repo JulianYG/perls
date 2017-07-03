@@ -1,4 +1,7 @@
 from .utils import util, io_util
+from .utils.io_util import (loginfo,
+                            logerr,
+                            FONT)
 from .handler.base import NullHandler
 from .handler.controlHandler import (KeyboardEventHandler,
                                      ViveEventHandler,
@@ -25,16 +28,19 @@ class View:
         to the world
         :param engine: Physics simulation engine
         """
-        self.name_str = 'Example View'
+        self.name_str = 'ExampleKBControl'
         self._description = desc
         self._adapter = adapter
         self._engine = engine
-        self._init_time_stamp = None
-        self._simulation_server_id = []
+
+        self._simulation_server_id = engine.info['id']
         self._frame = 'off'
         self._control_type = 'off'
+
         self._control_handler = NullHandler()
         self._event_handler = AssetHandler()
+
+        self._init_time_stamp = None
 
     @property
     def info(self):
@@ -90,23 +96,45 @@ class View:
         # Boot the adapter to talk with world (model)
         self._adapter.update_states()
 
+        # Load simulation, and feed target objects in
+        # case of recording
+        self._engine.load_simulation(
+            self._adapter.get_world_states(('env', 'target'))[0])
+
         # Some preparation jobs for control
-        self._engine.load_simulation()
-        done = False
+        time_up, done, success = False, False, False
         self._init_time_stamp = util.get_abs_time()
 
         # TODO: wait for pybullet setTimeOut
 
         # Start control loop
-        while not done:
+        while not (time_up or done):
             elt = util.get_elapsed_time(self._init_time_stamp)
 
-            # Run into interruption
+            # Perform control interruption first
             self._control_interrupt()
-            done = self._engine.step(elapsed_time=elt)
+            time_up = self._engine.step(elapsed_time=elt)
+
+            # Next check task completion, communicate
+            # with the model
+            done, success = self._checker_interrupt()
+
+        if success:
+            loginfo('Task success! Exiting simulation...',
+                    FONT.disp)
+        else:
+            loginfo('Task failed! Exiting simulation...',
+                    FONT.disp)
+
+        self.exit_routine()
 
     def _control_interrupt(self):
-
+        """
+        The control interruption, jumps to control defined
+        in xml file, process the control signals and
+        jumps back to the loop.
+        :return: None
+        """
         signal = self._control_handler.signal
         self._adapter.react(signal)
 
@@ -116,3 +144,21 @@ class View:
             info = self._event_handler.signal
             if info:
                 self._adapter.update_world(info)
+
+    def _checker_interrupt(self):
+        """
+        Checker interrupt, performs checking on current
+        world states and report status.
+        :return: (done, success) tuple, where 'done' is
+        boolean and 'success' is a scalar, either 0/1
+        binary, or float in [0,1] representing quality.
+        """
+        status = self._adapter.check_world_states()
+        return status
+
+    def exit_routine(self):
+        """
+        Exit routine for simulation.
+        :return: None
+        """
+        self._engine.stop()

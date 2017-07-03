@@ -1,7 +1,9 @@
 
 from .body import Tool, Body
 from ..utils import math_util
-
+from ..utils.io_util import (FONT,
+                             loginfo,
+                             logerr)
 
 class PrismaticGripper(Tool):
 
@@ -85,7 +87,8 @@ class PrismaticGripper(Tool):
         :return: None
         """
         if self.fix:
-            print('Cannot move attached gripper.')
+            logerr('Cannot move attached gripper.',
+                   FONT.model)
             return
         # Need some transformation
         base_pos = self.position_transform(pos, self.tool_orn)

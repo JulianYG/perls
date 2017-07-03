@@ -3,7 +3,36 @@ import struct
 import os, sys
 from xml.etree import ElementTree
 
-singleton_elem = ElementTree.Element(0)
+__author__ = 'Julian Gao'
+__email__ = 'julianyg@stanford.edu'
+__license__ = 'private'
+__version__ = '0.1'
+
+# Force automatic flush when printing
+sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
+sys.stderr = os.fdopen(sys.stderr.fileno(), 'w', 0)
+
+_singleton_elem = ElementTree.Element(0)
+
+
+class FONT:
+
+    # warning for all cases
+    warning = ['\033[93m']
+    ignore = ['\033[90m']
+
+    # world model color code
+    model = ['\033[94m', '\033[95m']
+
+    # display color code
+    disp = ['\033[94m', '\033[96m']
+
+    # controller color code
+    control = ['\033[92m', '\033[91m']
+
+    end = '\033[0m'
+    bold = '\033[1m'
+    underline = '\033[4m'
 
 
 class _EnvTree:
@@ -46,8 +75,9 @@ class _ConfigTree:
     def __init__(self, c_id, build,
                  model_desc, view_desc,
                  name, engine,
-                 version, job, async,
-                 step, max_time):
+                 version, job, video, async,
+                 step, max_time, log,
+                 record_name):
         self._conf_id = c_id
         self._model_desc = model_desc
         self._view_desc = view_desc
@@ -55,10 +85,13 @@ class _ConfigTree:
         self._version = version
         self._job = job
         self._async = async
+        self._video = video
         self._name = name
         self._engine = engine
         self._step_size = step
         self._build = build
+        self._log_path = log
+        self._fname = record_name
 
     @property
     def build(self):
@@ -79,6 +112,10 @@ class _ConfigTree:
     @property
     def job(self):
         return self._job
+
+    @property
+    def video(self):
+        return self._video
 
     @property
     def async(self):
@@ -104,9 +141,70 @@ class _ConfigTree:
     def view_desc(self):
         return self._view_desc
 
+    @property
+    def record_name(self):
+        return self._fname
+
+    @property
+    def log(self):
+        return self._log_path
+
 
 def str2bool(string):
-    return string.lower() == 'true' if isinstance(string, str) else string
+    return string.lower() == 'true'
+
+
+def loginfo(msg, itype):
+    """
+    Print message and flush to terminal
+    :param msg: string message to print
+    :return: None
+    """
+    sys.stdout.write('{}{}\n{}'.format(
+        itype[0], msg, FONT.end))
+
+
+def logerr(msg, etype):
+    sys.stderr.write('{}{}\n{}'.format(
+        etype[1] + FONT.bold, msg, FONT.end))
+
+
+def parse_log(file, verbose=True):
+    f = open(file, 'rb')
+    print('Opened'),
+    print(file)
+
+    keys = f.readline().decode('utf8').rstrip('\n').split(',')
+    fmt = f.readline().decode('utf8').rstrip('\n')
+
+    # The byte number of one record
+    sz = struct.calcsize(fmt)
+    # The type number of one record
+    n_cols = len(fmt)
+
+    if verbose:
+        print('Keys:'),
+        print(keys)
+        print('Format:'),
+        print(fmt)
+        print('Size:'),
+        print(sz)
+        print('Columns:'),
+        print(n_cols)
+
+    # Read data
+    whole_file = f.read()
+    # split by alignment word
+    chunks = whole_file.split(b'\xaa\xbb')
+    log = list()
+    for chunk in chunks:
+        if len(chunk) == sz:
+            values = struct.unpack(fmt, chunk)
+            record = list()
+            for i in range(ncols):
+                record.append(values[i])
+            log.append(record)
+    return log
 
 
 def err(*message):
@@ -162,7 +260,7 @@ def parse_gripper_elem(gripper_elem):
         elem = gripper_elem[i]
         asset = elem.find('asset')
         if asset is None:
-            asset = singleton_elem
+            asset = _singleton_elem
         pos, orn = elem.find('pos'), elem.find('orn')
         # Grippers are not fixed by default,
         # but you can change them by calling gripper.fix=(orn,pos)
@@ -181,7 +279,7 @@ def parse_gripper_elem(gripper_elem):
                 type=elem.attrib['type'],
                 # ID refers to controll id
                 name='{}_{}'.format(elem.attrib['name'], tid),
-                fixed=str2bool(elem.attrib.get('fixed', False)),
+                fixed=str2bool(elem.attrib.get('fixed', 'False')),
                 traction=float(elem.attrib.get('traction', 200.))
             ))
     return gripper
@@ -201,7 +299,7 @@ def parse_arm_elem(arm_elem):
         elem = arm_elem[i]
         asset = elem.find('asset')
         if asset is None:
-            asset = singleton_elem
+            asset = _singleton_elem
         pos, orn = elem.find('pos'), elem.find('orn')
         # Arm must have at least one gripper.
         gripper_elem = elem.find('gripper')
@@ -218,7 +316,7 @@ def parse_arm_elem(arm_elem):
                 orn is not None else (0., 0., 0., 1.),
                 type=elem.attrib['type'],
                 name='{}_{}'.format(elem.attrib['name'], tid),
-                null_space=str2bool(elem.attrib.get('null_space', False)),
+                null_space=str2bool(elem.attrib.get('null_space', 'False')),
                 gripper=parse_gripper_elem([gripper_elem])[0]
             )
         )
@@ -235,14 +333,14 @@ def parse_body_elem(body_elem):
         env.append(
             dict(
                 path=asset.attrib['path'],
-                record=str2bool(elem.attrib.get('record', False)),
+                record=str2bool(elem.attrib.get('record', 'False')),
                 pos=[float(f) for   # Allow default pos
                      f in pos.text.split(' ')] if
                 pos is not None else (0., 0., 0),
                 orn=[float(f) for   # Allow default orn
                      f in orn.text.split(' ')] if
                 orn is not None else (0., 0., 0., 1.),
-                fixed=str2bool(elem.attrib.get('fixed', False)),
+                fixed=str2bool(elem.attrib.get('fixed', 'False')),
                 # Default id is 0 since first time for each new object
                 name='{}_{}'.format(elem.attrib['name'],
                                     asset.attrib.get('id', 0))
@@ -280,7 +378,7 @@ def parse_disp(file_path):
     options = dict((k, str2bool(v)) for (k, v) in option_attrib.items())
 
     camera_attrib = root.find('./view/camera').attrib
-    camera_info = dict(egocentric=str2bool(camera_attrib.get('ego', False)),
+    camera_info = dict(egocentric=str2bool(camera_attrib.get('ego', 'False')),
                        pitch=float(camera_attrib.get('pitch', -35.)),
                        yaw=float(camera_attrib.get('yaw', 50.)),
                        focus=[float(x) for
@@ -288,7 +386,7 @@ def parse_disp(file_path):
                        distance=float(camera_attrib.get('distance', 4)))
 
     return disp_name, frame_info, camera_info, options, \
-           control_type, sensitivity, rate
+        control_type, sensitivity, rate
 
 
 def parse_config(file_path):
@@ -311,17 +409,24 @@ def parse_config(file_path):
 
         engine = simulation_attrib.get('engine', 'bullet')
         min_version = simulation_attrib.get('version', '20170101')
-        job = conf.find('./build/job').get('name', 'run')
-        async = str2bool(property_attrib.get('async', False))
 
+        job_attrib = conf.find('./build/job').attrib
+        job = job_attrib.get('name', 'run')
+        video = str2bool(job_attrib.get('video', 'False'))
+        log_path = job_attrib.get('log_path', '')
+        record_name = job_attrib.get('filename', '')
+
+        async = str2bool(property_attrib.get('async', 'False'))
         step_size = float(property_attrib.get(
             'step_size', 0.001)) if async else None
         max_run_time = int(float(property_attrib.get(
             'max_run_time', 300)))
+
         # Append one configuration
-        trees.append(_ConfigTree(conf_id, build,
-            model_desc, view_desc, config_name, engine,
-            min_version, job, async, step_size, max_run_time))
+        trees.append(_ConfigTree(
+            conf_id, build, model_desc, view_desc,
+            config_name, engine, min_version, job, video,
+            async, step_size, max_run_time, log_path, record_name))
 
     return trees
 

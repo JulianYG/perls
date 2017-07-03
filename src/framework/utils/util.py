@@ -5,9 +5,15 @@ def get_abs_time():
 
     return time.time()
 
-def get_time_stamp():
 
-    return time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
+def get_time_stamp():
+    return time.strftime('%H:%M:%s', time.localtime())
+
+
+def get_full_time_stamp():
+
+    return time.strftime('%Y-%m-%d-%H:%M:%S', time.localtime())
+
 
 def get_elapsed_time(start=None):
 
