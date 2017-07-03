@@ -164,7 +164,6 @@ class View:
 
                 # Allow changing camera view
 
-
     def _checker_interrupt(self):
         """
         Checker interrupt, performs checking on current
