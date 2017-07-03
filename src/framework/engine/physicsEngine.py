@@ -675,6 +675,7 @@ class BulletPhysicsEngine(FakeEngine):
                         physicsClientId = self._physics_server_id
                     )
                 )
+                return 0
 
             elif self._job == 'replay':
 
@@ -684,7 +685,7 @@ class BulletPhysicsEngine(FakeEngine):
                                       '{}.bin'.format(self._record_name))
 
                 # Can change verbosity later
-                obj_log = parse_log(self._record_name, verbose=False)
+                obj_log = parse_log(objects, verbose=False)
 
                 for record in obj_log:
                     # time_stamp = float(record[1])
@@ -703,10 +704,11 @@ class BulletPhysicsEngine(FakeEngine):
                     time.sleep(1e-5)
 
                 # TODO: figure out using HMD log to revive FPS
-
+                return 1
         else:
             logerr('Cannot start physics engine %d '
-                  'in error state.' % self.engine_id, FONT.disp)
+                   'in error state.' % self.engine_id, FONT.disp)
+        return -1
 
     def configure_display(self, frame_args, config):
 

@@ -201,7 +201,7 @@ def parse_log(file, verbose=True):
         if len(chunk) == sz:
             values = struct.unpack(fmt, chunk)
             record = list()
-            for i in range(ncols):
+            for i in range(n_cols):
                 record.append(values[i])
             log.append(record)
     return log

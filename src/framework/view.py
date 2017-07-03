@@ -97,9 +97,23 @@ class View:
         self._adapter.update_states()
 
         # Load simulation, and feed target objects in
-        # case of recording
-        self._engine.load_simulation(
-            self._adapter.get_world_states(('env', 'target'))[0])
+        # case of recording. Notice only when loading
+        # returns 0, can program enter control loop.
+        # 1 represents success of replay, and -1 represent
+        # error state.
+        state = self._engine.load_simulation(
+            self._adapter.get_world_states(
+                ('env', 'target'))[0])
+
+        if state == -1:
+            logerr('Error loading simulation', FONT.disp)
+        elif state == 1:
+            self.exit_routine()
+            loginfo('Replay finished. Exiting...', FONT.disp)
+            return
+        else:
+            loginfo('Display configs loaded. Starting simulation...',
+                    FONT.disp)
 
         # Some preparation jobs for control
         time_up, done, success = False, False, False

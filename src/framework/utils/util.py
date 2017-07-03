@@ -12,7 +12,7 @@ def get_time_stamp():
 
 def get_full_time_stamp():
 
-    return time.strftime('%Y-%m-%d-%H:%M:%S', time.localtime())
+    return time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime())
 
 
 def get_elapsed_time(start=None):
