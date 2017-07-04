@@ -62,8 +62,8 @@ class View:
 
     def update(self, camera_info, *_):
         """
-        Update the view, mainly resetting the camera_param
-        :param camera_info: dictionary of camera_param parameters.
+        Update the view, mainly resetting the camera
+        :param camera_info: dictionary of camera parameters.
         For GUI, camera_info is a dictionary of
         {flen: float, yaw: float degree,
         pitch: float degree, focus: float}
@@ -72,7 +72,7 @@ class View:
         :return: None
         """
         if camera_info:
-            self._engine.camera_param = camera_info
+            self._engine.camera = camera_info
 
     def load_config(self, description):
         """
@@ -81,7 +81,7 @@ class View:
         display description xml file.
         :return: None
         """
-        # Setup camera_param is for replay function
+        # Setup camera is for replay function
         camera_info, option_dic = io_util.parse_disp(description)
 
         # Configure display

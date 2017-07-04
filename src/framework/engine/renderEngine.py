@@ -85,7 +85,7 @@ class BulletRenderEngine(GraphicsEngine):
         :return: A dictionary of information of this
         world.
         {version/name, status, real time, id,
-        step size (if async), running job, camera_param info,
+        step size (if async), running job, camera info,
         log info, record file name, max running time}
         """
         info_dic = dict(
@@ -94,22 +94,23 @@ class BulletRenderEngine(GraphicsEngine):
             job=self._job,
             record_name=self._record_name,
             log_info=self._log_path,
-            camera_info=self.camera_param
+            camera_info=self.camera
         )
         return info_dic
 
     @property
-    def camera_param(self):
-        info = p.getDebugVisualizerCamera(self._server_id)
-
-        return dict(
-            frame_width=info[0], frame_height=info[1],
-            view_mat=np.array(info[2], dtype=np.float32).reshape((4, 4)),
-            projection_mat=np.array(info[3], dtype=np.float32).reshape((4, 4)),
-            up=np.where(info[4])[0][0],
-            yaw=info[8], pitch=info[9], focal_len=info[10],
-            focus=info[11],
-        )
+    def camera(self):
+        if self._FRAME_TYPES[self._frame] == 1:
+            info = p.getDebugVisualizerCamera(self._server_id)
+            return dict(
+                frame_width=info[0], frame_height=info[1],
+                view_mat=np.array(info[2], dtype=np.float32).reshape((4, 4)),
+                projection_mat=np.array(info[3], dtype=np.float32).reshape((4, 4)),
+                up=np.where(info[4])[0][0],
+                yaw=info[8], pitch=info[9], focal_len=info[10],
+                focus=info[11],
+            )
+        return 'Camera not available under frame {}'.format(self._frame)
 
     @property
     def record_name(self):
@@ -120,8 +121,8 @@ class BulletRenderEngine(GraphicsEngine):
         """
         return self._record_name
 
-    @camera_param.setter
-    def camera_param(self, params):
+    @camera.setter
+    def camera(self, params):
         if self._frame == 'gui':
             p.resetDebugVisualizerCamera(
                 params['flen'],
@@ -138,7 +139,7 @@ class BulletRenderEngine(GraphicsEngine):
                 physicsClientId=self._server_id
             )
         else:
-            loginfo('Cannot set camera_param under frame type <{}>.'.
+            loginfo('Cannot set camera under frame type <{}>.'.
                     format(self._frame),
                     FONT.warning)
 
@@ -155,7 +156,7 @@ class BulletRenderEngine(GraphicsEngine):
     ###
     #  Helper functions
     def get_camera_pose(self):
-        view_matrix = self.camera_param['view_mat']
+        view_matrix = self.camera['view_mat']
         transformation_matrix = np.linalg.inv(view_matrix)
 
         # TODO: Check the orientation correctness
@@ -184,8 +185,8 @@ class BulletRenderEngine(GraphicsEngine):
                 self._DISP_CONF[name],
                 switch, physicsClientId=self._server_id)
 
-            # Setup camera_param
-            self.camera_param = camera_args
+            # Setup camera
+            self.camera = camera_args
 
     def disable_hotkeys(self):
         p.configureDebugVisualizer(9, 0, self._server_id)
@@ -221,7 +222,7 @@ class BulletRenderEngine(GraphicsEngine):
                 )
 
             if self._frame == 'vr':
-                # Record the egocentric camera_param pose
+                # Record the egocentric camera pose
                 self._logging_id.append(
                     p.startStateLogging(
                         p.STATE_LOGGING_VR_CONTROLLERS,
@@ -244,7 +245,7 @@ class BulletRenderEngine(GraphicsEngine):
             # Can change verbosity later
             obj_log = parse_log(objects, verbose=False)
 
-            # TODO: set camera_param angle for GUI/HMD
+            # TODO: set camera angle for GUI/HMD
             loginfo('Start replaying file {}'.
                     format(self._record_name), FONT.control)
             for record in obj_log:

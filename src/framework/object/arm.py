@@ -181,11 +181,8 @@ class Arm(Tool):
              'position',
              dict(positionGains=(.05,) * self._dof,
                   velocityGains=(1.,) * self._dof))
-        self._engine.hold()
 
-        # Reset gripper
         if self._gripper:
-
             # Attach gripper
             self.attach_children = \
                 (self._end_idx,
@@ -195,9 +192,9 @@ class Arm(Tool):
                  [0., 0., 0.],
                  # TODO: Check if can use [0., 0., 0.707, 0.707] for child orn
                  [0., 0., 0., 1.], [0., 0., 0., 1.])
-
+            # Reset gripper
             self._gripper.reset()
-
+        self._engine.hold()
 
     def reach(self, pos=None, orn=None):
         """

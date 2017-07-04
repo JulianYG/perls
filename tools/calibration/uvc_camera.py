@@ -10,8 +10,8 @@ import numpy as np
 
 from utils.uvc_tracker import Tracker 
 
-# initialize the camera_param
-cam = cv2.VideoCapture(0)   # 0 -> index of camera_param
+# initialize the camera
+cam = cv2.VideoCapture(0)   # 0 -> index of camera
 cam.set(3, 1280)
 cam.set(4, 720)
 

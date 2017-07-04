@@ -31,7 +31,7 @@ class BulletPhysicsEngine(FakeStateEngine):
     
     """
     _STATUS = \
-        ['running', 'pending', 'stopped',
+        ['running', 'pending', 'stopped', 'off',
          'killed', 'finished', 'error']
 
     _JOINT_TYPES = {
@@ -86,7 +86,7 @@ class BulletPhysicsEngine(FakeStateEngine):
             self._step_size = None
             self._max_run_time = max_run_time
 
-        self._status = BulletPhysicsEngine._STATUS[1]
+        self._status = BulletPhysicsEngine._STATUS[3]
         self._error_message = list()
 
     @property
@@ -120,26 +120,33 @@ class BulletPhysicsEngine(FakeStateEngine):
 
     @property
     def status(self):
+        return self.status
+
+    @property
+    def error(self):
+        return self._error_message
+
+    @property
+    def status(self):
         return self._status
 
     @status.setter
     def status(self, stat):
         self._status = stat
 
-
-    # def _type_check(self):
-    #     """
-    #     Check if frame and async match
-    #     :return: 0 if success, -1 if failure
-    #     """
-    #     if self._real_time:
-    #         if BulletPhysicsEngine._FRAME_TYPES[self._frame] == 2:
-    #             self.status = BulletPhysicsEngine._STATUS[-1]
-    #             err_msg = 'CMD mode only supports async simulation.'
-    #             self._error_message.append(err_msg)
-    #             logerr(err_msg, FONT.control)
-    #             return -1
-    #     return 0
+    def _type_check(self, frame):
+        """
+        Check if frame and async match
+        :return: 0 if success, -1 if failure
+        """
+        if not self._async:
+            if frame == 'gui':
+                self.status = self._STATUS[-1]
+                err_msg = 'CMD mode only supports async simulation.'
+                self._error_message.append(err_msg)
+                logerr(err_msg, FONT.control)
+                return -1
+        return 0
 
     ###
     # General environment related methods
@@ -302,7 +309,9 @@ class BulletPhysicsEngine(FakeStateEngine):
         try:
             assert(len(jids) == len(vals)), \
                 'In <set_body_joint_state>: Number of joints mismatches number of values'
-            if self._async:
+
+            # Only reset if indicated to use reset
+            if kwargs.get('reset', False):
                 assert(ctype == 'position'), \
                     'Reset joint states currently only supports position control'
                 for jid, val in zip(jids, vals):
@@ -555,9 +564,9 @@ class BulletPhysicsEngine(FakeStateEngine):
                 jointDamping=tuple(damping),
                 physicsClientId=self._physics_server_id)
 
-    def start_engine(self):
+    def start_engine(self, frame):
 
-        if self.status == 'pending':
+        if self.status == 'pending' and self._type_check(frame) == 0:
             if self._async:
                 p.setTimeStep(
                     float(self._step_size),
@@ -575,23 +584,6 @@ class BulletPhysicsEngine(FakeStateEngine):
                    'in error state.' % self.engine_id, FONT.disp)
             return -1
 
-    # def start_engine(self, frame_args):
-    #
-    #     self._frame = frame_args[0]
-    #
-    #     if self._type_check() == 0:
-    #         # Convert to bullet constant
-    #         frame_args[0] = BulletPhysicsEngine._FRAME_TYPES[self._frame]
-    #         # The core step: connect to bullet physics server
-    #         self._physics_server_id = p.connect(*frame_args)
-    #         p.setInternalSimFlags(0, self._physics_server_id)
-    #         p.resetSimulation(self._physics_server_id)
-    #         return self._physics_server_id
-    #     else:
-    #         logerr('Incompatible frame type <{}>.'.
-    #                format(self._frame), FONT.disp)
-    #         return -1
-
     def hold(self, max_steps=1000):
         for _ in range(max_steps):
             p.stepSimulation(self._physics_server_id)
@@ -608,8 +600,8 @@ class BulletPhysicsEngine(FakeStateEngine):
             else:
                 if elapsed_time < self._max_run_time:
 
-                    # TODO: think about how to control camera_param at run time
-                    # self.camera_param = camera_info
+                    # TODO: think about how to control camera at run time
+                    # self.camera = camera_info
 
                     # TODO: Figure out why this is not useful in <load_simulation>
                     p.setRealTimeSimulation(1, physicsClientId=self._physics_server_id)

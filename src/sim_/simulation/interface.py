@@ -218,7 +218,7 @@ class ICmd(CtrlInterface):
 class IKeyboard(CtrlInterface):
 
 	def __init__(self, host, remote, task_name):
-		# Default settings for camera_param
+		# Default settings for camera
 		super(IKeyboard, self).__init__(host, remote, task_name)
 		self.pos = []
 
@@ -419,7 +419,7 @@ class IKeyboard(CtrlInterface):
 class IVR(CtrlInterface):
 
 	def __init__(self, host, remote, task_name):
-		# Default settings for camera_param
+		# Default settings for camera
 		super(IVR, self).__init__(host, remote, task_name)
 
 	def client_communicate(self, agent, configs):
@@ -521,7 +521,7 @@ class IVR(CtrlInterface):
 class IPhone(CtrlInterface):
 
 	def __init__(self, host, remote, task_name):
-		# Default settings for camera_param
+		# Default settings for camera
 		super(IPhone, self).__init__(host, remote, task_name)
 
 	def local_communicate(self, agent, gui=True):

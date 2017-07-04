@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <disp name="example_gui">
 	<view>
-		<frame name="first person human demo" 
-			type="cmd" args="0" options=""/>
+		<camera />
 		<option
 			gui_panel="False" 
 			shadow="False"

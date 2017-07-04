@@ -86,7 +86,8 @@ class SimulationController(object):
          instance_id: ......}
         """
         info_dic = {}
-        for s_id, (world, disp, pe, ctrl_hdlr) in self._physics_servers.items():
+        for s_id, (world, disp, pe, ctrl_hdlr) in \
+                self._physics_servers.items():
             info_dic[s_id] = dict(
                 world_info=world.info,
                 display_info=disp.info,
@@ -110,7 +111,8 @@ class SimulationController(object):
         num_configs = len(configs)
         for i in range(num_configs):
             conf = configs[i]
-            assert i == conf.id, 'Error loading configuration: invalid id.'
+            assert i == conf.id, \
+                'Error loading configuration: invalid id.'
 
             # load configs
             world, disp, ctrl_hdlr = self.load_config(conf)
@@ -121,12 +123,13 @@ class SimulationController(object):
                        'single simulation instance. \nSimulation '
                        'configuration %d build skipped with error. ' % i,
                        FONT.control)
+                world.notify_engine('error')
             else:
                 loginfo('Simulation configuration {} build success. '
                         'Build type: {}'.format(i, conf.build),
                         FONT.control)
-                # Only store successfully loaded configs
-                self._physics_servers[conf.id] = (world, disp, ctrl_hdlr)
+                world.notify_engine('pending')
+            self._physics_servers[conf.id] = (world, disp, ctrl_hdlr)
 
     def load_config(self, conf):
         """
@@ -170,12 +173,14 @@ class SimulationController(object):
         ctrl_handler = self._CTRL_HANDLERS[conf.control_type](
             conf.sensitivity, conf.rate
         )
-        if conf.build == 'debug':
-            world = debugger.ModelDebugger(world)
-            display = debugger.ViewDebugger(display)
-        elif conf.build == 'test':
-            world = tester.ModelTester(world)
-            display = tester.ViewTester(display)
+
+        # TODO
+        # if conf.build == 'debug':
+        #     world = debugger.ModelDebugger(world)
+        #     display = debugger.ViewDebugger(display)
+        # elif conf.build == 'test':
+        #     world = tester.ModelTester(world)
+        #     display = tester.ViewTester(display)
 
         # Give record name for physics physics_engine
         if conf.job == 'record' or conf.job == 'replay':
@@ -222,7 +227,6 @@ class SimulationController(object):
         configuration id) to start.
         :return: None
         """
-
         world, display, ctrl_handler = self._physics_servers[server_id]
 
         # Preparing variables
@@ -246,8 +250,8 @@ class SimulationController(object):
             loginfo('Display configs loaded. Starting simulation...',
                     FONT.control)
 
-        # Kick start the model
-        world.boot()
+        # Kick start the model, perform frame type check
+        world.boot(display.info['frame'])
 
         # Update initial control states
         init_states = world.get_states(('tool', 'pose'))[0]
@@ -265,7 +269,7 @@ class SimulationController(object):
                 # Update model
                 time_up = world.update(elt)
 
-                # Update view with camera_param info
+                # Update view with camera info
                 # TODO
                 display.update({})
 
@@ -400,16 +404,12 @@ class SimulationController(object):
                 elif method == 'pick_and_place':
                     tool.pick_and_place(*value)
 
-        # self._adapter.react(signal)
-        #
         # # GUI frame allow user to interact with the world
         # # dynamically, and vividly
         # if self._frame == 'gui':
         #     info = self._event_handler.signal
         #     if info:
         #         self._adapter.update_world(info)
-
-                # Allow changing camera_param view
 
 
     def _checker_interrupt(self, signal):

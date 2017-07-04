@@ -6,7 +6,7 @@ from robot import Robot
 class RobotStand(object):
 
 	def __init__(self, agent, interface, task, scene, gui=True, vr=False, log_dir=''):
-		# Default settings for camera_param
+		# Default settings for camera
 
 		log_dir = log_dir or pjoin(os.getcwd(), 'log')
 		self.VIDEO_DIR = pjoin(log_dir, 'video')
@@ -29,7 +29,7 @@ class RobotStand(object):
 	def set_camera_view(self, targetPosX, targetPosY, targetPosZ, roll, 
 		pitch, yaw, dist, width=600, height=540):
 		"""
-		Set the view of camera_param; typically egocentric, or oblique
+		Set the view of camera; typically egocentric, or oblique
 		"""
 		pass
 

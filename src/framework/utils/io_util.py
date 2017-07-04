@@ -404,7 +404,7 @@ def parse_config(file_path):
 
     for conf in configs:
 
-        build = conf.find('./build').attrib['type']
+        build = conf.find('./build').attrib['type'].lower()
         model_desc = conf.find('./env').text
         view_desc = conf.find('./disp').text
 
@@ -425,7 +425,7 @@ def parse_config(file_path):
 
         display_name = graphics_attrib['name']
 
-        display_type = graphics_attrib['type']
+        display_type = graphics_attrib['type'].lower()
         disp_args = [display_type]
         if display_type == 'gui':
             disp_args += [int(graphics_attrib.get('key', 0)),
@@ -441,7 +441,7 @@ def parse_config(file_path):
 
         disp_info = (display_name, display_type, disp_args)
 
-        job = job_attrib.get('name', 'run')
+        job = job_attrib.get('name', 'run').lower()
         video = str2bool(job_attrib.get('video', 'False'))
         log_path = job_attrib.get('log_path', '')
         record_name = job_attrib.get('filename', '')
@@ -452,7 +452,7 @@ def parse_config(file_path):
         max_run_time = int(float(property_attrib.get(
             'max_run_time', 300)))
 
-        control_type = control_attrib['type']
+        control_type = control_attrib['type'].lower()
         sensitivity = float(control_attrib.get('sensitivity', 1.))
         rate = int(control_attrib.get('rate', 100))
 

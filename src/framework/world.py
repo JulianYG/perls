@@ -2,6 +2,7 @@
 
 from .object.body import Body
 from .utils import io_util, math_util
+from .utils.io_util import logerr, FONT
 from .object import PR2Gripper, rethinkGripper, WSG50Gripper
 from .object import sawyer, kuka
 from .handler import taskHandler
@@ -68,6 +69,7 @@ class World(object):
             tools=[t.name for t in self._tools],
             tracking_bodies=[b.name for b in self._target_bodies],
             assets=self._bodies.keys(),
+            engine=self._engine.info
         )
 
     @property
@@ -277,12 +279,23 @@ class World(object):
             state_list.append(info)
         return state_list
 
-    def boot(self):
+    def boot(self, frame):
         """
         Start the physics engine.
+        :param frame: string of frame type,
+        for use of type check
         :return: engine start state
         """
-        return self._engine.start_engine()
+        return self._engine.start_engine(frame)
+
+    def notify_engine(self, stat):
+        """
+        Set the status of engine,
+        :param stat: string, 'running', 'pending',
+        'stopped', 'killed', 'finished', 'error'.
+        :return: None
+        """
+        self._engine.status = stat
 
     def update(self, elp):
         """
@@ -294,3 +307,6 @@ class World(object):
     def clean_up(self):
         self._target_bodies = list()
         self._tools, self._bodies = dict(), dict()
+        # Flush error messages
+        for err_msg in self._engine.error:
+            logerr(err_msg, FONT.model)

@@ -2,23 +2,24 @@
 <batch>
 	<config name="default" id="0">
 		<build type="Debug">
-			<graphics name="first person human demo" engine="bullet" type="gui" key="0"/>
+			<graphics name="first person human demo" engine="bullet" type="cmd" key="0"/>
 			<physics engine="bullet" version="20170601"/>
 			<job name="replay" video="False" log_path="" filename="hello_world_ExampleBrowser_2017-07-04-02-34-46"/>
-			<property async="False" step_size="0.001" max_run_time="10e6"/>
+			<property async="True" step_size="0.001" max_run_time="10e6"/>
 		</build>
 		<control type="keyboard" sensitivity="20" rate="100"/>
 		<env>test.xml</env>
 		<disp>disp.xml</disp>
 	</config>
 
-	<!-- <config name="default" id="1">
-		<build>
-			<simulaphysics_enginegine="bullet" version="20170601"/>
-			<job name="run"/>
+	<config name="default" id="1">
+		<build type="Release">
+			<graphics name="cannot see" engine="bullet" type="cmd" key="0"/>
+			<physics engine="bullet" version="20170601"/>
+			<job name="record"/>
 			<property async="True" step_size="0.001" max_run_time="10e6"/>
 		</build>
 		<env>env.xml</env>
 		<disp>direct.xml</disp>
-	</config> -->
+	</config>
 </batch>
