@@ -233,16 +233,18 @@ class SimulationController(object):
         status = display.run(track_targets)
 
         if status == -1:
-            logerr('Error loading simulation', FONT.disp)
+            logerr('Error loading simulation', FONT.control)
             self.stop(server_id)
             return
         elif status == 1:
             self.stop(server_id)
-            loginfo('Replay finished. Exiting...', FONT.disp)
+            loginfo('Replay finished. Exiting...', FONT.control)
             return
+        elif status == 2:
+            loginfo('Start recording.', FONT.control)
         else:
             loginfo('Display configs loaded. Starting simulation...',
-                    FONT.disp)
+                    FONT.control)
 
         # Kick start the model
         world.boot()
@@ -263,7 +265,7 @@ class SimulationController(object):
                 # Update model
                 time_up = world.update(elt)
 
-                # Update view with camera info
+                # Update view with camera_param info
                 # TODO
                 display.update({})
 
@@ -407,7 +409,7 @@ class SimulationController(object):
         #     if info:
         #         self._adapter.update_world(info)
 
-                # Allow changing camera view
+                # Allow changing camera_param view
 
 
     def _checker_interrupt(self, signal):

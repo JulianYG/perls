@@ -23,17 +23,17 @@ import intera_interface
 
 class Camera(object):
 	"""
-	The basic camera class. Provides a convenient basic 
+	The basic camera_param class. Provides a convenient basic
 	wrapper interface that can be called from calibrators.
 	"""
 
 	def __init__(self, camera, dimension, 
 		intrinsics, distortion):
 
-		# Due to different type of camera 
+		# Due to different type of camera_param
 		# interfaces, this should be implemented separately
 		self.camera_on = False
-		# camera parameters
+		# camera_param parameters
 		self._dimension = dimension
 		self._intrinsics = intrinsics
 		self._distortion = distortion
@@ -48,7 +48,7 @@ class Camera(object):
 	@property
 	def dimension(self):
 		"""
-		Returns the dimension of camera
+		Returns the dimension of camera_param
 		"""
 		return self._dimension
 
@@ -74,14 +74,14 @@ class Camera(object):
 
 	def turn_on(self):
 		"""
-		Turn on the camera;
-		Returns an instance of corresponding camera object
+		Turn on the camera_param;
+		Returns an instance of corresponding camera_param object
 		"""
 		self.camera_on = True
 
 	def turn_off(self):
 		"""
-		Turn off the camera;
+		Turn off the camera_param;
 		"""
 		self.camera_on = False
 
@@ -98,12 +98,12 @@ class Camera(object):
 		"""
 		Return one captured image at the moment it gets called
 		"""
-		raise NotImplementedError('Each camera class must implement this method individually.')
+		raise NotImplementedError('Each camera_param class must implement this method individually.')
 
 	def callback(self, img_data, info):
 		"""
 		A callback function to read image and capture edge 
-		corner points from camera
+		corner points from camera_param
 		"""
 		foundPattern, points = cv2.findChessboardCorners(
 			img_data, info['board_size'], None, 
@@ -210,7 +210,7 @@ class Kinect(Camera):
 			return
 
 		if not found:
-			print('Robot camera did not find pattern...'
+			print('Robot camera_param did not find pattern...'
 				' Please re-adjust checkerboard position to continue.')
 			cv2.imwrite(pjoin(info['directory'], 
 				'failures/{}.jpg'.format(rospy.Time.now())), cv_image)
@@ -244,7 +244,7 @@ class RobotCamera(Camera):
 	def turn_on(self):
 		robot_camera = intera_interface.Cameras()
 		if not robot_camera.verify_camera_exists(self._camera_idx):
-			rospy.logerr('Invalid camera name: {}, '
+			rospy.logerr('Invalid camera_param name: {}, '
 				'exit the program.'.format(self._camera_idx))
 		
 		if self._camera_idx == 'head_camera':
@@ -275,7 +275,7 @@ class RobotCamera(Camera):
 		return robot_camera
 
 	def turn_off(self):
-		rospy.loginfo('Shutting down robot camera corner detection')
+		rospy.loginfo('Shutting down robot camera_param corner detection')
 		cv2.destroyWindow('robot_calibrate')
 		self._device.unregister()
 		self.camera_on = False
@@ -391,7 +391,7 @@ class StereoCamera(Camera):
 	@property
 	def dimension(self):
 		"""
-		Returns the dimension of camera
+		Returns the dimension of camera_param
 		"""
 		return self._left_dimension, self._right_dimension
 
@@ -471,10 +471,10 @@ class StereoCamera(Camera):
 class UVCRobotStereo(StereoCamera):
 	"""
 	Hybrid indicates the two different types of cameras.
-	Usually Kinect & robot camera
-	Note: left camera is usually the external camera, be 
-	UVC or PrimeSense, or Kinect, and the right camera
-	is the name string of robot camera, be 
+	Usually Kinect & robot camera_param
+	Note: left camera_param is usually the external camera_param, be
+	UVC or PrimeSense, or Kinect, and the right camera_param
+	is the name string of robot camera_param, be
 	'head_camera' or 'right_hand_camera' for Sawyer
 	"""
 	def __init__(self, left, right, 
@@ -502,14 +502,14 @@ class UVCRobotStereo(StereoCamera):
 		"""
 		Due to the constraint of sampling the same set of points,
 		has to read the same set of points in ROS initiated 
-		camera callback for the external camera
+		camera_param callback for the external camera_param
 		"""
 		try:
-			# Using internal to indicate robot camera (right)
-			# and external to indicate UVC/Kinect camera (left)
+			# Using internal to indicate robot camera_param (right)
+			# and external to indicate UVC/Kinect camera_param (left)
 			internal_img = CvBridge().imgmsg_to_cv2(img_data, 'bgr8')
 
-			# Directly using the left camera
+			# Directly using the left camera_param
 			external_img = self._left_camera.snapshot()
 
 			internal_found, internal_points = cv2.findChessboardCorners(
@@ -535,7 +535,7 @@ class UVCRobotStereo(StereoCamera):
 				return
 				
 			if not internal_found or not external_found:
-				print('At least camera did not find pattern...'
+				print('At least camera_param did not find pattern...'
 					' Please re-adjust checkerboard position to continue.')
 				fail_img = internal_img if not internal_found else external_img
 				cv2.imwrite(pjoin(info['directory'], 
@@ -567,10 +567,10 @@ class UVCRobotStereo(StereoCamera):
 class KinectRobotStereo(StereoCamera):
 	"""
 	Hybrid indicates the two different types of cameras.
-	Usually Kinect & robot camera
-	Note: left camera is usually the external camera, be 
-	UVC or PrimeSense, or Kinect, and the right camera
-	is the name string of robot camera, be 
+	Usually Kinect & robot camera_param
+	Note: left camera_param is usually the external camera_param, be
+	UVC or PrimeSense, or Kinect, and the right camera_param
+	is the name string of robot camera_param, be
 	'head_camera' or 'right_hand_camera' for Sawyer
 	"""
 	def __init__(self, left, right, 
@@ -640,10 +640,10 @@ class KinectRobotStereo(StereoCamera):
 		"""
 		Due to the constraint of sampling the same set of points,
 		has to read the same set of points in ROS initiated 
-		camera callback for the external camera
+		camera_param callback for the external camera_param
 		"""
 
-		# Using internal to indicate robot camera (right)
+		# Using internal to indicate robot camera_param (right)
 		internal_img = CvBridge().imgmsg_to_cv2(img_data, 'bgr8')
 		internal_found, internal_points = cv2.findChessboardCorners(
 			internal_img, info['board_size'], None
@@ -662,7 +662,7 @@ class KinectRobotStereo(StereoCamera):
 			return
 			
 		if not internal_found:
-			print('Robot camera did not find pattern...'
+			print('Robot camera_param did not find pattern...'
 				' Please re-adjust checkerboard position to continue.')
 
 			cv2.imwrite(pjoin(info['directory'], 
@@ -676,7 +676,7 @@ class KinectRobotStereo(StereoCamera):
 			info['right_point_list'].append(internal_points)
 			print('Robot successfully read one point.')
 		else:
-			print('Done sampling points from robot camera.')
+			print('Done sampling points from robot camera_param.')
 			self._right_camera.turn_off()
 
 		print(len(info['left_point_list']), len(info['right_point_list']), 'robot')

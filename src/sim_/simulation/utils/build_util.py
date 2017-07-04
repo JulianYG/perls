@@ -25,7 +25,7 @@ _config_keys = [
 	'fixed_gripper_orn',
 	'enable_force_sensor',
 	'tool_positions',
-	'camera',
+	'camera_param',
 	'gui',
 	'scene',
 	'record_file_name',
@@ -51,7 +51,7 @@ def build_by_config(configs, work_dir, remote=False):
 	fixed = configs.get('fixed_gripper_orn', False)
 	force_sensor = configs.get('enable_force_sensor', False)
 	init_pos = configs.get('tool_positions', [0.,])
-	camera_info = configs.get('camera', None)
+	camera_info = configs.get('camera_param', None)
 	gui = configs.get('gui', True)
 	scene = configs.get('scene', '')
 

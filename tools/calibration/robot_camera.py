@@ -176,7 +176,7 @@ def main():
 
 
     if not camera.verify_camera_exists(camera_name):
-        rospy.logerr("Invalid camera name, exiting the example.")
+        rospy.logerr("Invalid camera_param name, exiting the example.")
         return
 
     camera.start_streaming(camera_name)

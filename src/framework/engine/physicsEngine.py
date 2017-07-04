@@ -608,8 +608,8 @@ class BulletPhysicsEngine(FakeStateEngine):
             else:
                 if elapsed_time < self._max_run_time:
 
-                    # TODO: think about how to control camera at run time
-                    # self.camera = camera_info
+                    # TODO: think about how to control camera_param at run time
+                    # self.camera_param = camera_info
 
                     # TODO: Figure out why this is not useful in <load_simulation>
                     p.setRealTimeSimulation(1, physicsClientId=self._physics_server_id)

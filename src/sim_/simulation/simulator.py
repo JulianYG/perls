@@ -19,7 +19,7 @@ class BulletSimulator:
 
 	def __init__(self, agent, interface, task, scene, gui=True, vr=False, 
 		log_dir=''):
-		# Default settings for camera
+		# Default settings for camera_param
 		self.FOCAL_POINT = (0., 0., 0.)
 		self.YAW = 35.
 		self.PITCH = 50.
@@ -85,7 +85,7 @@ class BulletSimulator:
 	def set_camera_view(self, targetPosX, targetPosY, targetPosZ, roll, 
 		pitch, yaw, dist, width=600, height=540):
 		"""
-		Set the view of camera; typically egocentric, or oblique
+		Set the view of camera_param; typically egocentric, or oblique
 		"""
 		self.FOCAL_POINT = (targetPosX, targetPosY,  targetPosZ)
 		self.PITCH = pitch

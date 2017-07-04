@@ -55,7 +55,7 @@ class GraspSawyer(object):
 
         if camera == 'external' and (not gripper_init_pos \
             or usbCameraMatrix is None or usbDistortionVector is None):
-            raise Exception('Need to specify gripper position for single camera')
+            raise Exception('Need to specify gripper position for single camera_param')
 
         self._robot = robot
         self._calibration_iter = numCalibPoints
@@ -249,7 +249,7 @@ class GraspSawyer(object):
         try:
             rospy.spin()
         except KeyboardInterrupt:
-            rospy.loginfo('Shutting down robot camera corner detection')
+            rospy.loginfo('Shutting down robot camera_param corner detection')
             self._robot_camera.stop_streaming('right_hand_camera')
 
     def _get_head_camera_points(self):
@@ -263,7 +263,7 @@ class GraspSawyer(object):
         try:
             rospy.spin()
         except KeyboardInterrupt:
-            rospy.loginfo('Shutting down robot camera corner detection')
+            rospy.loginfo('Shutting down robot camera_param corner detection')
             self._robot_camera.stop_streaming('head_camera')
 
     def calibrate_stereo(self, camera):
@@ -292,7 +292,7 @@ class GraspSawyer(object):
                 robot_matrix = self._wrist_camera_intrinsic
                 robot_distortion = self._wrist_camera_distortion
             else:
-                raise NotImplementedError('Invalid camera')
+                raise NotImplementedError('Invalid camera_param')
 
             print((self.usb_camera_corner_points))
             print(robot_points)
@@ -350,7 +350,7 @@ class GraspSawyer(object):
         try:
             rospy.spin()
         except KeyboardInterrupt:
-            rospy.loginfo('Shutting down robot camera corner detection')
+            rospy.loginfo('Shutting down robot camera_param corner detection')
             self._robot_camera.stop_streaming(camera)
 
     def _get_external_points(self):
@@ -358,19 +358,19 @@ class GraspSawyer(object):
         # self._usb_camera.open(self._usb_index)
         s = False
         # Loop until read image
-        print('Reading from usb camera...')
+        print('Reading from usb camera_param...')
         while not s:
             s, img = self._usb_camera.read()
 
         # Loop until found checkerboard pattern
-        print('USB camera finding checkerboard pattern...')
+        print('USB camera_param finding checkerboard pattern...')
         
         foundPattern, usbCamCornerPoints = cv2.findChessboardCorners(
             img, self._board_size, None, 
             cv2.CALIB_CB_ADAPTIVE_THRESH
         )
         if not foundPattern:
-            print('USB camera did not find pattern...')
+            print('USB camera_param did not find pattern...')
             return False, None, img
 
         # self._usb_camera.release()
@@ -390,7 +390,7 @@ class GraspSawyer(object):
             usb_found, usb_points, usb_img = self._get_external_points()
 
             if not robotFoundPattern or not usb_found:
-                raw_input('One camera did not find pattern...'
+                raw_input('One camera_param did not find pattern...'
                     ' Please re-adjust checkerboard position and press Enter.')
                 cv2.imwrite('real_/calib_data/failures/{}.jpg'.format(time_stamp), cv_image)
                 return
@@ -403,7 +403,7 @@ class GraspSawyer(object):
                     self.head_camera_corner_points.append(np.reshape(robot_points, (self._numCornerPoints, 2)))
                 elif camera == 'right_hand_camera':
                     self.wrist_camera_corner_points.append(np.reshape(robot_points, (self._numCornerPoints, 2)))
-                cv2.imwrite('real_/calib_data/camera/{}.jpg'.format(time_stamp), usb_img)
+                cv2.imwrite('real_/calib_data/camera_param/{}.jpg'.format(time_stamp), usb_img)
                 cv2.imwrite('real_/calib_data/{}/{}.jpg'.format(camera, time_stamp), cv_image)
                 raw_input('Successfully read one point.'
                     ' Re-adjust the checkerboard and press Enter to Continue...')
@@ -426,7 +426,7 @@ class GraspSawyer(object):
         if self.camera_type == 'stereo':
             pixel_location = self._fundamental.dot(p.T)
 
-            # TODO: figure out how to do the image to camera reference frame in sawyer
+            # TODO: figure out how to do the image to camera_param reference frame in sawyer
             if self.tl.frameExists('head_camera') and self.tl.frameExists('base'):
                 
                 hdr = Header(stamp=self.tl.getLatestCommonTime('head_camera',
@@ -441,7 +441,7 @@ class GraspSawyer(object):
 
                 camera_frame_position = self._inverse_robot_intrinsic.dot(pixel_location)
 
-                print(camera_frame_position, 'camera (world) frame')
+                print(camera_frame_position, 'camera_param (world) frame')
 
                 v3s = Vector3Stamped(header=hdr,
                         vector=Vector3(*camera_frame_position))

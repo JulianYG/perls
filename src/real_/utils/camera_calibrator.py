@@ -29,14 +29,14 @@ from geometry_msgs.msg import (
 
 class CameraCalibrator(object):
 	"""
-	The basic camera calibrator parent class. Takes the 
+	The basic camera_param calibrator parent class. Takes the
 	standard point pattern size of checkerboard (default 9x6) 
 	and checker size in meters, as well as dimension of the 
-	camera. (UVC 640 x 480)
+	camera_param. (UVC 640 x 480)
 	Calib_min: Minimum number of different angles (perspective)
-	required to accurately calibrate the camera. Typically 4 - 7.
+	required to accurately calibrate the camera_param. Typically 4 - 7.
 	The calibrator will save the intrinsics and distortion of the
-	camera, as well as the rotation / translation for each 
+	camera_param, as well as the rotation / translation for each
 	displayed checkerboard. It also outputs a meta file .yml 
 	about calibration info
 	"""
@@ -58,7 +58,7 @@ class CameraCalibrator(object):
 
 	def calibrate(self):
 		"""
-		Calibrate the camera if target information does not exist. 
+		Calibrate the camera_param if target information does not exist.
 		Otherwise read stored data.
 		Returns the following calibration parameters:
 		Camera intrinsic matrix,
@@ -68,7 +68,7 @@ class CameraCalibrator(object):
 		If stereo calibration:
 		Intrinsic matrix/distortion vector for both cameras, 
 		as well as 
-		Rotation / translation of camera 2 w.r.t camera 1
+		Rotation / translation of camera_param 2 w.r.t camera_param 1
 		Essential matrix
 		Fundamental matrix
 		"""
@@ -119,7 +119,7 @@ class CameraCalibrator(object):
 	def _get_image_points(self):
 		"""
 		Get image points for calibratio; polling from
-		the camera(s)
+		the camera_param(s)
 		"""
 		raise NotImplementedError('Each calibrator class must re-implement this method.')
 
@@ -221,7 +221,7 @@ class MonocularCalibrator(CameraCalibrator):
 
 class RobotCalibrator(CameraCalibrator):
 	"""
-	camera: 'right_hand_camera' and 'head_camera' for sawyer
+	camera_param: 'right_hand_camera' and 'head_camera' for sawyer
 	"""
 	def __init__(self, camera, boardSize, checkerSize, 
 		directory, calib_min=4):
@@ -246,12 +246,12 @@ class RobotCalibrator(CameraCalibrator):
 class StereoCalibrator(CameraCalibrator):
 
 	"""
-	Stereo camera calibration. Requires the two cameras be 
+	Stereo camera_param calibration. Requires the two cameras be
 	aligned on the same x-axis. 
-	Both cameras are not robot cameras, and camera indices
+	Both cameras are not robot cameras, and camera_param indices
 	must be provided.
 	Also assumes two cameras are identical; only requires
-	one camera dimension input
+	one camera_param dimension input
 	"""
 	def __init__(self, stereoCamera, boardSize, 
 		checkerSize, directory, calib_min=4):
@@ -333,10 +333,10 @@ class StereoCalibrator(CameraCalibrator):
 
 class HybridCalibrator(StereoCalibrator):
 	"""
-	Hybrid camera calibration (generalization of stereo)
-	By default, camera1 (left) is external camera (usually providing
-	clear top view, can be Kinect or UVC); camera 2 is 
-	the robot camera used for transforming camera coords 
+	Hybrid camera_param calibration (generalization of stereo)
+	By default, camera1 (left) is external camera_param (usually providing
+	clear top view, can be Kinect or UVC); camera_param 2 is
+	the robot camera_param used for transforming camera_param coords
 	to the base coords (for gripper)
 	Performs calibration separately, then compute the 
 	relation between two cameras
@@ -346,7 +346,7 @@ class HybridCalibrator(StereoCalibrator):
 		checkerSize, directory, calib_min=7):
 		"""
 		Note the constructor takes the index of external 
-		camera, and the string name of the robot camera (internal)
+		camera_param, and the string name of the robot camera_param (internal)
 		"""
 		super(HybridCalibrator, self).__init__(camera, boardSize, 
 			checkerSize, directory, calib_min)
