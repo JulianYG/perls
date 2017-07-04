@@ -137,7 +137,7 @@ class PrismaticGripper(Tool):
         if not self.fix:
             self.track(pos, orn, self._max_force)
         self.grasp(0)
-        self._engine.update()
+        self._engine.hold()
 
     def hang(self):
         """

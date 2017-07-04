@@ -1,46 +1,32 @@
-from .utils import util, io_util
-from .utils.io_util import (loginfo,
-                            logerr,
-                            FONT)
-from .handler.base import NullHandler
-from .handler.controlHandler import (KeyboardEventHandler,
-                                     ViveEventHandler,
-                                     AppEventHandler,
-                                     CmdEventHandler)
-from .handler.eventHandler import AssetHandler
+from .utils import io_util
+
+__author__ = 'Julian Gao'
+__email__ = 'julianyg@stanford.edu'
+__license__ = 'private'
+__version__ = '0.1'
 
 
 class View:
     """
-    The view part of the model
+    The display, view/rendering module of the system
     """
-    HANDLER_DIC = dict(keyboard=KeyboardEventHandler,
-                       vive=ViveEventHandler,
-                       phone=AppEventHandler,
-                       off=NullHandler)
     
-    def __init__(self, desc, adapter, engine):
+    def __init__(self, desc, adapter, graphics_engine):
         """
         Initialize the simulation display 
         :param desc: description file in xml format, 
         instructions about control/display settings
         :param adapter: adapter that allows view talking 
         to the world
-        :param engine: Physics simulation engine
+        :param graphics_engine: Physics simulation physics_engine
         """
-        self.name_str = 'ExampleKBControl'
+        self.name_str = 'ExampleBrowser'
         self._description = desc
         self._adapter = adapter
-        self._engine = engine
+        self._engine = graphics_engine
 
-        self._simulation_server_id = engine.info['id']
+        self._simulation_server_id = graphics_engine.ps_id
         self._frame = 'off'
-        self._control_type = 'off'
-
-        self._control_handler = NullHandler()
-        self._event_handler = AssetHandler()
-
-        self._init_time_stamp = None
 
     @property
     def info(self):
@@ -48,136 +34,75 @@ class View:
         Get the basic info description of the 
         simulation display.
         :return: A dictionary of information of current view.
-        {name, display frame, elapsed time, running simulation instances, 
-        engine info}
+        {name, display frame, running simulation instances,
+        physics_engine info}
         """
         return dict(
             name=self.name_str,
             frame=self._frame,
-            control=self._control_type,
-            run_time=util.get_elapsed_time(
-                self._init_time_stamp),
             server=self._simulation_server_id,
             engine=self._engine.info)
 
     def build(self):
         """
-        Construct the display 
-        :return: None
-        """
-        # Setup camera is for replay function
-        # camera dict: flen, yaw, pitch, focus
-        self.name_str, frame_info, camera_info, \
-            option_dic, self._control_type, sensitivity, rate = \
-            io_util.parse_disp(self._description)
-        self._frame = frame_info[0]
-        # Set up control event interruption handlers
-        # TODO
-        self._control_handler = self.HANDLER_DIC[self._control_type](
-            sensitivity, rate
-        )
-
-        # Special case for keyboard control on View side
-        if self._control_type == 'keyboard':
-            # Disable keyboard shortcuts for keyboard control
-            option_dic['keyboard_shortcut'] = False
-
-        # Configure display, connect to bullet physics server
-        self._engine.configure_display(frame_info, camera_info, option_dic)
-
-    def start(self):
-        """
-        Configure and start the simulation display.
-        Note this can only be called after world is built,
+        Construct, configure and start the simulation display.
+        Note this can only be called after world is instantiated,
         since it requires adapter to talk to the world.
         :return: None
         """
-        # Boot the adapter to talk with world (model)
-        self._adapter.update_states()
+        self.load_config(self._description)
 
-        # Load simulation, and feed target objects in
-        # case of recording. Notice only when loading
-        # returns 0, can program enter control loop.
-        # 1 represents success of replay, and -1 represent
-        # error state.
-        state = self._engine.load_simulation(
-            self._adapter.get_world_states(
-                ('env', 'target'))[0])
-
-        if state == -1:
-            logerr('Error loading simulation', FONT.disp)
-            self.exit_routine()
-            return
-        elif state == 1:
-            self.exit_routine()
-            loginfo('Replay finished. Exiting...', FONT.disp)
-            return
-        else:
-            loginfo('Display configs loaded. Starting simulation...',
-                    FONT.disp)
-
-        # Some preparation jobs for control
-        time_up, done, success = False, False, False
-        self._init_time_stamp = util.get_abs_time()
-
-        # TODO: wait for pybullet setTimeOut
-
-        # Start control loop
-        while not (time_up or done):
-            elt = util.get_elapsed_time(self._init_time_stamp)
-
-            # Perform control interruption first
-            self._control_interrupt()
-            time_up = self._engine.step(
-                # TODO update camera info
-                None, elapsed_time=elt)
-
-            # Next check task completion, communicate
-            # with the model
-            done, success = self._checker_interrupt()
-
-        if success:
-            loginfo('Task success! Exiting simulation...',
-                    FONT.disp)
-        else:
-            loginfo('Task failed! Exiting simulation...',
-                    FONT.disp)
-
-        self.exit_routine()
-
-    def _control_interrupt(self):
+    def disable_hotkeys(self):
         """
-        The control interruption, jumps to control defined
-        in xml file, process the control signals and
-        jumps back to the loop.
+        Special helper method to disable keyboard hot keys
+        for convenience of operating GUI
         :return: None
         """
-        signal = self._control_handler.signal
-        self._adapter.react(signal)
+        self._engine.disable_hotkeys()
 
-        # GUI frame allow user to interact with the world
-        # dynamically, and vividly
-        if self._frame == 'gui':
-            info = self._event_handler.signal
-            if info:
-                self._adapter.update_world(info)
-
-                # Allow changing camera view
-
-    def _checker_interrupt(self):
+    def update(self, camera_info, *_):
         """
-        Checker interrupt, performs checking on current
-        world states and report status.
-        :return: (done, success) tuple, where 'done' is
-        boolean and 'success' is a scalar, either 0/1
-        binary, or float in [0,1] representing quality.
+        Update the view, mainly resetting the camera
+        :param camera_info: dictionary of camera parameters.
+        For GUI, camera_info is a dictionary of
+        {flen: float, yaw: float degree,
+        pitch: float degree, focus: float}
+        For VR, camera_info is a tuple of
+        (pos: vec3 cartesian, orn: vec4 quat)
+        :return: None
         """
-        status = self._adapter.check_world_states()
-        return status
+        if camera_info:
+            self._engine.camera = camera_info
 
-    def exit_routine(self):
+    def load_config(self, description):
         """
-        Exit routine for simulation.
+        Load given configuration file
+        :param description: path string of
+        display description xml file.
+        :return: None
+        """
+        # Setup camera is for replay function
+        camera_info, option_dic = io_util.parse_disp(description)
+
+        # Configure display
+        self._engine.configure_display(option_dic, camera_info)
+
+    def run(self, targets):
+        """
+        Start the graphics engine.
+        Load simulation, and feed target objects in
+        case of recording.
+        :param targets: list of tracking body uids.
+        :return: integer boot status. Only when loading
+        returns 0, can program enter control loop.
+        1 represents success of replay, and -1 represent
+        error state.
+        """
+        return self._engine.boot(targets)
+
+    def close(self):
+        """
+        Exit routine for display.
         :return: None
         """
         self._engine.stop()

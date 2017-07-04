@@ -74,10 +74,13 @@ class _ConfigTree:
 
     def __init__(self, c_id, build,
                  model_desc, view_desc,
-                 name, engine,
+                 name, physics_engine,
+                 graphics_engine,
                  version, job, video, async,
                  step, max_time, log,
-                 record_name):
+                 record_name,
+                 control_type, sensitivity,
+                 rate, display_info):
         self._conf_id = c_id
         self._model_desc = model_desc
         self._view_desc = view_desc
@@ -87,11 +90,16 @@ class _ConfigTree:
         self._async = async
         self._video = video
         self._name = name
-        self._engine = engine
+        self._physics_engine = physics_engine
+        self._graphics_engine = graphics_engine
         self._step_size = step
         self._build = build
         self._log_path = log
         self._fname = record_name
+        self._control = control_type
+        self._sens = sensitivity
+        self._rate = rate
+        self._disp_info = display_info
 
     @property
     def build(self):
@@ -126,8 +134,12 @@ class _ConfigTree:
         return self._name
 
     @property
-    def engine(self):
-        return self._engine
+    def physics_engine(self):
+        return self._physics_engine
+
+    @property
+    def graphics_engine(self):
+        return self._graphics_engine
 
     @property
     def step_size(self):
@@ -142,12 +154,28 @@ class _ConfigTree:
         return self._view_desc
 
     @property
+    def control_type(self):
+        return self._control
+
+    @property
+    def sensitivity(self):
+        return self._sens
+
+    @property
+    def rate(self):
+        return self._rate
+
+    @property
     def record_name(self):
         return self._fname
 
     @property
     def log(self):
         return self._log_path
+
+    @property
+    def disp_info(self):
+        return self._disp_info
 
 
 def str2bool(string):
@@ -353,28 +381,7 @@ def parse_disp(file_path):
     xml = ElementTree.parse(file_path)
     root = xml.getroot()
 
-    disp_name = root.attrib['name']
-    frame_attrib = root.find('./view/frame').attrib
     option_attrib = root.find('./view/option').attrib
-    control_attrib = root.find('./control').attrib
-
-    frame_type = frame_attrib['type']
-    frame_info = [frame_type]
-    if frame_type == 'gui':
-        frame_info += [int(frame_attrib.get('key', 0)),
-                       frame_attrib.get('flag', '')]
-    elif frame_type == 'vr':
-        frame_info.append(int(frame_attrib.get('key', 0)))
-    elif frame_type == 'udp':
-        frame_info += [frame_attrib.get('ip', 'localhost'),
-                       int(frame_attrib.get('port', 1234))]
-    elif frame_type == 'tcp':
-        frame_info += [frame_attrib.get('ip', '127.0.0.1'),
-                       int(frame_attrib.get('port', 6667))]
-
-    control_type = control_attrib['type']
-    sensitivity = float(control_attrib.get('sensitivity', 1.))
-    rate = int(control_attrib.get('rate', 100))
     options = dict((k, str2bool(v)) for (k, v) in option_attrib.items())
 
     camera_attrib = root.find('./view/camera').attrib
@@ -385,8 +392,7 @@ def parse_disp(file_path):
                               x in camera_attrib.get('focus', '0 0 0').split(' ')],
                        flen=float(camera_attrib.get('focal_len', 4)))
 
-    return disp_name, frame_info, camera_info, options, \
-        control_type, sensitivity, rate
+    return camera_info, options
 
 
 def parse_config(file_path):
@@ -404,13 +410,37 @@ def parse_config(file_path):
 
         config_name = conf.attrib['name']
         conf_id = int(conf.attrib['id'])
-        simulation_attrib = conf.find('./build/simulator').attrib
+
+        # Getting five main attributes
+        physics_attrib = conf.find('./build/physics').attrib
+        graphics_attrib = conf.find('./build/graphics').attrib
         property_attrib = conf.find('./build/property').attrib
-
-        engine = simulation_attrib.get('engine', 'bullet')
-        min_version = simulation_attrib.get('version', '20170101')
-
         job_attrib = conf.find('./build/job').attrib
+        control_attrib = root.find('./config/control').attrib
+
+        physics_engine = physics_attrib.get('engine', 'bullet')
+        graphics_engine = graphics_attrib.get('engine', 'bullet')
+
+        min_version = physics_attrib.get('version', '20170101')
+
+        display_name = graphics_attrib['name']
+
+        display_type = graphics_attrib['type']
+        disp_args = [display_type]
+        if display_type == 'gui':
+            disp_args += [int(graphics_attrib.get('key', 0)),
+                              graphics_attrib.get('flag', '')]
+        elif display_type == 'vr':
+            disp_args.append(int(graphics_attrib.get('key', 0)))
+        elif display_type == 'udp':
+            disp_args += [graphics_attrib.get('ip', 'localhost'),
+                          int(graphics_attrib.get('port', 1234))]
+        elif display_type == 'tcp':
+            disp_args += [graphics_attrib.get('ip', '127.0.0.1'),
+                          int(graphics_attrib.get('port', 6667))]
+
+        disp_info = (display_name, display_type, disp_args)
+
         job = job_attrib.get('name', 'run')
         video = str2bool(job_attrib.get('video', 'False'))
         log_path = job_attrib.get('log_path', '')
@@ -422,11 +452,19 @@ def parse_config(file_path):
         max_run_time = int(float(property_attrib.get(
             'max_run_time', 300)))
 
+        control_type = control_attrib['type']
+        sensitivity = float(control_attrib.get('sensitivity', 1.))
+        rate = int(control_attrib.get('rate', 100))
+
         # Append one configuration
         trees.append(_ConfigTree(
             conf_id, build, model_desc, view_desc,
-            config_name, engine, min_version, job, video,
-            async, step_size, max_run_time, log_path, record_name))
+            config_name, physics_engine, graphics_engine,
+            min_version, job, video,
+            async, step_size, max_run_time, log_path, record_name,
+            control_type, sensitivity, rate,
+            disp_info)
+        )
 
     return trees
 

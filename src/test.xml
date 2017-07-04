@@ -9,22 +9,19 @@
 			<pos>-1.0 0.0 1.0</pos>
 			<!-- <orn>0.0 0.0 0.0 1.0</orn> -->
 		</gripper>
-		<robot name="titan" type="sawyer" null_space="True">
-			<asset path="sawyer_robot/sawyer_description/urdf/sawyer_arm.urdf" id="0"/>
-			<gripper name="bax" type="rethink">
-				<asset path="rethink_ee_description/urdf/electric_gripper/right_standard_narrow_round.urdf"/>
-			</gripper>
-			<pos>0.0 0.2 0.9</pos>
-			<orn>0.0 0.0 0.0 1.0</orn>
-		</robot>
-		<!-- <gripper name="bax" type="rethink">
-			<asset path="rethink_ee_description/urdf/electric_gripper/right_standard_narrow_round.urdf"/>
-		</gripper> -->
 		<robot name="king-kong" type="kuka" null_space="True">
 			<gripper name="for_king_kong" type="wsg">
 				<asset path="gripper/wsg50_one_motor_gripper_new_free_base.sdf"/>
 			</gripper>
 			<pos>0.0 1.8 0.66</pos>
+			<orn>0.0 0.0 0.0 -1.0</orn>
+		</robot>
+		<robot name="titan" type="sawyer" null_space="True">
+			<asset path="sawyer_robot/sawyer_description/urdf/sawyer_arm.urdf" id="1"/>
+			<gripper name="bax" type="rethink">
+				<asset path="rethink_ee_description/urdf/electric_gripper/right_standard_narrow_round.urdf"/>
+			</gripper>
+			<pos>0.0 0.2 0.9</pos>
 		</robot>
 	</tool>
 	<scene name="default">

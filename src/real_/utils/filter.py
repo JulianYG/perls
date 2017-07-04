@@ -51,9 +51,9 @@ class KalmanFilter(Filter):
 
     def estimate(self, observation):
         """
-        Do an online update for state estimation given a recent observation.
+        Do an online hold for state estimation given a recent observation.
 
-        :param observation: New observation to update internal estimate of state.
+        :param observation: New observation to hold internal estimate of state.
         :return: New estimate of state.
         """
         self.filtered_state_mean, self.filtered_state_covariance = self.kf.filter_update(self.filtered_state_mean,
@@ -79,9 +79,9 @@ class MovingAverageFilter(Filter):
 
     def estimate(self, observation):
         """
-        Do an online update for state estimation given a recent observation.
+        Do an online hold for state estimation given a recent observation.
 
-        :param observation: New observation to update internal estimate of state.
+        :param observation: New observation to hold internal estimate of state.
         :return: New estimate of state.
         """
         if self.num_samples == self.filter_width:

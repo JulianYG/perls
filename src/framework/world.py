@@ -1,10 +1,15 @@
-# __package__ = 'sim_.simulation'
+#!/usr/bin/env python
 
 from .object.body import Body
 from .utils import io_util, math_util
 from .object import PR2Gripper, rethinkGripper, WSG50Gripper
 from .object import sawyer, kuka
 from .handler import taskHandler
+
+__author__ = 'Julian Gao'
+__email__ = 'julianyg@stanford.edu'
+__license__ = 'private'
+__version__ = '0.1'
 
 
 class World(object):
@@ -17,16 +22,29 @@ class World(object):
 
     ARM_TYPE = dict(sawyer=sawyer.Sawyer, kuka=kuka.Kuka)
 
-    def __init__(self, desc_file, engine):
+    # Storing inquiry legend
+    _INQUIRY_DIC = dict(
+        tool=['pose', 'v', 'omega',
+              # TODO
+              # 'force', 'wrench', 'shape',
+              'name', 'contact'],
+        body=['pose', 'v', 'omega',
+              # 'force', 'wrench', 'shape',
+              'name', 'tid',
+              'contact'],
+        env=['gravity', 'traction', 'target']
+    )
+
+    def __init__(self, desc_file, physics_engine):
         """
         Initialize default environment in simulation
         :param desc_file: assets description file
-        :param engine: :param engine: Physics simulation engine
+        :param physics_engine: :param physics_engine: Physics simulation physics_engine
         """
         # Default name before loading
         self.name_str = 'hello_world'
         self._description = desc_file
-        self._engine = engine
+        self._engine = physics_engine
         self._target_bodies = list()
         self._tools, self._bodies = dict(), dict()
 
@@ -162,7 +180,11 @@ class World(object):
             # Target bodies are listed as a bunch of uid's
             self._target_bodies.append(gripper_body.uid)
 
-        for arm in parse_tree.arm:
+        for i in range(len(parse_tree.arm)):
+
+            arm = parse_tree.arm[i]
+
+            assert i == arm['id']
             gripper_spec = arm['gripper']
             gripper_body = self.GRIPPER_TYPE[gripper_spec['type']](
                 math_util.rand_bigint(),
@@ -224,7 +246,51 @@ class World(object):
             tool = self._tools[self._tools.keys()[0]]
         else:
             tool = self._tools[t_id]
-            
         # Mark the current using tool
         tool.mark = ('controlling', 2.5, (1.,0,0), None, .2)
         return tool
+
+    def get_states(self, *args):
+        """
+        Get world states by attribute name
+        :param args: list of string tuples indicating what
+        kind of inquiry (key), and what attributes
+        to get (value).
+        :return: states dictionary of given
+        inquiry. Keys are ids, values are states.
+        For example, [('body', 'pose')]
+        It will return a list of dictionaries in the same
+        order as inquiry list.
+        """
+        state_list = list()
+        for key, value in args:
+            assert key in self._INQUIRY_DIC, \
+                'Invalid inquiry key \'%s\'' % key
+            assert value in self._INQUIRY_DIC[key], \
+                'Invalid inquiry value \'%s\'' % value
+            if key == 'env':
+                # Hope this is not evil as setattr!
+                info = getattr(self, value)
+            else:
+                prop = getattr(self, key)
+                info = dict((x, getattr(prop[x], value)) for x in prop)
+            state_list.append(info)
+        return state_list
+
+    def boot(self):
+        """
+        Start the physics engine.
+        :return: engine start state
+        """
+        return self._engine.start_engine()
+
+    def update(self, elp):
+        """
+        Update the states of the world.
+        :return: None
+        """
+        return self._engine.step(elp)
+
+    def clean_up(self):
+        self._target_bodies = list()
+        self._tools, self._bodies = dict(), dict()

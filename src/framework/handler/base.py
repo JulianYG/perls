@@ -21,6 +21,10 @@ class InterruptHandler(object):
     #     pass
 
     @property
+    def name(self):
+        return 'Interrupt'
+
+    @property
     def signal(self):
         return self._signal
 

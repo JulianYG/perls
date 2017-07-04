@@ -22,7 +22,7 @@ class Body(object):
                  orn=None,
                  fixed=False):
         """
-        :param engine: The physics engine used to simulate
+        :param engine: The physics physics_engine used to simulate
          this tool.
         :param path: body model path (urdf, sdf, xml, mjcf, etc.)
         :param pos: initial position of object
@@ -658,7 +658,7 @@ class Tool(Body):
         is in the form of '%s%d', where s is 'm' for arm,
         'b' for robot, 'g' for gripper, and 'h' for hand
         (some haptic device).
-        :param engine: The physics engine used to simulate
+        :param engine: The physics physics_engine used to simulate
          this tool.
         :param path: the asset model file path of this tool.
         :param pos: initial position vec3 float cartesian

@@ -45,7 +45,7 @@ class ViewDebugger(object):
 
     def start(self):
         # Boot the adapter to talk with world (model)
-        self._display._adapter.update_states()
+        self._display._adapter._update_states()
 
         # Some preparation jobs for control
         self._display._engine.load_simulation()

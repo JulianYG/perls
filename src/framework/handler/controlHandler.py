@@ -36,6 +36,10 @@ class KeyboardEventHandler(InterruptHandler):
         self._sig_orn = math_util.zero_vec(3)
 
     @property
+    def name(self):
+        return 'KeyboardControl'
+
+    @property
     def signal(self):
         """
         Get the signal read from interruption.

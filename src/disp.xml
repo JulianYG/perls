@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <disp name="example_gui">
 	<view>
-		<frame name="first person human demo" 
-			type="gui" args="0" options=""/>
 		<option
 			gui_panel="False" 
 			shadow="False"
@@ -15,5 +13,4 @@
             mouse_picking="False"/>
         <camera ego="False" pitch="-35" yaw="50" focus="0 0 0" focal_len="4"/>
 	</view>
-	<control type="keyboard" sensitivity="20" rate="100"/>
 </disp>

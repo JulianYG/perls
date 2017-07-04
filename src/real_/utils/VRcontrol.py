@@ -103,7 +103,7 @@ class RobotController(object):
         self.command_queue = Queue(maxsize=3)
         assert(self.command_queue is not None)
 
-        # this is used to remember the velocity from the last minjerk update
+        # this is used to remember the velocity from the last minjerk hold
         self.v_mj = np.zeros(self.num_joints)
 
         # break state

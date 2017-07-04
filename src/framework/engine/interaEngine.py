@@ -1,7 +1,7 @@
 
-from .base import RealEngine
+from .base import RealStateEngine
 
 
-class InteraEngine(RealEngine):
+class InteraEngine(RealStateEngine):
 
     pass

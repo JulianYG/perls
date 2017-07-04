@@ -17,4 +17,3 @@ class Sawyer(Arm):
         self._tip_offset = math_util.vec([0., 0., 0.155])
         self._rest_pose = (0, -1.18, 0.00, 2.18, 0.00, 0.57, 3.3161)
         self.reset()
-

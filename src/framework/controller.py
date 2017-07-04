@@ -2,12 +2,18 @@
 from .world import World
 from .view import View
 from .adapter import Adapter
-from .engine import physicsEngine
-from .utils import io_util
+from .engine import physicsEngine, renderEngine
+from .utils import io_util, util, math_util
 from .utils.io_util import (FONT,
                             loginfo,
                             logerr)
 from .tool import debugger, tester
+from .handler.base import NullHandler
+from .handler.controlHandler import (KeyboardEventHandler,
+                                     ViveEventHandler,
+                                     AppEventHandler,
+                                     CmdEventHandler)
+from .handler.eventHandler import AssetHandler
 import threading
 
 # TODO: framework should only contain base class controller
@@ -18,9 +24,16 @@ class SimulationController(object):
     """
     The controller in MVC architecture.
     """
-    ENGINE_DIC = dict(bullet=physicsEngine.BulletPhysicsEngine,
-                      mujoco=physicsEngine.MujocoEngine,
-                      gazebo=physicsEngine.GazeboEngine)
+    _PHYSICS_ENGINES = dict(bullet=physicsEngine.BulletPhysicsEngine,
+                            mujoco=physicsEngine.MujocoEngine,
+                            gazebo=physicsEngine.GazeboEngine)
+
+    _GRAPHICS_ENGINES = dict(bullet=renderEngine.BulletRenderEngine)
+
+    _CTRL_HANDLERS = dict(keyboard=KeyboardEventHandler,
+                          vive=ViveEventHandler,
+                          phone=AppEventHandler,
+                          off=NullHandler)
 
     def __init__(self, config_batch):
         """
@@ -43,6 +56,18 @@ class SimulationController(object):
         self._physics_servers = dict()
         self._thread_pool = list()
 
+        self._control_handler = NullHandler()
+        self._event_handler = AssetHandler()
+
+        # space to store useful states
+        self._states = \
+            dict(tool=dict(),
+                 # The log of commands
+                 # or user operations/modifications
+                 # on the world
+                 log=list())
+
+        self._init_time_stamp = None
         self._build()
 
     @property
@@ -55,15 +80,20 @@ class SimulationController(object):
              status: pending/stopped/killed/error/finished,
              world_name: task property related, 
              view_name: exp property related,
-             ... etc, all world/disp/engine related info},
+             ... etc, all world/disp/physics_engine related info},
+             control_type: keyboard/vr/...,
+             running time: steps/ seconds
          instance_id: ......}
         """
         info_dic = {}
-        for s_id, (world, disp, pe) in self._physics_servers.items():
+        for s_id, (world, disp, pe, ctrl_hdlr) in self._physics_servers.items():
             info_dic[s_id] = dict(
                 world_info=world.info,
                 display_info=disp.info,
-                engine_info=pe.info
+                engine_info=pe.info,
+                control=ctrl_hdlr.name,
+                run_time=util.get_elapsed_time(
+                    self._init_time_stamp),
             )
         return info_dic
 
@@ -82,25 +112,23 @@ class SimulationController(object):
             conf = configs[i]
             assert i == conf.id, 'Error loading configuration: invalid id.'
 
-            # Perform loading
-            world, disp, pe = self.load_config(conf)
-            if num_configs > 1 and pe.info['real_time']:
+            # load configs
+            world, disp, ctrl_hdlr = self.load_config(conf)
+            if num_configs > 1 and (not conf.async):
                 logerr('Currently only support multiple instances '
                        'of non-GUI frame and asynchronous simulation. '
                        'GUI or synchronous frame can only run as '
                        'single simulation instance. \nSimulation '
-                       'configuration %d build skipped with error.' % i,
+                       'configuration %d build skipped with error. ' % i,
                        FONT.control)
-                pe.status = 'error'
             else:
-                loginfo('Simulation configuration {} build success.'
+                loginfo('Simulation configuration {} build success. '
                         'Build type: {}'.format(i, conf.build),
                         FONT.control)
+                # Only store successfully loaded configs
+                self._physics_servers[conf.id] = (world, disp, ctrl_hdlr)
 
-            self._physics_servers[conf.id] = (world, disp, pe)
-
-    @staticmethod
-    def load_config(conf):
+    def load_config(self, conf):
         """
         Helper method to load configurations. Not recommended with 
         outside calls unless perform manual check, since it may 
@@ -113,21 +141,35 @@ class SimulationController(object):
         :param conf: configuration to load.
         Currently only support three types of engines: 
         Bullet Physics, Mujoco, and Gazebo.
-        :return: loaded tuple (world, display, physics engine)
+        :return: loaded tuple (world, display, physics physics_engine)
         """
-        # Initialize physics engine
-        pe = SimulationController.ENGINE_DIC[conf.engine](
-            conf.id,
-            conf.max_run_time,
+
+        # Initialize graphics engine (rendering engine)
+        ge = self._GRAPHICS_ENGINES[conf.graphics_engine](
+            conf.disp_info,
             conf.job,
             conf.video,
-            conf.async,
-            conf.step_size,
             log_dir=conf.log
         )
-        world = World(conf.model_desc, pe)
-        display = View(conf.view_desc, Adapter(world), pe)
 
+        # Initialize physics engine (state engine)
+        pe = SimulationController._PHYSICS_ENGINES[conf.physics_engine](
+            conf.id,
+            ge.ps_id,
+            conf.max_run_time,
+            conf.async,
+            conf.step_size,
+        )
+
+        world = World(conf.model_desc, pe)
+        display = View(conf.view_desc, Adapter(world), ge)
+
+        # Set up control event interruption handlers
+        # TODO
+
+        ctrl_handler = self._CTRL_HANDLERS[conf.control_type](
+            conf.sensitivity, conf.rate
+        )
         if conf.build == 'debug':
             world = debugger.ModelDebugger(world)
             display = debugger.ViewDebugger(display)
@@ -135,14 +177,24 @@ class SimulationController(object):
             world = tester.ModelTester(world)
             display = tester.ViewTester(display)
 
-        # Give record name for physics engine
+        # Give record name for physics physics_engine
         if conf.job == 'record' or conf.job == 'replay':
-            pe.record_name = \
+            ge.record_name = \
                 conf.record_name or \
                 '{}_{}'.format(world.info['name'],
                                display.info['name'])
 
-        return world, display, pe
+        # connect to bullet graphics/display engine server,
+        # Build display first to load world faster
+        display.build()
+        world.build()
+
+        # Special case for keyboard control on View side
+        if conf.control_type == 'keyboard':
+            # Disable keyboard shortcuts for keyboard control
+            display.disable_hotkeys()
+
+        return world, display, ctrl_handler
 
     def start_all(self):
         """
@@ -170,19 +222,68 @@ class SimulationController(object):
         configuration id) to start.
         :return: None
         """
-        # First build the simulation
-        world, display, pe = self._physics_servers[server_id]
-        display.build()
-        world.build()
-        # Finally start
+
+        world, display, ctrl_handler = self._physics_servers[server_id]
+
+        # Preparing variables
+        time_up, done, success = False, False, False
+        self._init_time_stamp = util.get_abs_time()
+
+        track_targets = world.get_states(('env', 'target'))[0]
+        status = display.run(track_targets)
+
+        if status == -1:
+            logerr('Error loading simulation', FONT.disp)
+            self.stop(server_id)
+            return
+        elif status == 1:
+            self.stop(server_id)
+            loginfo('Replay finished. Exiting...', FONT.disp)
+            return
+        else:
+            loginfo('Display configs loaded. Starting simulation...',
+                    FONT.disp)
+
+        # Kick start the model
+        world.boot()
+
+        # Update initial control states
+        init_states = world.get_states(('tool', 'pose'))[0]
+        for tid, init_pose in init_states.items():
+            self._states['tool'][tid] = init_pose
+
+        # Finally start control loop
         try:
-            display.start()
+            while not time_up or done:
+                elt = util.get_elapsed_time(self._init_time_stamp)
+
+                # Perform control interruption first
+                self._control_interrupt(world, ctrl_handler.signal)
+
+                # Update model
+                time_up = world.update(elt)
+
+                # Update view with camera info
+                # TODO
+                display.update({})
+
+                # Next check task completion, communicate
+                # with the model
+                # TODO
+                # done, success = self._checker_interrupt()
+
+            if success:
+                loginfo('Task success! Exiting simulation...',
+                        FONT.disp)
+            else:
+                loginfo('Task failed! Exiting simulation...',
+                        FONT.disp)
         except KeyboardInterrupt:
             loginfo('User exits the program by ctrl+c.',
                     FONT.warning)
-            display.exit_routine()
+            self.stop(server_id)
 
-    def stop(self, server_id=0):
+    def stop(self, server_id):
         """
         Hang the simulation.
         :param server_id: physics server id (a.k.a. simulation id,
@@ -190,7 +291,10 @@ class SimulationController(object):
         can use start to resume. 
         :return: None
         """
-        pass
+        world, display, _ = self._physics_servers[server_id]
+        display.close()
+        world.clean_up()
+        loginfo('Safe exit.', FONT.control)
 
     def kill(self, server_id=0):
         """
@@ -201,5 +305,118 @@ class SimulationController(object):
         configuration id)) to kill.
         :return: None
         """
+        # TODO
         self._thread_pool[server_id] = None
 
+    def _control_interrupt(self, world, signal):
+        """
+        The control interruption, jumps to control defined
+        in xml file, process the control signals and
+        jumps back to the loop.
+        :return: None
+        """
+        commands, instructions = signal['cmd'], signal['instruction']
+        if commands or instructions:
+            tool = world.get_tool(signal['tid'], signal['key'])
+
+            # First check if there's low level commands
+            # TODO: Think if cmd/ins needs to be a class
+            # A sequential list of commands to execute in order
+            # These low level commands are set to absolute
+            # values in all cases
+            for cmd in commands:
+                method, value = cmd
+                if method == 'pos':
+                    tool.tool_pos = value
+                elif method == 'orn':
+                    tool.tool_orn = value
+                elif method == 'joint_states':
+                    tool.joint_states = value
+                else:
+                    loginfo('Unrecognized command type. Skipped',
+                            FONT.ignore)
+
+            # Next perform high level instructions
+            for ins in instructions:
+                # Use None for no value
+                method, value = ins
+
+                # Note this reset does not reset the elapsed
+                # run time. The user is forced to finish the
+                # task in limited amount of time.
+                if method == 'rst':
+                    loginfo('Resetting...', FONT.model)
+                    world.reset()
+
+                    # Update the states again
+                    self.states = world.get_states(
+                        ('tool', 'pose'))[0]
+
+                    loginfo('World is reset.', FONT.model)
+                elif method == 'reach':
+                    # Cartesian, quaternion
+                    r_pos, a_orn = value
+                    i_pos, _ = self._states['tool'][tool.tid]
+
+                    # Orientation is always relative to the
+                    # world frame, that is, absolute
+                    r = math_util.quat2mat(tool.orn)
+
+                    if r_pos is not None:
+                        # Increment to get absolute pos
+                        # Take account of rotation
+                        i_pos += r.dot(r_pos)
+                        pos_diff, orn_diff = tool.reach(i_pos, None)
+                    else:
+                        ###
+                        # Note: clipping does not happen here because
+                        # arm and gripper are treated in the same way.
+                        # Clipping would result in gripper not able to
+                        # change orn. However, clipping here would give
+                        # arm perfect response. Currently the arm end
+                        # effector will switch position when reaching its
+                        # limit. This is trade-off, sadly.
+                        pos_diff, orn_diff = tool.reach(None, a_orn)
+
+                    # Update state orientation all the time
+                    # Note by intuition, position should be updated too.
+                    # However, due to the limitation of IK, this will
+                    # cause robot arm act weirdly.
+                    state_pose = self._states['tool'][tool.tid]
+                    self._states['tool'][tool.tid] = \
+                        (state_pose[0], tool.tool_orn)
+
+                    # If the tool is out of reach, hold the adapter states
+                    # TODO: make the threshold configs
+                    # if math_util.rms(pos_diff) > 1.5 or \
+                    #    math_util.rms(orn_diff) > 5.0:
+                    #     self.states = world.get_states(
+                    #     ('tool', 'pose'))[0]
+
+                elif method == 'grasp':
+                    tool.grasp(value)
+                elif method == 'pick_and_place':
+                    tool.pick_and_place(*value)
+
+        # self._adapter.react(signal)
+        #
+        # # GUI frame allow user to interact with the world
+        # # dynamically, and vividly
+        # if self._frame == 'gui':
+        #     info = self._event_handler.signal
+        #     if info:
+        #         self._adapter.update_world(info)
+
+                # Allow changing camera view
+
+
+    def _checker_interrupt(self, signal):
+        """
+        Checker interrupt, performs checking on current
+        world states and report status.
+        :return: (done, success) tuple, where 'done' is
+        boolean and 'success' is a scalar, either 0/1
+        binary, or float in [0,1] representing quality.
+        """
+        status = self._adapter.check_world_states()
+        return status

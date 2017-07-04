@@ -174,18 +174,6 @@ class Arm(Tool):
         Reset tool to initial positions
         :return: None
         """
-        # Reset gripper
-        if self._gripper:
-            self._gripper.reset()
-            # Attach gripper
-            self.attach_children = \
-                (self._dof - 1,
-                 self._gripper.uid,
-                 0, 'fixed',
-                 [0., 0., 0.], self._tip_offset,
-                 [0., 0., 0.],
-                 # TODO: Check if can use [0., 0., 0.707, 0.707] for child orn
-                 [0., 0., 0., 1.], [0., 0., 0., 1.])
         # Reset arm
         self.joint_states = \
             (self._joints,
@@ -193,8 +181,23 @@ class Arm(Tool):
              'position',
              dict(positionGains=(.05,) * self._dof,
                   velocityGains=(1.,) * self._dof))
+        self._engine.hold()
 
-        self._engine.update()
+        # Reset gripper
+        if self._gripper:
+
+            # Attach gripper
+            self.attach_children = \
+                (self._end_idx,
+                 self._gripper.uid,
+                 0, 'fixed',
+                 [0., 0., 0.], self._tip_offset,
+                 [0., 0., 0.],
+                 # TODO: Check if can use [0., 0., 0.707, 0.707] for child orn
+                 [0., 0., 0., 1.], [0., 0., 0., 1.])
+
+            self._gripper.reset()
+
 
     def reach(self, pos=None, orn=None):
         """

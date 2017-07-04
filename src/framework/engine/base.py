@@ -3,12 +3,17 @@ class Engine(object):
     pass
 
 
-class RealEngine(Engine):
+class RealStateEngine(Engine):
 
     pass
 
 
-class FakeEngine(Engine):
+class FakeStateEngine(Engine):
+
+    pass
+
+
+class GraphicsEngine(Engine):
 
     pass
 
