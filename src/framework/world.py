@@ -66,8 +66,8 @@ class World(object):
         """
         return dict(
             name=self.name_str,
-            tools=[t.name for t in self._tools],
-            tracking_bodies=[b.name for b in self._target_bodies],
+            tools=[t.name for t in self._tools.values()],
+            tracking_bodies=[self._bodies[b].name for b in self._target_bodies],
             assets=self._bodies.keys(),
             engine=self._engine.info
         )
@@ -178,35 +178,37 @@ class World(object):
 
             # Tools are labeled by tool_id's
             self._tools[gripper_body.tid] = gripper_body
-
+            self._bodies[gripper_body.uid] = gripper_body
             # Target bodies are listed as a bunch of uid's
             self._target_bodies.append(gripper_body.uid)
 
         for i in range(len(parse_tree.arm)):
+            arm_spec = parse_tree.arm[i]
 
-            arm = parse_tree.arm[i]
-
-            assert i == arm['id']
-            gripper_spec = arm['gripper']
+            assert i == arm_spec['id']
+            gripper_spec = arm_spec['gripper']
             gripper_body = self.GRIPPER_TYPE[gripper_spec['type']](
                 math_util.rand_bigint(),
                 self._engine,
                 path=gripper_spec['path'])
+            gripper_body.name = gripper_spec['name']
 
             # Note here not appending gripper into tools since
             # we can only operate it through the arm
-            # TODO: confirm this is necessary
             self._target_bodies.append(gripper_body.uid)
+            self._bodies[gripper_body.uid] = gripper_body
 
-            arm_body = self.ARM_TYPE[arm['type']](
-                arm['id'],
+            arm_body = self.ARM_TYPE[arm_spec['type']](
+                arm_spec['id'],
                 self._engine,
-                path=arm['path'],
-                pos=arm['pos'], orn=arm['orn'],
-                null_space=arm['null_space'],
+                path=arm_spec['path'],
+                pos=arm_spec['pos'], orn=arm_spec['orn'],
+                null_space=arm_spec['null_space'],
                 gripper=gripper_body)
+            arm_body.name = arm_spec['name']
 
             self._tools[arm_body.tid] = arm_body
+            self._bodies[arm_body.uid] = arm_body
             self._target_bodies.append(arm_body.uid)
 
         for asset in parse_tree.scene:
@@ -216,7 +218,7 @@ class World(object):
                               orn=asset['orn'],
                               fixed=asset['fixed'])
 
-            self._bodies[asset_body.name] = asset_body
+            self._bodies[asset_body.uid] = asset_body
             if asset['record']:
                 self._target_bodies.append(asset_body.uid)
 

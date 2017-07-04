@@ -322,6 +322,15 @@ class Body(object):
         """
         return self._text_markers
 
+    @name.setter
+    def name(self, string):
+        """
+        Set the name of the body
+        :param string: name string
+        :return: None
+        """
+        raise NotImplementedError('Method <name.setter> not implemented for Body')
+
     @fix.setter
     def fix(self, (pos, orn)):
         """
@@ -674,6 +683,16 @@ class Tool(Body):
         self._close_grip = False
         self._dof = len(self._joints)
         self._tip_offset = math_util.zero_vec(3)
+        self._name = Body.name
+
+    @property
+    def name(self):
+        """
+        The name string of the tool. Default is given
+        by asset file, but user can choose own name in config
+        :return: string
+        """
+        return self._name
 
     @property
     def tid(self):
@@ -700,6 +719,14 @@ class Tool(Body):
         """
         raise NotImplementedError('Method <tool_orn> not implemented for tool')
 
+    @name.setter
+    def name(self, string):
+        """
+        Set the name of the tool
+        :param string:
+        :return: None
+        """
+        self._name = string
     ###
     #  Low level control functionality
 

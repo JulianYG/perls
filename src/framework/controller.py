@@ -175,12 +175,12 @@ class SimulationController(object):
         )
 
         # TODO
-        # if conf.build == 'debug':
-        #     world = debugger.ModelDebugger(world)
-        #     display = debugger.ViewDebugger(display)
-        # elif conf.build == 'test':
-        #     world = tester.ModelTester(world)
-        #     display = tester.ViewTester(display)
+        if conf.build == 'debug':
+            world = debugger.ModelDebugger(world)
+            display = debugger.ViewDebugger(display)
+        elif conf.build == 'test':
+            world = tester.ModelTester(world)
+            display = tester.ViewTester(display)
 
         # Give record name for physics physics_engine
         if conf.job == 'record' or conf.job == 'replay':
