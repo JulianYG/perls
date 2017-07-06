@@ -6,8 +6,8 @@ class MouseEventHandler(InterruptHandler):
 
 class AssetHandler(InterruptHandler):
 
-    def __init__(self, rate=100):
-        super(AssetHandler, self).__init__(rate)
+    def __init__(self, ps_id, rate=100):
+        super(AssetHandler, self).__init__(ps_id, rate)
 
     def save_assets(self):
 

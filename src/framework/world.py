@@ -160,7 +160,8 @@ class World(object):
         self.name_str = parse_tree.env['title']
 
         # Load task completion checker
-        self._checker = taskHandler.Checker(self.name_str)
+        self._checker = taskHandler.Checker(self._engine.ps_id, 
+                                            self.name_str)
 
         for gripper in parse_tree.gripper:
             gripper_body = self.GRIPPER_TYPE[gripper['type']](

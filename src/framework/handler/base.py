@@ -35,4 +35,4 @@ class NullHandler(InterruptHandler):
     Singleton placeholder
     """
     def __init__(self, a=None, b=None):
-        super(NullHandler, self).__init__(0.)
+        super(NullHandler, self).__init__(0, 0.)

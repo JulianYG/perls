@@ -10,8 +10,8 @@ class Checker(InterruptHandler):
     """
     Check if given task is finished
     """
-    def __init__(self, env_name):
-        super(Checker, self).__init__(100)
+    def __init__(self, ps_id, env_name):
+        super(Checker, self).__init__(ps_id, 100)
         self._name = env_name
 
     def check(self):

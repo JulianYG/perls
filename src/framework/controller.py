@@ -56,9 +56,6 @@ class SimulationController(object):
         self._physics_servers = dict()
         self._thread_pool = list()
 
-        self._control_handler = NullHandler()
-        self._event_handler = AssetHandler()
-
         # space to store useful states
         self._states = \
             dict(tool=dict(),
@@ -169,6 +166,7 @@ class SimulationController(object):
 
         # Set up control event interruption handlers
         # TODO
+        # event_handler = 
 
         ctrl_handler = self._CTRL_HANDLERS[conf.control_type](
             pe.ps_id, conf.sensitivity, conf.rate
