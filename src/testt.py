@@ -5,13 +5,15 @@ p.connect(p.GUI)
 p.setRealTimeSimulation(1)
 	
 import numpy as np
+np.set_printoptions(2, suppress=True)
 
-width, height, vmat, projmat, _, _, _, _, yaw, pitch, dist, target = p.getDebugVisualizerCamera()
+width, height, vmat, projmat, up, forward, _, _, yaw, pitch, dist, target = p.getDebugVisualizerCamera()
 
 vmat = np.array(vmat).reshape((4,4))
 projmat = np.array(projmat).reshape((4,4))
 vp = projmat.dot(vmat)
 
+print(up, forward)
 # print(proj[:3,:3].dot(x[:3,:3]).dot(np.array([512,378,1])))
 # point3d = vp.dot(np.array([0,0,0,1]))
 
@@ -19,6 +21,7 @@ vp = projmat.dot(vmat)
 # print((point3d[0] + 1) / 2. * width /2 , (1 - point3d[1]) / 2. * height/2)
 p.loadURDF('cube_small.urdf',(1,0,0))
 print(vmat, np.linalg.inv(vmat), 'fuck')
+# print(p.getDebugVisualizerCamera())
 _AXES2TUPLE = {
     'sxyz': (0, 0, 0, 0), 'sxyx': (0, 0, 1, 0), 'sxzy': (0, 1, 0, 0),
     'sxzx': (0, 1, 1, 0), 'syzx': (1, 0, 0, 0), 'syzy': (1, 0, 1, 0),
@@ -31,7 +34,7 @@ _AXES2TUPLE = {
 
 for x in _AXES2TUPLE.keys():
 	vvv = np.array(math_util.mat2quat(np.linalg.inv(vmat[:3,:3])))
-	print(vvv * 180 / np.pi, x)
+	# print(vvv * 180 / np.pi, x)
 while 1:
 
 	for e in p.getMouseEvents():

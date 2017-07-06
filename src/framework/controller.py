@@ -356,7 +356,7 @@ class SimulationController(object):
                     world.reset()
 
                     # Update the states again
-                    self.states = world.get_states(
+                    self._states['tool'] = world.get_states(
                         ('tool', 'pose'))[0]
 
                     loginfo('World is reset.', FONT.model)
@@ -397,7 +397,7 @@ class SimulationController(object):
                     # TODO: make the threshold configs
                     if math_util.rms(pos_diff) > 5. or \
                        math_util.rms(orn_diff) > 10.:
-                        self.states = world.get_states(
+                        self._states = world.get_states(
                         ('tool', 'pose'))[0]
 
                 elif method == 'grasp':
