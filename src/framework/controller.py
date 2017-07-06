@@ -171,7 +171,7 @@ class SimulationController(object):
         # TODO
 
         ctrl_handler = self._CTRL_HANDLERS[conf.control_type](
-            conf.sensitivity, conf.rate
+            pe.ps_id, conf.sensitivity, conf.rate
         )
 
         # TODO

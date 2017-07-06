@@ -1,9 +1,10 @@
 
 class InterruptHandler(object):
 
-    def __init__(self, rate):
+    def __init__(self, ps_id, rate):
 
         self._rate = rate
+        self._id = ps_id
         self._signal = dict(
             tid=0, key=None, cmd=list(), instruction=list())
 
@@ -22,7 +23,7 @@ class InterruptHandler(object):
 
     @property
     def name(self):
-        return 'Interrupt'
+        return 'InterruptHandler'
 
     @property
     def signal(self):

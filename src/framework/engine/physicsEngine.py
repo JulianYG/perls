@@ -187,24 +187,39 @@ class BulletPhysicsEngine(FakeStateEngine):
         return np.array(p.getBasePositionAndOrientation(
             uid, physicsClientId=self._physics_server_id)[0])
 
-    def get_body_scene_orientation(self, uid, type):
+    def get_body_scene_orientation(self, uid, otype='quat'):
 
         orn = p.getBasePositionAndOrientation(
             uid, physicsClientId=self._physics_server_id)[1]
-        if type == 'quaternion':
+        if otype == 'quat':
             return np.array(orn)
-        elif type == 'euler':
+        elif otype == 'euler':
             return np.array(p.getEulerFromQuaternion(orn))
         else:
             loginfo('Unrecognized orientation form.', FONT.ignore)
 
-    def get_body_camera_position(self):
+    def get_body_camera_position(self, uid, (camera_pos, camera_orn)):
 
-        return None
+        body_pose = p.getBasePositionAndOrientation(uid, self._physics_server_id)
+        camera_frame = math_util.pose2mat((camera_pos, camera_orn))
+        frame_pose = math_util.relative_pose(body_pose, camera_frame)
 
-    def get_body_camera_orientation(self, uid, type):
+        return frame_pose[3, :3]
 
-        return None
+    def get_body_camera_orientation(self, uid,
+                                    (camera_pos, camera_orn), otype):
+
+        body_pose = p.getBasePositionAndOrientation(uid, self._physics_server_id)
+        camera_frame = math_util.pose2mat((camera_pos, camera_orn))
+        frame_pose = math_util.relative_pose(body_pose, camera_frame)
+        orn = frame_pose[:3, :3]
+
+        if otype == 'quat':
+            return math_util.mat2quat(orn)
+        elif otype == 'euler':
+            return math_util.mat2euler(orn)
+        else:
+            loginfo('Unrecognized orientation form.', FONT.ignore)
 
     def set_body_scene_pose(self, uid, pos, orn):
         status = 0
@@ -213,8 +228,8 @@ class BulletPhysicsEngine(FakeStateEngine):
                 uid, pos, orn, physicsClientId=self._physics_server_id)
         except p.error:
             status = -1
-            logerr('BulletPhysicsEngine captured exception: ' + \
-                  p.error.message, FONT.model)
+            logerr('BulletPhysicsEngine captured exception: ' +
+                   p.error.message, FONT.model)
             self.status = BulletPhysicsEngine._STATUS[-1]
             self._error_message.append(p.error.message)
         return status

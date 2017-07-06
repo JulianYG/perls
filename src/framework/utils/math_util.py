@@ -42,6 +42,23 @@ def approximate(val, n_digits):
                     dtype=np.float32)
 
 
+def pose2mat((pos, orn)):
+
+    homo_pose_mat = np.zeros((4, 4), dtype=np.float32)
+    homo_pose_mat[:3, :3] = quat2mat(orn)
+    homo_pose_mat[3, :3] = np.array(pos, dtype=np.float32)
+    homo_pose_mat[3, 3] = 1.
+
+    return homo_pose_mat
+
+
+def relative_pose(obj_pose, frame):
+
+    obj_pose_homo = pose2mat(obj_pose)
+    frame_pose = np.linalg.inv(frame).dot(obj_pose_homo)
+    return frame_pose
+
+
 def transform(poseA, poseB):
     return p.multiplyTransforms(poseA[0], poseA[1], poseB[0], poseB[1])
 

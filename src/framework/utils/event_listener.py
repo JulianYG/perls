@@ -88,12 +88,12 @@ def listen_to_bullet_mouse(ps_id=0):
     return getMouseEvents(physicsClientId=ps_id)
 
 
-def listen_to_bullet_vive(dtype, ps_id=0):
+def listen_to_bullet_vive(ps_id=0, *dtype):
     t = 0
-    for device in (dtype,):
+    for device in dtype:
         t |= DEVICE_TYPE[device]
-    return getVREvents(deviceTypeFilter=t,
-                       physicsClientId=ps_id)
+    return (getVREvents(deviceTypeFilter=t,
+                        physicsClientId=ps_id))
 
 
 def listen_to_redis(queue):

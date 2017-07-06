@@ -15,21 +15,44 @@ _EVENT_LABEL = {
 }
 
 
-class CmdEventHandler(InterruptHandler):
+class ControlHandler(InterruptHandler):
+    """
+    Base class for control interrupt handling
+    """
+    def __init__(self, ps_id, sensitivity=1, rate=100):
+        super(ControlHandler, self).__init__(ps_id, rate)
+        self._sens = sensitivity
+
+    @property
+    def name(self):
+        return 'ControlHandler'
+
+    @property
+    def signal(self):
+        return self._signal
+
+
+class CmdEventHandler(ControlHandler):
     """
     For algorithmic learning usage, such as 
     passing commands into gym environment.
     """
-    pass
+    def __init__(self, ps_id, sensitivity=1, rate=0):
+        super(CmdEventHandler, self).__init__(ps_id, 1, 0)
+
+    @property
+    def name(self):
+        return 'CmdControl'
+
+    # TODO
 
 
-class KeyboardEventHandler(InterruptHandler):
+class KeyboardEventHandler(ControlHandler):
     """
     Handler for keyboard events/signal
     """
-    def __init__(self, sensitivity, rate=100):
-        super(KeyboardEventHandler, self).__init__(rate)
-        self._sens = sensitivity
+    def __init__(self, ps_id, sensitivity=1, rate=100):
+        super(KeyboardEventHandler, self).__init__(ps_id, sensitivity, rate)
 
         # Keep a private orientation vec to simulate
         # effect of absolute orientation
@@ -50,7 +73,7 @@ class KeyboardEventHandler(InterruptHandler):
         self._signal['cmd'] = list()
         ins = list()
 
-        events = event_listener.listen_to_bullet_keyboard()
+        events = event_listener.listen_to_bullet_keyboard(self._id)
         time.sleep(1. / self._rate)
 
         for long_key, const in events.items():
@@ -81,27 +104,64 @@ class KeyboardEventHandler(InterruptHandler):
         return self._signal
 
 
-class ViveEventHandler(InterruptHandler):
+class ViveEventHandler(ControlHandler):
     """
     Handles VR controller events/signal
     """
-    def __init__(self, rate):
-        super(ViveEventHandler, self).__init__(rate)
+    def __init__(self, ps_id, sensitivity=1, rate=100):
+        super(ViveEventHandler, self).__init__(ps_id, sensitivity, rate)
+
+        # Initialize positions
+        # Keep a private position vec to simulate
+        # effect of relative position. This is the
+        # opposite of KeyboardEventHandler
+        self._sig_orn = math_util.zero_vec(3)
+
+        self._controllers = dict()
+
+        c_id = event_listener.listen_to_bullet_vive(self._id)
+
+    @property
+    def name(self):
+        return 'VRControl'
 
     @property
     def signal(self):
+        self._signal['cmd'] = list()
+        ins = list()
+
+        events = event_listener.listen_to_bullet_vive(
+            self._id, 'controller')
+        time.sleep(1. / self._rate)
+
+        for c_id, pos, orn, slide, _, _, button, _ in events:
+            pass
+
+        self._signal['ins'] = ins
+
+        return self._signal
+
+    def _register(self):
+        """
+        Register the newly connected controller device
+        :return: None
+        """
         pass
 
 
-class AppEventHandler(InterruptHandler):
+class AppEventHandler(ControlHandler):
     """
     Handler for keyboard events/signal
     """
 
-    def __init__(self, ip='localhost', port=6379, rate=100):
-        super(AppEventHandler, self).__init__(rate)
-        self._comm = network.RedisComm(ip, port)
+    def __init__(self, ps_id, sensitivity=1, rate=100):
+        super(AppEventHandler, self).__init__(ps_id, sensitivity, rate)
+        self._comm = network.RedisComm('localhost', port=6379, db=0)
         self._comm.connect_to_channel('redis')
+
+    @property
+    def name(self):
+        return 'PhoneControl'
 
     @property
     def signal(self):
@@ -112,17 +172,34 @@ class AppEventHandler(InterruptHandler):
             self._comm.channels['redis'])
         time.sleep(1. / self._rate)
 
-        for label_id, value in events:
+        # for label_id, value in events:
+        #
+        #     label = _EVENT_LABEL[label_id]
+        #
+        #     if label_id < 4:
+        #         ins.append((label, value))
+        #     elif label_id == 4:
+        #         ins.append(('reach', (value, None)))
+        #     elif label_id == 5:
+        #         # Scale by sensitivity
+        #         orn = value[:3] * value[3]
+        #         ins.append(('reach', (None, orn)))
 
-            label = _EVENT_LABEL[label_id]
-            if label_id < 4:
-                ins.append((label, value))
-            elif label_id == 4:
-                ins.append(('reach', (value, None)))
-            elif label_id == 5:
-                # Scale by sensitivity
-                orn = value[:3] * value[3]
-                ins.append(('reach', (None, orn)))
+        for event_dic in events:
+
+            # label = _EVENT_LABEL[label_id]
+            # ins.append(('pos', event_dic['pos']))
+            ins.append(('rst', event_dic['rst']))
+            ins.append(('grasp', event_dic['grasp']))
+
+            ins.append(('reach', (event_dic['pos'], None)))
+
+            ins.append(('reach', (None, event_dic['orn'])))
+
+            # elif label == 'orn':
+            #     # Scale by sensitivity
+            #     orn = value[:3] * value[3]
+            #     ins.append(('reach', (None, orn)))
 
         self._signal['instruction'] = ins
         return self._signal

@@ -60,7 +60,7 @@ class Body(object):
         Get base orientation of the body in quaternion form
         :return: vec4 numpy float array of orientation of body
         """
-        return self._engine.get_body_scene_orientation(self._uid, type='quaternion')
+        return self._engine.get_body_scene_orientation(self._uid, type='quat')
     
     @property
     def pose(self):
