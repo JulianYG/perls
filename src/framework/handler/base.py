@@ -29,6 +29,9 @@ class InterruptHandler(object):
     def signal(self):
         return self._signal
 
+    def stop(self):
+        raise NotImplementedError('<stop> is not implemented for InterruptHandler')
+
 
 class NullHandler(InterruptHandler):
     """

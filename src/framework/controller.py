@@ -295,9 +295,12 @@ class SimulationController(object):
         can use start to resume. 
         :return: None
         """
-        world, display, _ = self._physics_servers[server_id]
-        display.close()
+        world, display, ctrl_handler = self._physics_servers[server_id]
+        
+        ctrl_handler.stop()
         world.clean_up()
+        display.close()
+
         loginfo('Safe exit.', FONT.control)
 
     def kill(self, server_id=0):
@@ -348,7 +351,7 @@ class SimulationController(object):
                 # Note this reset does not reset the elapsed
                 # run time. The user is forced to finish the
                 # task in limited amount of time.
-                if method == 'rst':
+                if method == 'rst' and value:
                     loginfo('Resetting...', FONT.model)
                     world.reset()
 
@@ -392,10 +395,10 @@ class SimulationController(object):
 
                     # If the tool is out of reach, hold the adapter states
                     # TODO: make the threshold configs
-                    # if math_util.rms(pos_diff) > 1.5 or \
-                    #    math_util.rms(orn_diff) > 5.0:
-                    #     self.states = world.get_states(
-                    #     ('tool', 'pose'))[0]
+                    if math_util.rms(pos_diff) > 5. or \
+                       math_util.rms(orn_diff) > 10.:
+                        self.states = world.get_states(
+                        ('tool', 'pose'))[0]
 
                 elif method == 'grasp':
                     tool.grasp(value)

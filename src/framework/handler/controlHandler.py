@@ -154,10 +154,11 @@ class AppEventHandler(ControlHandler):
     Handler for keyboard events/signal
     """
 
-    def __init__(self, ps_id, sensitivity=1, rate=100):
+    def __init__(self, ps_id, sensitivity=1, rate=100, channel_name='ios_channel'):
         super(AppEventHandler, self).__init__(ps_id, sensitivity, rate)
         self._comm = network.RedisComm('localhost', port=6379, db=0)
-        self._comm.connect_to_channel('redis')
+        self._channel_name = channel_name
+        self._comm.connect_to_channel(channel_name)
 
     @property
     def name(self):
@@ -169,7 +170,7 @@ class AppEventHandler(ControlHandler):
         ins = list()
 
         events = event_listener.listen_to_redis(
-            self._comm.channels['redis'])
+            self._comm.channels[self._channel_name])
         time.sleep(1. / self._rate)
 
         # for label_id, value in events:
@@ -187,19 +188,18 @@ class AppEventHandler(ControlHandler):
 
         for event_dic in events:
 
-            # label = _EVENT_LABEL[label_id]
-            # ins.append(('pos', event_dic['pos']))
+            # TODO: key and id
+
             ins.append(('rst', event_dic['rst']))
             ins.append(('grasp', event_dic['grasp']))
 
-            ins.append(('reach', (event_dic['pos'], None)))
-
-            ins.append(('reach', (None, event_dic['orn'])))
-
-            # elif label == 'orn':
-            #     # Scale by sensitivity
-            #     orn = value[:3] * value[3]
-            #     ins.append(('reach', (None, orn)))
+            ins.append(('reach', (math_util.vec(event_dic['pos']) * self._sens, None)))
+            orn = math_util.vec(event_dic['orn'])  * 3.1415927 / 180 
+            ins.append(('reach', (None, math_util.euler2quat(orn))))
 
         self._signal['instruction'] = ins
         return self._signal
+
+    def stop(self):
+
+        self._comm.disconnect()
