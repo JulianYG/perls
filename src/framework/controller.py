@@ -356,8 +356,14 @@ class SimulationController(object):
                     world.reset()
 
                     # Update the states again
-                    self.states = world.get_states(
+
+                    tool.joint_states = world.get_states(
+                        ('tool', 'joint_states'))[tool.tid]
+                    self._states['tool'] = world.get_states(
                         ('tool', 'pose'))[0]
+
+                    # self._states['tool'] = world.get_states(
+                    #     ('tool', 'pose'))[0]
 
                     loginfo('World is reset.', FONT.model)
                 elif method == 'reach':
@@ -395,11 +401,11 @@ class SimulationController(object):
 
                     # If the tool is out of reach, hold the adapter states
                     # TODO: make the threshold configs
-                    if math_util.rms(pos_diff) > 5. or \
+                    if math_util.rms(pos_diff) > 2. or \
                        math_util.rms(orn_diff) > 10.:
-                        self.states = world.get_states(
-                        ('tool', 'pose'))[0]
-
+                        self._states['tool'] = world.get_states(
+                            ('tool', 'pose'))[0]
+                        # pass
                 elif method == 'grasp':
                     tool.grasp(value)
                 elif method == 'pick_and_place':
