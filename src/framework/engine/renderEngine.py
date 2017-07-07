@@ -104,8 +104,8 @@ class BulletRenderEngine(GraphicsEngine):
             info = p.getDebugVisualizerCamera(self._server_id)
             return dict(
                 frame_width=info[0], frame_height=info[1],
-                view_mat=np.array(info[2], dtype=np.float32).reshape((4, 4)),
-                projection_mat=np.array(info[3], dtype=np.float32).reshape((4, 4)),
+                view_mat=np.array(info[2], dtype=np.float32).reshape((4, 4)).T,
+                projection_mat=np.array(info[3], dtype=np.float32).reshape((4, 4)).T,
                 up=np.where(info[4])[0][0],
                 yaw=info[8], pitch=info[9], focal_len=info[10],
                 focus=info[11],
@@ -155,13 +155,33 @@ class BulletRenderEngine(GraphicsEngine):
 
     ###
     #  Helper functions
-    def get_camera_pose(self):
-        view_matrix = self.camera['view_mat']
-        transformation_matrix = np.linalg.inv(view_matrix)
+    def get_camera_pose(self, up=(0.,1.,0.), otype='quat'):
+        view_matrix = self.camera['view_mat'].T
+        perm = [2, 0, 1]
+        if up == (0, 1, 0):
+            view_matrix = view_matrix.dot(np.array(
+                [[-1, 0, 0, 0],
+                 [0, 0, 1, 0],
+                 [0, 1, 0, 0],
+                 [0, 0, 0, 1]],
+                dtype=np.float32
+            ))
 
-        # TODO: Check the orientation correctness
-        return transformation_matrix[3, :3], \
-            math_util.mat2quat(transformation_matrix[:3, :3])
+        transformation_matrix = math_util.mat_inv(view_matrix)
+        pos = transformation_matrix[3, :3]
+        orn = math_util.mat2euler(transformation_matrix[:3, :3],
+                                  axes='sxyx')[perm]
+        if otype == 'quat':
+            orn = math_util.euler2quat(tuple(orn))
+        elif otype == 'deg':
+            orn = math_util.deg(orn)
+        elif otype == 'rad':
+            pass
+        else:
+            loginfo('Unrecognized orientation type. '
+                    'Choose among quat, deg, and rad',
+                    FONT.ignore)
+        return pos, orn
 
     def _build(self):
         # Convert to bullet constant

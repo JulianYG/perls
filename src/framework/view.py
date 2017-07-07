@@ -60,6 +60,13 @@ class View:
         """
         self._engine.disable_hotkeys()
 
+    def get_camera_pose(self, otype='orn'):
+        """
+        Get
+        :return:
+        """
+        return
+
     def update(self, camera_info, *_):
         """
         Update the view, mainly resetting the camera

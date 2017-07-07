@@ -3,7 +3,6 @@ import numpy as np
 import math
 
 
-
 _EPS = np.finfo(float).eps * 4.
 
 # axis sequences for Euler angles
@@ -40,6 +39,12 @@ def joint_clip(joint_pos, joint_spec):
 def approximate(val, n_digits):
     return np.array([float('%.{}g'.format(n_digits) % v) for v in val],
                     dtype=np.float32)
+
+
+def cross(x, y, axis=None):
+    if axis:
+        return np.cross(x, y, axis=axis)
+    return np.cross(x, y)
 
 
 def pose2mat((pos, orn)):
@@ -189,7 +194,15 @@ def mat2euler(rmat, axes='sxyz'):
         ax, ay, az = -ax, -ay, -az
     if frame:
         ax, az = az, ax
-    return ax, ay, az
+    return vec((ax, ay, az))
+
+
+def deg(euler):
+    return np.array(euler) * 180. / np.pi
+
+
+def rad(euler):
+    return np.array(euler) * np.pi / 180.
 
 
 def quat2euler(quaternion):

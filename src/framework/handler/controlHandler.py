@@ -148,6 +148,10 @@ class ViveEventHandler(ControlHandler):
         """
         pass
 
+    def stop(self):
+
+        self._comm.disconnect()
+
 
 class AppEventHandler(ControlHandler):
     """

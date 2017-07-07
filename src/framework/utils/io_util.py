@@ -1,5 +1,7 @@
 import csv
 import struct
+import pprint
+import numpy as np
 import os, sys
 from xml.etree import ElementTree
 
@@ -12,6 +14,7 @@ __version__ = '0.1'
 sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
 sys.stderr = os.fdopen(sys.stderr.fileno(), 'w', 0)
 
+np.set_printoptions(precision=3, suppress=True)
 _singleton_elem = ElementTree.Element(0)
 
 
@@ -188,11 +191,13 @@ def loginfo(msg, itype):
     :param msg: string message to print
     :return: None
     """
+    # msg = pprint.pformat(msg)
     sys.stdout.write('{}{}\n{}'.format(
         itype[0], msg, FONT.end))
 
 
 def logerr(msg, etype):
+    # msg = pprint.pformat(msg)
     sys.stderr.write('{}{}\n{}'.format(
         etype[1] + FONT.bold, msg, FONT.end))
 

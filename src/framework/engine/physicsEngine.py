@@ -192,9 +192,11 @@ class BulletPhysicsEngine(FakeStateEngine):
         orn = p.getBasePositionAndOrientation(
             uid, physicsClientId=self._physics_server_id)[1]
         if otype == 'quat':
-            return np.array(orn)
-        elif otype == 'euler':
-            return np.array(p.getEulerFromQuaternion(orn))
+            return orn
+        elif otype == 'deg':
+            return math_util.deg(math_util.quat2euler(orn))
+        elif otype == 'rad':
+            return math_util.quat2euler(orn)
         else:
             loginfo('Unrecognized orientation form.', FONT.ignore)
 
@@ -206,8 +208,8 @@ class BulletPhysicsEngine(FakeStateEngine):
 
         return frame_pose[3, :3]
 
-    def get_body_camera_orientation(self, uid,
-                                    (camera_pos, camera_orn), otype):
+    def get_body_camera_orientation(
+            self, uid, (camera_pos, camera_orn), otype):
 
         body_pose = p.getBasePositionAndOrientation(uid, self._physics_server_id)
         camera_frame = math_util.pose2mat((camera_pos, camera_orn))
@@ -216,8 +218,10 @@ class BulletPhysicsEngine(FakeStateEngine):
 
         if otype == 'quat':
             return math_util.mat2quat(orn)
-        elif otype == 'euler':
+        elif otype == 'rad':
             return math_util.mat2euler(orn)
+        elif otype == 'deg':
+            return math_util.deg(math_util.mat2euler(orn))
         else:
             loginfo('Unrecognized orientation form.', FONT.ignore)
 
