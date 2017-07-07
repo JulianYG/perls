@@ -356,14 +356,8 @@ class SimulationController(object):
                     world.reset()
 
                     # Update the states again
-
-                    tool.joint_states = world.get_states(
-                        ('tool', 'joint_states'))[tool.tid]
                     self._states['tool'] = world.get_states(
                         ('tool', 'pose'))[0]
-
-                    # self._states['tool'] = world.get_states(
-                    #     ('tool', 'pose'))[0]
 
                     loginfo('World is reset.', FONT.model)
                 elif method == 'reach':
