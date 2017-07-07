@@ -189,7 +189,7 @@ def mat2euler(rmat, axes='sxyz'):
         ax, ay, az = -ax, -ay, -az
     if frame:
         ax, az = az, ax
-    return ax, ay, az
+    return np.array([ax, ay, az], dtype=np.float32)
 
 
 def quat2euler(quaternion):

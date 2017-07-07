@@ -2,7 +2,7 @@ import pybullet as p
 from framework.utils import math_util
 p.connect(p.GUI)
 
-p.setRealTimeSimulation(1)
+# p.setRealTimeSimulation(1)
 	
 import numpy as np
 np.set_printoptions(2, suppress=True)
@@ -19,8 +19,14 @@ print(up, forward)
 
 # print(width, height)
 # print((point3d[0] + 1) / 2. * width /2 , (1 - point3d[1]) / 2. * height/2)
-p.loadURDF('cube_small.urdf',(1,0,0))
-print(vmat, np.linalg.inv(vmat), 'fuck')
+p.loadURDF('cube_small.urdf',(1,0,0), useFixedBase=False)
+print("View matrix")
+print(vmat.T)
+print("Inverse View matrix")
+xx = (np.linalg.inv(vmat.T.dot(np.array([[-1,0,0,0],[0,0,1,0],[0,1,0,0],[0,0,0,1]], dtype=np.float32))))
+
+
+print (xx)
 # print(p.getDebugVisualizerCamera())
 _AXES2TUPLE = {
     'sxyz': (0, 0, 0, 0), 'sxyx': (0, 0, 1, 0), 'sxzy': (0, 1, 0, 0),
@@ -33,13 +39,17 @@ _AXES2TUPLE = {
     'rzxz': (2, 0, 1, 1), 'rxyz': (2, 1, 0, 1), 'rzyz': (2, 1, 1, 1)}
 
 for x in _AXES2TUPLE.keys():
-	vvv = np.array(math_util.mat2quat(np.linalg.inv(vmat[:3,:3])))
+	vvv = math_util.mat2euler(xx[:3,:3])
 	# print(vvv * 180 / np.pi, x)
+	xxx = np.array([[-1,0,0],[0,0,1],[0,1,0]], dtype=np.float32).dot(xx[:3,:3])
+	print(math_util.mat2euler(xx[:3,:3], axes=x) * 180 / np.pi, x)
+	# print(math_util.mat2quat(xx[:3, :3]))
+	# print(np.array(p.getEulerFromQuaternion(math_util.mat2quat(xx[:3, :3]))) * 180 / np.pi)
 while 1:
-
+	p.stepSimulation()
 	for e in p.getMouseEvents():
 		if e[0] == 2:
 			# print(e[1], e[2], 0)
-			x = 2. * e[1] * 2. / width- 1
-			y = -2. * e[2] * 2. / height + 1
-			# print(np.linalg.inv(vp)[:3,:3].dot(np.array([x,y,0])))
+			x = 2. * e[1] / width - 1
+			y = -2. * e[2] / height + 1
+			print(np.linalg.inv(vp)[:3,:3].dot(np.array([x,y,0])))
