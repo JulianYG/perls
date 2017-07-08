@@ -16,6 +16,11 @@ from .handler.controlHandler import (KeyboardEventHandler,
 from .handler.eventHandler import AssetHandler
 import threading
 
+__author__ = 'Julian Gao'
+__email__ = 'julianyg@stanford.edu'
+__license__ = 'private'
+__version__ = '0.1'
+
 # TODO: framework should only contain base class controller
 # from .controller import Controller
 
@@ -383,11 +388,12 @@ class SimulationController(object):
                         # arm perfect response. Currently the arm end
                         # effector will switch position when reaching its
                         # limit. This is trade-off, sadly.
+                        # Can try directly setting joint states here
                         pos_diff, orn_diff = tool.reach(None, a_orn)
 
                     # Update state orientation all the time
                     # Note by intuition, position should be updated too.
-                    # However, due to the limitation of IK, this will
+                    # However, due to the limitation of IK, it will
                     # cause robot arm act weirdly.
                     state_pose = self._states['tool'][tool.tid]
                     self._states['tool'][tool.tid] = \
@@ -395,7 +401,7 @@ class SimulationController(object):
 
                     # If the tool is out of reach, hold the adapter states
                     # TODO: make the threshold configs
-                    if math_util.rms(pos_diff) > 2. or \
+                    if math_util.rms(pos_diff) > 3. or \
                        math_util.rms(orn_diff) > 10.:
                         self._states['tool'] = world.get_states(
                             ('tool', 'pose'))[0]

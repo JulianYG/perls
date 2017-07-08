@@ -2,13 +2,10 @@
 
 import pybullet as p
 import numpy as np
-import os, time
 import os.path as osp
-from .base import FakeStateEngine
-from ..utils import util
+from .stateEngine import FakeStateEngine
 from ..utils import math_util
 from ..utils.io_util import (FONT,
-                             parse_log,
                              loginfo,
                              logerr)
 
@@ -30,9 +27,6 @@ class BulletPhysicsEngine(FakeStateEngine):
     """
     
     """
-    _STATUS = \
-        ['running', 'pending', 'stopped', 'off',
-         'killed', 'finished', 'error']
 
     _JOINT_TYPES = {
         0: 'revolute', 1: 'prismatic', 2: 'spherical',
@@ -43,51 +37,41 @@ class BulletPhysicsEngine(FakeStateEngine):
         dict(revolute=0, prismatic=1, spherical=2,
              planar=3, fixed=4, point2point=5, gear=6)
 
+    _SHAPE_TYPES = dict(
+        sphere=p.GEOM_SPHERE, box=p.GEOM_BOX,
+        capsule=p.GEOM_CAPSULE, cylinder=p.GEOM_CYLINDER,
+        plane=p.GEOM_PLANE, mesh=p.GEOM_MESH
+    )
+
     def __init__(self, e_id, identifier, max_run_time,
                  async=False, step_size=0.001):
         """
         Initialize the physics physics_engine.
         :param async: boolean: indicate if run 
         asynchronously with real world
+        :param e_id: integer, engine id, label for current
+        engine; note this can be different from its
+        actual physics server id.
         :param max_run_time: maximum running time.
         Should be integer of number of time steps if 
         async, and can be float of time lapse seconds 
         if synced.
-        :param identifier:
-
+        :param identifier: the integer identifier id for
+        this engine, since physics server should be the
+        same as from the graphics server for bullet
         :param step_size: time step size (float) for each
         simulation step
-
         """
         self._version = 'perls version {}, bullet version {}'.\
             format(__version__, p.getAPIVersion())
 
-        # real_time flag is indicating current state (e.g., during
-        # loading or before set real time simulation), while
-        # async flag is constant
-        self._real_time = False
-        self._async = async
+        super(BulletPhysicsEngine, self).__init__(
+            e_id, max_run_time, async, step_size)
 
         # physics server id, a.k.a. simulation id.
         # Indicates which bullet physics simulation server to
         # connect to. Default is 0
-        self.engine_id = e_id
         self._physics_server_id = identifier
-
-        if async:
-            self._step_size = step_size
-            if not isinstance(max_run_time, int):
-                logerr('Need to specify integer max time steps '
-                       'for asynchronous simulation!', FONT.control)
-                return
-            self._max_run_time = int(max_run_time)
-            self._step_count = 0
-        else:
-            self._step_size = None
-            self._max_run_time = max_run_time
-
-        self._status = BulletPhysicsEngine._STATUS[3]
-        self._error_message = list()
 
     @property
     def version(self):
@@ -95,13 +79,6 @@ class BulletPhysicsEngine(FakeStateEngine):
 
     @property
     def info(self):
-        """
-        Get the basic info description of the world.
-        :return: A dictionary of information of this 
-        world.
-        {version/name, status, real time, id,
-        step size (if async), max running time}
-        """
         info_dic = dict(
             name='Bullet Physics Engine: {}'.format(
                 self.version),
@@ -116,23 +93,11 @@ class BulletPhysicsEngine(FakeStateEngine):
 
     @property
     def ps_id(self):
+        """
+        Get the physics server id of engine
+        :return:
+        """
         return self._physics_server_id
-
-    @property
-    def status(self):
-        return self.status
-
-    @property
-    def error(self):
-        return self._error_message
-
-    @property
-    def status(self):
-        return self._status
-
-    @status.setter
-    def status(self, stat):
-        self._status = stat
 
     def _type_check(self, frame):
         """
@@ -263,16 +228,17 @@ class BulletPhysicsEngine(FakeStateEngine):
 
     def get_body_visual_shape(self, uid):
         return p.getVisualShapeData(
-            uid, physicsClientId=self._physics_server_id)
+            uid, physicsClientId=self._physics_server_id)[1:]
 
     def set_body_visual_shape(
-            self, uid, texture, qid, shape_id=p.GEOM_BOX,
+            self, uid, texture, qid, shape_id='box',
             rgba_color=(1,1,1,1), spec_color=(1,1,1)):
         try:
             texture_id = p.loadTexture(texture, self._physics_server_id)
             p.changeVisualShape(
-                uid, qid, shape_id, texture_id, rgba_color,
-                spec_color, physicsClientId=self._physics_server_id)
+                uid, qid, self._SHAPE_TYPES[shape_id],
+                texture_id, rgba_color, spec_color,
+                physicsClientId=self._physics_server_id)
             return texture_id
         except p.error:
             self.status = BulletPhysicsEngine._STATUS[-1]
@@ -312,7 +278,7 @@ class BulletPhysicsEngine(FakeStateEngine):
                 uid, lid, 1, physicsClientId=self._physics_server_id)])
 
     def get_body_joint_info(self, uid, jid):
-        info =list(p.getJointInfo(uid, jid, physicsClientId=self._physics_server_id))
+        info = list(p.getJointInfo(uid, jid, physicsClientId=self._physics_server_id))
         info[2] = BulletPhysicsEngine._JOINT_TYPES[info[2]]
         return tuple(info)
 
@@ -365,13 +331,6 @@ class BulletPhysicsEngine(FakeStateEngine):
         return p.getDynamicsInfo(uid, lid, physicsClientId=self._physics_server_id)
 
     def set_body_dynamics(self, uid, lid, info):
-        """
-        
-        :param uid: 
-        :param lid: 
-        :param info: 
-        :return: 0 if success, -1 for failure
-        """
         status = 0
         try:
             if 'mass' in info:
@@ -472,13 +431,13 @@ class BulletPhysicsEngine(FakeStateEngine):
             self.status = BulletPhysicsEngine._STATUS[-1]
             self._error_message.append(p.error.message)
 
-    def apply_torque_to_body(self, uid, lid, torque, pos, ref):
+    def apply_torque_to_body(self, uid, lid, torque, ref):
         try:
             if ref == 'abs':
-                p.applyExternalTorque(uid, lid, torque, pos, p.WORLD_FRAME,
+                p.applyExternalTorque(uid, lid, torque, p.WORLD_FRAME,
                                       physicsClientId=self._physics_server_id)
             elif ref == 'rel':
-                p.applyExternalTorque(uid, lid, torque, pos, p.LINK_FRAME,
+                p.applyExternalTorque(uid, lid, torque, p.LINK_FRAME,
                                       physicsClientId=self._physics_server_id)
             else:
                 loginfo('Unrecognized reference frame. Choose abs or rel',
@@ -607,7 +566,7 @@ class BulletPhysicsEngine(FakeStateEngine):
         for _ in range(max_steps):
             p.stepSimulation(self._physics_server_id)
 
-    def step(self, camera_info, elapsed_time=0):
+    def step(self, elapsed_time=0):
         if self.status == 'running':
             if self._async:
                 if self._step_count < self._max_run_time:

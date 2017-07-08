@@ -75,7 +75,7 @@ class Camera(object):
 	def turn_on(self):
 		"""
 		Turn on the camera;
-		Returns an instance of corresponding camera object
+		Returns an instance of corresponding camera entity
 		"""
 		self.camera_on = True
 

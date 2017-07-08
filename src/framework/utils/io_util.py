@@ -374,7 +374,7 @@ def parse_body_elem(body_elem):
                      f in orn.text.split(' ')] if
                 orn is not None else (0., 0., 0., 1.),
                 fixed=str2bool(elem.attrib.get('fixed', 'False')),
-                # Default id is 0 since first time for each new object
+                # Default id is 0 since first time for each new entity
                 name='{}_{}'.format(elem.attrib['name'],
                                     asset.attrib.get('id', 0))
             )

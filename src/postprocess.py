@@ -7,7 +7,7 @@ import numpy as np
 class Postprocess(object):
     def __init__(self, objects_fname="sim_/log/trajectory/body_info.txt"):
 
-        # get mapping between object ids and object names
+        # get mapping between entity ids and entity names
         self.object_map = {}
         objects_fptr = open(objects_fname, "r")
         lines = objects_fptr.readlines()

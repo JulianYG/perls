@@ -42,7 +42,7 @@ class RobotController(object):
         # the name of the limb
         self.limb_name = limb_name
 
-        # Limb object from Intera SDK
+        # Limb entity from Intera SDK
         self.limb = intera_interface.Limb(limb_name)
         self.cuff = intera_interface.Cuff(limb=limb_name)
 

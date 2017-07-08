@@ -17,7 +17,7 @@ __version__ = '0.1'
 
 class BulletRenderEngine(GraphicsEngine):
     """
-
+    Rendering engine from bullet physics
     """
 
     _FRAME_TYPES = dict(off=0, gui=1, cmd=2, vr=3, udp=4, tcp=5)

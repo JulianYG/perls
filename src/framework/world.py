@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
-from .object.body import Body
+from .entity.body import Body
 from .utils import io_util, math_util
 from .utils.io_util import logerr, FONT
-from .object import PR2Gripper, rethinkGripper, WSG50Gripper
-from .object import sawyer, kuka
+from .entity import PR2Gripper, rethinkGripper, WSG50Gripper
+from .entity import sawyer, kuka
 from .handler import taskHandler
 
 __author__ = 'Julian Gao'

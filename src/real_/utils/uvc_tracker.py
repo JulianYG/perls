@@ -76,8 +76,8 @@ class Tracker():
 
 	def _get_object_points(self, size):
 		"""
-		Return a numpy array of object points in shape [num, 3], float32
-		The object points represent the corner points on checkerboard
+		Return a numpy array of entity points in shape [num, 3], float32
+		The entity points represent the corner points on checkerboard
 		in real world frame, origin from the top left corner of 
 		the checkerboard
 		"""
