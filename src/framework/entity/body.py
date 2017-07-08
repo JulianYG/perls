@@ -549,6 +549,7 @@ class Body(object):
         """
         Reset body to its original pose/fix condition.
         Note currently this cannot remove body attachments
+
         :return: None
         """
         del self.fix
@@ -588,7 +589,7 @@ class Body(object):
         :param force: Vec3 
         :param pos: Vec3
         :param ref: string 'abs' for world frame,
-        'rel' for link frame
+            'rel' for link frame
         :return: -1 if failure, 0 if success
         """
         if lid not in self._links:
@@ -799,7 +800,7 @@ class Tool(Body):
         The values are designated pos, orn
         This is especially
         useful on real robot case to achieve higher 
-        success rate.
+            success rate
         :return: None
         """
         if kwargs['hover']:

@@ -63,14 +63,14 @@ jd=[0.1,0.1,0.1,0.1,0.1,0.1,0.1]
 p.loadURDF('cube_small.urdf', [-0.6,0,0.2], useFixedBase=True)
 p.setGravity(0,0,-9.8)
 # r.mark('haha')
-print (p.getLinkState(r, 4)[0])
+print (p.getLinkState(r, 18)[0])
 # import ikpy
 # chain = ikpy.chain.Chain.from_urdf_file(
 # 	'../../bullet3/data/sawyer_robot/sawyer_description/urdf/sawyer_arm.urdf',
 # 	base_elements=['right_arm_base_link'],
-# 	active_links_mask=[False] + [True,] * 7)
+# 	active_links_mask=[False] + [True,] * 7 + [False])
 
-# target_vector = [0.8, -0.12, 1.5]
+# target_vector = [0.8, -0.12, 1.5-0.9]
 # target_frame = np.eye(4)
 # target_frame[:3, 3] = target_vector
 # print(target_frame)
@@ -78,8 +78,11 @@ print (p.getLinkState(r, 4)[0])
 # 	initial_position=(0, 0, -1.18, 0.00, 2.18, 0.00, 0.57, 3.3161))
 # [-0.465943   -0.89308893  2.286186    0.03158455 -2.25553708 -0.65736246
 #   2.17224787]
-sol = [-0.07833199, -0.29562288 ,-0.01593633,-0.31518591,  0.01860969 ,-0.96004085,
-  1.81762848]
+# sol = [-0.07833199, -0.29562288 ,-0.01593633,-0.31518591,  0.01860969 ,-0.96004085,
+#   1.81762848]
+# sol = [ -8.10866952e-04 , -8.84536528e-01,  -6.48048856e-02 , -3.49241639e-01,
+#    1.23926568e-01,  -3.38399207e-01  , 1.67933567e+00]
+
 # print(sol)
 # print(chain.forward_kinematics(sol))
 # ik = p.calculateInverseKinematics(r, 6, (-0.8, 0, 0.2), 
@@ -109,16 +112,16 @@ ik = p.calculateInverseKinematics(r, 6, (0.8, 0.1, 0.8),
         restPoses=(0, -1.18, 0.00, 2.18, 0.00, 0.57, 3.3161),
                 jointDamping=(.1,) * 7)
 print(ik)
-# p.setJointMotorControlArray(r, [5,10,11,12,13,15,18], 
-# 	p.POSITION_CONTROL, targetPositions=sol, 
-# 	targetVelocities=[0] * 7,
-# 	positionGains=[0.05] * 7, velocityGains=[1.] * 7)
-# print(p.getNumJoints(r))
+p.setJointMotorControlArray(r, [5,10,11,12,13,15,18], 
+	p.POSITION_CONTROL, targetPositions=ik[1:], 
+	targetVelocities=[0] * 7,
+	positionGains=[0.05] * 7, velocityGains=[1.] * 7)
+print(p.getNumJoints(r))
 while 1:
 	# print(p.getQuaternionFromEuler((0, 0, np.pi * 2)))
 	
 	p.setRealTimeSimulation(1)
-	print(p.getLinkState(r, 18)[0])
+	# print(p.getLinkState(r, 18)[0])
 
 	# print([(p.getLinkState(r, i)[0],p.getJointInfo(r, i)[-1])  for i in range(23)])
 	# for e in p.getMouseEvents():
