@@ -2,6 +2,10 @@
 
 from .stateEngine import RealStateEngine
 
+import rospy
+import rosparam
+import intera_interface
+
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
 __license__ = 'private'
@@ -13,6 +17,12 @@ class InteraEngine(RealStateEngine):
     def __init__(self, e_id, max_run_time):
 
         super(InteraEngine, self).__init__(e_id, max_run_time)
+
+        # TODO: may need to make sawyer as input
+        self._limb = intera_interface.Limb('right')
+        self._gripper = intera_interface.Gripper('right')
+
+        self._info = rospy.get_param()
 
     @property
     def version(self):
