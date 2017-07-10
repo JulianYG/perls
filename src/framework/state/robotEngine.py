@@ -24,7 +24,7 @@ class InteraEngine(RealStateEngine):
 
     def configure(self, configs):
         """
-        Configure the real state engine (robot)
+        Configure the real state render (robot)
         :param configs: configuration
         :return: None
         """
@@ -224,7 +224,7 @@ class InteraEngine(RealStateEngine):
 
     def start_engine(self, frame):
         """
-        Start the engine
+        Start the render
         :param frame: string of frame type,
         :return: 0 if success, -1 if failed
         """
@@ -252,7 +252,7 @@ class InteraEngine(RealStateEngine):
 
     def stop(self):
         """
-        Stop the engine and clean up.
+        Stop the render and clean up.
         :return: None
         """
         pass

@@ -284,16 +284,16 @@ class World(object):
 
     def boot(self, frame):
         """
-        Start the physics engine.
+        Start the physics render.
         :param frame: string of frame type,
         for use of type check
-        :return: engine start state
+        :return: render start state
         """
         return self._engine.start_engine(frame)
 
     def notify_engine(self, stat):
         """
-        Set the status of engine,
+        Set the status of render,
         :param stat: string, 'running', 'pending',
         'stopped', 'killed', 'finished', 'error'.
         :return: None

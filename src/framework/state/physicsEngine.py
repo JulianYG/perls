@@ -5,9 +5,7 @@ import numpy as np
 import os.path as osp
 from .stateEngine import FakeStateEngine
 from ..utils import math_util
-from ..utils.io_util import (FONT,
-                             loginfo,
-                             logerr)
+from ..utils.io_util import FONT, loginfo, logerr
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
@@ -49,15 +47,15 @@ class BulletPhysicsEngine(FakeStateEngine):
         Initialize the physics physics_engine.
         :param async: boolean: indicate if run 
         asynchronously with real world
-        :param e_id: integer, engine id, label for current
-        engine; note this can be different from its
+        :param e_id: integer, render id, label for current
+        render; note this can be different from its
         actual physics server id.
         :param max_run_time: maximum running time.
         Should be integer of number of time steps if 
         async, and can be float of time lapse seconds 
         if synced.
         :param identifier: the integer identifier id for
-        this engine, since physics server should be the
+        this render, since physics server should be the
         same as from the graphics server for bullet
         :param step_size: time step size (float) for each
         simulation step
@@ -94,7 +92,7 @@ class BulletPhysicsEngine(FakeStateEngine):
     @property
     def ps_id(self):
         """
-        Get the physics server id of engine
+        Get the physics server id of render
         :return:
         """
         return self._physics_server_id

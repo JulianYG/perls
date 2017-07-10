@@ -96,7 +96,7 @@ class View:
 
     def run(self, targets):
         """
-        Start the graphics engine.
+        Start the graphics render.
         Load simulation, and feed target objects in
         case of recording.
         :param targets: list of tracking body uids.

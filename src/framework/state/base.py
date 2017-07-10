@@ -1,11 +1,6 @@
 import abc
 
 
-class GraphicsEngine(object):
-
-    pass
-
-
 class StateEngine(object):
 
     _STATUS = \
@@ -14,9 +9,9 @@ class StateEngine(object):
 
     def __init__(self, e_id, max_run_time):
         """
-        Constructor for base class state engine
+        Constructor for base class state render
         :param e_id: integer, to indicate label
-        of this engine
+        of this render
         :param max_run_time: maximum running time.
         """
         self.engine_id = e_id
@@ -27,7 +22,7 @@ class StateEngine(object):
     @abc.abstractproperty
     def version(self):
         """
-        Get the version of this state engine
+        Get the version of this state render
         :return: version string
         """
         return NotImplemented
@@ -35,7 +30,7 @@ class StateEngine(object):
     @abc.abstractproperty
     def info(self):
         """
-        Get the basic info description of engine.
+        Get the basic info description of render.
         :return: A dictionary of information
         {version/name, status, real time, id,
         step size (if async), max running time}
@@ -63,7 +58,7 @@ class StateEngine(object):
     @status.setter
     def status(self, stat):
         """
-        Set the state engine status by given stat string
+        Set the state render status by given stat string
         :param stat: string of status
         :return: None
         """
@@ -545,7 +540,7 @@ class StateEngine(object):
     @abc.abstractmethod
     def start_engine(self, frame):
         """
-        Start the engine
+        Start the render
         :param frame: string of frame type,
         :return: 0 if success, -1 if failed
         """
@@ -576,7 +571,7 @@ class StateEngine(object):
     @abc.abstractmethod
     def stop(self):
         """
-        Stop the engine and clean up.
+        Stop the render and clean up.
         :return: None
         """
         return NotImplemented

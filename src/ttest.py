@@ -4,7 +4,7 @@ import pybullet as p
 # from datetime import datetime
 import thread
 
-from framework.controller import SimulationController as sc
+from framework.control import Controller as sc
 
 s = sc('config.xml')
 # s.start_all()

@@ -14,8 +14,8 @@
 
 	<!-- <config name="default" id="1">
 		<build type="Release">
-			<graphics name="cannot see" engine="bullet" type="cmd" key="0"/>
-			<physics engine="bullet" version="20170601"/>
+			<graphics name="cannot srendergine="bullet" type="cmd" key="0"/>
+			<physrendergine="bullet" version="20170601"/>
 			<job name="record"/>
 			<property async="True" step_size="0.001" max_run_time="10e6"/>
 		</build>

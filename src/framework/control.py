@@ -1,44 +1,58 @@
 
-from .world import World
-from .view import View
+import threading
+
+from .state import physicsEngine, robotEngine
 from .adapter import Adapter
-from .engine import physicsEngine, renderEngine
+from .render import renderEngine, camera
+from .handler.base import NullHandler
+from .handler.controlHandler import (KeyboardEventHandler,
+                                     ViveEventHandler,
+                                     AppEventHandler)
+from .tool import debugger, tester
 from .utils import io_util, util, math_util
 from .utils.io_util import (FONT,
                             loginfo,
                             logerr)
-from .tool import debugger, tester
-from .handler.base import NullHandler
-from .handler.controlHandler import (KeyboardEventHandler,
-                                     ViveEventHandler,
-                                     AppEventHandler,
-                                     CmdEventHandler)
-from .handler.eventHandler import AssetHandler
-import threading
+from .view import View
+from .world import World
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
 __license__ = 'private'
 __version__ = '0.1'
 
-# TODO: framework should only contain base class controller
-# from .controller import Controller
 
-
-class SimulationController(object):
+class Controller(object):
     """
     The controller in MVC architecture.
     """
-    _PHYSICS_ENGINES = dict(bullet=physicsEngine.BulletPhysicsEngine,
-                            mujoco=physicsEngine.MujocoEngine,
-                            gazebo=physicsEngine.GazeboEngine)
+    #######
+    # module type parsers
 
-    _GRAPHICS_ENGINES = dict(bullet=renderEngine.BulletRenderEngine)
+    _PHYSICS_ENGINES = dict(
+        # Simulation
+        bullet=physicsEngine.BulletPhysicsEngine,
+        mujoco=physicsEngine.MujocoEngine,
+        gazebo=physicsEngine.GazeboEngine,
 
-    _CTRL_HANDLERS = dict(keyboard=KeyboardEventHandler,
-                          vive=ViveEventHandler,
-                          phone=AppEventHandler,
-                          off=NullHandler)
+        # Reality
+        intera=robotEngine.InteraEngine,
+    )
+
+    _GRAPHICS_ENGINES = dict(
+        # Simulation
+        bullet=renderEngine.BulletRenderEngine,
+
+        # Reality
+        kinect=camera.Kinect,
+    )
+
+    _CTRL_HANDLERS = dict(
+        keyboard=KeyboardEventHandler,
+        vive=ViveEventHandler,
+        phone=AppEventHandler,
+        off=NullHandler
+    )
 
     def __init__(self, config_batch):
         """
@@ -149,7 +163,7 @@ class SimulationController(object):
         :return: loaded tuple (world, display, physics physics_engine)
         """
 
-        # Initialize graphics engine (rendering engine)
+        # Initialize graphics render (rendering render)
         ge = self._GRAPHICS_ENGINES[conf.graphics_engine](
             conf.disp_info,
             conf.job,
@@ -157,8 +171,8 @@ class SimulationController(object):
             log_dir=conf.log
         )
 
-        # Initialize physics engine (state engine)
-        pe = SimulationController._PHYSICS_ENGINES[conf.physics_engine](
+        # Initialize physics render (state render)
+        pe = Controller._PHYSICS_ENGINES[conf.physics_engine](
             conf.id,
             ge.ps_id,
             conf.max_run_time,
@@ -192,7 +206,7 @@ class SimulationController(object):
                 '{}_{}'.format(world.info['name'],
                                display.info['name'])
 
-        # connect to bullet graphics/display engine server,
+        # connect to bullet graphics/display render server,
         # Build display first to load world faster
         display.build()
         world.build()

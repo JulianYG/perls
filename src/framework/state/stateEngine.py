@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
+import abc
+
 from .base import StateEngine
 from ..utils.io_util import logerr, FONT
-import abc
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
@@ -12,23 +13,23 @@ __version__ = '0.1'
 
 class RealStateEngine(StateEngine):
     """
-    The robot state engine (real)
+    The robot state render (real)
     """
     def __init__(self, e_id, max_run_time, *_):
         """
-        Constructor of robot state engine.
-        :param e_id: engine id.
-        :param max_run_time: maximum run time of engine (robot)
+        Constructor of robot state render.
+        :param e_id: render id.
+        :param max_run_time: maximum run time of render (robot)
         :param _: TBD
         """
         super(RealStateEngine, self).__init__(e_id, max_run_time)
 
-        # The engine needs to actually store a robot here?
+        # The render needs to actually store a robot here?
 
     @abc.abstractmethod
     def configure(self, configs):
         """
-        Configure the real state engine (robot)
+        Configure the real state render (robot)
         :param configs: configuration
         :return: None
         """
@@ -37,13 +38,13 @@ class RealStateEngine(StateEngine):
 
 class FakeStateEngine(StateEngine):
     """
-    The simulation state engine (fake)
+    The simulation state render (fake)
     """
     def __init__(self, e_id, max_run_time, async, step_size):
         """
-        Constructor of simulation state engine.
-        :param e_id: engine id label
-        :param max_run_time: maximum run time of engine (simulation)
+        Constructor of simulation state render.
+        :param e_id: render id label
+        :param max_run_time: maximum run time of render (simulation)
         :param async: boolean if asynchronous simulation
         :param step_size: float of time step length, if async
         """

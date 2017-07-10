@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 
-import os, time
+import os
 import os.path as osp
 import pybullet as p
+import time
+
 import numpy as np
 
 from .base import GraphicsEngine
-from ..utils.io_util import FONT, loginfo, logerr, parse_log
 from ..utils import math_util, util
+from ..utils.io_util import FONT, loginfo, parse_log
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
@@ -17,7 +19,7 @@ __version__ = '0.1'
 
 class BulletRenderEngine(GraphicsEngine):
     """
-    Rendering engine from bullet physics
+    Rendering render from bullet physics
     """
 
     _FRAME_TYPES = dict(off=0, gui=1, cmd=2, vr=3, udp=4, tcp=5)

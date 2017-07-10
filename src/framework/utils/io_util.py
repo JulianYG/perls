@@ -423,8 +423,8 @@ def parse_config(file_path):
         job_attrib = conf.find('./build/job').attrib
         control_attrib = root.find('./config/control').attrib
 
-        physics_engine = physics_attrib.get('engine', 'bullet')
-        graphics_engine = graphics_attrib.get('engine', 'bullet')
+        physics_engine = physics_attrib.get('render', 'bullet')
+        graphics_engine = graphics_attrib.get('render', 'bullet')
 
         min_version = physics_attrib.get('version', '20170101')
 
