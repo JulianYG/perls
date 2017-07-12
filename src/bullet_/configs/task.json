@@ -36,26 +36,7 @@
 		["hanoi/slate_3.urdf", 0.84, 0.1, 0.69999, 0, 0, 0, 1], 
 		["hanoi/slate_4.urdf", 0.88, 0.1, 0.69999, 0, 0, 0, 1]
 	],
-	"shape":
-	[
-		["shape_sorter/shape_sorter.urdf", 0.4, -0.2, 0.7, 0, 0, 0, 1],
-
-		["shape_sorter/p1.urdf", 0.81, -0.2, 0.7, 0, 0, 0, 1],
-		["shape_sorter/p2.urdf", 0.83, -0.21, 0.7, 0, 0, 0, 1],
-		["shape_sorter/p3.urdf", 0.85, -0.12, 0.7, 0, 0, 0, 1],
-		["shape_sorter/p4.urdf", 0.87, -0.32, 0.7, 0, 0, 0, 1],
-		["shape_sorter/p5.urdf", 0.89, -0.2, 0.7, 0, 0, 0, 1],
-		["shape_sorter/p6.urdf", 0.79, -0.42, 0.7, 0, 0, 0, 1],
-		["shape_sorter/p7.urdf", 0.75, -0.12, 0.7, 0, 0, 0, 1],
-		["shape_sorter/p8.urdf", 0.73, -0.22, 0.7, 0, 0, 0, 1],
-		["shape_sorter/p9.urdf", 0.71, -0.32, 0.7, 0, 0, 0, 1]
-	],
 	"sorting":
-	[
-		["sorting_cubes/traybox.urdf", 0.8, -0.2, 0.7, 0, 0, 0, 1],
-		["sorting_cubes/cube_small_white.urdf", 0.8, -0.3, 1, 0, 0, 0, 1]
-	],
-	"sortingCubes":
 	[
 		["sorting_cubes/traybox_white.urdf", 0.8, 0.3, 0.63, 0, 0, 0, 1],
 		["sorting_cubes/traybox_red.urdf", 1.1, 0.3, 0.63, 0, 0, 0, 1],
@@ -72,20 +53,25 @@
 		["sorting_cubes/cube_small_red.urdf", 0.9, -0.45, 0.635, 0, 0, 0, 1],
 		["sorting_cubes/cube_small_white.urdf", 0.9, -0.41, 0.635, 0, 0, 0, 1],
 		["sorting_cubes/cube_small_blue.urdf", 0.9, -0.38, 0.635, 0, 0, 0, 1]
-
 	],
-	"stackingPushingCubes":
+	"stacking":
 	[
 		["sorting_cubes/cube_small_white.urdf", 1.1, -0.5, 0.635, 0, 0, 0, 1],
 		["sorting_cubes/cube_small_blue.urdf", 1.1, -0.54, 0.635, 0, 0, 0, 1],
-		["sorting_cubes/cube_small_blue.urdf", 1.1, -0.52, 0.635, 0, 0, 0, 1],
+		["sorting_cubes/cube_small_red.urdf", 1.1, -0.52, 0.635, 0, 0, 0, 1],
 
-		["sorting_cubes/cube_small_white.urdf", 1.3, -0.65, 0.635, 0, 0, 0, 1],
-		["sorting_cubes/cube_small_red.urdf", 1.3, -0.61, 0.635, 0, 0, 0, 1],
-		["sorting_cubes/cube_small_red.urdf", 1.3, -0.58, 0.635, 0, 0, 0, 1],
+		["sorting_cubes/cube_small_yellow.urdf", 1.15, -0.65, 0.635, 0, 0, 0, 1],
+		["sorting_cubes/cube_small_green.urdf", 1.16, -0.61, 0.635, 0, 0, 0, 1],
+		["sorting_cubes/cube_small_purple.urdf", 1.12, -0.58, 0.635, 0, 0, 0, 1]
+	],
+	"kitchen":
+	[
+		["serving/plate_white.urdf", 0.9100548839338686, -0.24379113551653922, 0.7285443566643067, 0.8116707289096787, -0.5668313101704464, 0.14084997586453862, -0.007360566598088276],
+		["serving/plate_green.urdf", 1.2836270442142448, -0.5613675080262577, 0.6698768599880549, 0.2853319853508423, -0.3490062849959193, 0.383150960233871, 0.8062106504139948],
+		["serving/plate_blue.urdf", 1.1135983952501511, -0.30537274969257694, 0.623808691112672, -0.00034811437027562197, -6.317934323411686e-06, 0.9999346388861955, 0.011427892719244834],
 
-		["sorting_cubes/cube_small_red.urdf", 1.2, -0.65, 0.635, 0, 0, 0, 1],
-		["sorting_cubes/cube_small_white.urdf", 1.2, -0.61, 0.635, 0, 0, 0, 1],
-		["sorting_cubes/cube_small_blue.urdf", 1.2, -0.58, 0.635, 0, 0, 0, 1]
+		["serving/pan_tefal.urdf", 1.1679055662141655, -0.10262912342585431, 0.6557404041106866, -0.07408538957154949, -0.11177775987142505, -0.8066079452695888, 0.5756741353214769],
+		["serving/pan_tefal.urdf", 1.197684085268012, -0.739087901679227, 0.7185014791384219, -0.03326809659548657, 0.9962059349596586, 0.08031817362804239, -0.003994982493267703],
+		["serving/pan_tefal.urdf", 0.9299279001652826, -0.2556317900772109, 0.659680238836353, 0.029927948268094494, -0.13789249366452674, -0.6902048095991218, 0.7097233960562952]
 	]
 }

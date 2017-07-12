@@ -20,9 +20,12 @@ class RedisComm(Comm):
         self.connected_with_server = False
         self.connected_with_client = False
         self.threads = []
+        self._buffer_size = buffer_size
         self.pubsub = self.terminal.pubsub()
-        self.event_queue = q(buffer_size)
-        self.signal_queue = q(buffer_size)
+        self.channel_queues = dict()
+
+    def broadcast_to_channel(self, channel, message):
+        return self.terminal.publish(channel, message)
 
     def broadcast_to_client(self, message):
         return self.terminal.publish('signal_channel', message)
@@ -30,26 +33,25 @@ class RedisComm(Comm):
     def broadcast_to_server(self, message):
         return self.terminal.publish('event_channel', message)
 
-    def listen_to_client(self):
+    def listen_to_channel(self, channel):
         events = []
-        # TODO: Check if / while, which one is better
-        # print(self.event_queue.qsize())
-        while not self.event_queue.empty():
-            events.append(self.event_queue.get())
-        # print(len(events), 'len')
+        queue = self.channel_queues[channel]
+        while not queue.empty():
+            events.append(queue.get())
+        # print(events)
         return events
 
-    def listen_to_server(self):
-        events = []
-        print(self.signal_queue.qsize())
-        while not self.signal_queue.empty():
-            events.append(self.signal_queue.get())
-        print(len(events), 'len')
-        return events
+    def connect_to_channel(self, channel):
+        self.channel_queues[channel] = q(self._buffer_size)
+        self.pubsub.subscribe(**{channel: self._channel_handler})
+        # Start thread
+        channel_thread = self.pubsub.run_in_thread(sleep_time=0.001)
+        self.threads.append(channel_thread)
 
-    def connect_with_client(self):
+    def connect_with_client(self, channel='event_channel'):
         if not self.connected_with_client:
-            self.pubsub.subscribe(**{'event_channel': self._event_handler})
+            self.channel_queues[channel] = q(self._buffer_size)
+            self.pubsub.subscribe(**{channel: self._channel_handler})
 
             # Start thread
             client_thread = self.pubsub.run_in_thread(sleep_time=0.001)
@@ -63,9 +65,10 @@ class RedisComm(Comm):
                     self.connected_with_client = True
                     break
 
-    def connect_with_server(self):
+    def connect_with_server(self, channel='signal_channel'):
         if not self.connected_with_server:
-            self.pubsub.subscribe(**{'signal_channel': self._signal_handler})
+            self.channel_queues[channel] = q(self._buffer_size)
+            self.pubsub.subscribe(**{channel: self._channel_handler})
             server_thread = self.pubsub.run_in_thread(sleep_time=0.001)
             self.threads.append(server_thread)
 
@@ -76,17 +79,15 @@ class RedisComm(Comm):
                     self.connected_with_server = True
                     break
 
-    def _event_handler(self, msg):
+    def _channel_handler(self, msg):
         packet = msg['data']
+        channel_name = msg['channel']
+        if isinstance(msg['channel'], bytes):
+            channel_name = msg['channel'].decode('utf-8')
+        channel_queue = self.channel_queues[channel_name]
         if isinstance(packet, str) or isinstance(packet, bytes):
-            if not self.event_queue.full():
-                self.event_queue.put(packet)
-
-    def _signal_handler(self, msg):
-        packet = msg['data']
-        if isinstance(packet, str) or isinstance(packet, bytes):
-            if not self.signal_queue.full():
-                self.signal_queue.put(packet)
+            if not channel_queue.full():
+                channel_queue.put(packet)
 
     def disconnect(self):
         if self.connected_with_server:

@@ -35,7 +35,7 @@ def execute():
 		while 1:
 			_CONFIGS = {}
 			while not _CONFIGS:
-				for event in socket.listen_to_client():
+				for event in socket.listen_to_channel('event_channel'):
 					e = eval(event)
 					# Make sure it's config
 					if isinstance(e, dict) and 'task' in e:

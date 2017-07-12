@@ -269,6 +269,10 @@ class PR2(Tool):
 			targetPosition=analog_slide, force=5.0)
 		p.setJointMotorControl2(gripper, 2, Constant.POS_CTRL, 
 			targetPosition=analog_slide, force=5.0)
+		if event[3] == 0:
+			self.close_grip = False
+		if event[3] == 1:
+			self.close_grip = True
 
 	def _load_tools(self, positions, reset):
 
@@ -287,7 +291,7 @@ class PR2(Tool):
 
 			self.grippers.append(pr2_gripper)
 			self.constraints.append(pr2_cid)
-			self.name_dic[pr2_gripper] = 'pr2_{}'.format(i)
+			self.name_dic['pr2_{}'.format(i)] = pr2_gripper
 		self.solo = len(self.grippers) == 1
 
 	def _set_camera(self, uid):

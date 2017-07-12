@@ -4,11 +4,13 @@
 
 - [Simplified Block version of Tower of Hanoi](https://www.dropbox.com/s/4sb3of6dawikagf/hanoi.zip?dl=0)
 
-- [Baxter/Sawyer End Effectors URDFs](https://www.dropbox.com/s/1xfc230a41lkf1k/rethink_ee_description.zip?dl=0)
+- [Baxter/Sawyer End Effectors URDFs](https://www.dropbox.com/s/9a79s7ixq0zcnoh/rethink_ee_description.zip?dl=0)
 
 - [Sawyer Robot URDF modified for Bullet](https://www.dropbox.com/s/tcpjef3iyym64of/sawyer_robot.zip?dl=0)
 
-- [Tray and Cube URDFs](https://www.dropbox.com/s/zrv93quaaum40cc/sorting_cubes.zip?dl=0)
+- [Sorting Cube Task URDFs](https://www.dropbox.com/s/xyacw2nym6a41ju/sorting_cubes.zip?dl=0)
+
+- [Serving Dinner Task URDFs](https://www.dropbox.com/s/o3sv5oiqhd7xbp8/serving.zip?dl=0)
 
 - [Shape Sorter URDFs](https://www.dropbox.com/s/vh0asw5rl67xta5/shape_sorter.zip?dl=0)
 

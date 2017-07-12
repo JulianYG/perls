@@ -9,6 +9,7 @@ import numpy as np
 from .utils import handler
 from .utils.misc import Constant, Key
 
+from .checker import TaskChecker
 
 class CtrlInterface(object):
 	"""
@@ -17,7 +18,7 @@ class CtrlInterface(object):
 	that connects inputs from elsewhere such as ROS / openAI to 
 	the pybullet node.
 	"""
-	def __init__(self, host, remote):
+	def __init__(self, host, remote, task_name=''):
 		self.remote = remote
 		self.socket = host
 		self.BTTN = 6
@@ -26,6 +27,7 @@ class CtrlInterface(object):
 		self.AAX = 3
 		self.msg_holder = {}
 		self.control_id = None
+		self.task_name = task_name
 
 	def start_remote_ctrl(self):
 		self.remote = True
@@ -43,6 +45,7 @@ class CtrlInterface(object):
 		raise NotImplementedError('Each interface must re-implement this method.')
 
 	def communicate(self, agent, scene, task, gui):
+		self._checker = TaskChecker(self.task_name, agent.name_dic)
 		if self.remote:
 			self.server_communicate(agent, scene, task, gui=gui)
 		else:
@@ -112,9 +115,11 @@ class CtrlInterface(object):
 
 					# If robot arm instance, just set gripper close/release
 					# The same thing for pr2 gripper
+					# print(obj,'haha', p.getBodyInfo(obj), pose)
 					agent.set_tool_joint_states([obj], [pose[2]], Constant.POS_CTRL)
 
 				if obj in agent.arms:
+					# print(obj, 'nono', p.getBodyInfo(obj), pose)
 					agent.set_tool_joint_states([obj], [pose], Constant.POS_CTRL)
 
 	def _msg_wrapper(self, tool_id, ids, agent, obj_map, ctrl=Constant.POS_CTRL):
@@ -140,15 +145,15 @@ class CtrlInterface(object):
 
 class ICmd(CtrlInterface):
 
-	def __init__(self, host, remote):
-		super(ICmd, self).__init__(host, remote)
+	def __init__(self, host, remote, task_name):
+		super(ICmd, self).__init__(host, remote, task_name)
 
 	def server_communicate(self, agent, scene, task, gui=True):
 		
 		self.socket.connect_with_client()
 
 		while True:
-			events = self.socket.listen_to_client()
+			events = self.socket.listen_to_channel('event_channel')
 			for event in events:
 				event = eval(event)
 				try:
@@ -186,7 +191,7 @@ class ICmd(CtrlInterface):
 			self.socket.broadcast_to_server(event)
 
 			# Receive and render from server
-			signal = self.socket.listen_to_server()
+			signal = self.socket.listen_to_channel('signal_channel')
 			for s in signal:
 				s = eval(s)
 				self._signal_loop(s, agent, control_map, obj_map)
@@ -212,9 +217,9 @@ class ICmd(CtrlInterface):
 
 class IKeyboard(CtrlInterface):
 
-	def __init__(self, host, remote):
+	def __init__(self, host, remote, task_name):
 		# Default settings for camera
-		super(IKeyboard, self).__init__(host, remote)
+		super(IKeyboard, self).__init__(host, remote, task_name)
 		self.pos = []
 
 	def client_communicate(self, agent, configs):
@@ -242,7 +247,7 @@ class IKeyboard(CtrlInterface):
 			self.socket.broadcast_to_server(event)
 
 			# Receive and render from server
-			signal = self.socket.listen_to_server()
+			signal = self.socket.listen_to_channel('signal_channel')
 			
 			for s in signal:
 				s = eval(s)
@@ -265,7 +270,7 @@ class IKeyboard(CtrlInterface):
 
 		end_effector_poses = agent.get_tool_poses(tools)
 		self.pos = end_effector_poses[:, 0]
-		self.orn = [[0,0,0],[0,0,0]]
+		self.orn = [[0,0,0], [0,0,0]]
 		pseudo_event = {0: 0, 3: 0.0, 6: {1: 0}}
 
 		curr_tool_id = control_map[Constant.GRIPPER][pseudo_event[0]]
@@ -276,7 +281,7 @@ class IKeyboard(CtrlInterface):
 
 		while True:
 			# if agent.controllers:
-			events = self.socket.listen_to_client()
+			events = self.socket.listen_to_channel('event_channel')
 			for event in events:
 				e = eval(event)
 				return_status = self._event_loop(e, scene, task, agent, gui)
@@ -301,13 +306,15 @@ class IKeyboard(CtrlInterface):
 				if i not in agent.arms and i not in agent.grippers:
 					orig_pos, orig_orn = self.msg_holder[i][:2]
 					pos, orn = p.getBasePositionAndOrientation(i)[:2]
-					if np.allclose(orig_pos, pos, rtol=3e-5) and np.allclose(orig_orn, 
-						orn, rtol=3e-5):
+					if np.allclose(orig_pos, pos, rtol=1e-4) and np.allclose(orig_orn, 
+						orn, rtol=1e-4):
 						continue
 					flow_lst.append(i)
 
-			self.socket.broadcast_to_client(self._msg_wrapper(curr_tool_id, 
-				flow_lst, agent, obj_map))
+			msg = self._msg_wrapper(curr_tool_id, 
+				flow_lst, agent, obj_map)
+			if msg:
+				self.socket.broadcast_to_client(msg)
 
 	def local_communicate(self, agent, gui=True):
 		
@@ -320,13 +327,15 @@ class IKeyboard(CtrlInterface):
 		agent.set_virtual_controller(range(len(tools)))
 		control_map, _ = agent.create_control_mappings()
 		pseudo_event = {0: 0, 3: 0.0}
-
-		while True:
+		done, success = False, False
+		while not done:
 			events = p.getKeyboardEvents()
 			self._keyboard_event_handler(events, agent, control_map, pseudo_event)	
 			if not gui:
 				p.stepSimulation()
 			time.sleep(0.01)
+			done, success = self._checker.check_status()
+		return success
 
 	def _keyboard_event_handler(self, events, agent, control_map, pseudo_event):
 		
@@ -377,16 +386,11 @@ class IKeyboard(CtrlInterface):
 					self.orn[pseudo_event[0]][1] += 0.01
 
 			# Gripper control
-			if Key.G in events and (events[Key.G] == p.KEY_IS_DOWN):
-				
+			if Key.G in events and (events[Key.G] == p.KEY_WAS_RELEASED):
 				# Using binary grippers for keyboard control
 				if agent.close_grip:
-					# This for binary robot gripper
-					agent.release(control_map[Constant.GRIPPER][pseudo_event[0]])
-					# This for binary pr2 
 					pseudo_event[3] = 0.0
 				else:
-					agent.grip(control_map[Constant.GRIPPER][pseudo_event[0]])
 					pseudo_event[3] = 1.0
 
 			# Update position
@@ -408,21 +412,20 @@ class IKeyboard(CtrlInterface):
 			except handler.IllegalOperation as e:
 				if self.socket:
 					handler.illegal_operation_handler(e, self.socket)
-				self.orn = [[0,0,0],[0,0,0]]
+				self.orn = [[0,0,0], [0,0,0]]
 				continue
 
 
 class IVR(CtrlInterface):
 
-	def __init__(self, host, remote):
+	def __init__(self, host, remote, task_name):
 		# Default settings for camera
-		super(IVR, self).__init__(host, remote)
+		super(IVR, self).__init__(host, remote, task_name)
 
 	def client_communicate(self, agent, configs):
 
 		self.socket.connect_with_server()
 		self.socket.broadcast_to_server(configs)
-
 		control_map, obj_map = agent.create_control_mappings()
 		
 		while True:
@@ -434,9 +437,8 @@ class IVR(CtrlInterface):
 			events = p.getVREvents()
 			for event in (events):
 				self.socket.broadcast_to_server(event)
+			signal = self.socket.listen_to_channel('signal_channel')
 
-			signal = self.socket.listen_to_server()
-			
 			for s in signal:
 				s = eval(s)
 				self._signal_loop(s, agent, control_map, obj_map)
@@ -452,7 +454,7 @@ class IVR(CtrlInterface):
 
 		# First get the controller IDs
 		while not agent.controllers:
-			events = self.socket.listen_to_client()
+			events = self.socket.listen_to_channel('event_channel')
 			for event in events:
 				event = eval(event)
 				if isinstance(event, tuple):
@@ -466,7 +468,7 @@ class IVR(CtrlInterface):
 		self.msg_holder = self._msg_wrapper(None, range(p.getNumBodies()), agent, obj_map)
 
 		while True:
-			events = self.socket.listen_to_client()
+			events = self.socket.listen_to_channel('event_channel')
 			for event in events:
 				event = eval(event)
 				return_status = self._event_loop(event, scene, task, 
@@ -483,22 +485,23 @@ class IVR(CtrlInterface):
 			if not gui:
 				p.stepSimulation()
 
-
 			flow_lst = agent.arms + agent.grippers
 			for i in range(p.getNumBodies()):
 				if i not in agent.arms and i not in agent.grippers:
 					orig_pos, orig_orn = self.msg_holder[i][:2]
 					pos, orn = p.getBasePositionAndOrientation(i)[:2]
-					if np.allclose(orig_pos, pos, rtol=3e-5) and np.allclose(orig_orn, orn, rtol=3e-5):
+					if np.allclose(orig_pos, pos, rtol=1e-4) and np.allclose(orig_orn, orn, rtol=1e-4):
 						continue
 					flow_lst.append(i)
 
-			self.socket.broadcast_to_client(self._msg_wrapper(None, flow_lst, agent, obj_map))
-
+			msg = self._msg_wrapper(None, flow_lst, agent, obj_map)
+			if msg:
+				self.socket.broadcast_to_client(msg)
 
 	def local_communicate(self, agent, gui=True):
 		control_map, _ = agent.create_control_mappings()
-		while True:
+		done, success = False, False
+		while not done:
 			events = p.getVREvents()
 			skip_flag = agent.redundant_control()
 			for event in (events):
@@ -506,15 +509,61 @@ class IVR(CtrlInterface):
 					if skip_flag:
 						if event[0] == agent.controllers[1]:
 							break
-						agent.control(event, control_map)
 					else:
 						agent.control(event, control_map)
 				except handler.IllegalOperation:
 					continue
 			if not gui:
 				p.stepSimulation()
+			done, success = self._checker.check_status()
+		return success
 
-	
+class IPhone(CtrlInterface):
+
+	def __init__(self, host, remote, task_name):
+		# Default settings for camera
+		super(IPhone, self).__init__(host, remote, task_name)
+
+	def local_communicate(self, agent, gui=True):
+
+		self.socket.connect_to_channel('orientation_channel')
+
+		tools = agent.get_tool_ids()
+		# Set same number of controllers as number of arms/grippers
+		agent.set_virtual_controller(range(len(tools)))
+		control_map, _ = agent.create_control_mappings()
+		pseudo_event = {0: 0, 2: (0, 1, 0, 0), 3: 0.0}
+		pseudo_event[6] = {32: 1, 33: 0, 1: 0}
+		done, success = False, False
+		while not done:
+			events = self.socket.listen_to_channel('orientation_channel')
+
+			skip_flag = agent.redundant_control()
+			for event in (events):
+				try:
+					if skip_flag:
+						if event[0] == agent.controllers[1]:
+							break
+					else:
+						roll, pitch, yaw, sens = [float(x) for x in event.split(' ')]
+						orn_euler = np.array([roll, -pitch, yaw], 
+							dtype=np.float32) * np.pi / 180.
+						if not agent.FIX:
+							pseudo_event[2] = p.getQuaternionFromEuler(
+								np.arcsin(np.sin(orn_euler * sens)))
+						end_effector_poses = agent.get_tool_poses(tools)
+						
+						self.pos = end_effector_poses[:, 0]
+						pseudo_event[1] = self.pos[pseudo_event[0]]
+						
+						agent.control(pseudo_event, control_map)
+
+				except handler.IllegalOperation:
+					continue
+			if not gui:
+				p.stepSimulation()
+			done, success = self._checker.check_status()
+		return success
 
 
 
