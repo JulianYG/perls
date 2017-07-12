@@ -264,5 +264,19 @@ class Tracker():
 				cv2.destroyAllWindows()
 
 
+rospy.init_node('track')
+limb = intera_interface.Limb('right')
+limb.set_joint_position_speed(0.2)
+robot = Robot(limb, None)
+
+camera = UVCCamera(0, (1280, 720), _UK, _UD)
+
+tracker = Tracker(camera, robot, 
+	K=_UK, D=_UD, board_size=(9, 6), itermat=(9, 9), debug=False)
+
+tracker.match_eval()
+
+
+
 
 
