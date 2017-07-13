@@ -10,6 +10,27 @@ s = sc('config.xml')
 # s.start_all()
 s.start()
 
+
+
+
+######
+# from framework.state.physicsEngine import BulletPhysicsEngine as bpe
+# # from framework.render.renderEngine import BulletRenderEngine as bre
+# b = bpe(0, 0, 0, async=True)
+
+# # r = bre('')
+
+# p.connect(p.DIRECT)
+
+
+# p.resetSimulation()
+
+# from framework.entity.sawyer import Sawyer
+
+# s = Sawyer('m0', b)
+
+# while True:
+# 	b.step(0)
 # class X():
 #     def __init__(self, name):
 #         self.name = name

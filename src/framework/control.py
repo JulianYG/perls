@@ -8,7 +8,7 @@ from .handler.base import NullHandler
 from .handler.controlHandler import (KeyboardEventHandler,
                                      ViveEventHandler,
                                      AppEventHandler)
-from .tool import debugger, tester
+from .debug import debugger, tester
 from .utils import io_util, util, math_util
 from .utils.io_util import (FONT,
                             loginfo,

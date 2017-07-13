@@ -127,8 +127,6 @@ class BulletPhysicsEngine(FakeStateEngine):
                 )
             elif osp.basename(file_path).split('.')[1] == 'sdf':
                 uid = p.loadSDF(file_path, physicsClientId=self._physics_server_id)[0]
-                p.resetBasePositionAndOrientation(
-                    uid, pos, orn, physicsClientId=self._physics_server_id)
                 if fixed:
                     p.createConstraint(
                         uid, -1, -1, -1, p.JOINT_FIXED,
@@ -136,6 +134,11 @@ class BulletPhysicsEngine(FakeStateEngine):
                         physicsClientId=self._physics_server_id)
             # Leave other possible formats for now
 
+            # Force reset pose... pybullet bug on loadURDF
+            p.resetBasePositionAndOrientation(
+                uid, pos, orn, physicsClientId=self._physics_server_id)
+
+            # Get joint and link indices
             joints = list(range(p.getNumJoints(uid, physicsClientId=self._physics_server_id)))
             links = [-1] + joints
             return int(uid), links, joints
@@ -567,14 +570,14 @@ class BulletPhysicsEngine(FakeStateEngine):
     def step(self, elapsed_time=0):
         if self.status == 'running':
             if self._async:
-                if self._step_count < self._max_run_time:
+                if self._step_count < self._max_run_time or max_run_time == 0:
 
                     # Update model (world) states
                     p.stepSimulation(self._physics_server_id)
                     self._step_count += 1
                     return False
             else:
-                if elapsed_time < self._max_run_time:
+                if elapsed_time < self._max_run_time or max_run_time == 0:
 
                     # TODO: think about how to control camera at run time
                     # self.camera = camera_info

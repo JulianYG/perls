@@ -19,7 +19,7 @@ class VelocityControl(Wrapper):
 	# Make use of self.agent
 	def step(self, action):	
 		"""
-		User defined step_helper. Takes pybullet tool agent and action,
+		User defined step_helper. Takes pybullet debug agent and action,
 		returns tuple of observation, reward, done status, and info.
 		A high level pybullet wrapper for the gym step function
 
@@ -55,7 +55,7 @@ class TorqueControl(Wrapper):
 
 	def step(self, action):	
 		"""
-		User defined step_helper. Takes pybullet tool agent and action,
+		User defined step_helper. Takes pybullet debug agent and action,
 		returns tuple of observation, reward, done status, and info.
 		A high level pybullet wrapper for the gym step function
 
@@ -89,7 +89,7 @@ class PositionControl(Wrapper):
 
 	def step(self, action):	
 		"""
-		User defined step_helper. Takes pybullet tool agent and action,
+		User defined step_helper. Takes pybullet debug agent and action,
 		returns tuple of observation, reward, done status, and info.
 		A high level pybullet wrapper for the gym step function
 

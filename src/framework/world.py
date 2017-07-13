@@ -230,7 +230,7 @@ class World(object):
 
     def get_tool(self, _id, key=None):
         """
-        Get the tool by id. Note this id corresponds to the 
+        Get the tool by id. Note this id corresponds to the
         id given in env xml file, and for robot arms, 
         keyboard numbering starts from 0,1,2,3,4,5,...
         User can also use ',' and '.' to cyclically go to the 
@@ -240,7 +240,7 @@ class World(object):
         :param key: character to choose from types of tools,
         For gripper or robot arm, hit 'g' before selecting numbers
         to choose from grippers, 'm' for arms, and 'h' 
-        for hands, etc. Default is the first available tool. 
+        for hands, etc. Default is the first available tool.
         Currently supports up to 10 tools in total. (arms and 
         individual grippers)
         :return: the Tool instance associated with the id

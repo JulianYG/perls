@@ -24,13 +24,15 @@ p.loadURDF('plane.urdf', useFixedBase=True)
 # r.grasp()
 import math
 
-r = p.loadURDF('sawyer_robot/sawyer_description/urdf/sawyer.urdf', [0,0,0.9],
+# r = p.loadURDF('sawyer_robot/sawyer_description/urdf/sawyer.urdf', [0,0,0.9],
+# 	[0,0,0,1],useFixedBase=True)
+
+
+r = p.loadURDF('kuka_iiwa/model_vr_limits.urdf', [0,0,0.],
 	[0,0,0,1],useFixedBase=True)
+p.resetBasePositionAndOrientation(r, (0,0,0),(0,0,0,1))
 
-
-# r = p.loadURDF('kuka_iiwa/model_vr_limits.urdf', [0,0,0.],
-	# [0,0,0,-1],useFixedBase=True)
-
+print(p.getBasePositionAndOrientation(r))
 # p.setJointMotorControlArray(r, [0,1,2,3,4,5,6], 
 # 		p.POSITION_CONTROL, targetPositions=[0,0,0,0.5*math.pi,0,-math.pi*0.5*0.66,0], 
 # 		targetVelocities=[0] * 7,
@@ -63,7 +65,7 @@ jd=[0.1,0.1,0.1,0.1,0.1,0.1,0.1]
 p.loadURDF('cube_small.urdf', [-0.6,0,0.2], useFixedBase=True)
 p.setGravity(0,0,-9.8)
 # r.mark('haha')
-print (p.getLinkState(r, 18)[0])
+# print (p.getLinkState(r, 18)[0])
 # import ikpy
 # chain = ikpy.chain.Chain.from_urdf_file(
 # 	'../../bullet3/data/sawyer_robot/sawyer_description/urdf/sawyer_arm.urdf',
@@ -94,34 +96,34 @@ print (p.getLinkState(r, 18)[0])
 #   #       restPoses=(0, -1.18, 0.00, 2.18, 0.00, 0.57, 3.3161),
 #                 jointDamping=(.1,) * 7)
 # print(ik)
-print([(p.getJointInfo(r, o)[1], p.getLinkState(r, o)[0]) for o in range(p.getNumJoints(r))])
+# print([(p.getJointInfo(r, o)[1], p.getLinkState(r, o)[0]) for o in range(p.getNumJoints(r))])
 
-p.setJointMotorControlArray(r, [5,10,11,12,13,15,18], 
-		p.POSITION_CONTROL, targetPositions=(0, -1.18, 0.00, 2.18, 0.00, 0.57, 3.3161), 
-		targetVelocities=[0] * 7,
-		positionGains=[0.05] * 7, velocityGains=[1.] * 7)
+# p.setJointMotorControlArray(r, [5,10,11,12,13,15,18], 
+# 		p.POSITION_CONTROL, targetPositions=(0, -1.18, 0.00, 2.18, 0.00, 0.57, 3.3161), 
+# 		targetVelocities=[0] * 7,
+# 		positionGains=[0.05] * 7, velocityGains=[1.] * 7)
 
 for _ in range(2000):
 	p.stepSimulation()
-ik = p.calculateInverseKinematics(r, 6, (0.8, 0.1, 0.8), 
+ik = p.calculateInverseKinematics(r, 6, (0.5, -0.1, 0.3), 
 		# (0, 1, 0, 0),
-		lowerLimits=(-3.05, -3.82, -3.05, -3.05, -2.98, -2.98, -4.71), 
-		upperLimits=(3.05, 2.28, 3.05, 3.05, 2.98, 2.98, 4.71),
-        jointRanges=(6.1, 6.1, 6.1, 6.1, 5.96, 5.96, 9.4), 
+		lowerLimits=ll,#(-3.05, -3.82, -3.05, -3.05, -2.98, -2.98, -4.71), 
+		upperLimits=ul,#(3.05, 2.28, 3.05, 3.05, 2.98, 2.98, 4.71),
+        jointRanges=jr,#(6.1, 6.1, 6.1, 6.1, 5.96, 5.96, 9.4), 
 
-        restPoses=(0, -1.18, 0.00, 2.18, 0.00, 0.57, 3.3161),
-                jointDamping=(.1,) * 7)
+        restPoses=rp,#(0, -1.18, 0.00, 2.18, 0.00, 0.57, 3.3161),
+                jointDamping=(.5,) * 7)
 print(ik)
-p.setJointMotorControlArray(r, [5,10,11,12,13,15,18], 
-	p.POSITION_CONTROL, targetPositions=ik[1:], 
+p.setJointMotorControlArray(r, range(7), 
+	p.POSITION_CONTROL, targetPositions=ik, 
 	targetVelocities=[0] * 7,
 	positionGains=[0.05] * 7, velocityGains=[1.] * 7)
-print(p.getNumJoints(r))
+# print(p.getNumJoints(r))
 while 1:
 	# print(p.getQuaternionFromEuler((0, 0, np.pi * 2)))
 	
 	p.setRealTimeSimulation(1)
-	# print(p.getLinkState(r, 18)[0])
+	# print(p.getLinkState(r, 6)[0])
 
 	# print([(p.getLinkState(r, i)[0],p.getJointInfo(r, i)[-1])  for i in range(23)])
 	# for e in p.getMouseEvents():
