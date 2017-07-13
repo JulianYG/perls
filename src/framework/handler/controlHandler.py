@@ -198,7 +198,7 @@ class AppEventHandler(ControlHandler):
             ins.append(('grasp', event_dic['grasp']))
 
             ins.append(('reach', (math_util.vec(event_dic['pos']) * self._sens, None)))
-            orn = math_util.vec(event_dic['orn'])  * 3.1415927 / 180 
+            orn = math_util.rad(math_util.vec(event_dic['orn']))
             ins.append(('reach', (None, math_util.euler2quat(orn))))
 
         self._signal['instruction'] = ins

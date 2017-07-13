@@ -2,9 +2,9 @@
 
 from .stateEngine import RealStateEngine
 
-import rospy
-import rosparam
-import intera_interface
+# import rospy
+# import rosparam
+# import intera_interface
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
