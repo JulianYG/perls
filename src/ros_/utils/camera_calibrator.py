@@ -243,6 +243,8 @@ class RobotCalibrator(CameraCalibrator):
 		self._camera.snapshot(info)
 		self._camera.stream()
 
+
+
 class StereoCalibrator(CameraCalibrator):
 
 	"""

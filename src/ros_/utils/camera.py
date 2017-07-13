@@ -174,17 +174,18 @@ class PrimeSense(Camera):
 
 class Kinect(Camera):
 
-	def __init__(self, camera, dimension=None, 
+	def __init__(self, dimension=None, 
 		intrinsics=None, distortion=None):
 
 		if rospy.get_name() == '/unnamed':
-			rospy.init_node('kinect_calibration')
-		super(Kinect, self).__init__(camera, 
+			rospy.init_node('kinect_camera')
+		super(Kinect, self).__init__('kinect', 
 			dimension, intrinsics, distortion)
 
 
 	def snapshot(self, callback, info):
-		self._device = rospy.Subscriber('/kinect2/{}/image_color_rect'.format(self._camera_idx), 
+		# Always use hd image here
+		self._device = rospy.Subscriber('/kinect2/hd/image_color', 
 			Image, callback, callback_args=info)
 		
 	def turn_off(self):
@@ -333,6 +334,9 @@ class RobotCamera(Camera):
 		else:
 			print('Done sampling points.')
 			self.turn_off()
+
+
+
 
 
 class StereoCamera(Camera):

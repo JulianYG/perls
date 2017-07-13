@@ -27,256 +27,270 @@ from robot import Robot
 # USB Camera matrix 
 # dimension (640, 480)
 # _UK = np.array([
-# 	[600.153387, 0, 315.459915], 
-# 	[0, 598.015225, 222.933946], 
-# 	[0,          0,          1]
-# 	], np.float32)
+#   [600.153387, 0, 315.459915], 
+#   [0, 598.015225, 222.933946], 
+#   [0,          0,          1]
+#   ], np.float32)
 
 # # USB Camera Distortion
 # _UD = np.array([0.147084, -0.257330, 
-# 	0.003032, -0.006975, 0.000000], np.float32)
+#   0.003032, -0.006975, 0.000000], np.float32)
 
 # Dimension (1280, 720)
 
 
 _UK = np.array([
-	[927.902447 ,0.000000 ,641.850659],
-	[0.000000, 921.598756, 345.336021],
-	[0.000000, 0.000000 ,1.000000]
-	], dtype=np.float32)
+    [927.902447 ,0.000000 ,641.850659],
+    [0.000000, 921.598756, 345.336021],
+    [0.000000, 0.000000 ,1.000000]
+    ], dtype=np.float32)
 
 _UD = np.array([
-	0.078759, -0.143339, -0.000887 ,-0.001555 ,0.000000
-	], dtype=np.float32)
+    0.078759, -0.143339, -0.000887 ,-0.001555 ,0.000000
+    ], dtype=np.float32)
 
 
 class KinectTracker():
 
-	def __init__(self, robot, board_size=(2,2), itermat=(8, 9), 
-		K=None, D=None,
-		calib='../../../tools/calibration/calib_data/kinect'):
+    def __init__(self, robot, board_size=(2,2), itermat=(8, 9), 
+        K=None, D=None,
+        calib='../../../tools/calibration/calib_data/kinect'):
 
-		if rospy.get_name() == '/unnamed':
-			rospy.init_node('kinect_calibration')
+        if rospy.get_name() == '/unnamed':
+            rospy.init_node('kinect_calibration')
 
-		self._board_size = board_size
-		self._checker_size = 0.0274
+        self._board_size = board_size
+        self._checker_size = 0.0274
 
-		self._arm = robot
-		self._grid = itermat
+        self._arm = robot
+        self._grid = itermat
 
-		self._calib_directory = calib
+        self._camera_man = None
 
-		self.K = K
-		self.d = D
-		self.calibration_points = []
-		self.image_points, self.gripper_points = [], []
+        self._calib_directory = calib
 
-		self.track()
+        self.K = K
+        self.d = D
+        self.calibration_points = []
+        self.image_points, self.gripper_points = [], []
 
-	def _get_object_points(self, size):
-		"""
-		Return a numpy array of object points in shape [num, 3], float32
-		The object points represent the corner points on checkerboard
-		in real world frame, origin from the top left corner of 
-		the checkerboard
-		"""
-		raw_points = np.zeros(
-			(self._board_size[1], self._board_size[0], 3), 
-			dtype=np.float32)
+        self.track()
 
-		for i in range(self._board_size[1]):
-			for j in range(self._board_size[0]):
-				# Use 0 for z as for lying on the plane
-				raw_points[i, j] = [i * self._checker_size, 
-					j * self._checker_size, 0.]
+    def _get_object_points(self, size):
+        """
+        Return a numpy array of object points in shape [num, 3], float32
+        The object points represent the corner points on checkerboard
+        in real world frame, origin from the top left corner of 
+        the checkerboard
+        """
+        raw_points = np.zeros(
+            (self._board_size[1], self._board_size[0], 3), 
+            dtype=np.float32)
 
-		object_points = np.reshape(raw_points, 
-			(self._board_size[0] * self._board_size[1], 3)).astype(np.float32)
+        for i in range(self._board_size[1]):
+            for j in range(self._board_size[0]):
+                # Use 0 for z as for lying on the plane
+                raw_points[i, j] = [i * self._checker_size, 
+                    j * self._checker_size, 0.]
 
-		# Correspond correct number of points with sampled points
-		return [object_points] * size
+        object_points = np.reshape(raw_points, 
+            (self._board_size[0] * self._board_size[1], 3)).astype(np.float32)
 
-	def track(self):
+        # Correspond correct number of points with sampled points
+        return [object_points] * size
 
-		# Preparing...
-		invRotation_dir = pjoin(self._calib_directory, 'kinect_inverseRotation.p')
-		translation_dir = pjoin(self._calib_directory, 'kinect_translation.p')
+    def track(self):
 
-		if os.path.exists(invRotation_dir) and os.path.exists(translation_dir):
-			
-			with open(invRotation_dir, 'rb') as f:
-				ir = pickle.load(f)
-			self.invR = ir
+        # Preparing...
+        invRotation_dir = pjoin(self._calib_directory, 'KinectTracker_inverseRotation.p')
+        translation_dir = pjoin(self._calib_directory, 'KinectTracker_translation.p')
 
-			with open(translation_dir, 'rb') as f:
-				t = pickle.load(f)
-			self.T = t
-		
-			return t, ir
+        if os.path.exists(invRotation_dir) and os.path.exists(translation_dir):
+            
+            with open(invRotation_dir, 'rb') as f:
+                ir = pickle.load(f)
+            self.invR = ir
 
-		
-		info = dict(
-			board_size=self._board_size,
-			directory=self._calib_directory
-			)
+            with open(translation_dir, 'rb') as f:
+                t = pickle.load(f)
+            self.T = t
+        
+            return t, ir
 
-		# After preparation is done, kickstart tracking!
-		camera_man = rospy.Subscriber('/kinect2/hd/image_color', 
+        
+        info = dict(
+            board_size=self._board_size,
+            directory=self._calib_directory
+            )
+
+        # After preparation is done, kickstart tracking!
+        self._camera_man = rospy.Subscriber('/kinect2/hd/image_color', 
             Image, self.tracking_callback)
 
-		try:
-			rospy.spin()
+        rospy.on_shutdown(self.clean_shutdown)
+        rospy.loginfo("Kinect calibration node running. Ctrl-c to quit")
+        rospy.spin()
 
-		except KeyboardInterrupt:
-			rospy.loginfo('Shutting down robot camera corner detection')
-			cv2.destroyWindow('kinect_calibrate')
-			camera_man.unregister()
-			print('computing...')
-			self._compute()
+    def clean_shutdown(self):
 
+        rospy.loginfo('Shutting down kinect calibration.')
+        cv2.destroyWindow('kinect_calibrate')
+        self._camera_man.unregister()
+        print('computing...')
+        self._compute()
 
+    def tracking_callback(self, img_data):
 
-	def tracking_callback(self, img_data):
+        cv_image = CvBridge().imgmsg_to_cv2(img_data, 'bgr8')
 
-		cv_image = CvBridge().imgmsg_to_cv2(img_data, 'bgr8')
+        # Match with pattern location
 
-		# Match with pattern location
+        detected, pix = self._detect_center(cv_image)
 
-		detected, pix = self._detect_center(cv_image)
+        # Skip if not found pattern
+        if not detected:
+            return
 
-		# Skip if not found pattern
-		if not detected:
-			return
+        # Get the real position
+        gripper_pos = np.array(self._arm.get_tool_pose()[0], 
+                               dtype=np.float32)
 
-		# Get the real position
-		gripper_pos = np.array(self._arm.get_tool_pose()[0], 
-							   dtype=np.float32)
-
-		self.image_points.append(pix)
-		self.gripper_points.append(gripper_pos)
-		print('{} image saved.'.format(len(self.image_points)))
-
-
-	def _compute(self):
-
-		object_points = self._get_object_points(len(self.image_points))
-
-		# Solve for matrices
-		retval, rvec, tvec = cv2.solvePnP(
-			np.array(self.gripper_points, dtype=np.float32), 
-			np.array(self.image_points, dtype=np.float32), 
-			self.K, 
-			self.d)
-
-		print('Solving matrices...')
-
-		rotMatrix = cv2.Rodrigues(rvec)[0]
-		invRotation = np.linalg.inv(rotMatrix)
-			
-		data = dict(inverseRotation=invRotation,
-					translation=tvec,
-					intrinsics=self.K,
-					distortion=self.d)
-
-		for name, mat in data.items():
-			with open(pjoin(self._calib_directory, 
-				'{}_{}.p'.format(self.__class__.__name__, name)), 'wb') as f:
-				pickle.dump(mat, f)
-
-		print('Writing matrices...')
-
-		self.T = tvec
-		self.invR = invRotation
-
-		return tvec, invRotation
-
-	@staticmethod
-	def convert(u, v, z, K, T, invR):
-
-		# Pixel value
-		p = np.array([u, v, 1], dtype=np.float32)
-
-		tempMat = invR * K
-		tempMat2 = tempMat.dot(p)
-		tempMat3 = invR.dot(np.reshape(T, 3))
-
-		# approx height of each block + 
-		# (inv Rotation matrix * inv Camera matrix * point)
-		# inv Rotation matrix * tvec
-		s = (z + tempMat3[2]) / tempMat2[2]
-
-		# s * [u,v,1] = M(R * [X,Y,Z] - t)  
-		# ->   R^-1 * (M^-1 * s * [u,v,1] - t) = [X,Y,Z] 
-		temp = np.linalg.inv(K).dot(s * p)
-		temp2 = temp - np.reshape(T, 3)
-		gripper_coords = invR.dot(temp2)
-
-		return gripper_coords
-
-	def _detect_center(self, cv_img):
-		
-		# Look for pattern
-		foundPattern, usbCamCornerPoints = cv2.findChessboardCorners(
-			cv_img, self._board_size, None,
-			cv2.CALIB_CB_ADAPTIVE_THRESH
-		)
-
-		cv2.drawChessboardCorners(cv_img, self._board_size, 
-				usbCamCornerPoints, foundPattern)
-
-		cv2.imshow('kinect_calibrate', cv_img)
-		key = cv2.waitKey(1) & 0xff
-
-		if key == 115:
-			print('Recognizing pattern...')
+        self.image_points.append(pix)
+        self.gripper_points.append(gripper_pos)
+        print('{} image saved.'.format(len(self.image_points)))
 
 
-			if not foundPattern:
-				# print('Robot camera did not find pattern...'
-				# 	' Skipping.')
-				# cv2.imwrite(pjoin(self._calib_directory, 
-				# 	'failures/{}.jpg'.format(rospy.Time.now())), cv_img)
-				return False, None	
+    def _compute(self):
 
-			else:
-				cv2.cornerSubPix(cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY), 
-						usbCamCornerPoints, (11, 11), (-1, -1), 
-						(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001))
+        object_points = self._get_object_points(len(self.image_points))
 
-				usbCamCornerPoints = np.squeeze(usbCamCornerPoints)
-				recognized_pix = np.mean(usbCamCornerPoints, axis=0)
-			
-				return True, recognized_pix
+        # Solve for matrices
+        retval, rvec, tvec = cv2.solvePnP(
+            np.array(self.gripper_points, dtype=np.float32), 
+            np.array(self.image_points, dtype=np.float32), 
+            self.K, 
+            self.d)
 
-		return False, None
+        print('Solving matrices...')
 
-		
-			
+        rotMatrix = cv2.Rodrigues(rvec)[0]
+        invRotation = np.linalg.inv(rotMatrix)
+            
+        data = dict(inverseRotation=invRotation,
+                    translation=tvec,
+                    intrinsics=self.K,
+                    distortion=self.d)
 
-	# def match_eval(self):
+        for name, mat in data.items():
+            with open(pjoin(self._calib_directory, 
+                '{}_{}.p'.format(self.__class__.__name__, name)), 'wb') as f:
+                pickle.dump(mat, f)
 
-	# 	def mouse_callback(event, x, y, flags, params):
-	# 		if event == 1:
-	# 			print((x, y), self.convert(x, y, 
-	# 				self.z_offset, self.K, self.T, self.invR))
-	# 	img = self._camera.snapshot()
-	# 	while True:
-	# 		try:
-	# 			cv2.namedWindow('match_eval', cv2.CV_WINDOW_AUTOSIZE)
-	# 			cv2.setMouseCallback('match_eval', mouse_callback)
-	# 			# # Remove distortion
-	# 			# rectified_image = cv2.undistort(img, self.K, 
-	# 			# 	self.d)
-	# 			cv2.imshow('match_eval', img)
+        print('Writing matrices...')
 
-	# 			# Update per millisecond
-	# 			cv2.waitKey(1)
-	# 		except KeyboardInterrupt:
-	# 			cv2.destroyAllWindows()
+        self.T = tvec
+        self.invR = invRotation
+
+        return tvec, invRotation
+
+    @staticmethod
+    def convert(u, v, z, K, T, invR):
+
+        # Pixel value
+        p = np.array([u, v, 1], dtype=np.float32)
+
+        tempMat = invR * K
+        tempMat2 = tempMat.dot(p)
+        tempMat3 = invR.dot(np.reshape(T, 3))
+
+        # approx height of each block + 
+        # (inv Rotation matrix * inv Camera matrix * point)
+        # inv Rotation matrix * tvec
+        s = (z + tempMat3[2]) / tempMat2[2]
+
+        # s * [u,v,1] = M(R * [X,Y,Z] - t)  
+        # ->   R^-1 * (M^-1 * s * [u,v,1] - t) = [X,Y,Z] 
+        temp = np.linalg.inv(K).dot(s * p)
+        temp2 = temp - np.reshape(T, 3)
+        gripper_coords = invR.dot(temp2)
+
+        return gripper_coords
+
+    def _detect_center(self, cv_img):
+        
+        # Look for pattern
+        foundPattern, usbCamCornerPoints = cv2.findChessboardCorners(
+            cv_img, self._board_size, None,
+            cv2.CALIB_CB_ADAPTIVE_THRESH
+        )
+
+        cv2.drawChessboardCorners(cv_img, self._board_size, 
+              usbCamCornerPoints, foundPattern)
+
+        cv2.imshow('kinect_calibrate', cv_img)
+        key = cv2.waitKey(1) & 0xff
+
+        if key == 115:
+            print('Recognizing pattern...')
+
+
+            if not foundPattern:
+                # print('Robot camera did not find pattern...'
+                #   ' Skipping.')
+                # cv2.imwrite(pjoin(self._calib_directory, 
+                #   'failures/{}.jpg'.format(rospy.Time.now())), cv_img)
+                return False, None  
+
+            else:
+                cv2.cornerSubPix(cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY), 
+                        usbCamCornerPoints, (11, 11), (-1, -1), 
+                        (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001))
+
+                usbCamCornerPoints = np.squeeze(usbCamCornerPoints)
+                recognized_pix = np.mean(usbCamCornerPoints, axis=0)
+            
+                return True, recognized_pix
+
+        return False, None
+
+    
+    def eval_callback(self, img):
+
+        
+            
+
+    def match_eval(self):
+
+        def mouse_callback(event, x, y, flags, params):
+            if event == 1:
+                print((x, y), self.convert(x, y, 
+                    0, self.K, self.T, self.invR))
+        # After preparation is done, kickstart tracking!
+        self._camera_man = rospy.Subscriber('/kinect2/hd/image_color', 
+            Image, mouse_callback)
+
+        cv_image = CvBridge().imgmsg_to_cv2(img_data, 'bgr8')
+
+        rospy.on_shutdown(self.clean_shutdown)
+        rospy.loginfo("Kinect calibration node running. Ctrl-c to quit")
+        rospy.spin()
+
+        while True:
+            try:
+                cv2.namedWindow('match_eval', cv2.CV_WINDOW_AUTOSIZE)
+                cv2.setMouseCallback('match_eval', mouse_callback)
+                  # # Remove distortion
+                  # rectified_image = cv2.undistort(img, self.K, 
+                  #   self.d)
+                cv2.imshow('match_eval', img)
+
+                  # Update per millisecond
+                cv2.waitKey(1)
+            except KeyboardInterrupt:
+                cv2.destroyAllWindows()
 
 if rospy.get_name() == '/unnamed':
-	rospy.init_node('kinect_tracker')
+    rospy.init_node('kinect_tracker')
 
 
 limb = intera_interface.Limb('right')
@@ -294,6 +308,6 @@ distortion = np.array([ 3.4454149657654337e-02, 9.7555269933206498e-02,
        -2.0379307133765162e-01 ], dtype=np.float32)
 
 tracker = KinectTracker(robot, board_size= (9,6), itermat=(3,4), K=intrinsics,
-	D=distortion)
+    D=distortion)
 
-# tracker.match_eval()
+tracker.match_eval()
