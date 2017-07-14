@@ -39,7 +39,6 @@ class Camera(object):
 		self._distortion = distortion
 
 		self._camera_idx = camera
-		self.turn_on()
 
 	@property
 	def on(self):
@@ -140,6 +139,7 @@ class UVCCamera(Camera):
 
 		super(UVCCamera, self).__init__(camera_index, 
 			dimension, intrinsics, distortion)
+		self.turn_on()
 
 	def turn_on(self):
 		self._device = cv2.VideoCapture(self._camera_idx)
@@ -174,61 +174,128 @@ class PrimeSense(Camera):
 
 class Kinect(Camera):
 
-	def __init__(self, dimension=None, 
+	_DIM_MAP = dict(hd=(1920, 1080),
+					qhd=(960, 540),
+					sd=(512, 424))
+
+	from pylibfreenect2 import Freenect2, SyncMultiFrameListener
+	from pylibfreenect2 import FrameType, Registration, Frame
+	from pylibfreenect2 import createConsoleLogger, setGlobalLogger
+	from pylibfreenect2 import LoggerLevel
+	from pylibfreenect2.libfreenect2 import IrCameraParams, ColorCameraParams
+	try:
+	    from pylibfreenect2 import OpenCLPacketPipeline
+	    pipeline = OpenCLPacketPipeline()
+	except:
+	    try:
+	        from pylibfreenect2 import OpenGLPacketPipeline
+	        pipeline = OpenGLPacketPipeline()
+	    except:
+	        from pylibfreenect2 import CpuPacketPipeline
+	        pipeline = CpuPacketPipeline()
+
+	print("Packet pipeline:", type(pipeline).__name__)
+
+	# Create and set logger
+	logger = createConsoleLogger(LoggerLevel.Debug)
+	setGlobalLogger(logger)
+
+	def __init__(self, dimension='hd', 
 		intrinsics=None, distortion=None):
 
-		if rospy.get_name() == '/unnamed':
-			rospy.init_node('kinect_camera')
+		assert dimension in _DIM_MAP.keys()
+
 		super(Kinect, self).__init__('kinect', 
-			dimension, intrinsics, distortion)
+			_DIM_MAP[dimension], intrinsics, distortion)
 
+		self._device = self._get_device()
+		self._listener = SyncMultiFrameListener(
+            FrameType.Color | FrameType.Ir | FrameType.Depth)
+		self._registration = self.turn_on()
 
-	def snapshot(self, callback, info):
-		# Always use hd image here
-		self._device = rospy.Subscriber('/kinect2/hd/image_color', 
-			Image, callback, callback_args=info)
+	def _get_device(self):
+
+        fn = Freenect2()
+        num_devices = fn.enumerateDevices()
+        if num_devices == 0:
+            print("No device connected!")
+            sys.exit(1)
+
+        serial = fn.getDeviceSerialNumber(0)
+        device = fn.openDevice(serial, pipeline=pipeline)
+        return device
+
+	def turn_on(self):
+
+		self._undistorted = Frame(512, 424, 4)
+        self._registered = Frame(512, 424, 4)
+
+        self._bigdepth = Frame(1920, 1082, 4)
+        self._color_depth_map = np.zeros((424, 512),  np.int32).ravel()
+
+        # Register listeners
+        device.setColorFrameListener(listener)
+        device.setIrAndDepthFrameListener(listener)
+
+        device.start()
+
+        # NOTE: must be called after device.start()
+        if self._intrinsics is None or self._distortion is None:
+
+            registration = Registration(device.getIrCameraParams(),
+                            device.getColorCameraParams())
+        else:
+            # IrParams = IrCameraParams(self.K, ...)
+            # colorParams = ColorCameraParams(self.K, ...)
+
+            # registration = Registration(IrParams, colorParams)
+            registration = Registration(device.getIrCameraParams(),
+                            device.getColorCameraParams())
+
+        return registration
+
+	def snapshot(self):
+		
+		frames = self._listener.waitForNewFrame()
+        color, ir, depth = frames['color'], frames['ir'], frames['depth']
+        
+        self._registration.apply(color, depth, 
+            self._undistorted,
+            self._registered, 
+            bigdepth=self._bigdepth, 
+            color_depth_map=self._color_depth_map)
+
+        return color, ir, depth
+
+    def stream(self):
+    	while True:
+    		color, ir, depth = self.snapshot()
+    		cv2.imshow("ir", ir.asarray() / 65535.)
+		    cv2.imshow("depth", depth.asarray() / 4500.)
+		    cv2.imshow("color", cv2.resize(color.asarray(),
+		                                   (int(1920 / 3), int(1080 / 3))))
+		    cv2.imshow("registered", registered.asarray(np.uint8))
+
+		    cv2.imshow("bigdepth", cv2.resize(bigdepth.asarray(np.float32),
+		                                          (int(1920 / 3), int(1082 / 3))))
+		    
+		    cv2.imshow("color_depth_map", color_depth_map.reshape(424, 512))
+
+		    self._listener.release(frames)
+
+		    key = cv2.waitKey(delay=1)
+		    if key == ord('q'):
+		        break
+
 		
 	def turn_off(self):
-		cv2.destroyWindow('kinect_calibrate')
-		self._device.unregister()
-		self.camera_on = False
+        self._device.stop()
+        self._device.close()
+        self.camera_on = False
 
 	def callback(self, img_data, info):
 
-		cv_image = CvBridge().imgmsg_to_cv2(img_data, 'bgr8')
-		found, points = cv2.findChessboardCorners(
-			cv_image, info['board_size'], None
-		)
-		cv2.drawChessboardCorners(cv_image, info['board_size'], 
-			points, found)
-
-		cv2.imshow('kinect_calibrate', cv_image)
-		key = cv2.waitKey(1) & 0xff
-
-		if key == 115:
-			print('Recognizing pattern...')
-		else:
-			return
-
-		if not found:
-			print('Robot camera did not find pattern...'
-				' Please re-adjust checkerboard position to continue.')
-			cv2.imwrite(pjoin(info['directory'], 
-				'failures/{}.jpg'.format(rospy.Time.now())), cv_image)
-			return
-
-		elif len(info['point_list']) < info['calibration_points']:
-
-			cv2.cornerSubPix(cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY), 
-				points, (11, 11), (-1, -1), 
-				(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001))
-			info['point_list'].append(points)
-			print('Successfully read one point.'
-				' Re-adjust the checkerboard to continue...')
-			return
-		else:
-			self.turn_off()
-			print('Done sampling points.')
+		return NotImplemented
 
 
 class RobotCamera(Camera):
@@ -240,6 +307,7 @@ class RobotCamera(Camera):
 			rospy.init_node('robot_camera_calibration')
 		super(RobotCamera, self).__init__(camera_type, 
 			dimension, intrinsics, distortion)
+		self.turn_on()
 
 	# Cannot implement turn_on and 
 	def turn_on(self):
