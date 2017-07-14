@@ -71,33 +71,14 @@ class KinectTracker():
 
         self.K = K
         self.d = D
+        self.T = None
+        self.invR = None
         self.calibration_points = []
         self.image_points, self.gripper_points = [], []
 
+        self.depth_image = None
+
         self.track()
-
-    def _get_object_points(self, size):
-        """
-        Return a numpy array of object points in shape [num, 3], float32
-        The object points represent the corner points on checkerboard
-        in real world frame, origin from the top left corner of 
-        the checkerboard
-        """
-        raw_points = np.zeros(
-            (self._board_size[1], self._board_size[0], 3), 
-            dtype=np.float32)
-
-        for i in range(self._board_size[1]):
-            for j in range(self._board_size[0]):
-                # Use 0 for z as for lying on the plane
-                raw_points[i, j] = [i * self._checker_size, 
-                    j * self._checker_size, 0.]
-
-        object_points = np.reshape(raw_points, 
-            (self._board_size[0] * self._board_size[1], 3)).astype(np.float32)
-
-        # Correspond correct number of points with sampled points
-        return [object_points] * size
 
     def track(self):
 
@@ -124,7 +105,7 @@ class KinectTracker():
             )
 
         # After preparation is done, kickstart tracking!
-        self._camera_man = rospy.Subscriber('/kinect2/hd/image_color', 
+        self._camera_man = rospy.Subscriber('/kinect2/hd/image_color_rect', 
             Image, self.tracking_callback)
 
         rospy.on_shutdown(self.clean_shutdown)
@@ -136,8 +117,9 @@ class KinectTracker():
         rospy.loginfo('Shutting down kinect calibration.')
         cv2.destroyWindow('kinect_calibrate')
         self._camera_man.unregister()
-        print('computing...')
-        self._compute()
+        if self.invR is None or self.T is None:
+            print('computing...')
+            self._compute()
 
     def tracking_callback(self, img_data):
 
@@ -161,8 +143,6 @@ class KinectTracker():
 
 
     def _compute(self):
-
-        object_points = self._get_object_points(len(self.image_points))
 
         # Solve for matrices
         retval, rvec, tvec = cv2.solvePnP(
@@ -210,8 +190,10 @@ class KinectTracker():
 
         # s * [u,v,1] = M(R * [X,Y,Z] - t)  
         # ->   R^-1 * (M^-1 * s * [u,v,1] - t) = [X,Y,Z] 
+
         temp = np.linalg.inv(K).dot(s * p)
         temp2 = temp - np.reshape(T, 3)
+
         gripper_coords = invR.dot(temp2)
 
         return gripper_coords
@@ -228,17 +210,13 @@ class KinectTracker():
               usbCamCornerPoints, foundPattern)
 
         cv2.imshow('kinect_calibrate', cv_img)
-        key = cv2.waitKey(1) & 0xff
+        key = cv2.waitKey(500) & 0xff
 
         if key == 115:
             print('Recognizing pattern...')
 
-
             if not foundPattern:
-                # print('Robot camera did not find pattern...'
-                #   ' Skipping.')
-                # cv2.imwrite(pjoin(self._calib_directory, 
-                #   'failures/{}.jpg'.format(rospy.Time.now())), cv_img)
+                print('Pattern not found.')
                 return False, None  
 
             else:
@@ -254,40 +232,52 @@ class KinectTracker():
         return False, None
 
     
-    def eval_callback(self, img):
+    def rgb_callback(self, img):
 
-        
-            
+        cv_image = CvBridge().imgmsg_to_cv2(img, 'bgr8')
+
+        def mouse_callback(event, x, y, flags, params):
+            if event == 1 and self.depth_image is not None:
+                # print(self.depth_image.shape)  # 1080, 1920
+                # print(self.depth_image[y][x] / 1000.)
+                print((x, y), self.convert(x, y, 
+                    #1.22 - self.depth_image[y][x] / 1000., 
+                    -0.1,
+                    self.K, self.T, self.invR))
+
+        try:
+
+            cv2.namedWindow("kinect-rgb", cv2.CV_WINDOW_AUTOSIZE)
+            cv2.imshow("kinect-rgb", cv_image)
+
+            cv2.setMouseCallback('kinect-rgb', mouse_callback, cv_image)
+            cv2.waitKey(200)
+
+        except CvBridgeError, err:
+            rospy.logerr(err)
+            return
+
+
+    def depth_callback(self, img):
+
+        cv_image = CvBridge().imgmsg_to_cv2(img)
+        self.depth_image = cv_image
+
 
     def match_eval(self):
 
-        def mouse_callback(event, x, y, flags, params):
-            if event == 1:
-                print((x, y), self.convert(x, y, 
-                    0, self.K, self.T, self.invR))
         # After preparation is done, kickstart tracking!
-        self._camera_man = rospy.Subscriber('/kinect2/hd/image_color', 
-            Image, mouse_callback)
+        self._camera_man = rospy.Subscriber('/kinect2/hd/image_color_rect', 
+            Image, self.rgb_callback)
 
-        cv_image = CvBridge().imgmsg_to_cv2(img_data, 'bgr8')
+        self._depth_camera = rospy.Subscriber('/kinect2/hd/image_depth_rect', 
+            Image, self.depth_callback)
 
         rospy.on_shutdown(self.clean_shutdown)
-        rospy.loginfo("Kinect calibration node running. Ctrl-c to quit")
+        rospy.loginfo("Kinect evaluation node running. Ctrl-c to quit")
         rospy.spin()
 
-        while True:
-            try:
-                cv2.namedWindow('match_eval', cv2.CV_WINDOW_AUTOSIZE)
-                cv2.setMouseCallback('match_eval', mouse_callback)
-                  # # Remove distortion
-                  # rectified_image = cv2.undistort(img, self.K, 
-                  #   self.d)
-                cv2.imshow('match_eval', img)
 
-                  # Update per millisecond
-                cv2.waitKey(1)
-            except KeyboardInterrupt:
-                cv2.destroyAllWindows()
 
 if rospy.get_name() == '/unnamed':
     rospy.init_node('kinect_tracker')
@@ -300,7 +290,7 @@ robot = Robot(limb, None)
 
 dimension = (1920, 1080)
 intrinsics = np.array([[1.0741796970429734e+03, 0., 9.3488214133804252e+02], 
-                       [1.0640064260133906e+03, 0., 6.0428649994134821e+02], 
+                       [0., 1.0640064260133906e+03, 6.0428649994134821e+02], 
                        [0., 0., 1.]], dtype=np.float32)
 
 distortion = np.array([ 3.4454149657654337e-02, 9.7555269933206498e-02,
