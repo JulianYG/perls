@@ -322,7 +322,7 @@ class Kinect(Camera):
             cv2.namedWindow('kinect-rgbd', cv2.CV_WINDOW_AUTOSIZE)
             rgbd = self._color_depth_map.reshape(424, 512)
             cv2.imshow("kinect-rgbd", rgbd)
-            cv2.setMouseCallback('kinect-rgbd', mouse_callback, rgbd)
+            cv2.setMouseCallback('kinect-rgbd', mouse_callback, self._undistorted)
 
 
             self._listener.release(self._frames)
