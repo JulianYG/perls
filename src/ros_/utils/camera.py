@@ -169,8 +169,6 @@ class PrimeSense(Camera):
 		super(PrimeSense, self).__init__(camera_index, 
 			dimension, intrinsics, distortion)
 
-	# TODO
-
 
 class Kinect(Camera):
 
