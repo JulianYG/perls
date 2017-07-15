@@ -5,8 +5,7 @@ import threading
 from .state import physicsEngine, robotEngine
 from .adapter import Adapter
 from .render import renderEngine, camera
-from ..comm.reader import StateReader
-from ..comm.logger import StateLogger
+from ..comm.worker import StateReader, StateLogger
 from .debug import debugger, tester
 from .utils import io_util, util
 from .utils.io_util import FONT, loginfo, logerr
@@ -133,7 +132,8 @@ class PerlsServer(object):
                 StateReader(conf.id),
                 StateLogger(conf.id))
 
-    def load_config(self, conf):
+    @staticmethod
+    def load_config(conf):
         """
         Helper method to load configurations. Not recommended with
         outside calls unless perform manual check, since it may
@@ -150,7 +150,7 @@ class PerlsServer(object):
         """
 
         # Initialize graphics render (rendering render)
-        ge = self._GRAPHICS_ENGINES[conf.graphics_engine](
+        ge = PerlsServer._GRAPHICS_ENGINES[conf.graphics_engine](
             conf.disp_info,
             conf.job,
             conf.video,
@@ -158,7 +158,7 @@ class PerlsServer(object):
         )
 
         # Initialize physics render (state render)
-        pe = self._PHYSICS_ENGINES[conf.physics_engine](
+        pe = PerlsServer._PHYSICS_ENGINES[conf.physics_engine](
             conf.id,
             ge.ps_id,
             conf.max_run_time,
@@ -213,11 +213,11 @@ class PerlsServer(object):
         world, display, reader, writer = self._physics_servers[server_id]
 
         # Preparing variables
-        time_up, done, success = False, False, False
+        time_up = False
         self._init_time_stamp = util.get_abs_time()
 
         track_targets = world.get_states(('env', 'target'))[0]
-        status = display.run(track_targets)
+        status = display.run([t[0] for t in track_targets])
 
         if status == -1:
             logerr('Error loading simulation', FONT.control)
@@ -238,11 +238,11 @@ class PerlsServer(object):
 
         # Finally start control loop
         try:
-            while not time_up or done:
+            while not time_up:
                 elt = util.get_elapsed_time(self._init_time_stamp)
 
                 # Read desired states
-                reader.consume(world)
+                reader.consume(world, display)
 
                 # Update model
                 time_up = world.update(elt)
@@ -250,21 +250,11 @@ class PerlsServer(object):
                 # Update actual states
                 writer.produce(world)
 
-                # Update view with camera info
-                # TODO
-                display.update({})
-
                 # Next check task completion, communicate
                 # with the model
                 # TODO This should happen in client, not here
                 # done, success = self._checker_interrupt()
 
-            if success:
-                loginfo('Task success! Exiting simulation...',
-                        FONT.disp)
-            else:
-                loginfo('Task failed! Exiting simulation...',
-                        FONT.disp)
         except KeyboardInterrupt:
             loginfo('User exits the program by ctrl+c.',
                     FONT.warning)

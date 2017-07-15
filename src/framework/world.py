@@ -67,7 +67,7 @@ class World(object):
         return dict(
             name=self.name_str,
             tools=[t.name for t in self._tools.values()],
-            tracking_bodies=[self._bodies[b].name for b in self._target_bodies],
+            tracking_bodies=[b[1] for b in self._target_bodies],
             assets=self._bodies.keys(),
             engine=self._engine.info
         )
@@ -112,7 +112,7 @@ class World(object):
         Get the list of tracked bodies in the world, 
         that is, being recorded.
         :return: A list of target bodies, this is 
-        a subset of all bodies in the world
+        a subset of all bodies in the world (uid, name)
         """
         return self._target_bodies
 
@@ -147,8 +147,8 @@ class World(object):
         # TODO: depend on tool type
         body = Body(self._engine, file_path, pos, orn, fixed)
         if record:
-            self._target_bodies.append(body.uid)
-        self._bodies[body.uid] = body
+            self._target_bodies.append((body.uid, body.name))
+        self._bodies[body.name] = body
 
     def load_xml(self, file_name):
         """
@@ -179,9 +179,10 @@ class World(object):
 
             # Tools are labeled by tool_id's
             self._tools[gripper_body.tid] = gripper_body
-            self._bodies[gripper_body.uid] = gripper_body
-            # Target bodies are listed as a bunch of uid's
-            self._target_bodies.append(gripper_body.uid)
+            self._bodies[gripper_body.name] = gripper_body
+
+            # Target bodies are listed as a bunch of (uid, name) tuples
+            self._target_bodies.append((gripper_body.uid, gripper_body.name))
 
         for i in range(len(parse_tree.arm)):
             arm_spec = parse_tree.arm[i]
@@ -196,8 +197,8 @@ class World(object):
 
             # Note here not appending gripper into tools since
             # we can only operate it through the arm
-            self._target_bodies.append(gripper_body.uid)
-            self._bodies[gripper_body.uid] = gripper_body
+            self._target_bodies.append((gripper_body.uid, gripper_body.name))
+            self._bodies[gripper_body.name] = gripper_body
 
             arm_body = self.ARM_TYPE[arm_spec['type']](
                 arm_spec['id'],
@@ -209,8 +210,8 @@ class World(object):
             arm_body.name = arm_spec['name']
 
             self._tools[arm_body.tid] = arm_body
-            self._bodies[arm_body.uid] = arm_body
-            self._target_bodies.append(arm_body.uid)
+            self._bodies[arm_body.name] = arm_body
+            self._target_bodies.append((arm_body.uid, arm_body.name))
 
         for asset in parse_tree.scene:
             asset_body = Body(self._engine,
@@ -219,9 +220,9 @@ class World(object):
                               orn=asset['orn'],
                               fixed=asset['fixed'])
 
-            self._bodies[asset_body.uid] = asset_body
+            self._bodies[asset_body.name] = asset_body
             if asset['record']:
-                self._target_bodies.append(asset_body.uid)
+                self._target_bodies.append((asset_body.uid, asset_body.name))
 
         # TODO: Think if there's other stuff to conf
         # Add gravity after everything is loaded

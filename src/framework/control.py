@@ -147,7 +147,8 @@ class Controller(object):
                 world.notify_engine('pending')
             self._physics_servers[conf.id] = (world, disp, ctrl_hdlr)
 
-    def load_config(self, conf):
+    @staticmethod
+    def load_config(conf):
         """
         Helper method to load configurations. Not recommended with 
         outside calls unless perform manual check, since it may 
@@ -164,7 +165,7 @@ class Controller(object):
         """
 
         # Initialize graphics render (rendering render)
-        ge = self._GRAPHICS_ENGINES[conf.graphics_engine](
+        ge = Controller._GRAPHICS_ENGINES[conf.graphics_engine](
             conf.disp_info,
             conf.job,
             conf.video,
@@ -187,7 +188,7 @@ class Controller(object):
         # TODO
         # event_handler = 
 
-        ctrl_handler = self._CTRL_HANDLERS[conf.control_type](
+        ctrl_handler = Controller._CTRL_HANDLERS[conf.control_type](
             pe.ps_id, conf.sensitivity, conf.rate
         )
 
@@ -251,7 +252,9 @@ class Controller(object):
         self._init_time_stamp = util.get_abs_time()
 
         track_targets = world.get_states(('env', 'target'))[0]
-        status = display.run(track_targets)
+
+        # Pass in targets uids
+        status = display.run([t[0] for t in track_targets])
 
         if status == -1:
             logerr('Error loading simulation', FONT.control)

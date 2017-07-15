@@ -62,10 +62,11 @@ class View:
 
     def get_camera_pose(self, otype='orn'):
         """
-        Get
-        :return:
+        Get the current camera pose in rendering engine
+        :return: (pos, orn) tuple based on given
+        orientation type
         """
-        return
+        return self._engine.get_camera_pose(otype=otype)
 
     def update(self, camera_info, *_):
         """
