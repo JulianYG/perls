@@ -545,6 +545,26 @@ class Body(object):
             self._engine.remove_body_text_marker(mid)
         self._text_markers = dict()
 
+    def get_pose(self, uid=None, lid=None):
+        """
+        Get the current pose of the body. If uid input
+        argument is not specified, returns with respect
+        to absolute world frame. Otherwise returns relative
+        pose w.r.t given object uid.
+        :return: (pos, orn) tuple
+        """
+        if uid:
+            frame_pos = self._engine.get_body_scene_position(uid)
+            frame_orn = self._engine.get_body_scene_orientation(uid)
+            if lid:
+                frame_pos, frame_orn = \
+                    self._engine.get_body_link_state(uid, lid)[:2]
+
+            return self._engine.get_body_relative_pose(
+                self._uid, frame_pos, frame_orn)
+        else:
+            return self.pos, self.orn
+
     def reset(self):
         """
         Reset body to its original pose/fix condition.

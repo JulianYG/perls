@@ -133,6 +133,20 @@ class StateEngine(object):
         return NotImplemented
 
     @abc.abstractmethod
+    def get_body_relative_pose(self, uid, frame_pos, frame_orn):
+        """
+        Get the body's position and orientation in the
+        specified coordinate system.
+        :param uid: body's unique integer id
+        :param frame_pos: origin of given frame (vec3 float
+         cartesian), relative to the world frame
+        :param frame_orn: orientation of given frame (vec4
+        float quaternion), relative to the world frame
+        :return: (pos, orn) of querying object in given frame
+        """
+        return NotImplemented
+
+    @abc.abstractmethod
     def set_body_scene_pose(self, uid, pos, orn):
         """
         Set position and orientation (vec4 float quaternion),

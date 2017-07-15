@@ -103,6 +103,20 @@ class InteraEngine(RealStateEngine):
         """
         pass
 
+    def get_body_relative_pose(self, uid, frame_pos, frame_orn):
+        """
+        Get the body's position and orientation in the
+        specified coordinate system. In a real world, this
+        should have something to do with the camera.
+        :param uid: body's unique integer id
+        :param frame_pos: origin of given frame (vec3 float
+         cartesian), relative to the world frame
+        :param frame_orn: orientation of given frame (vec4
+        float quaternion), relative to the world frame
+        :return: (pos, orn) of querying object in given frame
+        """
+        pass
+
     def get_body_name(self, uid):
         """
         Get the name string of the body

@@ -150,11 +150,15 @@ class BulletPhysicsEngine(FakeStateEngine):
     # Body related methods
 
     def get_body_scene_position(self, uid):
-        return np.array(p.getBasePositionAndOrientation(
+        if uid == -1:
+            return math_util.zero_vec(3)
+        return math_util.vec(p.getBasePositionAndOrientation(
             uid, physicsClientId=self._physics_server_id)[0])
 
     def get_body_scene_orientation(self, uid, otype='quat'):
 
+        if uid == -1:
+            return math_util.vec((0, 0, 0, 1))
         orn = p.getBasePositionAndOrientation(
             uid, physicsClientId=self._physics_server_id)[1]
         if otype == 'quat':
@@ -190,6 +194,14 @@ class BulletPhysicsEngine(FakeStateEngine):
             return math_util.deg(math_util.mat2euler(orn))
         else:
             loginfo('Unrecognized orientation form.', FONT.ignore)
+
+    def get_body_relative_pose(self, uid, frame_pos, frame_orn):
+
+        body_pose = p.getBasePositionAndOrientation(uid, self._physics_server_id)
+
+        transform = p.invertTransform(frame_pos, frame_orn)
+        return p.multiplyTransforms(transform[0], transform[1],
+                                    body_pose[0], body_pose[1])
 
     def set_body_scene_pose(self, uid, pos, orn):
         status = 0
