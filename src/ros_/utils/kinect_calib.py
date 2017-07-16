@@ -142,30 +142,30 @@ class KinectTracker():
             
             color, ir, depth = self.snapshot()
 
-            cv2.namedWindow('kinect-ir', cv2.WINDOW_AUTOSIZE)
+            cv2.namedWindow('kinect-ir', cv2.CV_WINDOW_AUTOSIZE)
             cv2.imshow('kinect-ir', ir.asarray() / 65535.)
             cv2.setMouseCallback('kinect-ir', mouse_callback, ir)
 
-            cv2.namedWindow('kinect-depth', cv2.WINDOW_AUTOSIZE)
+            cv2.namedWindow('kinect-depth', cv2.CV_WINDOW_AUTOSIZE)
             cv2.imshow("kinect-depth", depth.asarray() / 4500.)
             cv2.setMouseCallback('kinect-depth', mouse_callback, depth)
 
-            cv2.namedWindow('kinect-rgb', cv2.WINDOW_AUTOSIZE)
+            cv2.namedWindow('kinect-rgb', cv2.CV_WINDOW_AUTOSIZE)
             rgb = cv2.resize(color.asarray(), (int(1920 / 3), int(1080 / 3)))
             cv2.imshow("kinect-rgb", rgb)
 
-            cv2.namedWindow('kinect-registered', cv2.WINDOW_AUTOSIZE)
+            cv2.namedWindow('kinect-registered', cv2.CV_WINDOW_AUTOSIZE)
             registered = self._registered.asarray(np.uint8)
             cv2.imshow("kinect-registered", registered)
             cv2.setMouseCallback('kinect-registered', mouse_callback, self._registered)
 
-            cv2.namedWindow('kinect-big_depth', cv2.WINDOW_AUTOSIZE)
+            cv2.namedWindow('kinect-big_depth', cv2.CV_WINDOW_AUTOSIZE)
             big_depth = cv2.resize(self._big_depth.asarray(np.float32), 
                 (int(1920 / 3), int(1082 / 3)))
             cv2.imshow("kinect-big_depth", big_depth)
             cv2.setMouseCallback('kinect-registered', mouse_callback, self._big_depth)
 
-            cv2.namedWindow('kinect-rgbd', cv2.WINDOW_AUTOSIZE)
+            cv2.namedWindow('kinect-rgbd', cv2.CV_WINDOW_AUTOSIZE)
             rgbd = self._color_depth_map.reshape(424, 512)
             cv2.imshow("kinect-rgbd", rgbd)
             # cv2.setMouseCallback('kinect-rgbd', mouse_callback, self._color_depth_map)
@@ -189,7 +189,7 @@ class KinectTracker():
             big_depth = cv2.resize(self._big_depth.asarray(np.float32), 
                 (int(1920 / 3), int(1082 / 3)))
 
-            cv2.namedWindow('kinect-registered', cv2.WINDOW_AUTOSIZE)
+            cv2.namedWindow('kinect-registered', cv2.CV_WINDOW_AUTOSIZE)
             registered = self._registered.asarray(np.uint8)
             cv2.imshow("kinect-registered", registered)
             cv2.setMouseCallback('kinect-registered', mouse_callback, self._registered)
@@ -314,7 +314,7 @@ class KinectTracker():
         img = self._registered.asarray(np.uint8)
         # img = cv2.resize(color.asarray(), (int(1920 / 3), int(1080 / 3)))
 
-        cv2.namedWindow('kinect-calibration', cv2.WINDOW_AUTOSIZE)
+        cv2.namedWindow('kinect-calibration', cv2.CV_WINDOW_AUTOSIZE)
         cv2.imshow('kinect-calibration', img)
 
         markers = detect_markers(img)
