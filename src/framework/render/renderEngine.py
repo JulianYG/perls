@@ -220,16 +220,28 @@ class BulletRenderEngine(GraphicsEngine):
             time_stamp = util.get_full_time_stamp()
 
             # Record only objects that are tracked
-            self._logging_id.append(
-                p.startStateLogging(
-                    p.STATE_LOGGING_GENERIC_ROBOT,
-                    osp.join(self._log_path['trajectory'],
-                             '{}_{}.bin'.format(
-                                 self._record_name, time_stamp)),
-                    objectUniqueIds=target_uids,
-                    physicsClientId=self._server_id
+            if target_uids:
+                self._logging_id.append(
+                    p.startStateLogging(
+                        p.STATE_LOGGING_GENERIC_ROBOT,
+                        osp.join(self._log_path['trajectory'],
+                                 '{}_{}.bin'.format(
+                                     self._record_name, time_stamp)),
+                        objectUniqueIds=target_uids,
+                        physicsClientId=self._server_id
+                    )
                 )
-            )
+            else:
+                # Record every object
+                self._logging_id.append(
+                    p.startStateLogging(
+                        p.STATE_LOGGING_GENERIC_ROBOT,
+                        osp.join(self._log_path['trajectory'],
+                                 '{}_{}.bin'.format(
+                                     self._record_name, time_stamp)),
+                        physicsClientId=self._server_id
+                    )
+                )
 
             # Record mp4 video if indicated
             if self._record_video:

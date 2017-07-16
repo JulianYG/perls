@@ -95,7 +95,7 @@ class View:
         # Configure display
         self._engine.configure_display(option_dic, camera_info)
 
-    def run(self, targets):
+    def run(self, targets=None):
         """
         Start the graphics render.
         Load simulation, and feed target objects in

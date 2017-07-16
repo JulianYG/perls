@@ -21,6 +21,8 @@ class PerlsEnv(gym.Env):
     def __init__(self, conf):
 
         self._world, self._display, _ = Controller.load_config(conf)
+        status = self._display.run()
+        self._world.boot(self._display.info['frame'])
 
     def _seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
