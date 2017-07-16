@@ -18,7 +18,7 @@ class PerlsEnv(gym.Env):
         'video.frames_per_second': 50
     }
 
-    def __init__(self, conf):
+    def __init__(self, conf='gym.xml'):
 
         self._world, self._display, _ = Controller.load_config(conf)
         status = self._display.run()
