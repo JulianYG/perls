@@ -15,54 +15,215 @@ from os.path import join as pjoin
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import CameraInfo, Image
-
+from pylibfreenect2 import Frame
 import rospy
 import rosparam
 import intera_interface
 import time
 import pybullet as p
+sys.path.append(os.path.abspath(os.path.join(__file__, '../../')))
+from robot import Robot
+
+import pylibfreenect2
+from pylibfreenect2 import Freenect2, SyncMultiFrameListener
+from pylibfreenect2 import FrameType, Registration, Frame
+from pylibfreenect2 import createConsoleLogger, setGlobalLogger
+from pylibfreenect2 import LoggerLevel
+from pylibfreenect2.libfreenect2 import IrCameraParams, ColorCameraParams
+try:
+    from pylibfreenect2 import OpenCLPacketPipeline
+    pipeline = OpenCLPacketPipeline()
+except:
+    try:
+        from pylibfreenect2 import OpenGLPacketPipeline
+        pipeline = OpenGLPacketPipeline()
+    except:
+        from pylibfreenect2 import CpuPacketPipeline
+        pipeline = CpuPacketPipeline()
+
+from hamming.detect import detect_markers
 
 
 class KinectTracker():
 
-    def __init__(self, camera, robot,
+    def __init__(self, robot,
         board_size=(2,2), itermat=(8, 9),
-        K=None, D=None, calib='../../../tools/calibration/calib_data/kinect'):
+        calib='../../../tools/calibration/calib_data/kinect'):
 
         self._board_size = board_size
         self._checker_size = 0.0274
 
-        self._camera = camera
 
         self._arm = robot
+
+        self._intrinsics = None
         self._grid = itermat
 
         self._calib_directory = calib
 
-        self.K = K
-        self.d = D
-        self.calibration_points = []
-
+        self._transformation = np.zeros((4, 4), dtype=np.float32)
+        self._transformation[3, 3] = 1
+        self.turn_on()
         self.track()
+
+    def turn_on(self):
+
+        fn = Freenect2()
+        num_devices = fn.enumerateDevices()
+        if num_devices == 0:
+            print("No device connected!")
+            sys.exit(1)
+
+        serial = fn.getDeviceSerialNumber(0)
+        self._fn = fn
+        self._serial = serial
+
+        self._device = self._fn.openDevice(self._serial, pipeline=pipeline)
+
+        self._listener = SyncMultiFrameListener(
+            FrameType.Color | FrameType.Ir | FrameType.Depth)
+
+        # Register listeners
+        self._device.setColorFrameListener(self._listener)
+        self._device.setIrAndDepthFrameListener(self._listener)
+        self._device.start()
+
+        # NOTE: must be called after device.start()
+        if self._intrinsics is None:
+
+            self._intrinsics = self._to_matrix(self._device.getColorCameraParams())
+
+            self._registration = Registration(self._device.getIrCameraParams(), 
+                self._device.getColorCameraParams())
+        else:
+            # IrParams = IrCameraParams(self.K, ...)
+            # colorParams = ColorCameraParams(self.K, ...)
+
+            # registration = Registration(IrParams, colorParams)
+            self._registration = Registration(
+                            self._device.getIrCameraParams(),
+                            self._device.getColorCameraParams())
+
+        self._undistorted = Frame(512, 424, 4)
+        self._registered = Frame(512, 424, 4)
+
+        self._big_depth = Frame(1920, 1082, 4)
+        self._color_depth_map = np.zeros((424, 512),  np.int32).ravel()
+
+        self.camera_on = True
+
+    def snapshot(self):
+
+        self._frames = self._listener.waitForNewFrame()
+
+        color, ir, depth = \
+            self._frames[pylibfreenect2.FrameType.Color],\
+            self._frames[pylibfreenect2.FrameType.Ir], \
+            self._frames[pylibfreenect2.FrameType.Depth]
+
+        self._registration.apply(color, depth, 
+            self._undistorted,
+            self._registered, 
+            bigdepth=self._big_depth, 
+            color_depth_map=self._color_depth_map)
+
+        return color, ir, depth
+
+    def get_point_3d(self, x, y):
+        return self._registration.getPointXYZ(Frame(512, 424, 4), x, y)
+
+    def stream(self):
+
+        def mouse_callback(event, x, y, flags, params):
+            if event == 1:
+                print(self.get_point_3d(x, y))
+
+        while True:
+            
+            color, ir, depth = self.snapshot()
+
+            cv2.namedWindow('kinect-ir', cv2.WINDOW_AUTOSIZE)
+            cv2.imshow('kinect-ir', ir.asarray() / 65535.)
+            cv2.setMouseCallback('kinect-ir', mouse_callback, ir)
+
+            cv2.namedWindow('kinect-depth', cv2.WINDOW_AUTOSIZE)
+            cv2.imshow("kinect-depth", depth.asarray() / 4500.)
+            cv2.setMouseCallback('kinect-depth', mouse_callback, depth)
+
+            cv2.namedWindow('kinect-rgb', cv2.WINDOW_AUTOSIZE)
+            rgb = cv2.resize(color.asarray(), (int(1920 / 3), int(1080 / 3)))
+            cv2.imshow("kinect-rgb", rgb)
+
+            cv2.namedWindow('kinect-registered', cv2.WINDOW_AUTOSIZE)
+            registered = self._registered.asarray(np.uint8)
+            cv2.imshow("kinect-registered", registered)
+            cv2.setMouseCallback('kinect-registered', mouse_callback, self._registered)
+
+            cv2.namedWindow('kinect-big_depth', cv2.WINDOW_AUTOSIZE)
+            big_depth = cv2.resize(self._big_depth.asarray(np.float32), 
+                (int(1920 / 3), int(1082 / 3)))
+            cv2.imshow("kinect-big_depth", big_depth)
+            cv2.setMouseCallback('kinect-registered', mouse_callback, self._big_depth)
+
+            cv2.namedWindow('kinect-rgbd', cv2.WINDOW_AUTOSIZE)
+            rgbd = self._color_depth_map.reshape(424, 512)
+            cv2.imshow("kinect-rgbd", rgbd)
+            # cv2.setMouseCallback('kinect-rgbd', mouse_callback, self._color_depth_map)
+
+            self._listener.release(self._frames)
+
+            key = cv2.waitKey(delay=1)
+            if key == ord('q'):
+                break
+
+    def match_eval(self):
+
+        def mouse_callback(event, x, y, flags, params):
+            if event == 1:
+                print(self.convert(x, y))
+
+        while True:
+            
+            color, _, _ = self.snapshot()
+
+            big_depth = cv2.resize(self._big_depth.asarray(np.float32), 
+                (int(1920 / 3), int(1082 / 3)))
+
+            cv2.namedWindow('kinect-registered', cv2.WINDOW_AUTOSIZE)
+            registered = self._registered.asarray(np.uint8)
+            cv2.imshow("kinect-registered", registered)
+            cv2.setMouseCallback('kinect-registered', mouse_callback, self._registered)
+
+
+            self._listener.release(self._frames)
+            
+            key = cv2.waitKey(delay=1)
+            if key == ord('q'):
+                break
+
+    def turn_off(self):
+        self._device.stop()
+        self._device.close()
+        self.camera_on = False
 
     def track(self):
 
-        invRotation_dir = pjoin(self._calib_directory, 'Kinect_inverseRotation.p')
-        translation_dir = pjoin(self._calib_directory, 'Kinect_translation.p')
+        invRotation_dir = pjoin(self._calib_directory, 'KinectTracker_rotation.p')
+        translation_dir = pjoin(self._calib_directory, 'KinectTracker_translation.p')
 
         if os.path.exists(invRotation_dir) and os.path.exists(translation_dir):
             
             with open(invRotation_dir, 'rb') as f:
-                ir = pickle.load(f)
-            self.invR = ir
+                rotation = pickle.load(f)
 
             with open(translation_dir, 'rb') as f:
-                t = pickle.load(f)
-            self.T = t
+                translation = np.squeeze(pickle.load(f))
         
-            return t, ir
+            self._transformation[:3, :3] = rotation
+            self._transformation[:3, 3] = translation
+            return
 
-        origin = np.array([0.3690, -0.2566, 0.27], dtype=np.float32)
+        origin = np.array([0.43489, -0.2240, 0.1941], dtype=np.float32)
         orn = np.array([0, 0, 0, 1], dtype=np.float32)
 
         calibration_grid = np.zeros((self._grid[0] * self._grid[1], 3), np.float32)
@@ -72,7 +233,7 @@ class KinectTracker():
         calibration_grid[:, -1] += np.random.uniform(-0.08, 0.2, 
             self._grid[0] * self._grid[1])
 
-        image_points, gripper_points = [], []
+        camera_points, gripper_points = [], []
 
         for pos in calibration_grid:
 
@@ -95,110 +256,113 @@ class KinectTracker():
             gripper_pos = np.array(self._arm.get_tool_pose()[0], 
                                    dtype=np.float32)
             # Match with pattern location
+
             detected, pix = self._detect_center()
 
             # Skip if not found pattern
             if not detected:
                 print('Pattern not detected. Skipping')
-                continue
-
-            image_points.append(pix)
-            gripper_points.append(gripper_pos)
+            else:
+                print(pix)
+                camera_points.append(pix)
+                gripper_points.append(gripper_pos)
 
         # Solve for matrices
-        retval, rvec, tvec = cv2.solvePnP(
+        retval, rvec, translation = cv2.solvePnP(
             np.array(gripper_points, dtype=np.float32), 
-            np.array(image_points, dtype=np.float32), 
-            self.K, 
-            self.d)
+            # Only use the x, y to get R | T
+            np.array(camera_points, dtype=np.float32)[:, :2], 
+            self._intrinsics, 
+            # Give none, assuming feeding in undistorted images 
+            None)
+            # self.d)
 
-        rotMatrix = cv2.Rodrigues(rvec)[0]
-        invRotation = np.linalg.inv(rotMatrix)
+        rotation = cv2.Rodrigues(rvec)[0]
             
-        data = dict(inverseRotation=invRotation,
-                    translation=tvec,
-                    intrinsics=self.K,
-                    distortion=self.d)
+        data = dict(rotation=rotation,
+                    translation=translation,)
+                    # intrinsics=self.K,
+                    # distortion=self.d)
 
         for name, mat in data.items():
             with open(pjoin(self._calib_directory, 
                 '{}_{}.p'.format(self.__class__.__name__, name)), 'wb') as f:
                 pickle.dump(mat, f)
 
-        self.T = tvec
-        self.invR = invRotation
+        print(rotation, translation)
 
-        return tvec, invRotation
+        self._transformation[:3, :3] = rotation
+        self._transformation[:3, 3] = np.squeeze(translation)
 
-    @staticmethod
-    def convert(u, v, z, K, T, invR):
+        self.turn_off()
 
-        # Pixel value
-        p = np.array([u, v, 1], dtype=np.float32)
+    def convert(self, u, v):
 
-        tempMat = invR * K
-        tempMat2 = tempMat.dot(p)
-        tempMat3 = invR.dot(np.reshape(T, 3))
+        p = np.ones((4,), dtype=np.float32)
 
-        # approx height of each block + 
-        # (inv Rotation matrix * inv Camera matrix * point)
-        # inv Rotation matrix * tvec
-        s = (z + tempMat3[2]) / tempMat2[2]
+        p[:3] = self._registration.getPointXYZ(Frame(int(1920 / 3), int(1080 / 3), 4), u, v)
 
-        # s * [u,v,1] = M(R * [X,Y,Z] - t)  
-        # ->   R^-1 * (M^-1 * s * [u,v,1] - t) = [X,Y,Z] 
-        temp = np.linalg.inv(K).dot(s * p)
-        temp2 = temp - np.reshape(T, 3)
-        gripper_coords = invR.dot(temp2)
-
-        return gripper_coords
+        print(p, self._transformation)
+        return self._transformation.dot(p)
 
     def _detect_center(self):
 
         # Take picture
-        ?, ?, img = self._camera.snapshot()
-        
-        # Look for pattern
-        foundPattern, usbCamCornerPoints = cv2.findChessboardCorners(
-            img, self._board_size, None, 
-            cv2.CALIB_CB_ADAPTIVE_THRESH
-        )
+        self.snapshot()
+        self._listener.release(self._frames)
 
-        if foundPattern:
-            cv2.cornerSubPix(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), 
-                    usbCamCornerPoints, (11, 11), (-1, -1), 
-                    (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001))
+        img = self._registered.asarray(np.uint8)
+        # img = cv2.resize(color.asarray(), (int(1920 / 3), int(1080 / 3)))
 
-            usbCamCornerPoints = np.squeeze(usbCamCornerPoints)
-            recognized_pix = np.mean(usbCamCornerPoints, axis=0)
+        cv2.namedWindow('kinect-calibration', cv2.WINDOW_AUTOSIZE)
+        cv2.imshow('kinect-calibration', img)
 
-            cv2.drawChessboardCorners(img, self._board_size, 
-                usbCamCornerPoints, foundPattern)
-            self.calibration_points.append(usbCamCornerPoints)
-            return True, recognized_pix
-        else:
+        markers = detect_markers(img)
+
+        if not markers:
             return False, None
 
-    def match_eval(self):
+        else:
+            pos = markers[0].center
+            # markers[0].highlight
+            marker.highlite_marker(img)
+            if pos is None:
+                return False, None
+            else:
+                return True, pos
 
-        def mouse_callback(event, x, y, flags, params):
-            if event == 1:
-                print((x, y), self.convert(x, y, 
-                    self.z_offset, self.K, self.T, self.invR))
-        ?, ?, img = self._camera.snapshot()
-        while True:
-            try:
-                cv2.namedWindow('match_eval', cv2.CV_WINDOW_AUTOSIZE)
-                cv2.setMouseCallback('match_eval', mouse_callback)
-                # # Remove distortion
-                # rectified_image = cv2.undistort(img, self.K, 
-                #   self.d)
-                cv2.imshow('match_eval', img)
+        # # Look for pattern
+        # foundPattern, usbCamCornerPoints = cv2.findChessboardCorners(
+        #     img, self._board_size, None, 
+        #     cv2.CALIB_CB_ADAPTIVE_THRESH
+        # )
+        cv2.waitKey(500)
+        # if foundPattern:
+        #     cv2.cornerSubPix(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), 
+        #             usbCamCornerPoints, (11, 11), (-1, -1), 
+        #             (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001))
 
-                # Update per millisecond
-                cv2.waitKey(1)
-            except KeyboardInterrupt:
-                cv2.destroyAllWindows()
+        #     usbCamCornerPoints = np.squeeze(usbCamCornerPoints)
+        #     recognized_pix = np.mean(usbCamCornerPoints, axis=0)
+
+        #     cv2.drawChessboardCorners(img, self._board_size, 
+        #         usbCamCornerPoints, foundPattern)
+
+        #     # frame_pos = self._camera.get_point_3d(recognized_pix)
+
+        #     return True, recognized_pix
+        # else:
+        #     return False, None
+
+    @staticmethod
+    def _to_matrix(param):
+
+        return np.array([
+            [param.fx, 0, param.cx], 
+            [0, param.fy, param.cy], 
+            [0, 0, 1]], 
+            dtype=np.float32)
+
 
 if rospy.get_name() == '/unnamed':
     rospy.init_node('kinect_tracker')
@@ -207,7 +371,6 @@ if rospy.get_name() == '/unnamed':
 limb = intera_interface.Limb('right')
 limb.set_joint_position_speed(0.2)
 robot = Robot(limb, None)
-
 
 dimension = (1920, 1080)
 intrinsics = np.array([[1.0741796970429734e+03, 0., 9.3488214133804252e+02], 
@@ -218,8 +381,7 @@ distortion = np.array([ 3.4454149657654337e-02, 9.7555269933206498e-02,
        1.2981879029576470e-02, 2.7898744906562916e-04,
        -2.0379307133765162e-01 ], dtype=np.float32)
 
-tracker = KinectTracker(robot, board_size= (9,6), itermat=(3,4), K=intrinsics,
-    D=distortion)
+tracker = KinectTracker(robot, board_size=(9,6), itermat=(3,3))
 
 tracker.match_eval()
 

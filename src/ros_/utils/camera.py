@@ -214,6 +214,16 @@ class Kinect(Camera):
             self._DIM_MAP[dimension], intrinsics, distortion)
 
         self.turn_on()
+        self.points = [(0., 0., 0.)]
+
+    @staticmethod
+    def _to_matrix(param):
+
+        return np.array([
+            [param.fx, 0, param.cx], 
+            [0, param.fy, param.cy], 
+            [0, 0, 1]], 
+            dtype=np.float32)
 
     def turn_on(self):
 
@@ -238,11 +248,12 @@ class Kinect(Camera):
         self._device.start()
 
         # NOTE: must be called after device.start()
-        if self._intrinsics is None or self._distortion is None:
+        if self._intrinsics is None:
 
-            self._registration = Registration(
-                            self._device.getIrCameraParams(),
-                            self._device.getColorCameraParams())
+            self._intrinsics = self._to_matrix(self._device.getColorCameraParams())
+
+            self._registration = Registration(self._device.getIrCameraParams(), 
+                self._device.getColorCameraParams())
         else:
             # IrParams = IrCameraParams(self.K, ...)
             # colorParams = ColorCameraParams(self.K, ...)
@@ -265,56 +276,62 @@ class Kinect(Camera):
         self._frames = self._listener.waitForNewFrame()
 
         color, ir, depth = \
-        	self._frames[pylibfreenect2.FrameType.Color],
-        	self._frames[pylibfreenect2.FrameType.Ir], 
-        	self._frames[pylibfreenect2.FrameType.Depth]
-        
+            self._frames[pylibfreenect2.FrameType.Color],\
+            self._frames[pylibfreenect2.FrameType.Ir], \
+            self._frames[pylibfreenect2.FrameType.Depth]
+
         self._registration.apply(color, depth, 
             self._undistorted,
             self._registered, 
-            big_depth=self._big_depth, 
+            bigdepth=self._big_depth, 
             color_depth_map=self._color_depth_map)
 
-        return color.asarray(), ir.asarray() / 65535., depth.asarray() / 4500.
+        return color, ir, depth
+
+    def get_point_3d(self, x, y):
+        return self._registration.getPointXYZ(Frame(512, 424, 4), x, y)
+
+    def update(self):
+        self._listener.release(self._frames)
 
     def stream(self):
 
         def mouse_callback(event, x, y, flags, params):
             if event == 1:
-                print(self._registration.getPointXYZ(params, x, y))
+                print(self.get_point_3d(x, y))
 
         while True:
             
             color, ir, depth = self.snapshot()
 
             cv2.namedWindow('kinect-ir', cv2.CV_WINDOW_AUTOSIZE)
-            cv2.imshow('kinect-ir', ir)
+            cv2.imshow('kinect-ir', ir.asarray() / 65535.)
             cv2.setMouseCallback('kinect-ir', mouse_callback, ir)
 
             cv2.namedWindow('kinect-depth', cv2.CV_WINDOW_AUTOSIZE)
-            cv2.imshow("kinect-depth", depth)
+            cv2.imshow("kinect-depth", depth.asarray() / 4500.)
             cv2.setMouseCallback('kinect-depth', mouse_callback, depth)
 
             cv2.namedWindow('kinect-rgb', cv2.CV_WINDOW_AUTOSIZE)
-            rgb = cv2.resize(color, (int(1920 / 3), int(1080 / 3)))
+            rgb = cv2.resize(color.asarray(), (int(1920 / 3), int(1080 / 3)))
             cv2.imshow("kinect-rgb", rgb)
-            cv2.setMouseCallback('kinect-rgb', mouse_callback, rgb)
+            cv2.setMouseCallback('kinect-rgb', mouse_callback, color)
 
             cv2.namedWindow('kinect-registered', cv2.CV_WINDOW_AUTOSIZE)
             registered = self._registered.asarray(np.uint8)
             cv2.imshow("kinect-registered", registered)
-            cv2.setMouseCallback('kinect-registered', mouse_callback, registered)
+            cv2.setMouseCallback('kinect-registered', mouse_callback, self._registered)
 
             cv2.namedWindow('kinect-big_depth', cv2.CV_WINDOW_AUTOSIZE)
             big_depth = cv2.resize(self._big_depth.asarray(np.float32), 
-            	(int(1920 / 3), int(1082 / 3)))
+                (int(1920 / 3), int(1082 / 3)))
             cv2.imshow("kinect-big_depth", big_depth)
-            cv2.setMouseCallback('kinect-registered', mouse_callback, big_depth)
+            cv2.setMouseCallback('kinect-registered', mouse_callback, self._big_depth)
 
             cv2.namedWindow('kinect-rgbd', cv2.CV_WINDOW_AUTOSIZE)
             rgbd = self._color_depth_map.reshape(424, 512)
             cv2.imshow("kinect-rgbd", rgbd)
-            cv2.setMouseCallback('kinect-rgbd', mouse_callback, self._undistorted)
+            # cv2.setMouseCallback('kinect-rgbd', mouse_callback, self._color_depth_map)
 
             self._listener.release(self._frames)
 

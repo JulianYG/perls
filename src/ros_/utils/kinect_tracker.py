@@ -73,7 +73,7 @@ class KinectTracker():
         self.d = D
         self.T = None
         self.invR = None
-        self.calibration_points = []
+        # self.calibration_points = []
         self.image_points, self.gripper_points = [], []
 
         self.depth_image = None
@@ -148,8 +148,11 @@ class KinectTracker():
         retval, rvec, tvec = cv2.solvePnP(
             np.array(self.gripper_points, dtype=np.float32), 
             np.array(self.image_points, dtype=np.float32), 
-            self.K, 
-            self.d)
+            self.K,
+            # Give none, assuming feeding in undistorted images 
+            None)
+            # 
+            #self.d)
 
         print('Solving matrices...')
 
@@ -235,7 +238,7 @@ class KinectTracker():
     def rgb_callback(self, img):
 
         cv_image = CvBridge().imgmsg_to_cv2(img, 'bgr8')
-
+        print("????")
         def mouse_callback(event, x, y, flags, params):
             if event == 1 and self.depth_image is not None:
                 # print(self.depth_image.shape)  # 1080, 1920
