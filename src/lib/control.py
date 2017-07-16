@@ -187,7 +187,6 @@ class Controller(object):
         # Set up control event interruption handlers
         # TODO
         # event_handler = 
-
         ctrl_handler = Controller._CTRL_HANDLERS[conf.control_type](
             pe.ps_id, conf.sensitivity, conf.rate
         )

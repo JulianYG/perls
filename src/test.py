@@ -1,8 +1,8 @@
 import pybullet as p
-import framework.entity.body as body
-import framework.entity.rethinkGripper as rg
-import framework.entity.sawyer as s
-import framework.entity.kuka as k
+import lib.entity.body as body
+import lib.entity.rethinkGripper as rg
+import lib.entity.sawyer as s
+import lib.entity.kuka as k
 import numpy as np
 p.connect(p.GUI)
 

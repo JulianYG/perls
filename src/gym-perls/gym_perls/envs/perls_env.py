@@ -1,11 +1,10 @@
 import gym
-from gym import error, spaces, utils
 from gym.utils import seeding
 
 import sys, os
-sys.path.append(os.path.abspath(os.path.join(__file__, '../../..')))
-
-from framework.control import Controller
+sys.path.append(os.path.abspath(os.path.join(__file__, '../../../../')))
+from lib.control import Controller
+from lib.utils import io_util
 
 
 class PerlsEnv(gym.Env):
@@ -18,8 +17,8 @@ class PerlsEnv(gym.Env):
         'video.frames_per_second': 50
     }
 
-    def __init__(self, conf='gym.xml'):
-
+    def __init__(self, conf_path):
+        conf = io_util.parse_config(conf_path)[0]
         self._world, self._display, _ = Controller.load_config(conf)
         status = self._display.run()
         self._world.boot(self._display.info['frame'])
