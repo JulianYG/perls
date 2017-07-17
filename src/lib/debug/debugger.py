@@ -76,7 +76,7 @@ class ViewDebugger(object):
     def load_config(self, desc):
         self._display.load_config(desc)
 
-    def run(self, target):
+    def run(self, target=None):
         # while True:
         #     self._display._control_interrupt()
         #     self._display._engine.step(elapsed_time=0)

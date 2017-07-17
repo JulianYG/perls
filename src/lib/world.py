@@ -162,7 +162,6 @@ class World(object):
         # Load task completion checker
         self._checker = taskHandler.Checker(self._engine.ps_id, 
                                             self.name_str)
-
         for gripper in parse_tree.gripper:
             gripper_body = self.GRIPPER_TYPE[gripper['type']](
                 gripper['id'],
@@ -186,7 +185,6 @@ class World(object):
 
         for i in range(len(parse_tree.arm)):
             arm_spec = parse_tree.arm[i]
-
             assert i == arm_spec['id']
             gripper_spec = arm_spec['gripper']
             gripper_body = self.GRIPPER_TYPE[gripper_spec['type']](
@@ -207,8 +205,8 @@ class World(object):
                 pos=arm_spec['pos'], orn=arm_spec['orn'],
                 null_space=arm_spec['null_space'],
                 gripper=gripper_body)
-            arm_body.name = arm_spec['name']
 
+            arm_body.name = arm_spec['name']
             self._tools[arm_body.tid] = arm_body
             self._bodies[arm_body.name] = arm_body
             self._target_bodies.append((arm_body.uid, arm_body.name))

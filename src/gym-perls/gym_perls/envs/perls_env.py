@@ -8,10 +8,10 @@ from lib.utils import io_util
 
 
 class PerlsEnv(gym.Env):
+    """
+    Construct an gym environment
+    """
 
-    """
-    Trying to solve InverseKinematics by RL
-    """
     metadata = {
         'render.modes': ['human', 'depth', 'segment'],
         'video.frames_per_second': 50

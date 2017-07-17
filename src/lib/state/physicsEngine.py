@@ -304,10 +304,11 @@ class BulletPhysicsEngine(FakeStateEngine):
             jids = [jids]
         if isinstance(vals, int):
             vals = [vals]
-        try:
-            assert(len(jids) == len(vals)), \
-                'In <set_body_joint_state>: Number of joints mismatches number of values'
 
+        assert (len(jids) == len(vals)), \
+            'In <set_body_joint_state>: Number of joints mismatches number of values'
+
+        try:
             # Only reset if indicated to use reset
             if kwargs.get('reset', False):
                 assert(ctype == 'position'), \
@@ -557,7 +558,8 @@ class BulletPhysicsEngine(FakeStateEngine):
 
     def start_engine(self, frame):
 
-        if self.status == 'pending' and self._type_check(frame) == 0:
+        if self.status == 'pending' or \
+           self.status == 'off' and self._type_check(frame) == 0:
             if self._async:
                 p.setTimeStep(
                     float(self._step_size),
@@ -572,7 +574,9 @@ class BulletPhysicsEngine(FakeStateEngine):
             return 0
         else:
             logerr('Cannot start physics physics_engine %d '
-                   'in error state.' % self.engine_id, FONT.disp)
+                   'in error state. Errors:' % self.engine_id, FONT.disp)
+            for err_msg in self._error_message:
+                logerr(err_msg, FONT.model)
             return -1
 
     def hold(self, max_steps=1000):
@@ -582,14 +586,14 @@ class BulletPhysicsEngine(FakeStateEngine):
     def step(self, elapsed_time=0):
         if self.status == 'running':
             if self._async:
-                if self._step_count < self._max_run_time or max_run_time == 0:
+                if self._step_count < self._max_run_time or self._max_run_time == 0:
 
                     # Update model (world) states
                     p.stepSimulation(self._physics_server_id)
                     self._step_count += 1
                     return False
             else:
-                if elapsed_time < self._max_run_time or max_run_time == 0:
+                if elapsed_time < self._max_run_time or self._max_run_time == 0:
 
                     # TODO: think about how to control camera at run time
                     # self.camera = camera_info

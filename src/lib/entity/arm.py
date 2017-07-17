@@ -181,7 +181,6 @@ class Arm(Tool):
              'position',
              dict(positionGains=(.05,) * self._dof,
                   velocityGains=(1.,) * self._dof))
-
         if self._gripper:
             # Attach gripper
             self.attach_children = \

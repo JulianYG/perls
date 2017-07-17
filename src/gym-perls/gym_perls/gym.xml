@@ -8,7 +8,7 @@
 			<property async="True" step_size="0.001" max_run_time="900000"/>
 		</build>
 		<control type="off" sensitivity="20" rate="100"/>
-		<env>push.xml</env>
-		<disp>exp.xml</disp>
+		<env>/Users/JulianYGao/perls/src/gym-perls/gym_perls/push.xml</env>
+		<disp>/Users/JulianYGao/perls/src/gym-perls/gym_perls/exp.xml</disp>
 	</config>
 </batch>

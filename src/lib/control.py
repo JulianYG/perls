@@ -271,7 +271,6 @@ class Controller(object):
 
         # Kick start the model, perform frame type check
         world.boot(display.info['frame'])
-
         # Update initial control states
         init_states = world.get_states(('tool', 'pose'))[0]
         for tid, init_pose in init_states.items():

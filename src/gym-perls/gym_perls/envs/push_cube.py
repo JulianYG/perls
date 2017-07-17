@@ -1,6 +1,4 @@
 from .perls_env import PerlsEnv
-from lib.control import Controller
-from lib.utils import io_util
 
 
 class PushCube(PerlsEnv):
