@@ -15,14 +15,8 @@ class PushCube(PerlsEnv):
 
         super(PushCube, self).__init__(conf_path)
 
-    def _close(self):
-        return NotImplemented
-
     def _render(self, mode='', close=False):
         return NotImplemented
-
-    def _reset(self):
-        return self._world.get_states()
 
     def _step(self, action):
         return NotImplemented
