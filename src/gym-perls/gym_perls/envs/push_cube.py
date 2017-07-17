@@ -18,9 +18,10 @@ class PushCube(PerlsEnv):
     def _reset(self):
 
         super(PushCube, self)._reset()
-        tool_pose, body_pose = self._world.get_states(('tool', 'pose'), ('body', 'pose'))
+        tool_pose, body_pose = self._world.get_states(
+            ('tool', 'pose'), ('body', 'pose'))
 
-        return tool_pose['titan'], body_pose['cube_0']
+        return tool_pose['m0'], body_pose['cube_0']
 
         # TODO: get Robot end effector 2D pose in robot frame, get Cube 2D pose in robot frame
 
