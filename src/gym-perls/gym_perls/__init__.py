@@ -13,3 +13,4 @@ register(
     entry_point='gym_perls.envs:PushCube',
     kwargs=dict(conf_path=osp.abspath(osp.join(__file__, '../gym.xml'))),
 )
+
