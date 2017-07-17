@@ -1,11 +1,20 @@
+# !/usr/bin/env python
+
+import abc
+
 import gym
 from gym.utils import seeding
 
 import sys, os
-import abc
 sys.path.append(os.path.abspath(os.path.join(__file__, '../../../../')))
+
 from lib.control import Controller
 from lib.utils import io_util
+
+__author__ = 'Julian Gao'
+__email__ = 'julianyg@stanford.edu'
+__license__ = 'private'
+__version__ = '0.1'
 
 
 class PerlsEnv(gym.Env):
