@@ -65,15 +65,15 @@ pos = TR[:3, 3]
 rot = TR[:3, :3]
 x = [ 0.12308943,  0.09174353,  1.     ]
 print((rot).dot( x - pos  ), 'ha')
-# pos = (0.05309283,
+# pos_abs = (0.05309283,
 # 0.12304577,
 # 0.63757806)
-# orn = (0, 0, 0, 1)
+# orn_abs = (0, 0, 0, 1)
 orn = np.array(tf.transformations.quaternion_from_matrix(TR))
 orn = orn / np.sqrt(np.sum(orn ** 2))
 print(orn)
-#orn = (0.87822085, -0.34770535 , 0.26621342,  0.19224864)
-# orn = [ 0.9739193 , -0.03370887 ,-0.22305033 ,-0.02436092]
+#orn_abs = (0.87822085, -0.34770535 , 0.26621342,  0.19224864)
+# orn_abs = [ 0.9739193 , -0.03370887 ,-0.22305033 ,-0.02436092]
 while not rospy.is_shutdown():
 	br.sendTransform(pos, orn, 
 					rospy.Time.now(), 'kinect', 'base')

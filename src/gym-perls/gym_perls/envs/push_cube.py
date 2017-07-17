@@ -19,15 +19,13 @@ class PushCube(PerlsEnv):
 
         super(PushCube, self)._reset()
         tool_pose, body_pose = self._world.get_states(
-            ('tool', 'pose'), ('body', 'pose'))
+            ('tool', 'pose_abs'), ('body', 'pose_abs'))
 
         return tool_pose['m0'], body_pose['cube_0']
 
-        # TODO: get Robot end effector 2D pose in robot frame, get Cube 2D pose in robot frame
-
     def _step(self, action):
 
-        # TODO: action should be delta Robot end effector 2D pose, so do bounds clipping and apply action
+        # TODO: action should be delta Robot end effector 2D pose_abs, so do bounds clipping and apply action
 
         # TODO: make sure to go through IK here, since it's not perfect
 

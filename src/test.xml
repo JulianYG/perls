@@ -7,7 +7,7 @@
 		</gripper>
 		<gripper name="wsg" type="wsg" traction="50">
 			<pos>-1.0 0.0 1.0</pos>
-			<!-- <orn>0.0 0.0 0.0 1.0</orn> -->
+			<!-- <orn>0.0 0.0 0.0 1</orn> -->
 		</gripper>
 		<robot name="king-kong" type="kuka" null_space="True">
 			<gripper name="for_king_kong" type="wsg">

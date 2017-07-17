@@ -16,7 +16,7 @@ class Arm(Tool):
         """
         super(Arm, self).__init__(tid, engine, path, pos, orn, fixed=True)
 
-        # Reset pose is defined in subclasses
+        # Reset pose_abs is defined in subclasses
         self._gripper = gripper
         self._rest_pose = (0., ) * self._dof
         self._end_idx = self._dof - 1
@@ -41,22 +41,22 @@ class Arm(Tool):
         return self._null_space
 
     @property
-    def tool_pos(self):
+    def tool_pos_abs(self):
         """
         Get the position of the tool. This is semantic
         :return: vec3 float in Cartesian
         """
-        return self._gripper.tool_pos
+        return self._gripper.tool_pos_abs
 
     @property
-    def tool_orn(self):
+    def tool_orn_abs(self):
         """
         Get the orientation of the gripper attached at
         robot end effector link. There should exist
-        some offset based on robot's rest pose.
+        some offset based on robot's rest pose_abs.
         :return: vec4 float quaternion in Cartesian
         """
-        return self._gripper.tool_orn
+        return self._gripper.tool_orn_abs
 
     @null_space.setter
     def null_space(self, use_ns):
@@ -67,19 +67,19 @@ class Arm(Tool):
         """
         self._null_space = use_ns
 
-    @tool_pos.setter
-    def tool_pos(self, pos):
+    @tool_pos_abs.setter
+    def tool_pos_abs(self, pos):
         """
-        Set the tool to given pose.
+        Set the tool to given pose_abs.
         :param pos: vec3 float in cartesian space,
         referring to the position between the gripper fingers
         :return: None
         """
-        target_pos = self.position_transform(pos, self.tool_orn)
-        self._move_to(target_pos, self.tool_orn)
+        target_pos = self.position_transform(pos, self.tool_orn_abs)
+        self._move_to(target_pos, self.tool_orn_abs)
 
-    @tool_orn.setter
-    def tool_orn(self, orn):
+    @tool_orn_abs.setter
+    def tool_orn_abs(self, orn):
         """
         Set the tool to given orientation.
         Note setting orientation does not keep previous
@@ -126,15 +126,15 @@ class Arm(Tool):
         gripper_arm_tran = gripper_base_pos - pos
 
         # Math:
-        # relative: transformed_pos = rotation x (pos - translation)
-        # absolute: transformed_pos = pos - rotation x abs_frame_orn
+        # relative: transformed_pos = rotation x (pos_abs - translation)
+        # absolute: transformed_pos = pos_abs - rotation x abs_frame_orn
         rotation = math_util.quat2mat(orn)
         target_pos = gripper_base_pos - rotation.dot(gripper_arm_tran)
         return target_pos
 
     def _move_to(self, pos, orn):
         """
-        Given pose, call IK to move
+        Given pose_abs, call IK to move
         :param pos: vec3 float cartesian
         :param orn: vec4 float quaternion
         :return: None
@@ -189,48 +189,55 @@ class Arm(Tool):
                  0, 'fixed',
                  [0., 0., 0.], self._tip_offset,
                  [0., 0., 0.],
-                 # TODO: Check if can use [0., 0., 0.707, 0.707] for child orn
+                 # TODO: Check if can use [0., 0., 0.707, 0.707] for child orn_abs
                  [0., 0., 0., 1.], [0., 0., 0., 1.])
             # Reset gripper
             self._gripper.reset()
         self._engine.hold()
 
-    def reach(self, pos=None, orn=None):
+    def reach(self, pos=None, orn=None, ftype='abs'):
         """
-        Reach to given pose.
+        Reach to given pose_abs.
         Note this operation sets position first, then
         adjust to orientation by rotation end effector,
         so the position is not accurate in a sense.
         For accurate control, call <pinpoint> instead.
         :param pos: vec3 float cartesian
         :param orn: vec3 float quaternion
-        :return: delta between target and actual pose
+        :param ftype: string param, coordinate system frame type.
+        'abs' indicates the position is in world frame
+        'rel' indicates the position is in tool frame.
+        Hint:
+        Default control uses world frame absolute positions.
+        To align simulation with real world, use 'rel'
+        :return: delta between target and actual pose_abs
         """
         orn_delta = math_util.zero_vec(3)
         pos_delta = math_util.zero_vec(3)
 
         if pos is not None:
             self._move_to(pos, orn)
-            pos_delta = self.tool_pos - pos
+            pos_delta = self.tool_pos_abs - pos
 
         if orn is not None:
             self.tool_orn = orn
-            orn_delta = math_util.quat_diff(self.tool_orn, orn)
+            orn_delta = math_util.quat_diff(self.tool_orn_abs, orn)
 
         return pos_delta, orn_delta
 
-    def pinpoint(self, pos, orn=None):
+    def pinpoint(self, pos, orn=None, ftype='abs'):
         """
-        Accurately reach to the given pose.
+        Accurately reach to the given pose_abs.
         Note this operation sets position and orientation
         and the same time, keeping neither previous
         position nor previous orientation
         :param pos: vec3 float cartesian
         :param orn: vec4 float quaternion
+        :param ftype: refer to <reach~ftype>
         :return: None
         """
         if orn is None:
-            orn = self.tool_orn
+            orn = self.tool_orn_abs
         target_pos = self.position_transform(pos, orn)
         self._move_to(target_pos, orn)
 

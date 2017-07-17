@@ -152,7 +152,7 @@ while True:
 			# 		velocityGain=1.0, force=MAX_FORCE)
 
 		else:
-			# Set back to original rest pose
+			# Set back to original rest pose_abs
 			for jointIndex in range(p.getNumJoints(sawyer)):
 				p.setJointMotorControl2(sawyer, jointIndex, p.POSITION_CONTROL, 
 					REST_POSE[jointIndex], 0)

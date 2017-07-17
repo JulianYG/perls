@@ -48,7 +48,7 @@ class InteraEngine(RealStateEngine):
         :param pos: position vec3 float cartesian
         :param orn: orientation vec4 float quaternion tuple
         :param fixed: boolean indicating whether the body should
-        be fixed to given pose when loaded.
+        be fixed to given pose_abs when loaded.
         :return: integer of body unique id, body link indices,
         body joint indices
         """
@@ -113,7 +113,7 @@ class InteraEngine(RealStateEngine):
          cartesian), relative to the world frame
         :param frame_orn: orientation of given frame (vec4
         float quaternion), relative to the world frame
-        :return: (pos, orn) of querying object in given frame
+        :return: (pos_abs, orn_abs) of querying object in given frame
         """
         pass
 
@@ -286,7 +286,7 @@ class InteraEngine(RealStateEngine):
 
     def set_body_scene_pose(self, uid, pos, orn):
         """
-        Cannot set body pose in real world through code
+        Cannot set body pose_abs in real world through code
         """
         return NotImplemented
 
@@ -392,7 +392,7 @@ class InteraEngine(RealStateEngine):
 
     def move_body(self, cid, pos, orn, force):
         """
-        Cannot move a fixed body to given pose with given force
+        Cannot move a fixed body to given pose_abs with given force
         in real world
         """
         return NotImplemented

@@ -5,6 +5,7 @@ from ..utils.io_util import (FONT,
                              loginfo,
                              logerr)
 
+
 class PrismaticGripper(Tool):
 
     def __init__(self, tid, engine, path, pos, orn, left, right):
@@ -56,7 +57,7 @@ class PrismaticGripper(Tool):
         return self._max_force
 
     @property
-    def tool_pos(self):
+    def tool_pos_abs(self):
         """
         Get the position of the gripper, based on 
         the average of left and right tips/fingers 
@@ -68,19 +69,19 @@ class PrismaticGripper(Tool):
         return (left_finger_pos + right_finger_pos) / 2. + self._tip_offset
 
     @property
-    def tool_orn(self):
+    def tool_orn_abs(self):
         """
         Get the orientation of the gripper. This is semantic
         :return: vec4 float quaternion in Cartesian
         """
-        return self.orn
+        return self.orn_abs
 
     @traction.setter
     def traction(self, f):
         self._max_force = f
 
-    @tool_pos.setter
-    def tool_pos(self, pos):
+    @tool_pos_abs.setter
+    def tool_pos_abs(self, pos):
         """
         Set the gripper to given position. Use left finger as reference.
         :param pos: vec3 float in cartesian space
@@ -91,20 +92,20 @@ class PrismaticGripper(Tool):
                    FONT.model)
             return
         # Need some transformation
-        base_pos = self.position_transform(pos, self.tool_orn)
+        base_pos = self.position_transform(pos, self.tool_orn_abs)
 
         # Note here it only cares about the position,
         # thus not solving using constraints
-        self.track(pos, self.tool_orn, self._max_force)
+        self.track(pos, self.tool_orn_abs, self._max_force)
 
-    @tool_orn.setter
-    def tool_orn(self, orn):
+    @tool_orn_abs.setter
+    def tool_orn_abs(self, orn):
         """
         Set the gripper to given orientation
         :param orn: vec4 float in quaternion form
         :return: None
         """
-        self.orn = orn
+        self.orn_abs = orn
 
     def position_transform(self, pos, orn):
         """
@@ -120,7 +121,7 @@ class PrismaticGripper(Tool):
         translation = (
             self.kinematics['pos'][self._left_finger_idx] +
             self.kinematics['pos'][self._right_finger_idx]) / 2. -\
-            self.pos
+            self.pos_abs
         # Since desired frame is aligned with base frame...
         rotation = math_util.quat2mat(orn)
         base_pos = pos - rotation.dot(translation)
@@ -146,40 +147,40 @@ class PrismaticGripper(Tool):
         """
         self.attach_children = (
             -1, -1, -1, 'fixed', [0., 0., 0.],
-            [0., 0., 0.], self.pos, None, self.orn)
+            [0., 0., 0.], self.pos_abs, None, self.orn_abs)
 
-    def reach(self, pos=None, orn=None):
+    def reach(self, pos=None, orn=None, ftype='abs'):
         """
-        Reach to given pose approximately
+        Reach to given pose_abs approximately
         :param pos: vec3 float cartesian at base
         :param orn: vec4 float quaternion
-        :return: delta between target and actual pose
+        :return: delta between target and actual pose_abs
         """
         orn_delta = math_util.zero_vec(3)
         pos_delta = math_util.zero_vec(3)
 
         if orn is None:
-            orn = self.tool_orn
+            orn = self.tool_orn_abs
         # Use constraint to move gripper for simulation,
         # to avoid boundary mixing during collision
         self.track(pos, orn, self._max_force)
 
-        orn_delta = math_util.quat_diff(self.tool_orn, orn)
+        orn_delta = math_util.quat_diff(self.tool_orn_abs, orn)
         if pos is not None:
-            pos_delta = self.tool_pos - pos
+            pos_delta = self.tool_pos_abs - pos
 
         return pos_delta, orn_delta
 
-    def pinpoint(self, pos, orn=None):
+    def pinpoint(self, pos, orn=None, ftype='abs'):
         """
-        Accurately reach to given pose
+        Accurately reach to given pose_abs
         :param pos: vec3 float cartesian at finger tip
         :param orn: vec4 float quaternion
         :return: None
         """
         if orn:
-            self.tool_orn = orn
-        self.tool_pos = pos
+            self.tool_orn_abs = orn
+        self.tool_pos_abs = pos
 
     def grasp(self, slide):
         """

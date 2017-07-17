@@ -53,7 +53,7 @@ For local demo, under perls/src/bullet_ `python run.py -c <configuration>`
 
 There are currently two types of simulator executable from `ccr_engine.py`, a keyboard simulator, interfacing with keyboard,  and a VR simulator, interfacing with SteamVR. We plan to add joystick or smartphone interfaced simulators.
 
-To use the simulators, first initialize by calling their constructors as in the script. The second input argument is the task input, represented by a list of object and pose tuples. To record, enter the name of file you want to save as in the record method. In bullet3/bin, execute the AppsSharedMemoryVR.exe, then call run.py in command line. Press ctrl+C to stop recording. The record file will can be replayed using replay function. 
+To use the simulators, first initialize by calling their constructors as in the script. The second input argument is the task input, represented by a list of object and pose_abs tuples. To record, enter the name of file you want to save as in the record method. In bullet3/bin, execute the AppsSharedMemoryVR.exe, then call run.py in command line. Press ctrl+C to stop recording. The record file will can be replayed using replay function.
 
 The simulators are executed upon models. Current models include pr2 gripper, and robot. Robot is an abstract class that are implemented as multiple concrete classes, such as kuka, sawyer, and baxter. The models are also used for the openAI gym implementation of pybullet, cascading the learning layer with physical layer.
 

@@ -25,11 +25,12 @@ class World(object):
 
     # Storing inquiry legend
     _INQUIRY_DIC = dict(
-        tool=['pose', 'v', 'omega', 'joint_states',
+        tool=['pose_abs', 'v', 'omega', 'joint_states',
+              'pose_rel',
               # TODO
               # 'force', 'wrench', 'shape',
               'name', 'contact'],
-        body=['pose', 'v', 'omega',
+        body=['pose_abs', 'v', 'omega', 'pose_rel',
               # 'force', 'wrench', 'shape',
               'name', 'tid',
               'contact'],
@@ -262,7 +263,7 @@ class World(object):
         to get (value).
         :return: states dictionary of given
         inquiry. Keys are ids, values are states.
-        For example, [('body', 'pose')]
+        For example, [('body', 'pose_abs')]
         It will return a list of dictionaries in the same
         order as inquiry list.
         """

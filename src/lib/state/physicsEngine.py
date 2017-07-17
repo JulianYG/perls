@@ -134,7 +134,7 @@ class BulletPhysicsEngine(FakeStateEngine):
                         physicsClientId=self._physics_server_id)
             # Leave other possible formats for now
 
-            # Force reset pose... pybullet bug on loadURDF
+            # Force reset pose_abs... pybullet bug on loadURDF
             p.resetBasePositionAndOrientation(
                 uid, pos, orn, physicsClientId=self._physics_server_id)
 

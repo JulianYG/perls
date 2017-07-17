@@ -11,14 +11,14 @@ p.resetSimulation()
 
 p.loadURDF('plane.urdf', useFixedBase=True)
 
-# w = wsg.WSG50Gripper(async=True, pos=(-0.5, -0.7, 0.8))
+# w = wsg.WSG50Gripper(async=True, pos_abs=(-0.5, -0.7, 0.8))
 # g.grasp(slide=1)
 # w.grasp(slide=1)
 
-# print(w.pos)
-# print(w.tool_pos)
+# print(w.pos_abs)
+# print(w.tool_pos_abs)
 
-# r = k.Kuka(null_space=True, pos=[0,0,0],orn=[0,0,0,1])
+# r = k.Kuka(null_space=True, pos_abs=[0,0,0],orn_abs=[0,0,0,1])
 # r = s.Sawyer()
 # g = rg.RethinkGripper()
 # r.grasp()
@@ -43,10 +43,10 @@ print(p.getBasePositionAndOrientation(r))
 # 		targetVelocities=[0] * 7,
 # 		positionGains=[0.05] * 7, velocityGains=[1.] * 7)
 
-# pose = (0., 0., 0., 1.570793, 0., -1.04719755, 0.)
+# pose_abs = (0., 0., 0., 1.570793, 0., -1.04719755, 0.)
 # for i in range(7):
 
-# 	p.resetJointState(r, i, pose[i],0,0)
+# 	p.resetJointState(r, i, pose_abs[i],0,0)
 
 # p.setRealTimeSimulation(1)
 # for _ in range(2000):
@@ -134,9 +134,9 @@ while 1:
 	# 	p.setJointMotorControl2(r, j, 
 	# 		p.POSITION_CONTROL, targetPosition=ik[j], targetVelocity=0.,
 	# 		positionGain=0.05, velocityGain=1.)
-	# r.tool_orn=((0,1,0,0))
+	# r.tool_orn_abs=((0,1,0,0))
 	# (g.reach((0.8, -0.5,  1.), p.getQuaternionFromEuler((np.pi/2, -np.pi/2, 0))), 'delta')
-	# print(r.tool_pos, r.tool_orn)
+	# print(r.tool_pos_abs, r.tool_orn_abs)
 	# print(p.getLinkState(r.uid, 6)[0])
 	# p.stepSimulation()
 

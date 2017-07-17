@@ -106,10 +106,10 @@ s.start()
 # while 1:
 
 # 	for i in range (100):
-# 		pos = [-0.6, 0., 0.2]
+# 		pos_abs = [-0.6, 0., 0.2]
 # 		#end effector points down, not up (in case useOrientation==1)
-# 		orn = (0,1,0,0)
-# 		jointPoses = p.calculateInverseKinematics(kukaId,kukaEndEffectorIndex,pos,orn,ll,ul,jr,rp,jointDamping=jd)
+# 		orn_abs = (0,1,0,0)
+# 		jointPoses = p.calculateInverseKinematics(kukaId,kukaEndEffectorIndex,pos_abs,orn_abs,ll,ul,jr,rp,jointDamping=jd)
 		
 # 		for i in range (numJoints):
 # 			p.setJointMotorControl2(bodyIndex=kukaId,jointIndex=i,controlMode=p.POSITION_CONTROL,targetPosition=jointPoses[i],targetVelocity=0,force=500,positionGain=0.03,velocityGain=1)
