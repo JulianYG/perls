@@ -68,6 +68,18 @@ class View:
         """
         return self._engine.get_camera_pose(otype=otype)
 
+    def get_camera_image(self, itype='rgb'):
+        """
+        Get the camera snapshot of current scene
+        :param itype: string of image type, can be
+        'rgb', 'depth', 'segment'
+        :return:
+        rgb: an rgb array suitable for video
+        depth: a depth value array of current env
+        seg: segmentation value array
+        """
+        return self._engine.get_camera_image(itype=itype)
+
     def update(self, camera_info, *_):
         """
         Update the view, mainly resetting the camera

@@ -5,6 +5,7 @@ import os.path as osp
 import pybullet as p
 import time
 
+from matplotlib import pyplot as plt
 import numpy as np
 
 from .base import GraphicsEngine
@@ -212,6 +213,34 @@ class BulletRenderEngine(GraphicsEngine):
 
     def disable_hotkeys(self):
         p.configureDebugVisualizer(9, 0, self._server_id)
+
+    def get_camera_image(self, itype):
+
+        camera_param = self.camera
+
+        width, height, rgb_img, depth_img, seg_img = \
+            p.getCameraImage(camera_param['frame_width'],
+                             camera_param['frame_height'],
+                             camera_param['view_mat'],
+                             camera_param['projection_mat'],
+                             [0, 1, 0], [1, 1, 1],
+                             renderer=p.ER_BULLET_HARDWARE_OPENGL)
+        if itype == 'human':
+            rgb_img = np.reshape(rgb_img, (height, width, 4)).astype(np.float32) / 255.
+            plt.imshow(rgb_img)
+            plt.pause(2)
+
+        elif itype == 'rgb':
+            return np.reshape(rgb_img, (height, width, 4)).astype(np.float32) / 255.
+
+        elif itype == 'depth':
+            return np.reshape(depth_img, (height, width)).astype(np.float32)
+
+        elif itype == 'segment':
+            return np.reshape(seg_img, (height, width)).astype(np.float32)
+
+        else:
+            loginfo('Unrecognized image type', FONT.ignore)
 
     def boot(self, target_uids):
         if self._job == 'record':

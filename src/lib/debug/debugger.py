@@ -73,6 +73,14 @@ class ViewDebugger(object):
     def update(self, camera, *_):
         self._display.update(camera)
 
+    def get_camera_pose(self, otype='orn'):
+
+        return self._display.get_camera_pose(otype=otype)
+
+    def get_camera_image(self, itype='rgb'):
+
+        return self._display.get_camera_image(itype=itype)
+
     def load_config(self, desc):
         self._display.load_config(desc)
 

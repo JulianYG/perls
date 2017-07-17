@@ -26,9 +26,6 @@ class PushCube(PerlsEnv):
 
         # TODO: get Robot end effector 2D pose in robot frame, get Cube 2D pose in robot frame
 
-    def _render(self, mode='', close=False):
-        return NotImplemented
-
     def _step(self, action):
 
         # TODO: action should be delta Robot end effector 2D pose, so do bounds clipping and apply action

@@ -14,7 +14,7 @@ class PerlsEnv(gym.Env):
     """
 
     metadata = {
-        'render.modes': ['human', 'depth', 'segment'],
+        'render.modes': ['human', 'rgb', 'depth', 'segment'],
         'video.frames_per_second': 50
     }
 
@@ -50,10 +50,18 @@ class PerlsEnv(gym.Env):
         """
         Generate rendered data based on given mode.
         :param mode: string of mode, as specified in metadata
-        :param close: If environment is shutdown
+        human: pop up a window and render
+        rgb: an rgb array suitable for video
+        depth: a depth value array of current env
+        seg: segmentation value array
+        :param close: close all open renderings
         :return: rendered data
         """
-        return NotImplemented
+        if mode in self.metadata['render.modes']:
+            return self._display.get_camera_image(mode)
+        else:
+            # just raise an exception
+            super(PerlsEnv, self).render(mode=mode)
 
     def _reset(self):
         """
