@@ -18,14 +18,23 @@ class PushCube(PerlsEnv):
     def _reset(self):
 
         super(PushCube, self)._reset()
-        # tool_pose = self._world.get_states(('tool', 'pose'))
-        tool_jpos = self._world.get_states(('tool', 'joint_states'))
+        tool_pose = self._world.get_states(('tool', 'pose'))
+        # tool_jpos = self._world.get_states(('tool', 'joint_states'))
         body_pose = self._world.get_states(('body', 'pose'))
 
-        return tool_jpos['titan'], body_pose['cube_0']
+        return tool_pose['titan'], body_pose['cube_0']
+
+        # TODO: get Robot end effector 2D pose in robot frame, get Cube 2D pose in robot frame
 
     def _render(self, mode='', close=False):
         return NotImplemented
 
     def _step(self, action):
+
+        # TODO: action should be delta Robot end effector 2D pose, so do bounds clipping and apply action
+
+        # TODO: make sure to go through IK here, since it's not perfect
+
+        # TODO: then read robot state, and get the stuff we care about again. 
+
         return NotImplemented
