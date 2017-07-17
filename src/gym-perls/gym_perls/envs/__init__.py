@@ -1,3 +1,3 @@
-# ------------bullet-------------
-from gym_perls.envs.perls_env import PerlsEnv
-from gym_perls.envs.push_cube import PushCube
+# ------------perls------------
+from .perls_env import PerlsEnv
+from .push_cube import PushCube
