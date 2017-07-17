@@ -18,9 +18,7 @@ class PushCube(PerlsEnv):
     def _reset(self):
 
         super(PushCube, self)._reset()
-        tool_pose = self._world.get_states(('tool', 'pose'))
-        # tool_jpos = self._world.get_states(('tool', 'joint_states'))
-        body_pose = self._world.get_states(('body', 'pose'))
+        tool_pose, body_pose = self._world.get_states(('tool', 'pose'), ('body', 'pose'))
 
         return tool_pose['titan'], body_pose['cube_0']
 
