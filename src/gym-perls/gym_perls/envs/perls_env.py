@@ -2,6 +2,7 @@ import gym
 from gym.utils import seeding
 
 import sys, os
+import abc
 sys.path.append(os.path.abspath(os.path.join(__file__, '../../../../')))
 from lib.control import Controller
 from lib.utils import io_util
@@ -56,12 +57,13 @@ class PerlsEnv(gym.Env):
 
     def _reset(self):
         """
-        Reset the world environment
-        :return: All initial states of the environment
+        Reset the world environment.
+        :return: Empty list of states. The state
         """
         self._world.reset()
-        return self._world.get_states()
+        return
 
+    @abc.abstractmethod
     def _step(self, action):
         """
         Make one step move in the environment.

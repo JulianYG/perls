@@ -15,6 +15,15 @@ class PushCube(PerlsEnv):
 
         super(PushCube, self).__init__(conf_path)
 
+    def _reset(self):
+
+        super(PushCube, self)._reset()
+        # tool_pose = self._world.get_states(('tool', 'pose'))
+        tool_jpos = self._world.get_states(('tool', 'joint_states'))
+        body_pose = self._world.get_states(('body', 'pose'))
+
+        return tool_jpos['titan'], body_pose['cube_0']
+
     def _render(self, mode='', close=False):
         return NotImplemented
 
