@@ -8,7 +8,7 @@ else:
 
 from .core import Comm
 
-from bullet_.simulation.utils.misc import Constant
+# from bullet_.simulation.utils.misc import Constant
 
 class RedisComm(Comm):
 

@@ -1,5 +1,5 @@
 import pybullet as p
-from framework.utils import math_util
+from lib.utils import math_util
 p.connect(p.GUI)
 
 # p.setRealTimeSimulation(1)

@@ -4,12 +4,33 @@ import pybullet as p
 # from datetime import datetime
 import thread
 
-from framework.control import Controller as sc
+from lib.control import Controller as sc
 
 s = sc('config.xml')
 # s.start_all()
 s.start()
 
+
+
+
+######
+# from lib.state.physicsEngine import BulletPhysicsEngine as bpe
+# # from lib.render.renderEngine import BulletRenderEngine as bre
+# b = bpe(0, 0, 0, async=True)
+
+# # r = bre('')
+
+# p.connect(p.DIRECT)
+
+
+# p.resetSimulation()
+
+# from lib.entity.sawyer import Sawyer
+
+# s = Sawyer('m0', b)
+
+# while True:
+# 	b.step(0)
 # class X():
 #     def __init__(self, name):
 #         self.name = name
