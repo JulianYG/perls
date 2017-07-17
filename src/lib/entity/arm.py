@@ -16,7 +16,7 @@ class Arm(Tool):
         """
         super(Arm, self).__init__(tid, engine, path, pos, orn, fixed=True)
 
-        # Reset pose_abs is defined in subclasses
+        # Reset pose is defined in subclasses
         self._gripper = gripper
         self._rest_pose = (0., ) * self._dof
         self._end_idx = self._dof - 1
@@ -53,7 +53,7 @@ class Arm(Tool):
         """
         Get the orientation of the gripper attached at
         robot end effector link. There should exist
-        some offset based on robot's rest pose_abs.
+        some offset based on robot's rest pose.
         :return: vec4 float quaternion in Cartesian
         """
         return self._gripper.tool_orn_abs
@@ -70,7 +70,7 @@ class Arm(Tool):
     @tool_pos_abs.setter
     def tool_pos_abs(self, pos):
         """
-        Set the tool to given pose_abs.
+        Set the tool to given pose.
         :param pos: vec3 float in cartesian space,
         referring to the position between the gripper fingers
         :return: None
@@ -126,15 +126,15 @@ class Arm(Tool):
         gripper_arm_tran = gripper_base_pos - pos
 
         # Math:
-        # relative: transformed_pos = rotation x (pos_abs - translation)
-        # absolute: transformed_pos = pos_abs - rotation x abs_frame_orn
+        # relative: transformed_pos = rotation x (pos - translation)
+        # absolute: transformed_pos = pos - rotation x abs_frame_orn
         rotation = math_util.quat2mat(orn)
         target_pos = gripper_base_pos - rotation.dot(gripper_arm_tran)
         return target_pos
 
     def _move_to(self, pos, orn):
         """
-        Given pose_abs, call IK to move
+        Given pose, call IK to move
         :param pos: vec3 float cartesian
         :param orn: vec4 float quaternion
         :return: None
@@ -189,7 +189,7 @@ class Arm(Tool):
                  0, 'fixed',
                  [0., 0., 0.], self._tip_offset,
                  [0., 0., 0.],
-                 # TODO: Check if can use [0., 0., 0.707, 0.707] for child orn_abs
+                 # TODO: Check if can use [0., 0., 0.707, 0.707] for child orn
                  [0., 0., 0., 1.], [0., 0., 0., 1.])
             # Reset gripper
             self._gripper.reset()
@@ -197,7 +197,7 @@ class Arm(Tool):
 
     def reach(self, pos=None, orn=None, ftype='abs'):
         """
-        Reach to given pose_abs.
+        Reach to given pose.
         Note this operation sets position first, then
         adjust to orientation by rotation end effector,
         so the position is not accurate in a sense.
@@ -210,7 +210,7 @@ class Arm(Tool):
         Hint:
         Default control uses world frame absolute positions.
         To align simulation with real world, use 'rel'
-        :return: delta between target and actual pose_abs
+        :return: delta between target and actual pose
         """
         orn_delta = math_util.zero_vec(3)
         pos_delta = math_util.zero_vec(3)
@@ -227,7 +227,7 @@ class Arm(Tool):
 
     def pinpoint(self, pos, orn=None, ftype='abs'):
         """
-        Accurately reach to the given pose_abs.
+        Accurately reach to the given pose.
         Note this operation sets position and orientation
         and the same time, keeping neither previous
         position nor previous orientation

@@ -90,7 +90,7 @@ while True:
 				positionGain=0.03, velocityGain=1.0, force=MAX_FORCE)
 
 		else:
-			# Set back to original rest pose_abs
+			# Set back to original rest pose
 			for jointIndex in range(p.getNumJoints(kuka)):
 				p.setJointMotorControl2(kuka, jointIndex, p.POSITION_CONTROL, 
 					REST_JOINT_POS[jointIndex], 0)

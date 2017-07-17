@@ -272,7 +272,7 @@ class Controller(object):
         # Kick start the model, perform frame type check
         world.boot(display.info['frame'])
         # Update initial control states
-        init_states = world.get_states(('tool', 'pose_abs'))[0]
+        init_states = world.get_states(('tool', 'pose'))[0]
         for tid, init_pose in init_states.items():
             self._states['tool'][tid] = init_pose
 
@@ -353,9 +353,9 @@ class Controller(object):
             # values in all cases
             for cmd in commands:
                 method, value = cmd
-                if method == 'pos_abs':
+                if method == 'pos':
                     tool.tool_pos_abs = value
-                elif method == 'orn_abs':
+                elif method == 'orn':
                     tool.tool_orn_abs = value
                 elif method == 'joint_states':
                     tool.joint_states = value
@@ -377,7 +377,7 @@ class Controller(object):
 
                     # Update the states again
                     self._states['tool'] = world.get_states(
-                        ('tool', 'pose_abs'))[0]
+                        ('tool', 'pose'))[0]
 
                     loginfo('World is reset.', FONT.model)
                 elif method == 'reach':
@@ -387,10 +387,10 @@ class Controller(object):
 
                     # Orientation is always relative to the
                     # world frame, that is, absolute
-                    r = math_util.quat2mat(tool.orn_abs)
+                    r = math_util.quat2mat(tool.orn)
 
                     if r_pos is not None:
-                        # Increment to get absolute pos_abs
+                        # Increment to get absolute pos
                         # Take account of rotation
                         i_pos += r.dot(r_pos)
                         pos_diff, orn_diff = tool.reach(i_pos, None)
@@ -399,7 +399,7 @@ class Controller(object):
                         # Note: clipping does not happen here because
                         # arm and gripper are treated in the same way.
                         # Clipping would result in gripper not able to
-                        # change orn_abs. However, clipping here would give
+                        # change orn. However, clipping here would give
                         # arm perfect response. Currently the arm end
                         # effector will switch position when reaching its
                         # limit. This is trade-off, sadly.
@@ -419,7 +419,7 @@ class Controller(object):
                     if math_util.rms(pos_diff) > 3. or \
                        math_util.rms(orn_diff) > 10.:
                         self._states['tool'] = world.get_states(
-                            ('tool', 'pose_abs'))[0]
+                            ('tool', 'pose'))[0]
                         # pass
                 elif method == 'grasp':
                     tool.grasp(value)

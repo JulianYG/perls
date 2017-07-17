@@ -60,10 +60,10 @@ class View:
         """
         self._engine.disable_hotkeys()
 
-    def get_camera_pose(self, otype='orn_abs'):
+    def get_camera_pose(self, otype='orn'):
         """
-        Get the current camera pose_abs in rendering engine
-        :return: (pos_abs, orn_abs) tuple based on given
+        Get the current camera pose in rendering engine
+        :return: (pos, orn) tuple based on given
         orientation type
         """
         return self._engine.get_camera_pose(otype=otype)
@@ -88,7 +88,7 @@ class View:
         {flen: float, yaw: float degree,
         pitch: float degree, focus: float}
         For VR, camera_info is a tuple of
-        (pos_abs: vec3 cartesian, orn_abs: vec4 quat)
+        (pos: vec3 cartesian, orn: vec4 quat)
         :return: None
         """
         if camera_info:

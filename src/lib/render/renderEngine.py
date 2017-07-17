@@ -285,7 +285,7 @@ class BulletRenderEngine(GraphicsEngine):
                 )
 
             if self._frame == 'vr':
-                # Record the egocentric camera pose_abs
+                # Record the egocentric camera pose
                 self._logging_id.append(
                     p.startStateLogging(
                         p.STATE_LOGGING_VR_CONTROLLERS,

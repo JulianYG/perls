@@ -47,7 +47,7 @@ class Body(object):
     ###
     # Basic info
     @property
-    def pos_abs(self):
+    def pos(self):
         """
         Get base position of the body in absolute world frame
         :return: numpy array [x, y, z] position of entity
@@ -55,7 +55,7 @@ class Body(object):
         return self._engine.get_body_scene_position(self._uid)
 
     @property
-    def orn_abs(self):
+    def orn(self):
         """
         Get base orientation of the body in quaternion form in
         absolute world frame
@@ -64,7 +64,7 @@ class Body(object):
         return self._engine.get_body_scene_orientation(self._uid, otype='quat')
     
     @property
-    def pose_abs(self):
+    def pose(self):
         """
         An extra level of abstraction to get 
         position and orientation in absolute world frame.
@@ -72,34 +72,9 @@ class Body(object):
         In real case, this is whatever origin set by the object
         pose tracker, e.g., the point that maps to the top left corner
         of tracker camera's image frame.
-        :return: (pos_abs, orn_abs) tuple
+        :return: (pos, orn) tuple
         """
-        return self.pos_abs, self.orn_abs
-
-    @property
-    def pos_rel(self):
-        """
-        Get position of the body in tool frames. Note if multiple
-        tools are present, it gives positions in each tool frame.
-        :return: A dictionary of relative positions (vec3 float cartesian)
-        where keys are tool ids, and values are corresponding relative
-        position of the body in that tool frame.
-        """
-        pos_dic = dict()
-
-        return
-
-    @property
-    def orn_rel(self):
-        """
-        Get orientation of the body in tool frames. Note if multiple
-        tools are present, it gives orientations in each tool frame.
-        :return: A dictionary of relative orientations (vec4 float quaternion)
-        where keys are tool ids, and values are corresponding relative
-        orientation of the body in that tool frame.
-        """
-        orn_dic = dict()
-        return
+        return self.pos, self.orn
 
     @property
     def uid(self):
@@ -176,12 +151,12 @@ class Body(object):
         )
         if len(self._links) == 1:
             info_dic['name'].append(self._engine.get_link_name(self._uid, -1))
-            info_dic['pos'].append(self.pos_abs)
-            info_dic['orn'].append(self.orn_abs)
+            info_dic['pos'].append(self.pos)
+            info_dic['orn'].append(self.orn)
             info_dic['rel_pos'].append([0., 0., 0.])
             info_dic['rel_orn'].append([0., 0., 0., 1.])
-            info_dic['abs_frame_pos'].append(self.pos_abs)
-            info_dic['abs_frame_orn'].append(self.orn_abs)
+            info_dic['abs_frame_pos'].append(self.pos)
+            info_dic['abs_frame_orn'].append(self.orn)
             info_dic['abs_v'].append(self.v)
             info_dic['abs_omega'].append(self.omega)
         else:
@@ -256,7 +231,7 @@ class Body(object):
         """
         Get joint states of the body
         :return: a dictionary of dictionaries of
-        {joint_index: {pos_abs, v, wrench (vec6), motor_torque}}
+        {joint_index: {pos, v, wrench (vec6), motor_torque}}
         where motor_torque is the applied motor torque
         during last simulation step.
         Note that force and motor_torque are only
@@ -368,8 +343,8 @@ class Body(object):
         :param pos: position vec3 float cartesian to fix at
         :return: None
         """
-        pos = self.pos_abs if pos is None else pos
-        orn = self.orn_abs if orn is None else orn
+        pos = self.pos if pos is None else pos
+        orn = self.orn if orn is None else orn
         self.attach_children = (
             -1, -1, -1, 'fixed', [0.,0.,0.],
             [0.,0.,0.], pos, None, orn)
@@ -390,27 +365,27 @@ class Body(object):
             self._engine.remove_body_attachment(
                 self._children[-1]['cid'])
 
-    @pos_abs.setter
-    def pos_abs(self, pos):
+    @pos.setter
+    def pos(self, pos):
         """
         Set base position of the body base in absolute world frame
         :param pos: entity position in (x, y, z)
         :return: None
         """
-        self._engine.set_body_scene_pose(self._uid, pos, self.orn_abs)
+        self._engine.set_body_scene_pose(self._uid, pos, self.orn)
 
-    @orn_abs.setter
-    def orn_abs(self, orn):
+    @orn.setter
+    def orn(self, orn):
         """
         Set orientation of the body base in absolute world frame
         :param orn: orientation in either quaternion or 
         euler form
         :return: None
         """
-        self._engine.set_body_scene_pose(self._uid, self.pos_abs, orn)
+        self._engine.set_body_scene_pose(self._uid, self.pos, orn)
 
-    @pose_abs.setter
-    def pose_abs(self, pose):
+    @pose.setter
+    def pose(self, pose):
         """
         Set the pose of the body in absolute world frame
         :param pose: (pos, orn) tuple
@@ -602,11 +577,11 @@ class Body(object):
             return self._engine.get_body_relative_pose(
                 self._uid, frame_pos, frame_orn)
         else:
-            return self.pose_abs
+            return self.pose
 
     def reset(self):
         """
-        Reset body to its original pose_abs/fix condition.
+        Reset body to its original pose/fix condition.
         Note currently this cannot remove body attachments
 
         :return: None
@@ -614,7 +589,7 @@ class Body(object):
         del self.fix
         pos, orn, fixed = self._init_state
         if not fixed:
-            self.pose_abs = (pos, orn)
+            self.pose = (pos, orn)
             # self._engine.set_body_scene_pose(self._uid, pos, orn)
         else:
             self.fix = (pos, orn)
@@ -710,8 +685,8 @@ class Body(object):
             self.fix = (pos, orn)
         else:
             cid = self.attach_children[-1]['cid']
-            pos = self.pos_abs if pos is None else pos
-            orn = self.orn_abs if orn is None else orn
+            pos = self.pos if pos is None else pos
+            orn = self.orn if orn is None else orn
             self._engine.move_body(cid, pos, orn, max_force)
 
 
@@ -829,7 +804,7 @@ class Tool(Body):
         Hint:
         Default control uses world frame absolute positions.
         To align simulation with real world, use 'rel'
-        :return: Delta difference between target and actual (pos_abs, orn_abs)
+        :return: Delta difference between target and actual (pos, orn)
         """
         raise NotImplementedError('Method <reach> not implemented for tool. '
                                   'Method is tool-specific')
@@ -868,46 +843,31 @@ class Tool(Body):
         :param kwargs: User can specify reaching/leaving
         behavior with five stages 'hover', 'attend', 
         'carry', 'release', and 'leave'. 
-        The values are designated pos_abs, orn_abs
+        The values are designated pos, orn
         This is especially useful on real robot use case to
         achieve higher success rate
         :return: None
         """
 
         if kwargs['hover']:
-            if ftype == 'abs':
-                self.tool_pos_abs, self.tool_orn_abs = kwargs['hover']
-            else:
-                self.tool_pos_rel, self.tool_orn_rel = kwargs['hover']
+            self.tool_pos, self.tool_orn = kwargs['hover']
 
         self.reach(pick_pos, pick_orn, ftype)
 
         if kwargs['attend']:
-            if ftype == 'abs':
-                self.tool_pos_abs, self.tool_orn_abs = kwargs['attend']
-            else:
-                self.tool_pos_rel, self.tool_orn_rel = kwargs['attend']
+            self.tool_pos, self.tool_orn = kwargs['attend']
 
         self.grasp(None)
 
         if kwargs['carry']:
-            if ftype == 'abs':
-                self.tool_pos_abs, self.tool_orn_abs = kwargs['carry']
-            else:
-                self.tool_pos_rel, self.tool_orn_rel = kwargs['carry']
+            self.tool_pos, self.tool_orn = kwargs['carry']
 
         self.reach(place_pos, place_orn, ftype)
 
         if kwargs['release']:
-            if ftype == 'abs':
-                self.tool_pos_abs, self.tool_orn_abs = kwargs['release']
-            else:
-                self.tool_pos_rel, self.tool_orn_rel = kwargs['release']
+            self.tool_pos, self.tool_orn = kwargs['release']
 
         self.grasp(None)
 
         if kwargs['leave']:
-            if ftype == 'abs':
-                self.tool_pos_abs, self.tool_orn_abs = kwargs['leave']
-            else:
-                self.tool_pos_rel, self.tool_orn_rel = kwargs['leave']
+            self.tool_pos, self.tool_orn = kwargs['leave']

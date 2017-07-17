@@ -25,12 +25,11 @@ class World(object):
 
     # Storing inquiry legend
     _INQUIRY_DIC = dict(
-        tool=['pose_abs', 'v', 'omega', 'joint_states',
-              'pose_rel',
+        tool=['pose', 'v', 'omega', 'joint_states',
               # TODO
               # 'force', 'wrench', 'shape',
               'name', 'contact'],
-        body=['pose_abs', 'v', 'omega', 'pose_rel',
+        body=['pose', 'v', 'omega', 'pose_rel',
               # 'force', 'wrench', 'shape',
               'name', 'tid',
               'contact'],
@@ -263,7 +262,7 @@ class World(object):
         to get (value).
         :return: states dictionary of given
         inquiry. Keys are ids, values are states.
-        For example, [('body', 'pose_abs')]
+        For example, [('body', 'pose')]
         It will return a list of dictionaries in the same
         order as inquiry list.
         """
@@ -280,6 +279,31 @@ class World(object):
                 prop = getattr(self, key)
                 info = dict((x, getattr(prop[x], value)) for x in prop)
             state_list.append(info)
+
+            @property
+            def pos_rel(self):
+                """
+                Get position of the body in tool frames. Note if multiple
+                tools are present, it gives positions in each tool frame.
+                :return: A dictionary of relative positions (vec3 float cartesian)
+                where keys are tool ids, and values are corresponding relative
+                position of the body in that tool frame.
+                """
+                pos_dic = dict()
+
+                return
+
+            @property
+            def orn_rel(self):
+                """
+                Get orientation of the body in tool frames. Note if multiple
+                tools are present, it gives orientations in each tool frame.
+                :return: A dictionary of relative orientations (vec4 float quaternion)
+                where keys are tool ids, and values are corresponding relative
+                orientation of the body in that tool frame.
+                """
+                orn_dic = dict()
+                return
         return state_list
 
     def boot(self, frame):

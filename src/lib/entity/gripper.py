@@ -74,7 +74,7 @@ class PrismaticGripper(Tool):
         Get the orientation of the gripper. This is semantic
         :return: vec4 float quaternion in Cartesian
         """
-        return self.orn_abs
+        return self.orn
 
     @traction.setter
     def traction(self, f):
@@ -105,7 +105,7 @@ class PrismaticGripper(Tool):
         :param orn: vec4 float in quaternion form
         :return: None
         """
-        self.orn_abs = orn
+        self.orn = orn
 
     def position_transform(self, pos, orn):
         """
@@ -121,7 +121,7 @@ class PrismaticGripper(Tool):
         translation = (
             self.kinematics['pos'][self._left_finger_idx] +
             self.kinematics['pos'][self._right_finger_idx]) / 2. -\
-            self.pos_abs
+            self.pos
         # Since desired frame is aligned with base frame...
         rotation = math_util.quat2mat(orn)
         base_pos = pos - rotation.dot(translation)
@@ -147,14 +147,14 @@ class PrismaticGripper(Tool):
         """
         self.attach_children = (
             -1, -1, -1, 'fixed', [0., 0., 0.],
-            [0., 0., 0.], self.pos_abs, None, self.orn_abs)
+            [0., 0., 0.], self.pos, None, self.orn)
 
     def reach(self, pos=None, orn=None, ftype='abs'):
         """
-        Reach to given pose_abs approximately
+        Reach to given pose approximately
         :param pos: vec3 float cartesian at base
         :param orn: vec4 float quaternion
-        :return: delta between target and actual pose_abs
+        :return: delta between target and actual pose
         """
         orn_delta = math_util.zero_vec(3)
         pos_delta = math_util.zero_vec(3)
@@ -173,7 +173,7 @@ class PrismaticGripper(Tool):
 
     def pinpoint(self, pos, orn=None, ftype='abs'):
         """
-        Accurately reach to given pose_abs
+        Accurately reach to given pose
         :param pos: vec3 float cartesian at finger tip
         :param orn: vec4 float quaternion
         :return: None

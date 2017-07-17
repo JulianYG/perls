@@ -132,7 +132,7 @@ class Tracker():
 			target = origin + pos
 
 			# Add randomness to orientation
-			# target_orn = orn_abs + np.random.normal(0, 0.05, 4)
+			# target_orn = orn + np.random.normal(0, 0.05, 4)
 			# target_orn /= np.sqrt(np.sum(target_orn ** 2))
 
 			end_state = dict(position=tuple(target),

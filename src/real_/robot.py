@@ -48,7 +48,7 @@ class Robot(object):
 	def set_init_positions(self, position):
 		
 		self.plan_joint_positions(position)
-		self.initEndpointPose = self.limb.endpoint_pose() # initial pose_abs of end effector
+		self.initEndpointPose = self.limb.endpoint_pose() # initial pose of end effector
 
 	# For LARGE MOVEMENTS: move joints to desired angles (motion planner)
 	# Takes in a dictionary (string:float) with entries for each joint on the robot
@@ -59,7 +59,7 @@ class Robot(object):
 
 	# Takes in a dictionary (string:float) with entries for each joint on the robot
 	def set_joint_positions(self, angles): 
-		self.limb.set_joint_positions(angles) # look into the raw bool flag -> commands joint pos_abs without modification to JCB -> bypasses safety check
+		self.limb.set_joint_positions(angles) # look into the raw bool flag -> commands joint pos without modification to JCB -> bypasses safety check
 		rospy.loginfo("Moved arm to desired position")
 
 	def get_joint_angles(self):
@@ -91,7 +91,7 @@ class Robot(object):
 				),
 			),
 		}
-		# Add desired pose_abs for inverse kinematics
+		# Add desired pose for inverse kinematics
 		ikreq.pose_stamp.append(poses["right"])
 		# Request inverse kinematics from base to "right_hand" link
 		ikreq.tip_names.append('right_hand')
