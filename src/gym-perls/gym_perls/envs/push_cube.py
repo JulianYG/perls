@@ -24,7 +24,7 @@ class PushCube(PerlsEnv):
 
         cube = self._world.body['cube_0']
         tool = self._world.tool['m0']
-        cube_pose_rel = cube.get_pose(tool.uid, -1)
+        cube_pose_rel = cube.get_pose(tool.uid, 0)
         eef_pose_rel = tool.tool_pose_rel
 
         return eef_pose_rel, cube_pose_rel

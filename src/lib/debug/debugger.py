@@ -18,6 +18,42 @@ class ModelDebugger(object):
     def target(self):
         return self._world.target
 
+    @property
+    def gravity(self):
+        """
+        Get gravitational property of the world
+        :return: vec3 float gravity
+        """
+        return self._world.gravity
+
+    @property
+    def traction(self):
+        """
+        Get the traction force on tracking bodies 
+        in the world
+        :return: float force in Newton
+        """
+        return self._world.traction
+
+
+    @property
+    def body(self):
+        """
+        Get the full list of bodies in the world
+        :return: list of Body instances
+        """
+        return self._world.body
+
+    @property
+    def tool(self):
+        """
+        Get the tools inside the environment
+        :return: dictionary of Tool instances, can be
+        either grippers or arms, or even hands, where
+        keys are tool ids, and values are tool instances
+        """
+        return self._world.tool
+
     def build(self):
         self._world.build()
         loginfo('World Debugger info: \n{}'.format(self.info), FONT.model)
