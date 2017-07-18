@@ -1,7 +1,6 @@
 from gym.envs.registration import register
 import os.path as osp
 
-
 register(
     id='perls-v0',
     entry_point='envs:PerlsEnv',
