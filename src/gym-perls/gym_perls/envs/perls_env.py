@@ -84,6 +84,6 @@ class PerlsEnv(gym.Env):
         """
         Make one step move in the environment.
         :param action: Action as defined in action space
-        :return: Observations, Rewards, IfDone, Info tuple
+        :return: Observations, Rewards, isDone, Info tuple
         """
         return NotImplemented

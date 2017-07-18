@@ -2,10 +2,10 @@ from .perls_env import PerlsEnv
 
 
 class PushCube(PerlsEnv):
+    """
+    Pushing cube across the table
+    """
 
-    """
-    Trying to solve InverseKinematics by RL
-    """
     metadata = {
         'render.modes': ['human', 'depth', 'segment'],
         'video.frames_per_second': 50
