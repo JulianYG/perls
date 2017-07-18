@@ -198,10 +198,7 @@ class BulletPhysicsEngine(FakeStateEngine):
     def get_body_relative_pose(self, uid, frame_pos, frame_orn):
 
         body_pose = p.getBasePositionAndOrientation(uid, self._physics_server_id)
-
-        transform = p.invertTransform(frame_pos, frame_orn)
-        return p.multiplyTransforms(transform[0], transform[1],
-                                    body_pose[0], body_pose[1])
+        return math_util.get_transformed_pose(body_pose, (frame_pos, frame_orn))
 
     def set_body_scene_pose(self, uid, pos, orn):
         status = 0

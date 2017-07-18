@@ -41,22 +41,22 @@ class Arm(Tool):
         return self._null_space
 
     @property
-    def tool_pos_abs(self):
+    def tool_pos(self):
         """
         Get the position of the tool. This is semantic
         :return: vec3 float in Cartesian
         """
-        return self._gripper.tool_pos_abs
+        return self._gripper.tool_pos
 
     @property
-    def tool_orn_abs(self):
+    def tool_orn(self):
         """
         Get the orientation of the gripper attached at
         robot end effector link. There should exist
         some offset based on robot's rest pose.
         :return: vec4 float quaternion in Cartesian
         """
-        return self._gripper.tool_orn_abs
+        return self._gripper.tool_orn
 
     @null_space.setter
     def null_space(self, use_ns):
@@ -67,19 +67,19 @@ class Arm(Tool):
         """
         self._null_space = use_ns
 
-    @tool_pos_abs.setter
-    def tool_pos_abs(self, pos):
+    @tool_pos.setter
+    def tool_pos(self, pos):
         """
         Set the tool to given pose.
         :param pos: vec3 float in cartesian space,
         referring to the position between the gripper fingers
         :return: None
         """
-        target_pos = self.position_transform(pos, self.tool_orn_abs)
-        self._move_to(target_pos, self.tool_orn_abs)
+        target_pos = self.position_transform(pos, self.tool_orn)
+        self._move_to(target_pos, self.tool_orn)
 
-    @tool_orn_abs.setter
-    def tool_orn_abs(self, orn):
+    @tool_orn.setter
+    def tool_orn(self, orn):
         """
         Set the tool to given orientation.
         Note setting orientation does not keep previous
@@ -102,6 +102,25 @@ class Arm(Tool):
             [y, x], 'position',
             dict(positionGains=(.05,) * 2,
                  velocityGains=(1.,) * 2))
+
+    def get_pose(self, uid=None, lid=None):
+        """
+        Get the current base pose of the tool. This is
+        especially useful for end effector pose relative
+        to
+        :return: (pos, orn) tuple
+        """
+        if uid:
+            frame_pos = self._engine.get_body_scene_position(uid)
+            frame_orn = self._engine.get_body_scene_orientation(uid)
+            if lid:
+                frame_pos, frame_orn = \
+                    self._engine.get_body_link_state(uid, lid)[:2]
+
+            return self._engine.get_body_relative_pose(
+                self._uid, frame_pos, frame_orn)
+        else:
+            return self.pose
 
     ###
     # Helper functions
@@ -217,11 +236,11 @@ class Arm(Tool):
 
         if pos is not None:
             self._move_to(pos, orn)
-            pos_delta = self.tool_pos_abs - pos
+            pos_delta = self.tool_pos - pos
 
         if orn is not None:
             self.tool_orn = orn
-            orn_delta = math_util.quat_diff(self.tool_orn_abs, orn)
+            orn_delta = math_util.quat_diff(self.tool_orn, orn)
 
         return pos_delta, orn_delta
 
@@ -237,7 +256,7 @@ class Arm(Tool):
         :return: None
         """
         if orn is None:
-            orn = self.tool_orn_abs
+            orn = self.tool_orn
         target_pos = self.position_transform(pos, orn)
         self._move_to(target_pos, orn)
 

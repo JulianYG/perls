@@ -57,7 +57,7 @@ class PrismaticGripper(Tool):
         return self._max_force
 
     @property
-    def tool_pos_abs(self):
+    def tool_pos(self):
         """
         Get the position of the gripper, based on 
         the average of left and right tips/fingers 
@@ -69,7 +69,7 @@ class PrismaticGripper(Tool):
         return (left_finger_pos + right_finger_pos) / 2. + self._tip_offset
 
     @property
-    def tool_orn_abs(self):
+    def tool_orn(self):
         """
         Get the orientation of the gripper. This is semantic
         :return: vec4 float quaternion in Cartesian
@@ -80,8 +80,8 @@ class PrismaticGripper(Tool):
     def traction(self, f):
         self._max_force = f
 
-    @tool_pos_abs.setter
-    def tool_pos_abs(self, pos):
+    @tool_pos.setter
+    def tool_pos(self, pos):
         """
         Set the gripper to given position. Use left finger as reference.
         :param pos: vec3 float in cartesian space
@@ -92,14 +92,14 @@ class PrismaticGripper(Tool):
                    FONT.model)
             return
         # Need some transformation
-        base_pos = self.position_transform(pos, self.tool_orn_abs)
+        base_pos = self.position_transform(pos, self.tool_orn)
 
         # Note here it only cares about the position,
         # thus not solving using constraints
-        self.track(pos, self.tool_orn_abs, self._max_force)
+        self.track(pos, self.tool_orn, self._max_force)
 
-    @tool_orn_abs.setter
-    def tool_orn_abs(self, orn):
+    @tool_orn.setter
+    def tool_orn(self, orn):
         """
         Set the gripper to given orientation
         :param orn: vec4 float in quaternion form
@@ -128,7 +128,8 @@ class PrismaticGripper(Tool):
         return base_pos
 
     ###
-    #  High level functionalities
+    #  High level functionality
+
     def reset(self):
         """
         Release gripper for reset
@@ -160,14 +161,14 @@ class PrismaticGripper(Tool):
         pos_delta = math_util.zero_vec(3)
 
         if orn is None:
-            orn = self.tool_orn_abs
+            orn = self.tool_orn
         # Use constraint to move gripper for simulation,
         # to avoid boundary mixing during collision
         self.track(pos, orn, self._max_force)
 
-        orn_delta = math_util.quat_diff(self.tool_orn_abs, orn)
+        orn_delta = math_util.quat_diff(self.tool_orn, orn)
         if pos is not None:
-            pos_delta = self.tool_pos_abs - pos
+            pos_delta = self.tool_pos - pos
 
         return pos_delta, orn_delta
 
@@ -179,8 +180,8 @@ class PrismaticGripper(Tool):
         :return: None
         """
         if orn:
-            self.tool_orn_abs = orn
-        self.tool_pos_abs = pos
+            self.tool_orn = orn
+        self.tool_pos = pos
 
     def grasp(self, slide):
         """
@@ -188,6 +189,7 @@ class PrismaticGripper(Tool):
         :param slide: if given, perform slider grasp
         :return: None
         """
-        raise NotImplementedError('Method <grasp> not implemented for gripper. '
-                                  'Method is gripper-specific')
+        raise NotImplementedError(
+            'Method <grasp> not implemented for gripper. '
+            'Method is gripper-specific')
 

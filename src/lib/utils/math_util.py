@@ -237,6 +237,13 @@ def quat_diff(quat1, quat2):
     return quat2euler(quat1) - quat2euler(quat2)
 
 
+def get_transformed_pose(body_pose, frame_pose):
+
+    transform = p.invertTransform(frame_pose[0], frame_pose[1])
+    return p.multiplyTransforms(transform[0], transform[1],
+                                body_pose[0], body_pose[1])
+
+
 def get_transformed_pos(pos, translation, rotation):
     return rotation.dot(pos - translation)
 

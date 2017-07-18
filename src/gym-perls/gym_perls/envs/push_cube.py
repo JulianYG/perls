@@ -18,10 +18,16 @@ class PushCube(PerlsEnv):
     def _reset(self):
 
         super(PushCube, self)._reset()
-        tool_pose, body_pose = self._world.get_states(
-            ('tool', 'pose'), ('body', 'pose'))
+        return self._get_relative_pose()
 
-        return tool_pose['m0'], body_pose['cube_0']
+    def _get_relative_pose(self):
+
+        cube = self._world.body['cube_0']
+        tool = self._world.tool['m0']
+        cube_pose_rel = cube.get_pose(tool.uid, -1)
+        eef_pose_rel = tool.tool_pose_rel
+
+        return eef_pose_rel, cube_pose_rel
 
     def _step(self, action):
 

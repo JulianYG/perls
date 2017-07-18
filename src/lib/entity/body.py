@@ -39,10 +39,12 @@ class Body(object):
         self._model_path = path
         self._text_markers = dict()
         self._fixed = fixed
+
         self._children = dict() # No children constraints initially
         self._texture = dict()  # No texture initially
         self._uid, self._links, self._joints = \
             self._engine.load_asset(path, pos, orn, fixed)
+        self._name = self._engine.get_body_name(self._uid)
 
     ###
     # Basic info
@@ -103,10 +105,11 @@ class Body(object):
     @property
     def name(self):
         """
-        Get the name of the body
-        :return: name string 
+        Get the name of the body.  User can define name string
+        in environment configuration file
+        :return: name string
         """
-        return self._engine.get_body_name(self._uid)
+        return self._name
 
     @property
     def v(self):
@@ -334,7 +337,7 @@ class Body(object):
         :param string: name string
         :return: None
         """
-        raise NotImplementedError('Method <name.setter> not implemented for Body')
+        self._name = string
 
     @fix.setter
     def fix(self, (pos, orn)):
@@ -453,9 +456,9 @@ class Body(object):
             self._engine.set_body_dynamics(self._uid, link_id, d_info)
 
     @attach_children.setter
-    def attach_children(self,
-                        (lid, child_uid, child_lid, jtype, jaxis,
-                         parent_pos, child_pos, parent_orn, child_orn)):
+    def attach_children(
+            self, (lid, child_uid, child_lid, jtype, jaxis,
+            parent_pos, child_pos, parent_orn, child_orn)):
         """
         Attach a child body B on this parent body A
         Required input:
@@ -721,41 +724,51 @@ class Tool(Body):
         self._tip_offset = math_util.zero_vec(3)
         self._name = Body.name
 
-    @property
-    def name(self):
-        """
-        The name string of the tool. Default is given
-        by asset file, but user can choose own name in config
-        :return: string
-        """
-        return self._name
-
-    @property
+    @abc.abstractproperty
     def tid(self):
         """
         A tool id specifically assigned to this tool.
         Used for control.
         :return: integer tool id
         """
-        return 't{}'.format(self._tool_id)
+        return NotImplemented
 
     @abc.abstractproperty
-    def tool_pos_abs(self):
+    def tool_pos(self):
         """
         Get the position of the tool. This is semantic
         :return: vec3 float in Cartesian
         """
-        raise NotImplementedError('Method <tool_pos_abs> not implemented for tool')
+        raise NotImplemented
 
     @abc.abstractproperty
-    def tool_orn_abs(self):
+    def tool_orn(self):
         """
         Get the orientation of the tool. This is semantic
         :return: vec4 float quaternion in Cartesian
         """
-        raise NotImplementedError('Method <tool_orn_abs> not implemented for tool')
+        raise NotImplemented
 
-    @name.setter
+    @property
+    def tool_pose(self):
+        """
+        Get the tool end effector pose (position and
+        orientation in world frame).
+        :return: (pos, orn) tuple of (vec3 float cartesian,
+        vec4 float quaternion)
+        """
+        return self.tool_pos, self.tool_orn
+
+    @property
+    def tool_pose_rel(self):
+        """
+        Note: this is only applicable to tools
+        Get the tool pose relative to arm's base frame
+        :return: (pos, orn) tuple
+        """
+        return math_util.get_transformed_pose(self.pose, self.tool_pose)
+
+    @Body.name.setter
     def name(self, string):
         """
         Set the name of the tool
@@ -763,29 +776,47 @@ class Tool(Body):
         :return: None
         """
         self._name = string
+
     ###
     #  Low level control functionality
 
-    @tool_pos_abs.setter
-    def tool_pos_abs(self, pos):
+    @tool_pos.setter
+    def tool_pos(self, pos):
         """
         Set the tool to given position
         :param pos: vec3 float in cartesian space
         :return: None
         """
-        raise NotImplementedError('Method <tool_pos_abs> not implemented for tool')
+        raise NotImplemented
 
-    @tool_orn_abs.setter
-    def tool_orn_abs(self, orn):
+    @tool_orn.setter
+    def tool_orn(self, orn):
         """
         Set the tool to given orientation
         :param orn: vec4 float in quaternion form
         :return: None
         """
-        raise NotImplementedError('Method <tool_orn_abs> not implemented for tool')
+        raise NotImplemented
+
+    @tool_pose.setter
+    def tool_pose(self, pose):
+        """
+        Set the pose of tool
+        :param pose: (pos, orn) tuple
+        :return: None
+        """
+        raise NotImplemented
 
     ###
     #  High level control functionality
+
+    @abc.abstractmethod
+    def reset(self):
+        """
+        Reset the tool to original pose
+        :return: None
+        """
+        raise NotImplemented
 
     @abc.abstractmethod
     def reach(self, pos, orn, ftype='abs'):
@@ -806,8 +837,7 @@ class Tool(Body):
         To align simulation with real world, use 'rel'
         :return: Delta difference between target and actual (pos, orn)
         """
-        raise NotImplementedError('Method <reach> not implemented for tool. '
-                                  'Method is tool-specific')
+        raise NotImplemented
 
     @abc.abstractmethod
     def pinpoint(self, pos, orn, ftype='abs'):
@@ -818,8 +848,7 @@ class Tool(Body):
         :param ftype: refer to <reach~ftype>
         :return: None
         """
-        raise NotImplementedError('Method <pinpoint> not implemented for tool. '
-                                  'Method is tool-specific')
+        raise NotImplemented
 
     @abc.abstractmethod
     def grasp(self, slide):
@@ -828,7 +857,7 @@ class Tool(Body):
         :param slide: if given, perform slider grasp
         :return: None
         """
-        raise NotImplementedError('Method <grasp> not implemented for tool')
+        raise NotImplemented
 
     def pick_and_place(self, pick_pos, place_pos,
                        pick_orn=None, place_orn=None,
