@@ -13,11 +13,11 @@ register(
     entry_point='envs:PushCube',
     kwargs=dict(conf_path=osp.abspath(osp.join(__file__, '../gym.xml'))),
 )
-
-import gym
-env = gym.make('exp-v0')
-o = env.reset()
-print(o)
-
-while True:
-    pass
+#
+# import gym
+# env = gym.make('exp-v0')
+# o = env.reset()
+# print(o)
+# import pybullet as p
+# while True:
+#     p.stepSimulation()
