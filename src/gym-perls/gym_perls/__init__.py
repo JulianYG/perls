@@ -17,6 +17,5 @@ import gym
 env = gym.make('exp-v0')
 o = env.reset()
 print(o)
-import pybullet as p
 while True:
-    p.stepSimulation()
+    env.step()
