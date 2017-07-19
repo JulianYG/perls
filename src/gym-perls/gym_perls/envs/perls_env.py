@@ -78,6 +78,8 @@ class PerlsEnv(gym.Env):
         :return: Empty list of states. The state
         """
         self._world.reset()
+        for _ in range(500):
+            self._world.update()
 
     @abc.abstractmethod
     def _step(self, action):

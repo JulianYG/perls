@@ -311,8 +311,13 @@ class World(object):
         return self._engine.step(elp)
 
     def clean_up(self):
+        """
+        Clean up the environment and shut down
+        :return: None
+        """
         self._target_bodies = list()
         self._tools, self._bodies = dict(), dict()
+
         # Flush error messages
         for err_msg in self._engine.error:
             logerr(err_msg, FONT.model)
