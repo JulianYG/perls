@@ -26,8 +26,10 @@ class PushCube(PerlsEnv):
         super(PushCube, self)._reset()
 
         # move robot to initial position
-        self._robot.reach(pos=[-0.45032182335853577, 0.0994880199432373, -0.16887788474559784], 
-                          orn=euler2quat([np.pi / 2.0, 0.0, 0.0]))
+        # self._robot.pinpoint(pos=[2.0, 0.0, -2.0], 
+        #                      orn=euler2quat([-np.pi / 2.0, -np.pi / 2.0, 0.0]))
+        self._robot.pinpoint(pos=[2.0, 0.0, -2.0], 
+                             orn=euler2quat([-np.pi, -np.pi / 2.0, 0.0]))     
 
         # TODO: should this be pinpoint???
 
