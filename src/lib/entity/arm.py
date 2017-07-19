@@ -1,5 +1,5 @@
 
-from .body import Tool
+from .body import Body, Tool
 from ..utils import math_util
 
 
@@ -39,6 +39,15 @@ class Arm(Tool):
         :return: Boolean
         """
         return self._null_space
+
+    @property
+    def pose(self):
+        """
+        Get the pose of arm base frame.
+        :return: arm base frame (pos, orn) tuple
+        """
+        return self.kinematics['abs_frame_pos'][0], \
+            self.kinematics['abs_frame_orn'][1]
 
     @property
     def tool_pos(self):
@@ -231,20 +240,21 @@ class Arm(Tool):
         To align simulation with real world, use 'rel'
         :return: delta between target and actual pose
         """
+        fpos, forn = super(Arm, self).reach(pos, orn, ftype)
         orn_delta = math_util.zero_vec(3)
         pos_delta = math_util.zero_vec(3)
 
-        if pos is not None:
-            self._move_to(pos, orn)
-            pos_delta = self.tool_pos - pos
+        if fpos is not None:
+            self._move_to(fpos, forn)
+            pos_delta = self.tool_pos - fpos
 
-        if orn is not None:
-            self.tool_orn = orn
-            orn_delta = math_util.quat_diff(self.tool_orn, orn)
+        if forn is not None:
+            self.tool_orn = forn
+            orn_delta = math_util.quat_diff(self.tool_orn, forn)
 
         return pos_delta, orn_delta
 
-    def pinpoint(self, pos, orn=None, ftype='abs'):
+    def pinpoint(self, pos, orn, ftype='abs'):
         """
         Accurately reach to the given pose.
         Note this operation sets position and orientation
@@ -255,10 +265,8 @@ class Arm(Tool):
         :param ftype: refer to <reach~ftype>
         :return: None
         """
-        if orn is None:
-            orn = self.tool_orn
-        target_pos = self.position_transform(pos, orn)
-        self._move_to(target_pos, orn)
+        target_pos, target_orn = super(Arm, self).pinpoint(pos, orn, ftype)
+        self._move_to(target_pos, target_orn)
 
     def grasp(self, slide=-1):
         """

@@ -1,7 +1,7 @@
 # !/usr/bin/env python
 
 from .perls_env import PerlsEnv
-from lib.utils.math_util import euler2quat
+from lib.utils import math_util
 import numpy as np
 
 
@@ -26,14 +26,10 @@ class PushCube(PerlsEnv):
         super(PushCube, self)._reset()
 
         # move robot to initial position
-        # self._robot.pinpoint(pos=[2.0, 0.0, -2.0], 
-        #                      orn=euler2quat([-np.pi / 2.0, -np.pi / 2.0, 0.0]))
-        self._robot.pinpoint(pos=[2.0, 0.0, -2.0], 
-                             orn=euler2quat([-np.pi, -np.pi / 2.0, 0.0]))     
-
-        # TODO: should this be pinpoint???
-
-        # TODO: set cube's initial position here
+        self._robot.pinpoint(
+            (1., 0., .6),
+            math_util.euler2quat([-math_util.pi, -math_util.pi / 2.0, 0.0]),
+            ftype='rel')
 
         return self._get_relative_pose()
 

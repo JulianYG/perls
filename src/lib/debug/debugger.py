@@ -35,7 +35,6 @@ class ModelDebugger(object):
         """
         return self._world.traction
 
-
     @property
     def body(self):
         """
@@ -61,7 +60,7 @@ class ModelDebugger(object):
     def reset(self):
         self._world.reset()
 
-    def update(self, elt):
+    def update(self, elt=0):
         self._world.update(elt)
 
     def load_body(self, file_path, pos, orn,

@@ -57,6 +57,10 @@ class PrismaticGripper(Tool):
         return self._max_force
 
     @property
+    def pose(self):
+        return self.pos, self.orn
+
+    @property
     def tool_pos(self):
         """
         Get the position of the gripper, based on 
@@ -157,31 +161,32 @@ class PrismaticGripper(Tool):
         :param orn: vec4 float quaternion
         :return: delta between target and actual pose
         """
+        fpos, forn = super(PrismaticGripper, self).reach(pos, orn, ftype)
         orn_delta = math_util.zero_vec(3)
         pos_delta = math_util.zero_vec(3)
 
-        if orn is None:
-            orn = self.tool_orn
+        if forn is None:
+            forn = self.tool_orn
         # Use constraint to move gripper for simulation,
         # to avoid boundary mixing during collision
-        self.track(pos, orn, self._max_force)
+        self.track(fpos, forn, self._max_force)
 
-        orn_delta = math_util.quat_diff(self.tool_orn, orn)
-        if pos is not None:
-            pos_delta = self.tool_pos - pos
+        orn_delta = math_util.quat_diff(self.tool_orn, forn)
+        if fpos is not None:
+            pos_delta = self.tool_pos - fpos
 
         return pos_delta, orn_delta
 
-    def pinpoint(self, pos, orn=None, ftype='abs'):
+    def pinpoint(self, pos, orn, ftype='abs'):
         """
         Accurately reach to given pose
         :param pos: vec3 float cartesian at finger tip
         :param orn: vec4 float quaternion
         :return: None
         """
-        if orn:
-            self.tool_orn = orn
-        self.tool_pos = pos
+        fpos, forn = super(PrismaticGripper, self).pinpoint(pos, orn, ftype)
+        self.tool_pos = fpos
+        self.tool_orn = forn
 
     def grasp(self, slide):
         """

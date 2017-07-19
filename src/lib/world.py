@@ -303,7 +303,7 @@ class World(object):
         """
         self._engine.status = stat
 
-    def update(self, elp):
+    def update(self, elp=0):
         """
         Update the states of the world.
         :return: None

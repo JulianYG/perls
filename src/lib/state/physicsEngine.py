@@ -580,7 +580,7 @@ class BulletPhysicsEngine(FakeStateEngine):
         for _ in range(max_steps):
             p.stepSimulation(self._physics_server_id)
 
-    def step(self, elapsed_time=0):
+    def step(self, elapsed_time):
         if self.status == 'running':
             if self._async:
                 if self._step_count < self._max_run_time or self._max_run_time == 0:

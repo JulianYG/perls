@@ -2,7 +2,7 @@ import pybullet as p
 import numpy as np
 import math
 
-
+pi = np.pi
 _EPS = np.finfo(float).eps * 4.
 
 # axis sequences for Euler angles

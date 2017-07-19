@@ -572,7 +572,7 @@ class StateEngine(object):
         return NotImplemented
 
     @abc.abstractmethod
-    def step(self, elapsed_time=0):
+    def step(self, elapsed_time):
         """
         Simulate for one step
         :param elapsed_time: integer elapsed time

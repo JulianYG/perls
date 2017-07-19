@@ -354,9 +354,9 @@ class Controller(object):
             for cmd in commands:
                 method, value = cmd
                 if method == 'pos':
-                    tool.tool_pos_abs = value
+                    tool.tool_pos = value
                 elif method == 'orn':
-                    tool.tool_orn_abs = value
+                    tool.tool_orn = value
                 elif method == 'joint_states':
                     tool.joint_states = value
                 else:
@@ -412,7 +412,7 @@ class Controller(object):
                     # cause robot arm act weirdly.
                     state_pose = self._states['tool'][tool.tid]
                     self._states['tool'][tool.tid] = \
-                        (state_pose[0], tool.tool_orn_abs)
+                        (state_pose[0], tool.tool_orn)
 
                     # If the tool is out of reach, hold the adapter states
                     # TODO: make the threshold configs

@@ -734,12 +734,20 @@ class Tool(Body):
         return NotImplemented
 
     @abc.abstractproperty
+    def pose(self):
+        """
+        Get the base frame pose of the tool
+        :return: (pos, orn) tuple
+        """
+        return NotImplemented
+
+    @abc.abstractproperty
     def tool_pos(self):
         """
         Get the position of the tool. This is semantic
         :return: vec3 float in Cartesian
         """
-        raise NotImplemented
+        return NotImplemented
 
     @abc.abstractproperty
     def tool_orn(self):
@@ -747,7 +755,7 @@ class Tool(Body):
         Get the orientation of the tool. This is semantic
         :return: vec4 float quaternion in Cartesian
         """
-        raise NotImplemented
+        return NotImplemented
 
     @property
     def tool_pose(self):
@@ -766,7 +774,7 @@ class Tool(Body):
         Get the tool pose relative to arm's base frame
         :return: (pos, orn) tuple
         """
-        return math_util.get_transformed_pose(self.pose, self.tool_pose)
+        return math_util.get_transformed_pose(self.tool_pose, self.pose)
 
     @Body.name.setter
     def name(self, string):
@@ -807,6 +815,20 @@ class Tool(Body):
         """
         raise NotImplemented
 
+    ### Helper functions
+
+    @abc.abstractmethod
+    def position_transform(self, pos, orn):
+        """
+        Helper function to convert position between
+        fingers of gripper to position on robot
+        end effector link
+        :param pos: vec3 float cartesian world frame
+        :param orn: vec4 float quaternion world frame
+        :return: vec3 float cartesian world frame
+        """
+        return NotImplemented
+
     ###
     #  High level control functionality
 
@@ -818,10 +840,10 @@ class Tool(Body):
         """
         raise NotImplemented
 
-    @abc.abstractmethod
     def reach(self, pos, orn, ftype='abs'):
         """
-        Reach given position and orientation.
+        Reach given position and orientation specified
+        as in world frame.
         Note that this method does not perform 
         position transform, and sets the position and 
         orientation individually.
@@ -837,9 +859,23 @@ class Tool(Body):
         To align simulation with real world, use 'rel'
         :return: Delta difference between target and actual (pos, orn)
         """
-        raise NotImplemented
+        fpos, forn = pos, orn
+        if ftype == 'abs':
+            return fpos, forn
+        elif ftype == 'rel':
+            fpos, forn = math_util.get_transformed_pose(
+                # Desired pose in absolute world frame
+                (pos or self.tool_pos, orn or self.tool_orn),
+                # tool base frame
+                self.pose)
+            # Convert it back
+            fpos = None if pos is None else fpos
+            forn = None if orn is None else forn
+        else:
+            loginfo('Unrecognized frame type; select from <abs> and <rel>',
+                    FONT.ignore)
+        return fpos, forn
 
-    @abc.abstractmethod
     def pinpoint(self, pos, orn, ftype='abs'):
         """
         Accurately reach to given position and orientation.
@@ -848,7 +884,16 @@ class Tool(Body):
         :param ftype: refer to <reach~ftype>
         :return: None
         """
-        raise NotImplemented
+        fpos, forn = self.position_transform(pos, orn), orn
+
+        if ftype == 'rel':
+            fpos, forn = math_util.get_transformed_pose(
+                # Desired pose in absolute world frame
+                (pos, orn),
+                # tool base frame
+                self.pose)
+
+        return fpos, forn
 
     @abc.abstractmethod
     def grasp(self, slide):
