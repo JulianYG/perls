@@ -831,7 +831,7 @@ class Tool(Body):
 
     ###
     #  High level control functionality
-
+    
     @abc.abstractmethod
     def reset(self):
         """

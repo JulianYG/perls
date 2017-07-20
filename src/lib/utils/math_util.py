@@ -80,6 +80,10 @@ def zero_vec(size):
     return np.zeros(size, dtype=np.float32)
 
 
+def clip_vec(vec, low, high):
+    return np.clip(vec, low, high)
+
+
 def pose_diff(pose1, pose2):
 
     pos1, orn1 = pose1

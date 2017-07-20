@@ -383,8 +383,8 @@ class Controller(object):
                     # Update the states again
                     self._states['tool'] = world.get_states(
                         ('tool', 'tool_pose'))[0]
-
                     loginfo('World is reset.', FONT.model)
+                    
                 elif method == 'reach':
                     # Cartesian, quaternion
                     r_pos, a_orn = value

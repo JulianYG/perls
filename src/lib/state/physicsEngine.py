@@ -326,7 +326,7 @@ class BulletPhysicsEngine(FakeStateEngine):
                     p.setJointMotorControlArray(uid, jointIndices=jids,
                                                 controlMode=p.VELOCITY_CONTROL,
                                                 targetVelocities=vals,
-                                                physicsClientId=self._physics_server_id
+                                                physicsClientId=self._physics_server_id,
                                                 **kwargs)
                 elif ctype == 'torque':
                     p.setJointMotorControlArray(uid, jointIndices=jids,

@@ -171,7 +171,9 @@ class Arm(Tool):
         :return: None
         """
         specs = self.joint_specs
-        damps = specs['damping']
+        
+        # Clip the damping factors to make sure non-zero
+        damps = math_util.clip_vec(specs['damping'], .1, 1.)
         if ns:
             lower_limits = math_util.vec(specs['lower'])
             upper_limits = math_util.vec(specs['upper'])
