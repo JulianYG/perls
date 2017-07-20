@@ -28,11 +28,11 @@ import math
 # 	[0,0,0,1],useFixedBase=True)
 
 
-r = p.loadURDF('kuka_iiwa/model_vr_limits.urdf', [0,0,0.],
+r = p.loadURDF('kuka_iiwa/model.urdf', [0,0,0.],
 	[0,0,0,1],useFixedBase=True)
 p.resetBasePositionAndOrientation(r, (0,0,0),(0,0,0,1))
 
-print(p.getBasePositionAndOrientation(r))
+# print(p.getBasePositionAndOrientation(r))
 # p.setJointMotorControlArray(r, [0,1,2,3,4,5,6], 
 # 		p.POSITION_CONTROL, targetPositions=[0,0,0,0.5*math.pi,0,-math.pi*0.5*0.66,0], 
 # 		targetVelocities=[0] * 7,
@@ -48,7 +48,7 @@ print(p.getBasePositionAndOrientation(r))
 
 # 	p.resetJointState(r, i, pose[i],0,0)
 
-# p.setRealTimeSimulation(1)
+p.setRealTimeSimulation(1)
 # for _ in range(2000):
 # 	p.stepSimulation()
 
@@ -61,6 +61,9 @@ jr=[5.8,4,5.8,4,5.8,4,6]
 rp=[0,0,0,0.5*math.pi,0,-math.pi*0.5*0.66,0]
 #joint damping coefficents
 jd=[0.1,0.1,0.1,0.1,0.1,0.1,0.1]
+
+for i in range (7):
+	p.resetJointState(r,i,rp[i])
 
 p.loadURDF('cube_small.urdf', [-0.6,0,0.2], useFixedBase=True)
 p.setGravity(0,0,-9.8)
@@ -103,26 +106,47 @@ p.setGravity(0,0,-9.8)
 # 		targetVelocities=[0] * 7,
 # 		positionGains=[0.05] * 7, velocityGains=[1.] * 7)
 
-for _ in range(2000):
-	p.stepSimulation()
-ik = p.calculateInverseKinematics(r, 6, (0.5, -0.1, 0.3), 
-		# (0, 1, 0, 0),
-		lowerLimits=ll,#(-3.05, -3.82, -3.05, -3.05, -2.98, -2.98, -4.71), 
-		upperLimits=ul,#(3.05, 2.28, 3.05, 3.05, 2.98, 2.98, 4.71),
-        jointRanges=jr,#(6.1, 6.1, 6.1, 6.1, 5.96, 5.96, 9.4), 
+# for _ in range(20):
+# 	p.stepSimulation()
 
-        restPoses=rp,#(0, -1.18, 0.00, 2.18, 0.00, 0.57, 3.3161),
-                jointDamping=(.5,) * 7)
-print(ik)
-p.setJointMotorControlArray(r, range(7), 
-	p.POSITION_CONTROL, targetPositions=ik, 
-	targetVelocities=[0] * 7,
-	positionGains=[0.05] * 7, velocityGains=[1.] * 7)
+# print(p.getLinkState(r, 6)[0])
+
+# ik = p.calculateInverseKinematics(r, 6, (0.5, -0.1, 0.3), 
+# 		(0, 1, 0, 0),
+# 		lowerLimits=ll,#(-3.05, -3.82, -3.05, -3.05, -2.98, -2.98, -4.71), 
+# 		upperLimits=ul,#(3.05, 2.28, 3.05, 3.05, 2.98, 2.98, 4.71),
+#         jointRanges=jr,#(6.1, 6.1, 6.1, 6.1, 5.96, 5.96, 9.4), 
+
+#         restPoses=rp,#(0, -1.18, 0.00, 2.18, 0.00, 0.57, 3.3161),
+#                 jointDamping=(.5,) * 7)
+# # print(ik)
+# p.setJointMotorControlArray(r, range(7), 
+# 	p.POSITION_CONTROL, targetPositions=ik, 
+# 	targetVelocities=[0] * 7,
+	# positionGains=[0.05] * 7, velocityGains=[1.] * 7)
 # print(p.getNumJoints(r))
+
 while 1:
 	# print(p.getQuaternionFromEuler((0, 0, np.pi * 2)))
 	
-	p.setRealTimeSimulation(1)
+	ik = p.calculateInverseKinematics(r, 6, (0.5, -0.1, 0.3), 
+	(0, 1, 0, 0),
+	# lowerLimits=ll,#(-3.05, -3.82, -3.05, -3.05, -2.98, -2.98, -4.71), 
+	# upperLimits=ul,#(3.05, 2.28, 3.05, 3.05, 2.98, 2.98, 4.71),
+#       jointRanges=jr,#(6.1, 6.1, 6.1, 6.1, 5.96, 5.96, 9.4), 
+
+#       restPoses=rp,#(0, -1.18, 0.00, 2.18, 0.00, 0.57, 3.3161),
+            jointDamping=(.5,) * 7)
+
+	# print(ik)
+	p.setJointMotorControlArray(r, range(7), 
+		p.POSITION_CONTROL, targetPositions=ik, 
+		targetVelocities=[0] * 7,
+		positionGains=[0.05] * 7, velocityGains=[1.] * 7)
+
+
+
+	# p.setRealTimeSimulation(1)
 	# print(p.getLinkState(r, 6)[0])
 
 	# print([(p.getLinkState(r, i)[0],p.getJointInfo(r, i)[-1])  for i in range(23)])
@@ -137,8 +161,7 @@ while 1:
 	# r.tool_orn_abs=((0,1,0,0))
 	# (g.reach((0.8, -0.5,  1.), p.getQuaternionFromEuler((np.pi/2, -np.pi/2, 0))), 'delta')
 	# print(r.tool_pos_abs, r.tool_orn_abs)
-	# print(p.getLinkState(r.uid, 6)[0])
-	# p.stepSimulation()
+	print(p.getLinkState(r, 6)[0])
 
 
 

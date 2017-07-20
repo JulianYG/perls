@@ -242,7 +242,6 @@ def get_inverse_transformed_pose(body_pose, frame_pose):
 
 
 def get_transformed_pose(body_pose, frame_pose):
-
     transform_pose = p.invertTransform(frame_pose[0], frame_pose[1])
     return transform(transform_pose, body_pose)
 

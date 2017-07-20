@@ -860,23 +860,19 @@ class Tool(Body):
         :return: Delta difference between target and actual (pos, orn)
         """
         fpos, forn = pos, orn
-        if ftype == 'abs':
-            return fpos, forn
 
         # Relative pose: convert back to world frame
         # If we stick to pybullet IK, this is necessary
-        elif ftype == 'rel':
+        if ftype == 'rel':
             fpos, forn = math_util.get_inverse_transformed_pose(
                 # Desired pose in absolute world frame
-                (pos or self.tool_pos, orn or self.tool_orn),
+                (fpos or self.tool_pos, forn or self.tool_orn),
                 # tool base frame
                 self.pose)
             # Convert it back
             fpos = None if pos is None else fpos
             forn = None if orn is None else forn
-        else:
-            loginfo('Unrecognized frame type; select from <abs> and <rel>',
-                    FONT.ignore)
+
         return fpos, forn
 
     def pinpoint(self, pos, orn, ftype='abs'):
@@ -887,16 +883,14 @@ class Tool(Body):
         :param ftype: refer to <reach~ftype>
         :return: None
         """
-        fpos, forn = self.position_transform(pos, orn), orn
-
         if ftype == 'rel':
-            fpos, forn = math_util.get_inverse_transformed_pose(
+            pos, orn = math_util.get_inverse_transformed_pose(
                 # Desired pose in absolute world frame
                 (pos, orn),
                 # tool base frame
                 self.pose)
 
-        return fpos, forn
+        return self.position_transform(pos, orn), orn
 
     @abc.abstractmethod
     def grasp(self, slide):

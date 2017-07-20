@@ -95,8 +95,6 @@ class PrismaticGripper(Tool):
             logerr('Cannot move attached gripper.',
                    FONT.model)
             return
-        # Need some transformation
-        base_pos = self.position_transform(pos, self.tool_orn)
 
         # Note here it only cares about the position,
         # thus not solving using constraints
@@ -126,6 +124,7 @@ class PrismaticGripper(Tool):
             self.kinematics['pos'][self._left_finger_idx] +
             self.kinematics['pos'][self._right_finger_idx]) / 2. -\
             self.pos
+
         # Since desired frame is aligned with base frame...
         rotation = math_util.quat2mat(orn)
         base_pos = pos - rotation.dot(translation)
@@ -133,7 +132,6 @@ class PrismaticGripper(Tool):
 
     ###
     #  High level functionality
-
     def reset(self):
         """
         Release gripper for reset
@@ -162,11 +160,10 @@ class PrismaticGripper(Tool):
         :return: delta between target and actual pose
         """
         fpos, forn = super(PrismaticGripper, self).reach(pos, orn, ftype)
-        orn_delta = math_util.zero_vec(3)
-        pos_delta = math_util.zero_vec(3)
 
-        if forn is None:
-            forn = self.tool_orn
+        pos_delta = math_util.zero_vec(3)
+        forn = self.tool_orn if forn is None else forn
+
         # Use constraint to move gripper for simulation,
         # to avoid boundary mixing during collision
         self.track(fpos, forn, self._max_force)

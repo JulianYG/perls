@@ -271,8 +271,10 @@ class Controller(object):
 
         # Kick start the model, perform frame type check
         world.boot(display.info['frame'])
+
         # Update initial control states
-        init_states = world.get_states(('tool', 'pose'))[0]
+        init_states = world.get_states(('tool', 'tool_pose'))[0]
+
         for tid, init_pose in init_states.items():
             self._states['tool'][tid] = init_pose
 
@@ -287,6 +289,7 @@ class Controller(object):
                 # Update model
                 time_up = world.update(elt)
 
+                # print('arm pose', world.get_tool(1,'m').tool_pose)
                 # Update view with camera info
                 # TODO
                 display.update({})
@@ -359,6 +362,8 @@ class Controller(object):
                     tool.tool_orn = value
                 elif method == 'joint_states':
                     tool.joint_states = value
+                elif method == 'pose':
+                    tool.pinpoint(*value)
                 else:
                     loginfo('Unrecognized command type. Skipped',
                             FONT.ignore)
@@ -388,13 +393,16 @@ class Controller(object):
                     # Orientation is always relative to the
                     # world frame, that is, absolute
                     r = math_util.quat2mat(tool.orn)
+                    pos_diff, orn_diff = math_util.zero_vec(3), \
+                                         math_util.zero_vec(3)
 
                     if r_pos is not None:
                         # Increment to get absolute pos
                         # Take account of rotation
                         i_pos += r.dot(r_pos)
                         pos_diff, orn_diff = tool.reach(i_pos, None)
-                    else:
+
+                    if a_orn is not None:
                         ###
                         # Note: clipping does not happen here because
                         # arm and gripper are treated in the same way.
@@ -420,13 +428,13 @@ class Controller(object):
                        math_util.rms(orn_diff) > 10.:
                         self._states['tool'] = world.get_states(
                             ('tool', 'pose'))[0]
-                        # pass
+
                 elif method == 'grasp':
                     tool.grasp(value)
                 elif method == 'pick_and_place':
                     tool.pick_and_place(*value)
 
-        # # GUI frame allow user to interact with the world
+        # TODO: GUI frame allow user to interact with the world
         # # dynamically, and vividly
         # if self._frame == 'gui':
         #     info = self._event_handler.signal

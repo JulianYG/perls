@@ -26,8 +26,9 @@ class PushCube(PerlsEnv):
 
         # move robot to initial position
         self._robot.pinpoint(
-            (1., 0., .6),
-            math_util.euler2quat([-math_util.pi, -math_util.pi / 2.0, 0.0]),
+            (.8, .0, .6),
+            math_util.euler2quat(
+                [-math_util.pi, -math_util.pi / 2.0, 0.0]),
             ftype='rel')
 
         return self._get_relative_pose()

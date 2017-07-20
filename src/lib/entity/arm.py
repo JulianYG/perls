@@ -81,11 +81,13 @@ class Arm(Tool):
         """
         Set the tool to given pose.
         :param pos: vec3 float in cartesian space,
-        referring to the position between the gripper fingers
+        referring to the position between the gripper fingers.
+        Note it only controls the position of the gripper,
+        and does not keep the orientation.
         :return: None
         """
         target_pos = self.position_transform(pos, self.tool_orn)
-        self._move_to(target_pos, self.tool_orn)
+        self._move_to(target_pos, None, self._null_space)
 
     @tool_orn.setter
     def tool_orn(self, orn):
@@ -133,7 +135,6 @@ class Arm(Tool):
 
     ###
     # Helper functions
-
     def position_transform(self, pos, orn):
         """
         Helper function to convert position between
@@ -160,20 +161,24 @@ class Arm(Tool):
         target_pos = gripper_base_pos - rotation.dot(gripper_arm_tran)
         return target_pos
 
-    def _move_to(self, pos, orn):
+    def _move_to(self, pos, orn, ns=False):
         """
         Given pose, call IK to move
         :param pos: vec3 float cartesian
         :param orn: vec4 float quaternion
+        :param ns: boolean indicating whether solve for
+        null space solutions. Default is False.
         :return: None
         """
         specs = self.joint_specs
         damps = specs['damping']
 
-        if self._null_space:
+        if ns:
             lower_limits = math_util.vec(specs['lower'])
             upper_limits = math_util.vec(specs['upper'])
             ranges = upper_limits - lower_limits
+
+            # Solve using null space
             ik_solution = self._engine.solve_ik_null_space(
                 self._uid, self._end_idx,
                 pos, orn=orn,
@@ -191,26 +196,18 @@ class Arm(Tool):
         self.joint_states = (
             self._joints, ik_solution, 'position',
             dict(forces=specs['max_force'],
-                 positionGains=(.05,) * self._dof,
+                 positionGains=(.03,) * self._dof,
                  velocityGains=(1.,) * self._dof))
 
     ###
     #  High level functionality
-
     def reset(self):
         """
         Reset tool to initial positions
         :return: None
         """
-        # Reset arm
-        self.joint_states = \
-            (self._joints,
-             self._rest_pose,
-             'position',
-             dict(positionGains=(.05,) * self._dof,
-                  velocityGains=(1.,) * self._dof))
         if self._gripper:
-            # Attach gripper
+            # First attach gripper
             self.attach_children = \
                 (self._end_idx,
                  self._gripper.uid,
@@ -219,9 +216,16 @@ class Arm(Tool):
                  [0., 0., 0.],
                  # TODO: Check if can use [0., 0., 0.707, 0.707] for child orn
                  [0., 0., 0., 1.], [0., 0., 0., 1.])
-            # Reset gripper
+
+            # Next reset gripper
             self._gripper.reset()
-        self._engine.hold()
+
+        # Lastly reset arm
+        self.joint_states = \
+            (self._joints,
+             self._rest_pose,
+             'position',
+             dict(reset=True))
 
     def reach(self, pos=None, orn=None, ftype='abs'):
         """
@@ -245,7 +249,7 @@ class Arm(Tool):
         pos_delta = math_util.zero_vec(3)
 
         if fpos is not None:
-            self._move_to(fpos, forn)
+            self.tool_pos = fpos
             pos_delta = self.tool_pos - fpos
 
         if forn is not None:
@@ -266,6 +270,7 @@ class Arm(Tool):
         :return: None
         """
         target_pos, target_orn = super(Arm, self).pinpoint(pos, orn, ftype)
+        # For pinpoint, must not use null space to achieve accuracy
         self._move_to(target_pos, target_orn)
 
     def grasp(self, slide=-1):

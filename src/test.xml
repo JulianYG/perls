@@ -9,7 +9,7 @@
 			<pos>-1.0 0.0 1.0</pos>
 			<!-- <orn>0.0 0.0 0.0 1</orn> -->
 		</gripper>
-		<robot name="king-kong" type="kuka" null_space="True">
+		<robot name="king-kong" type="kuka" null_space="False">
 			<gripper name="for_king_kong" type="wsg">
 				<asset path="gripper/wsg50_one_motor_gripper_new_free_base.sdf"/>
 			</gripper>

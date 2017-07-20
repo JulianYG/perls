@@ -26,7 +26,7 @@ class World(object):
     # Storing inquiry legend
     _INQUIRY_DIC = dict(
         tool=['pose', 'v', 'omega', 'joint_states',
-              'tool_pose', 'tool_pose_rel',
+              'tool_pose',
               # TODO
               # 'force', 'wrench', 'shape',
               'name', 'contact'],
