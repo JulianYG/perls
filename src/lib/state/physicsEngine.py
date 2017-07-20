@@ -584,7 +584,7 @@ class BulletPhysicsEngine(FakeStateEngine):
                 logerr(err_msg, FONT.model)
             return -1
 
-    def hold(self, max_steps=20):
+    def hold(self, max_steps=30):
         for _ in range(max_steps):
             p.stepSimulation(self._physics_server_id)
 

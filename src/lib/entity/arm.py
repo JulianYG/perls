@@ -172,7 +172,6 @@ class Arm(Tool):
         """
         specs = self.joint_specs
         damps = specs['damping']
-
         if ns:
             lower_limits = math_util.vec(specs['lower'])
             upper_limits = math_util.vec(specs['upper'])
@@ -214,8 +213,8 @@ class Arm(Tool):
                  0, 'fixed',
                  [0., 0., 0.], self._tip_offset,
                  [0., 0., 0.],
-                 # TODO: Check if can use [0., 0., 0.707, 0.707] for child orn
-                 [0., 0., 0., 1.], [0., 0., 0., 1.])
+                 # This is correct default end effector orientation
+                 [0., .707, 0., .707], [0., .707, 0., .707])
 
             # Next reset gripper
             self._gripper.reset()

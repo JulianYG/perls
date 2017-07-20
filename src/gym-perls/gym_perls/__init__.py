@@ -16,6 +16,6 @@ register(
 import gym
 env = gym.make('exp-v0')
 o = env.reset()
-print(o)
+
 while True:
-    env.step()
+    env.step(None)

@@ -24,13 +24,15 @@ class PushCube(PerlsEnv):
 
         super(PushCube, self)._reset()
 
-        # move robot to initial position
-        self._robot.pinpoint(
-            (.8, .0, .6),
-            math_util.euler2quat(
-                [-math_util.pi, -math_util.pi / 2.0, 0.0]),
-            ftype='rel')
-
+        for _ in range(200):
+            # move robot to initial position
+            self._robot.pinpoint(
+                (.8, .0, .6),
+                math_util.euler2quat(
+                    [-math_util.pi, -math_util.pi / 2., 0.]),
+                ftype='rel')
+            self._world.update()
+        print(self._get_relative_pose()[0][0])
         return self._get_relative_pose()
 
     def _get_relative_pose(self):
@@ -48,4 +50,4 @@ class PushCube(PerlsEnv):
 
         # TODO: then read robot state, and get the stuff we care about again. 
 
-        return NotImplemented
+        self._world.update()

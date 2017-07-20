@@ -227,8 +227,8 @@ class BulletRenderEngine(GraphicsEngine):
                              renderer=p.ER_BULLET_HARDWARE_OPENGL)
         if itype == 'human':
             rgb_img = np.reshape(rgb_img, (height, width, 4)).astype(np.float32) / 255.
-            plt.imshow(rgb_img)
-            plt.pause(2)
+            plt.imshow(rgb_img, interpolation='none')
+            plt.pause(1.5)
 
         elif itype == 'rgb':
             return np.reshape(rgb_img, (height, width, 4)).astype(np.float32) / 255.
