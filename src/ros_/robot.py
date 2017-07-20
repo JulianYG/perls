@@ -74,7 +74,7 @@ class Robot(object):
 	def get_tool_pose(self):
 		pose = self.limb.endpoint_pose()
 		pos, orn = pose['position'], pose['orientation']
-		return (pos.x, pos.y, pos.z), (orn.w, orn.x, orn.y, orn.z)
+		return (pos.x, pos.y, pos.z), (orn.x, orn.y, orn.z, orn.w)
 
 	# Takes in a dict of {'position' : (x, y, z), 'orientation' : (w, x, y, z)} and uses inverse IK solver to map and set the joint position
 	def reach_absolute(self, endState): 
