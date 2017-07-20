@@ -2,7 +2,6 @@
 
 from .perls_env import PerlsEnv
 from lib.utils import math_util
-import numpy as np
 
 
 class PushCube(PerlsEnv):

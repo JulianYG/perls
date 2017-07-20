@@ -862,8 +862,11 @@ class Tool(Body):
         fpos, forn = pos, orn
         if ftype == 'abs':
             return fpos, forn
+
+        # Relative pose: convert back to world frame
+        # If we stick to pybullet IK, this is necessary
         elif ftype == 'rel':
-            fpos, forn = math_util.get_transformed_pose(
+            fpos, forn = math_util.get_inverse_transformed_pose(
                 # Desired pose in absolute world frame
                 (pos or self.tool_pos, orn or self.tool_orn),
                 # tool base frame
@@ -887,7 +890,7 @@ class Tool(Body):
         fpos, forn = self.position_transform(pos, orn), orn
 
         if ftype == 'rel':
-            fpos, forn = math_util.get_transformed_pose(
+            fpos, forn = math_util.get_inverse_transformed_pose(
                 # Desired pose in absolute world frame
                 (pos, orn),
                 # tool base frame
