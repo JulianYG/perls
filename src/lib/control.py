@@ -382,7 +382,7 @@ class Controller(object):
 
                     # Update the states again
                     self._states['tool'] = world.get_states(
-                        ('tool', 'pose'))[0]
+                        ('tool', 'tool_pose'))[0]
 
                     loginfo('World is reset.', FONT.model)
                 elif method == 'reach':
@@ -427,7 +427,7 @@ class Controller(object):
                     if math_util.rms(pos_diff) > 3. or \
                        math_util.rms(orn_diff) > 10.:
                         self._states['tool'] = world.get_states(
-                            ('tool', 'pose'))[0]
+                            ('tool', 'tool_pose'))[0]
 
                 elif method == 'grasp':
                     tool.grasp(value)

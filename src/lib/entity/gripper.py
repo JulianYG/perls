@@ -194,4 +194,3 @@ class PrismaticGripper(Tool):
         raise NotImplementedError(
             'Method <grasp> not implemented for gripper. '
             'Method is gripper-specific')
-
