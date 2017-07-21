@@ -217,7 +217,7 @@ class Arm(Tool):
                  [0., 0., 0.],
                  # This is correct default end effector orientation
                  [0., .707, 0., .707], [0., .707, 0., .707])
-
+                 # [0., .0, 0., .1], [0., .0, 0., .1])
             # Next reset gripper
             self._gripper.reset()
 

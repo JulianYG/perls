@@ -4,10 +4,10 @@ import threading
 
 from .state import physicsEngine, robotEngine
 from .adapter import Adapter
-from .render import renderEngine, camera
+from .render import graphicsEngine, camera
 from ..comm.worker import StateReader, StateLogger
 from .debug import debugger, tester
-from .utils import io_util, util
+from .utils import io_util, time_util
 from .utils.io_util import FONT, loginfo, logerr
 from .view import View
 from .world import World
@@ -37,7 +37,7 @@ class PerlsServer(object):
 
     _GRAPHICS_ENGINES = dict(
         # Simulation
-        bullet=renderEngine.BulletRenderEngine,
+        bullet=graphicsEngine.BulletRenderEngine,
 
         # Reality
         kinect=camera.Kinect,
@@ -90,7 +90,7 @@ class PerlsServer(object):
                 display_info=disp.info,
                 engine_info=pe.info,
                 control=ctrl_hdlr.name,
-                run_time=util.get_elapsed_time(
+                run_time=time_util.get_elapsed_time(
                     self._init_time_stamp),
             )
         return info_dic
@@ -214,7 +214,7 @@ class PerlsServer(object):
 
         # Preparing variables
         time_up = False
-        self._init_time_stamp = util.get_abs_time()
+        self._init_time_stamp = time_util.get_abs_time()
 
         track_targets = world.get_states(('env', 'target'))[0]
         status = display.run([t[0] for t in track_targets])
@@ -239,7 +239,7 @@ class PerlsServer(object):
         # Finally start control loop
         try:
             while not time_up:
-                elt = util.get_elapsed_time(self._init_time_stamp)
+                elt = time_util.get_elapsed_time(self._init_time_stamp)
 
                 # Read desired states
                 reader.consume(world, display)

@@ -1,6 +1,10 @@
 import time
 
 
+def pause(t):
+    time.sleep(t)
+
+
 def get_abs_time():
 
     return time.time()

@@ -27,6 +27,8 @@ KEY_STATUS = {1: 'holding',
               }
 
 KEY_LABEL = {65284: 'rst', # F5 for reset
+             65306: 'cam', # for camera control, SHIFT
+             65307: 'tbd', # reserved, CONTROL
 
              # 6dof Orientation control
              65295: 'orn',  # 'roll_counterclockwise', <--
@@ -53,15 +55,19 @@ KEY_LABEL = {65284: 'rst', # F5 for reset
              # 48 - 57 corresponds to 'id' type, 0-9
              }
 
-HOT_KEY = {65284: None, # F5
-           # Orientation control
+HOT_KEY = {65284: None,  # F5
+           65306: None,  # SHIFT
+           65307: None,  # CONTROL
+
+           # Tool Orientation control
            65295: _X_NEG_VEC,  # <^
            65296: _X_POS_VEC,  # ^>
            65297: _Y_POS_VEC,  # ^
            65298: _Y_NEG_VEC,  # v
            113: _Z_NEG_VEC,  # <--
            101: _Z_POS_VEC,  # -->
-           # Position control
+
+           # Tool Position control
            32: None,  # Space
            119: _X_NEG_VEC,  # W
            115: _X_POS_VEC,  # S
@@ -75,9 +81,6 @@ HOT_KEY = {65284: None, # F5
            46: 1,  # .
            # 48 - 57 corresponds to their own values - 48.
            }
-
-# TODO: All use id as 0 for now, assuming one server
-# for keyboard control (GUI)
 
 
 def listen_to_bullet_keyboard(ps_id=0):

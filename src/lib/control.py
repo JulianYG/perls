@@ -3,13 +3,14 @@ import threading
 
 from .state import physicsEngine, robotEngine
 from .adapter import Adapter
-from .render import renderEngine, camera
+from .render import graphicsEngine, camera
 from .handler.base import NullHandler
+from .handler.eventHandler import ViewEventHandler
 from .handler.controlHandler import (KeyboardEventHandler,
                                      ViveEventHandler,
                                      AppEventHandler)
 from .debug import debugger, tester
-from .utils import io_util, util, math_util
+from .utils import io_util, time_util, math_util
 from .utils.io_util import (FONT,
                             loginfo,
                             logerr)
@@ -41,7 +42,7 @@ class Controller(object):
 
     _GRAPHICS_ENGINES = dict(
         # Simulation
-        bullet=renderEngine.BulletRenderEngine,
+        bullet=graphicsEngine.BulletRenderEngine,
 
         # Reality
         kinect=camera.Kinect,
@@ -76,12 +77,19 @@ class Controller(object):
         self._thread_pool = list()
 
         # space to store useful states
+        # Note it needs to use dictionary to store the states of
+        # tools because the positions and orientations of the
+        # tools cannot be determined before the control loop
+        # has started for a few iterations, so that the
+        # control handler cannot store the initial states of the
+        # tools. The event handler, however, can store the
+        # initial states of the camera, thus able to store
+        # the camera params within itself.
         self._states = \
             dict(tool=dict(),
-                 # The log of commands
-                 # or user operations/modifications
-                 # on the world
-                 log=list())
+                 log=list(),  # The log of commands or user
+                 # operations/modifications on the world
+                 )
 
         self._init_time_stamp = None
         self._build()
@@ -109,7 +117,7 @@ class Controller(object):
                 display_info=disp.info,
                 engine_info=pe.info,
                 control=ctrl_hdlr.name,
-                run_time=util.get_elapsed_time(
+                run_time=time_util.get_elapsed_time(
                     self._init_time_stamp),
             )
         return info_dic
@@ -131,7 +139,7 @@ class Controller(object):
                 'Error loading configuration: invalid id.'
 
             # load configs
-            world, disp, ctrl_hdlr = self.load_config(conf)
+            world, disp, ctrl_hdlr, event_hdlr = self.load_config(conf)
             if num_configs > 1 and (not conf.async):
                 logerr('Currently only support multiple instances '
                        'of non-GUI frame and asynchronous simulation. '
@@ -145,7 +153,8 @@ class Controller(object):
                         'Build type: {}'.format(i, conf.build),
                         FONT.control)
                 world.notify_engine('pending')
-            self._physics_servers[conf.id] = (world, disp, ctrl_hdlr)
+            self._physics_servers[conf.id] = \
+                (world, disp, ctrl_hdlr, event_hdlr)
 
     @staticmethod
     def load_config(conf):
@@ -186,7 +195,8 @@ class Controller(object):
 
         # Set up control event interruption handlers
         # TODO
-        # event_handler = 
+        event_handler = ViewEventHandler(pe.ps_id) \
+            if conf.disp_info[1] == 'gui' else None
         ctrl_handler = Controller._CTRL_HANDLERS[conf.control_type](
             pe.ps_id, conf.sensitivity, conf.rate
         )
@@ -216,7 +226,7 @@ class Controller(object):
             # Disable keyboard shortcuts for keyboard control
             display.disable_hotkeys()
 
-        return world, display, ctrl_handler
+        return world, display, ctrl_handler, event_handler
 
     def start_all(self):
         """
@@ -244,11 +254,13 @@ class Controller(object):
         configuration id) to start.
         :return: None
         """
-        world, display, ctrl_handler = self._physics_servers[server_id]
+        # Get all handlers
+        world, display, ctrl_handler, event_handler = \
+            self._physics_servers[server_id]
 
         # Preparing variables
         time_up, done, success = False, False, False
-        self._init_time_stamp = util.get_abs_time()
+        self._init_time_stamp = time_util.get_abs_time()
 
         track_targets = world.get_states(('env', 'target'))[0]
 
@@ -269,32 +281,43 @@ class Controller(object):
             loginfo('Display configs loaded. Starting simulation...',
                     FONT.control)
 
-        # Kick start the model, perform frame type check
+        # Kickstart the model, perform frame type check
         world.boot(display.info['frame'])
 
-        # Update initial control states
+        # Update initial states:
         init_states = world.get_states(('tool', 'tool_pose'))[0]
-
+        # First control states
         for tid, init_pose in init_states.items():
             self._states['tool'][tid] = init_pose
 
-        # Finally start control loop
+        # Next display states
+        camera_param = display.info['engine']['camera_info']
+        if camera_param and event_handler:
+            event_handler.update_states(
+                dict(flen=camera_param['focal_len'],
+                     focus=camera_param['focus'],
+                     pitch=camera_param['pitch'],
+                     yaw=camera_param['yaw'],
+                     roll=0.))
+
+        # Finally start control loop (Core)
         try:
             while not time_up or done:
-                elt = util.get_elapsed_time(self._init_time_stamp)
+                elt = time_util.get_elapsed_time(self._init_time_stamp)
 
                 # Perform control interruption first
                 self._control_interrupt(world, ctrl_handler.signal)
-
                 # Update model
                 time_up = world.update(elt)
 
-                # print('arm pose', world.get_tool(1,'m').tool_pose)
+                # Perform display interruption next
                 # Update view with camera info
-                # TODO
-                display.update({})
+                if event_handler:
+                    self._display_interrupt(display, event_handler.signal)
 
-                # Next check task completion, communicate
+                # display.update(self._states['camera'])
+
+                # Lastly check task completion, communicate
                 # with the model
                 # TODO
                 # done, success = self._checker_interrupt()
@@ -343,6 +366,8 @@ class Controller(object):
         The control interruption, jumps to control defined
         in xml file, process the control signals and
         jumps back to the loop.
+        :param world: the world model, provides tools
+        :param signal: the signal received from control handler
         :return: None
         """
         commands, instructions = signal['cmd'], signal['instruction']
@@ -441,6 +466,18 @@ class Controller(object):
         #     if info:
         #         self._adapter.update_world(info)
 
+    def _display_interrupt(self, display, signal):
+        """
+        Display interruption, listens to display events and
+        camera events, adjust view, as well as interact with
+        the world in run time if necessary
+        :param display: the view side of system
+        :param signal: display signals received from
+        event handler
+        :return: None
+        """
+        # TODO get user inputs
+        display.update(signal, None)
 
     def _checker_interrupt(self, signal):
         """

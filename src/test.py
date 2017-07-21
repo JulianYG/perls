@@ -48,7 +48,7 @@ p.resetBasePositionAndOrientation(r, (0,0,0),(0,0,0,1))
 
 # 	p.resetJointState(r, i, pose[i],0,0)
 
-p.setRealTimeSimulation(1)
+p.setRealTimeSimulation(0)
 # for _ in range(2000):
 # 	p.stepSimulation()
 
@@ -68,7 +68,7 @@ for i in range (7):
 p.loadURDF('cube_small.urdf', [-0.6,0,0.2], useFixedBase=True)
 p.setGravity(0,0,-9.8)
 # r.mark('haha')
-# print (p.getLinkState(r, 18)[0])
+# print (p.getLinkState(r, 6)[0])
 # import ikpy
 # chain = ikpy.chain.Chain.from_urdf_file(
 # 	'../../bullet3/data/sawyer_robot/sawyer_description/urdf/sawyer_arm.urdf',
@@ -129,7 +129,7 @@ p.setGravity(0,0,-9.8)
 while 1:
 	# print(p.getQuaternionFromEuler((0, 0, np.pi * 2)))
 	
-	ik = p.calculateInverseKinematics(r, 6, (0.5, -0.1, 0.3), 
+	ik = p.calculateInverseKinematics(r, 6, (-0.33, -0.1, 0.63), 
 	(0, 1, 0, 0),
 	# lowerLimits=ll,#(-3.05, -3.82, -3.05, -3.05, -2.98, -2.98, -4.71), 
 	# upperLimits=ul,#(3.05, 2.28, 3.05, 3.05, 2.98, 2.98, 4.71),
@@ -144,7 +144,7 @@ while 1:
 		targetVelocities=[0] * 7,
 		positionGains=[0.05] * 7, velocityGains=[1.] * 7)
 
-
+	p.stepSimulation()
 
 	# p.setRealTimeSimulation(1)
 	# print(p.getLinkState(r, 6)[0])

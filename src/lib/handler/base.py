@@ -30,5 +30,8 @@ class NullHandler(InterruptHandler):
     def __init__(self, a=None, b=None, c=None):
         super(NullHandler, self).__init__(0, 0.)
 
+    def update_states(self, state):
+        return
+
     def stop(self):
         return

@@ -60,13 +60,23 @@ class View:
         """
         self._engine.disable_hotkeys()
 
-    def get_camera_pose(self, otype='orn'):
+    def get_camera_pose(self, otype='quat'):
         """
         Get the current camera pose in rendering engine
         :return: (pos, orn) tuple based on given
         orientation type
         """
         return self._engine.get_camera_pose(otype=otype)
+
+    def set_camera_pose(self, pos, orn):
+        """
+        Set the current camera pose in rendering engine
+        :param pos: vec3 float cartesian position
+        :param orn: vec4 float quaternion orientation
+        :return: None
+        """
+        # TODO
+        self._engine.set_camera_pose(pos, orn)
 
     def get_camera_image(self, itype='rgb'):
         """
@@ -80,7 +90,7 @@ class View:
         """
         return self._engine.get_camera_image(itype=itype)
 
-    def update(self, camera_info, *_):
+    def update(self, camera_info, params):
         """
         Update the view, mainly resetting the camera
         :param camera_info: dictionary of camera parameters.
@@ -89,10 +99,16 @@ class View:
         pitch: float degree, focus: float}
         For VR, camera_info is a tuple of
         (pos: vec3 cartesian, orn: vec4 quat)
+        :param params: Physics parameters, or state
+        parameters (object pose, etc) to interact with
+        the model dynamically.
         :return: None
         """
         if camera_info:
             self._engine.camera = camera_info
+
+        if params and self._frame == 'gui':
+            self._adapter.update_world(params)
 
     def load_config(self, description):
         """
