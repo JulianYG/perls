@@ -294,6 +294,9 @@ class Controller(object):
         camera_param = display.info['engine']['camera_info']
         if camera_param and event_handler:
             event_handler.update_states(
+                # Get pose of the camera
+                display.get_camera_pose(),
+                # Get camera parameters
                 dict(flen=camera_param['focal_len'],
                      focus=camera_param['focus'],
                      pitch=camera_param['pitch'],
@@ -418,8 +421,8 @@ class Controller(object):
                     # Orientation is always relative to the
                     # world frame, that is, absolute
                     r = math_util.quat2mat(tool.orn)
-                    pos_diff, orn_diff = math_util.zero_vec(3), \
-                                         math_util.zero_vec(3)
+                    pos_diff, orn_diff = \
+                        math_util.zero_vec(3), math_util.zero_vec(3)
 
                     if r_pos is not None:
                         # Increment to get absolute pos

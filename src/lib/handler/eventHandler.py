@@ -8,6 +8,7 @@ class ViewEventHandler(InterruptHandler):
 
         super(ViewEventHandler, self).__init__(ps_id, None)
         self._signal = dict()
+        self._pose = math_util.pose2mat(((0,0,0), (0,0,0,1)))
         self._angle = math_util.zero_vec(3)
 
     @property
@@ -26,23 +27,33 @@ class ViewEventHandler(InterruptHandler):
         # TODO: probably need to change this into set_camera_pose
         if 'cam' in keys and keys['cam'][1] == 'holding':
             if 'pos' in keys and keys['pos'][1] == 'holding':
-                self._signal['focus'] += event_listener.HOT_KEY[keys['pos'][0]] * 50
+
+                raw_vec = event_listener.HOT_KEY[keys['pos'][0]] * 50
+
+                # TODO Align it with view perspective frame
+                transformed_vec = self._pose[:3, :3].T.dot(raw_vec)
+
+                self._signal['focus'] += transformed_vec
 
             if 'orn' in keys and keys['orn'][1] == 'holding':
-                self._angle += math_util.deg(event_listener.HOT_KEY[keys['orn'][0]])
+
+                self._angle += math_util.deg(event_listener.HOT_KEY[keys['orn'][0]]) * 30
                 self._signal['roll'] = self._angle[0]
                 self._signal['pitch'] = self._angle[1]
                 self._signal['yaw'] = self._angle[2]
 
         return self._signal
 
-    def update_states(self, params):
+    def update_states(self, pose, params):
         """
         Initialize/update the camera states
+        :param pose: the (pos, orn) tuple of camera pose
         :param params: (key string, value) tuple of parameters:
         roll, pitch, yaw (all in degrees), flen, focus (vec3 floats)
         :return: None
         """
+        self._pose = math_util.pose2mat(pose)
+        print(self._pose)
         for key, val in params.items():
             self._signal[key] = val
         self._angle = math_util.vec(

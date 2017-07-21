@@ -108,7 +108,7 @@ class ViewDebugger(object):
     def update(self, camera, param):
         self._display.update(camera, param)
 
-    def get_camera_pose(self, otype='orn'):
+    def get_camera_pose(self, otype='quat'):
 
         return self._display.get_camera_pose(otype=otype)
 

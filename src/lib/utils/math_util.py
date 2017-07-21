@@ -105,7 +105,9 @@ def transform(poseA, poseB):
     :param poseB:
     :return:
     """
-    return p.multiplyTransforms(poseA[0], poseA[1], poseB[0], poseB[1])
+    return p.multiplyTransforms(
+        tuple(poseA[0]), tuple(poseA[1]),
+        tuple(poseB[0]), tuple(poseB[1]))
 
 
 def rand_bigint():

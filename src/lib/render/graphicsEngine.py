@@ -175,7 +175,6 @@ class BulletRenderEngine(GraphicsEngine):
                  [0, 0, 0, 1]],
                 dtype=np.float32
             ))
-
         transformation_matrix = math_util.mat_inv(view_matrix)
         pos = transformation_matrix[3, :3]
         orn = math_util.mat2euler(transformation_matrix[:3, :3],
