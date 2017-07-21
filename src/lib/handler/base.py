@@ -1,3 +1,5 @@
+import abc
+
 
 class InterruptHandler(object):
 
@@ -8,19 +10,6 @@ class InterruptHandler(object):
         self._signal = dict(
             tid=0, key=None, cmd=list(), instruction=list())
 
-    # TODO: Add remote some time in the future
-    # @property
-    # def remote(self):
-    #     return
-    #
-    # @remote.setter
-    # def remote(self, (ip, port)):
-    #     pass
-    #
-    # @remote.deleter
-    # def remote(self):
-    #     pass
-
     @property
     def name(self):
         return 'InterruptHandler'
@@ -29,6 +18,7 @@ class InterruptHandler(object):
     def signal(self):
         return self._signal
 
+    @abc.abstractmethod
     def stop(self):
         raise NotImplementedError('<stop> is not implemented for InterruptHandler')
 
@@ -39,3 +29,9 @@ class NullHandler(InterruptHandler):
     """
     def __init__(self, a=None, b=None, c=None):
         super(NullHandler, self).__init__(0, 0.)
+
+    def update_states(self, state):
+        return
+
+    def stop(self):
+        return

@@ -1,5 +1,5 @@
 
-from .base import Camera
+from .renderEngine import Camera
 
 
 class Monocular(Camera):
@@ -13,3 +13,6 @@ class Kinect(Camera):
     pass
 
 
+class Stereo(Camera):
+
+    pass

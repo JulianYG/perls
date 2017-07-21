@@ -198,10 +198,7 @@ class BulletPhysicsEngine(FakeStateEngine):
     def get_body_relative_pose(self, uid, frame_pos, frame_orn):
 
         body_pose = p.getBasePositionAndOrientation(uid, self._physics_server_id)
-
-        transform = p.invertTransform(frame_pos, frame_orn)
-        return p.multiplyTransforms(transform[0], transform[1],
-                                    body_pose[0], body_pose[1])
+        return math_util.get_transformed_pose(body_pose, (frame_pos, frame_orn))
 
     def set_body_scene_pose(self, uid, pos, orn):
         status = 0
@@ -329,7 +326,7 @@ class BulletPhysicsEngine(FakeStateEngine):
                     p.setJointMotorControlArray(uid, jointIndices=jids,
                                                 controlMode=p.VELOCITY_CONTROL,
                                                 targetVelocities=vals,
-                                                physicsClientId=self._physics_server_id
+                                                physicsClientId=self._physics_server_id,
                                                 **kwargs)
                 elif ctype == 'torque':
                     p.setJointMotorControlArray(uid, jointIndices=jids,
@@ -531,11 +528,13 @@ class BulletPhysicsEngine(FakeStateEngine):
     def solve_ik(self, uid, lid, pos, damping, orn=None):
         if orn is None:
             return p.calculateInverseKinematics(
-                uid, lid, pos, jointDamping=damping,
+                uid, lid, targetPosition=pos,
+                jointDamping=tuple(damping),
                 physicsClientId=self._physics_server_id)
         else:
             return p.calculateInverseKinematics(
-                uid, lid, pos, orn, jointDamping=damping,
+                uid, lid, targetPosition=pos,
+                targetOrientation=orn, jointDamping=tuple(damping),
                 physicsClientId=self._physics_server_id)
 
     def solve_ik_null_space(self, uid, lid, pos,
@@ -543,14 +542,16 @@ class BulletPhysicsEngine(FakeStateEngine):
                             rest, damping, orn=None):
         if orn is None:
             return p.calculateInverseKinematics(
-                uid, lid, pos,
+                uid, lid,
+                targetPosition=pos,
                 lowerLimits=tuple(lower), upperLimits=tuple(upper),
                 jointRanges=tuple(ranges), restPoses=rest,
                 jointDamping=tuple(damping),
                 physicsClientId=self._physics_server_id)   
         else:
             return p.calculateInverseKinematics(
-                uid, lid, pos, orn,
+                uid, lid, targetPosition=pos,
+                targetOrientation=orn,
                 lowerLimits=tuple(lower), upperLimits=tuple(upper),
                 jointRanges=tuple(ranges), restPoses=rest,
                 jointDamping=tuple(damping),
@@ -561,10 +562,14 @@ class BulletPhysicsEngine(FakeStateEngine):
         if self.status == 'pending' or \
            self.status == 'off' and self._type_check(frame) == 0:
             if self._async:
+                p.setRealTimeSimulation(0, physicsClientId=self._physics_server_id)
                 p.setTimeStep(
                     float(self._step_size),
                     physicsClientId=self._physics_server_id
                 )
+            else:
+                p.setRealTimeSimulation(1, physicsClientId=self._physics_server_id)
+
             # When simulation starts, change state
             self._real_time = not self._async
             # Set status to running
@@ -579,32 +584,26 @@ class BulletPhysicsEngine(FakeStateEngine):
                 logerr(err_msg, FONT.model)
             return -1
 
-    def hold(self, max_steps=1000):
+    def hold(self, max_steps=30):
         for _ in range(max_steps):
             p.stepSimulation(self._physics_server_id)
 
-    def step(self, elapsed_time=0):
+    def step(self, elapsed_time):
         if self.status == 'running':
             if self._async:
-                if self._step_count < self._max_run_time or self._max_run_time == 0:
-
+                if self._step_count < self._max_run_time \
+                        or self._max_run_time == 0:
                     # Update model (world) states
                     p.stepSimulation(self._physics_server_id)
                     self._step_count += 1
                     return False
             else:
-                if elapsed_time < self._max_run_time or self._max_run_time == 0:
-
-                    # TODO: think about how to control camera at run time
-                    # self.camera = camera_info
-
-                    # TODO: Figure out why this is not useful in <load_simulation>
-                    p.setRealTimeSimulation(1, physicsClientId=self._physics_server_id)
+                if elapsed_time < self._max_run_time \
+                        or self._max_run_time == 0:
                     return False
         return True
 
     def stop(self):
-
         # Shutdown simulation
         p.resetSimulation(self._physics_server_id)
         p.disconnect(self._physics_server_id)

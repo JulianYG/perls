@@ -1,5 +1,5 @@
 
-from .body import Tool
+from .body import Body, Tool
 from ..utils import math_util
 
 
@@ -41,6 +41,15 @@ class Arm(Tool):
         return self._null_space
 
     @property
+    def pose(self):
+        """
+        Get the pose of arm base frame.
+        :return: arm base frame (pos, orn) tuple
+        """
+        return self.kinematics['abs_frame_pos'][0], \
+            self.kinematics['abs_frame_orn'][1]
+
+    @property
     def tool_pos(self):
         """
         Get the position of the tool. This is semantic
@@ -72,11 +81,13 @@ class Arm(Tool):
         """
         Set the tool to given pose.
         :param pos: vec3 float in cartesian space,
-        referring to the position between the gripper fingers
+        referring to the position between the gripper fingers.
+        Note it only controls the position of the gripper,
+        and does not keep the orientation.
         :return: None
         """
         target_pos = self.position_transform(pos, self.tool_orn)
-        self._move_to(target_pos, self.tool_orn)
+        self._move_to(target_pos, None, self._null_space)
 
     @tool_orn.setter
     def tool_orn(self, orn):
@@ -103,9 +114,27 @@ class Arm(Tool):
             dict(positionGains=(.05,) * 2,
                  velocityGains=(1.,) * 2))
 
+    def get_pose(self, uid=None, lid=None):
+        """
+        Get the current base pose of the tool. This is
+        especially useful for end effector pose relative
+        to
+        :return: (pos, orn) tuple
+        """
+        if uid:
+            frame_pos = self._engine.get_body_scene_position(uid)
+            frame_orn = self._engine.get_body_scene_orientation(uid)
+            if lid:
+                frame_pos, frame_orn = \
+                    self._engine.get_body_link_state(uid, lid)[:2]
+
+            return self._engine.get_body_relative_pose(
+                self._uid, frame_pos, frame_orn)
+        else:
+            return self.pose
+
     ###
     # Helper functions
-
     def position_transform(self, pos, orn):
         """
         Helper function to convert position between
@@ -132,20 +161,25 @@ class Arm(Tool):
         target_pos = gripper_base_pos - rotation.dot(gripper_arm_tran)
         return target_pos
 
-    def _move_to(self, pos, orn):
+    def _move_to(self, pos, orn, ns=False):
         """
         Given pose, call IK to move
         :param pos: vec3 float cartesian
         :param orn: vec4 float quaternion
+        :param ns: boolean indicating whether solve for
+        null space solutions. Default is False.
         :return: None
         """
         specs = self.joint_specs
-        damps = specs['damping']
-
-        if self._null_space:
+        
+        # Clip the damping factors to make sure non-zero
+        damps = math_util.clip_vec(specs['damping'], .1, 1.)
+        if ns:
             lower_limits = math_util.vec(specs['lower'])
             upper_limits = math_util.vec(specs['upper'])
             ranges = upper_limits - lower_limits
+
+            # Solve using null space
             ik_solution = self._engine.solve_ik_null_space(
                 self._uid, self._end_idx,
                 pos, orn=orn,
@@ -163,39 +197,38 @@ class Arm(Tool):
         self.joint_states = (
             self._joints, ik_solution, 'position',
             dict(forces=specs['max_force'],
-                 positionGains=(.05,) * self._dof,
+                 positionGains=(.03,) * self._dof,
                  velocityGains=(1.,) * self._dof))
 
     ###
     #  High level functionality
-
     def reset(self):
         """
         Reset tool to initial positions
         :return: None
         """
-        # Reset arm
-        self.joint_states = \
-            (self._joints,
-             self._rest_pose,
-             'position',
-             dict(positionGains=(.05,) * self._dof,
-                  velocityGains=(1.,) * self._dof))
         if self._gripper:
-            # Attach gripper
+            # First attach gripper
             self.attach_children = \
                 (self._end_idx,
                  self._gripper.uid,
                  0, 'fixed',
                  [0., 0., 0.], self._tip_offset,
                  [0., 0., 0.],
-                 # TODO: Check if can use [0., 0., 0.707, 0.707] for child orn
-                 [0., 0., 0., 1.], [0., 0., 0., 1.])
-            # Reset gripper
+                 # This is correct default end effector orientation
+                 [0., .707, 0., .707], [0., .707, 0., .707])
+                 # [0., .0, 0., .1], [0., .0, 0., .1])
+            # Next reset gripper
             self._gripper.reset()
-        self._engine.hold()
 
-    def reach(self, pos=None, orn=None):
+        # Lastly reset arm
+        self.joint_states = \
+            (self._joints,
+             self._rest_pose,
+             'position',
+             dict(reset=True))
+
+    def reach(self, pos=None, orn=None, ftype='abs'):
         """
         Reach to given pose.
         Note this operation sets position first, then
@@ -204,22 +237,29 @@ class Arm(Tool):
         For accurate control, call <pinpoint> instead.
         :param pos: vec3 float cartesian
         :param orn: vec3 float quaternion
+        :param ftype: string param, coordinate system frame type.
+        'abs' indicates the position is in world frame
+        'rel' indicates the position is in tool frame.
+        Hint:
+        Default control uses world frame absolute positions.
+        To align simulation with real world, use 'rel'
         :return: delta between target and actual pose
         """
+        fpos, forn = super(Arm, self).reach(pos, orn, ftype)
         orn_delta = math_util.zero_vec(3)
         pos_delta = math_util.zero_vec(3)
 
-        if pos is not None:
-            self._move_to(pos, orn)
-            pos_delta = self.tool_pos - pos
+        if fpos is not None:
+            self.tool_pos = fpos
+            pos_delta = self.tool_pos - fpos
 
-        if orn is not None:
-            self.tool_orn = orn
-            orn_delta = math_util.quat_diff(self.tool_orn, orn)
+        if forn is not None:
+            self.tool_orn = forn
+            orn_delta = math_util.quat_diff(self.tool_orn, forn)
 
         return pos_delta, orn_delta
 
-    def pinpoint(self, pos, orn=None):
+    def pinpoint(self, pos, orn, ftype='abs'):
         """
         Accurately reach to the given pose.
         Note this operation sets position and orientation
@@ -227,12 +267,12 @@ class Arm(Tool):
         position nor previous orientation
         :param pos: vec3 float cartesian
         :param orn: vec4 float quaternion
+        :param ftype: refer to <reach~ftype>
         :return: None
         """
-        if orn is None:
-            orn = self.tool_orn
-        target_pos = self.position_transform(pos, orn)
-        self._move_to(target_pos, orn)
+        target_pos, target_orn = super(Arm, self).pinpoint(pos, orn, ftype)
+        # For pinpoint, must not use null space to achieve accuracy
+        self._move_to(target_pos, target_orn)
 
     def grasp(self, slide=-1):
         """

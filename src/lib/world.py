@@ -26,6 +26,7 @@ class World(object):
     # Storing inquiry legend
     _INQUIRY_DIC = dict(
         tool=['pose', 'v', 'omega', 'joint_states',
+              'tool_pose',
               # TODO
               # 'force', 'wrench', 'shape',
               'name', 'contact'],
@@ -100,9 +101,10 @@ class World(object):
     @property
     def tool(self):
         """
-        Get the tool list containing tools
-        :return: list of Tool instances, can be 
-        either grippers or arms, or even hands
+        Get the tools inside the environment
+        :return: dictionary of Tool instances, can be
+        either grippers or arms, or even hands, where
+        keys are tool ids, and values are tool instances
         """
         return self._tools
 
@@ -217,6 +219,7 @@ class World(object):
                               pos=asset['pos'],
                               orn=asset['orn'],
                               fixed=asset['fixed'])
+            asset_body.name = asset['name']
 
             self._bodies[asset_body.name] = asset_body
             if asset['record']:
@@ -279,6 +282,7 @@ class World(object):
                 prop = getattr(self, key)
                 info = dict((x, getattr(prop[x], value)) for x in prop)
             state_list.append(info)
+
         return state_list
 
     def boot(self, frame):
@@ -299,7 +303,7 @@ class World(object):
         """
         self._engine.status = stat
 
-    def update(self, elp):
+    def update(self, elp=0):
         """
         Update the states of the world.
         :return: None
@@ -307,8 +311,13 @@ class World(object):
         return self._engine.step(elp)
 
     def clean_up(self):
+        """
+        Clean up the environment and shut down
+        :return: None
+        """
         self._target_bodies = list()
         self._tools, self._bodies = dict(), dict()
+
         # Flush error messages
         for err_msg in self._engine.error:
             logerr(err_msg, FONT.model)

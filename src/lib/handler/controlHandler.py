@@ -1,8 +1,17 @@
-from .base import InterruptHandler
+# !/usr/env/bin python
+
 import time
+import abc
+
+from .base import InterruptHandler
 from ..utils import math_util
 from ..utils import event_listener
 from ..utils import network
+
+__author__ = 'Julian Gao'
+__email__ = 'julianyg@stanford.edu'
+__license__ = 'private'
+__version__ = '0.1'
 
 _EVENT_LABEL = {
     0: 'key',  # Alphabet 'g' for grippers, 'm' for arms
@@ -31,6 +40,10 @@ class ControlHandler(InterruptHandler):
     def signal(self):
         return self._signal
 
+    @abc.abstractmethod
+    def stop(self):
+        return NotImplemented
+
 
 class CmdEventHandler(ControlHandler):
     """
@@ -45,6 +58,11 @@ class CmdEventHandler(ControlHandler):
         return 'CmdControl'
 
     # TODO
+    def signal(self):
+        pass
+
+    def stop(self):
+        return
 
 
 class KeyboardEventHandler(ControlHandler):
@@ -103,6 +121,9 @@ class KeyboardEventHandler(ControlHandler):
         self._signal['instruction'] = ins
         return self._signal
 
+    def stop(self):
+        return
+
 
 class ViveEventHandler(ControlHandler):
     """
@@ -135,6 +156,7 @@ class ViveEventHandler(ControlHandler):
         time.sleep(1. / self._rate)
 
         for c_id, pos, orn, slide, _, _, button, _ in events:
+            # TODO
             pass
 
         self._signal['ins'] = ins
@@ -146,11 +168,12 @@ class ViveEventHandler(ControlHandler):
         Register the newly connected controller device
         :return: None
         """
+        # TODO register devices dynamically
         pass
 
     def stop(self):
-
-        self._comm.disconnect()
+        # TODO
+        pass
 
 
 class AppEventHandler(ControlHandler):
@@ -177,27 +200,14 @@ class AppEventHandler(ControlHandler):
             self._comm.channels[self._channel_name])
         time.sleep(1. / self._rate)
 
-        # for label_id, value in events:
-        #
-        #     label = _EVENT_LABEL[label_id]
-        #
-        #     if label_id < 4:
-        #         ins.append((label, value))
-        #     elif label_id == 4:
-        #         ins.append(('reach', (value, None)))
-        #     elif label_id == 5:
-        #         # Scale by sensitivity
-        #         orn = value[:3] * value[3]
-        #         ins.append(('reach', (None, orn)))
-
         for event_dic in events:
 
             # TODO: key and id
-
             ins.append(('rst', event_dic['rst']))
             ins.append(('grasp', event_dic['grasp']))
-
             ins.append(('reach', (math_util.vec(event_dic['pos']) * self._sens, None)))
+
+            # orn = math_util.vec(event_dic['orn'])  * 3.1415927 / 180
             orn = math_util.rad(math_util.vec(event_dic['orn']))
             ins.append(('reach', (None, math_util.euler2quat(orn))))
 
@@ -205,5 +215,4 @@ class AppEventHandler(ControlHandler):
         return self._signal
 
     def stop(self):
-
         self._comm.disconnect()

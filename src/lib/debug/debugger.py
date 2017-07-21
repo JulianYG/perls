@@ -18,6 +18,41 @@ class ModelDebugger(object):
     def target(self):
         return self._world.target
 
+    @property
+    def gravity(self):
+        """
+        Get gravitational property of the world
+        :return: vec3 float gravity
+        """
+        return self._world.gravity
+
+    @property
+    def traction(self):
+        """
+        Get the traction force on tracking bodies 
+        in the world
+        :return: float force in Newton
+        """
+        return self._world.traction
+
+    @property
+    def body(self):
+        """
+        Get the full list of bodies in the world
+        :return: list of Body instances
+        """
+        return self._world.body
+
+    @property
+    def tool(self):
+        """
+        Get the tools inside the environment
+        :return: dictionary of Tool instances, can be
+        either grippers or arms, or even hands, where
+        keys are tool ids, and values are tool instances
+        """
+        return self._world.tool
+
     def build(self):
         self._world.build()
         loginfo('World Debugger info: \n{}'.format(self.info), FONT.model)
@@ -25,7 +60,7 @@ class ModelDebugger(object):
     def reset(self):
         self._world.reset()
 
-    def update(self, elt):
+    def update(self, elt=0):
         self._world.update(elt)
 
     def load_body(self, file_path, pos, orn,
@@ -70,12 +105,16 @@ class ViewDebugger(object):
     def disable_hotkeys(self):
         self._display.disable_hotkeys()
 
-    def update(self, camera, *_):
-        self._display.update(camera)
+    def update(self, camera, param):
+        self._display.update(camera, param)
 
     def get_camera_pose(self, otype='orn'):
 
         return self._display.get_camera_pose(otype=otype)
+
+    def set_camera_pose(self, pos, orn):
+
+        self._display.set_camera_pose(pos, orn)
 
     def get_camera_image(self, itype='rgb'):
 

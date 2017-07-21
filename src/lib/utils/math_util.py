@@ -2,7 +2,7 @@ import pybullet as p
 import numpy as np
 import math
 
-
+pi = np.pi
 _EPS = np.finfo(float).eps * 4.
 
 # axis sequences for Euler angles
@@ -23,11 +23,21 @@ _TUPLE2AXES = dict((v, k) for k, v in _AXES2TUPLE.items())
 
 
 def rms(vector):
+    """
+    Get the root mean square of the vector
+    :param vector: input vector
+    :return: float number
+    """
     return np.sqrt(np.sum(vector ** 2))
 
 
 def joint_clip(joint_pos, joint_spec):
-
+    """
+    Clip the joints under their limits
+    :param joint_pos: input joint positions
+    :param joint_spec: upper and lower limit specifications
+    :return: Clipped joint position values
+    """
     joint_pos = np.clip(
         joint_pos,
         a_min=joint_spec['lower'][-3:],
@@ -37,34 +47,64 @@ def joint_clip(joint_pos, joint_spec):
 
 
 def approximate(val, n_digits):
+    """
+    Approximate numbers by given digits.
+    :param val: value to approximate.
+    :param n_digits: number of digits to keep
+    :return: approximated numbers
+    """
     return np.array([float('%.{}g'.format(n_digits) % v) for v in val],
                     dtype=np.float32)
 
 
 def cross(x, y, axis=None):
+    """
+    Perform cross product of values.
+    :param x: vector X.
+    :param y: vector Y.
+    :param axis: axis to cross on
+    :return: the cross product of x, y
+    """
     if axis:
         return np.cross(x, y, axis=axis)
     return np.cross(x, y)
 
 
-def pose2mat((pos, orn)):
-
+def pose2mat(pose):
+    """
+    Convert pose to homogeneous matrix
+    :param pose: a (pos, orn) tuple where
+    pos is vec3 float cartesian, and
+    orn is vec4 float quaternion.
+    :return:
+    """
     homo_pose_mat = np.zeros((4, 4), dtype=np.float32)
-    homo_pose_mat[:3, :3] = quat2mat(orn)
-    homo_pose_mat[3, :3] = np.array(pos, dtype=np.float32)
+    homo_pose_mat[:3, :3] = quat2mat(pose[1])
+    homo_pose_mat[3, :3] = np.array(pose[0], dtype=np.float32)
     homo_pose_mat[3, 3] = 1.
-
     return homo_pose_mat
 
 
 def relative_pose(obj_pose, frame):
-
+    """
+    Get the relative pose of object in given frame,
+    in the form of homogeneous matrix.
+    :param obj_pose: pose of given object, (pos, orn)
+    :param frame: 4x4 homogeneous matrix representing the frame
+    :return: pose of the object in the frame, 4x4 homogeneous mat
+    """
     obj_pose_homo = pose2mat(obj_pose)
     frame_pose = np.linalg.inv(frame).dot(obj_pose_homo)
     return frame_pose
 
 
 def transform(poseA, poseB):
+    """
+    Transform pose into another frame
+    :param poseA:
+    :param poseB:
+    :return:
+    """
     return p.multiplyTransforms(poseA[0], poseA[1], poseB[0], poseB[1])
 
 
@@ -78,6 +118,10 @@ def vec(values):
 
 def zero_vec(size):
     return np.zeros(size, dtype=np.float32)
+
+
+def clip_vec(vec, low, high):
+    return np.clip(vec, low, high)
 
 
 def pose_diff(pose1, pose2):
@@ -237,6 +281,15 @@ def quat_diff(quat1, quat2):
     return quat2euler(quat1) - quat2euler(quat2)
 
 
+def get_inverse_transformed_pose(body_pose, frame_pose):
+    return transform(frame_pose, body_pose)
+
+
+def get_transformed_pose(body_pose, frame_pose):
+    transform_pose = p.invertTransform(frame_pose[0], frame_pose[1])
+    return transform(transform_pose, body_pose)
+
+
 def get_transformed_pos(pos, translation, rotation):
     return rotation.dot(pos - translation)
 
@@ -245,3 +298,9 @@ def process_orn_signal(roll, pitch, yaw, sens):
     orn_euler = np.array([roll, -pitch, yaw],
                          dtype=np.float32) * np.pi / 180.
     return orn_euler * sens
+
+
+def array2mat():
+
+    # TODO: for graphicsEngine
+    pass

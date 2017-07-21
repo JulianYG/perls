@@ -1,13 +1,6 @@
 import abc
 
 
-class GraphicsEngine(object):
+class RenderEngine(object):
 
     pass
-
-
-class Camera(object):
-
-    pass
-
-

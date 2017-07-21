@@ -1,11 +1,20 @@
+# !/usr/bin/env python
+
+import abc
+
 import gym
 from gym.utils import seeding
 
 import sys, os
-import abc
 sys.path.append(os.path.abspath(os.path.join(__file__, '../../../../')))
+
 from lib.control import Controller
 from lib.utils import io_util
+
+__author__ = 'Julian Gao'
+__email__ = 'julianyg@stanford.edu'
+__license__ = 'private'
+__version__ = '0.1'
 
 
 class PerlsEnv(gym.Env):
@@ -46,7 +55,7 @@ class PerlsEnv(gym.Env):
         self._world.clean_up()
         self._display.close()
 
-    def _render(self, mode='', close=False):
+    def _render(self, mode='human', close=True):
         """
         Generate rendered data based on given mode.
         :param mode: string of mode, as specified in metadata
@@ -69,13 +78,14 @@ class PerlsEnv(gym.Env):
         :return: Empty list of states. The state
         """
         self._world.reset()
-        return
+        for _ in range(50):
+            self._world.update()
 
     @abc.abstractmethod
     def _step(self, action):
         """
         Make one step move in the environment.
         :param action: Action as defined in action space
-        :return: Observations, Rewards, IfDone, Info tuple
+        :return: Observations, Rewards, isDone, Info tuple
         """
         return NotImplemented

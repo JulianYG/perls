@@ -5,6 +5,7 @@ from ..utils.io_util import (FONT,
                              loginfo,
                              logerr)
 
+
 class PrismaticGripper(Tool):
 
     def __init__(self, tid, engine, path, pos, orn, left, right):
@@ -56,6 +57,10 @@ class PrismaticGripper(Tool):
         return self._max_force
 
     @property
+    def pose(self):
+        return self.pos, self.orn
+
+    @property
     def tool_pos(self):
         """
         Get the position of the gripper, based on 
@@ -90,8 +95,6 @@ class PrismaticGripper(Tool):
             logerr('Cannot move attached gripper.',
                    FONT.model)
             return
-        # Need some transformation
-        base_pos = self.position_transform(pos, self.tool_orn)
 
         # Note here it only cares about the position,
         # thus not solving using constraints
@@ -121,13 +124,14 @@ class PrismaticGripper(Tool):
             self.kinematics['pos'][self._left_finger_idx] +
             self.kinematics['pos'][self._right_finger_idx]) / 2. -\
             self.pos
+
         # Since desired frame is aligned with base frame...
         rotation = math_util.quat2mat(orn)
         base_pos = pos - rotation.dot(translation)
         return base_pos
 
     ###
-    #  High level functionalities
+    #  High level functionality
     def reset(self):
         """
         Release gripper for reset
@@ -148,38 +152,38 @@ class PrismaticGripper(Tool):
             -1, -1, -1, 'fixed', [0., 0., 0.],
             [0., 0., 0.], self.pos, None, self.orn)
 
-    def reach(self, pos=None, orn=None):
+    def reach(self, pos=None, orn=None, ftype='abs'):
         """
         Reach to given pose approximately
         :param pos: vec3 float cartesian at base
         :param orn: vec4 float quaternion
         :return: delta between target and actual pose
         """
-        orn_delta = math_util.zero_vec(3)
-        pos_delta = math_util.zero_vec(3)
+        fpos, forn = super(PrismaticGripper, self).reach(pos, orn, ftype)
 
-        if orn is None:
-            orn = self.tool_orn
+        pos_delta = math_util.zero_vec(3)
+        forn = self.tool_orn if forn is None else forn
+
         # Use constraint to move gripper for simulation,
         # to avoid boundary mixing during collision
-        self.track(pos, orn, self._max_force)
+        self.track(fpos, forn, self._max_force)
 
-        orn_delta = math_util.quat_diff(self.tool_orn, orn)
-        if pos is not None:
-            pos_delta = self.tool_pos - pos
+        orn_delta = math_util.quat_diff(self.tool_orn, forn)
+        if fpos is not None:
+            pos_delta = self.tool_pos - fpos
 
         return pos_delta, orn_delta
 
-    def pinpoint(self, pos, orn=None):
+    def pinpoint(self, pos, orn, ftype='abs'):
         """
         Accurately reach to given pose
         :param pos: vec3 float cartesian at finger tip
         :param orn: vec4 float quaternion
         :return: None
         """
-        if orn:
-            self.tool_orn = orn
-        self.tool_pos = pos
+        fpos, forn = super(PrismaticGripper, self).pinpoint(pos, orn, ftype)
+        self.tool_pos = fpos
+        self.tool_orn = forn
 
     def grasp(self, slide):
         """
@@ -187,6 +191,6 @@ class PrismaticGripper(Tool):
         :param slide: if given, perform slider grasp
         :return: None
         """
-        raise NotImplementedError('Method <grasp> not implemented for gripper. '
-                                  'Method is gripper-specific')
-
+        raise NotImplementedError(
+            'Method <grasp> not implemented for gripper. '
+            'Method is gripper-specific')

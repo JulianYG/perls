@@ -1,11 +1,14 @@
+# !/usr/bin/env python
+
 from .perls_env import PerlsEnv
+from lib.utils import math_util
 
 
 class PushCube(PerlsEnv):
+    """
+    Pushing cube across the table
+    """
 
-    """
-    Trying to solve InverseKinematics by RL
-    """
     metadata = {
         'render.modes': ['human', 'depth', 'segment'],
         'video.frames_per_second': 50
@@ -14,15 +17,30 @@ class PushCube(PerlsEnv):
     def __init__(self, conf_path):
 
         super(PushCube, self).__init__(conf_path)
+        self._cube = self._world.body['cube_0']
+        self._robot = self._world.tool['m0']
 
     def _reset(self):
 
         super(PushCube, self)._reset()
-        tool_pose, body_pose = self._world.get_states(('tool', 'pose'), ('body', 'pose'))
 
-        return tool_pose['titan'], body_pose['cube_0']
+        for _ in range(200):
+            # move robot to initial position
+            self._robot.pinpoint(
+                (.8, .0, .6),
+                math_util.euler2quat(
+                    [-math_util.pi, -math_util.pi / 2., 0.]),
+                ftype='rel')
+            self._world.update()
+        print(self._get_relative_pose()[0][0])
+        return self._get_relative_pose()
 
-        # TODO: get Robot end effector 2D pose in robot frame, get Cube 2D pose in robot frame
+    def _get_relative_pose(self):
+
+        cube_pose_rel = self._cube.get_pose(self._robot.uid, 0)
+        eef_pose_rel = self._robot.tool_pose_rel
+
+        return eef_pose_rel, cube_pose_rel
 
     def _step(self, action):
 
@@ -32,4 +50,4 @@ class PushCube(PerlsEnv):
 
         # TODO: then read robot state, and get the stuff we care about again. 
 
-        return NotImplemented
+        self._world.update()
