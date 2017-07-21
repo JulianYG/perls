@@ -297,10 +297,8 @@ class Controller(object):
                 # Get pose of the camera
                 display.get_camera_pose(),
                 # Get camera parameters
-                dict(flen=camera_param['focal_len'],
-                     pitch=camera_param['pitch'],
-                     yaw=camera_param['yaw'],
-                     roll=0.))
+                dict(pitch=camera_param['pitch'],
+                     yaw=camera_param['yaw']))
 
         # Finally start control loop (Core)
         try:
@@ -315,9 +313,17 @@ class Controller(object):
                 # Perform display interruption next
                 # Update view with camera info
                 if event_handler:
-                    self._display_interrupt(display, event_handler.signal)
+                    event_sig = event_handler.signal
 
-                # display.update(self._states['camera'])
+                    # Updating from user input
+                    if event_sig['update']:
+                        camera_param = display.info['engine']['camera_info']
+                        event_handler.update_states(
+                            display.get_camera_pose(),
+                            # Get camera parameters
+                            dict(pitch=camera_param['pitch'],
+                                 yaw=camera_param['yaw']))
+                    self._display_interrupt(display, event_handler.signal)
 
                 # Lastly check task completion, communicate
                 # with the model
