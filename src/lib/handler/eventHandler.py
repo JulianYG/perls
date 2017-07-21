@@ -34,9 +34,9 @@ class ViewEventHandler(InterruptHandler):
                 transformed_vec = self._pose[:3, :3].T.dot(raw_vec)
 
                 self._signal['focus'] += transformed_vec
+                self._signal['flen'] = 1e-3
 
             if 'orn' in keys and keys['orn'][1] == 'holding':
-
                 self._angle += math_util.deg(event_listener.HOT_KEY[keys['orn'][0]]) * 30
                 self._signal['roll'] = self._angle[0]
                 self._signal['pitch'] = self._angle[1]
@@ -53,9 +53,11 @@ class ViewEventHandler(InterruptHandler):
         :return: None
         """
         self._pose = math_util.pose2mat(pose)
-        print(self._pose)
+
         for key, val in params.items():
             self._signal[key] = val
+        self._signal['focus'] = self._pose[3, :3]
+        self._signal['flen'] = 1e-3
         self._angle = math_util.vec(
             (self._signal['roll'], self._signal['pitch'],
              self._signal['yaw']))

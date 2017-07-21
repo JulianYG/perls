@@ -298,7 +298,6 @@ class Controller(object):
                 display.get_camera_pose(),
                 # Get camera parameters
                 dict(flen=camera_param['focal_len'],
-                     focus=camera_param['focus'],
                      pitch=camera_param['pitch'],
                      yaw=camera_param['yaw'],
                      roll=0.))
