@@ -114,6 +114,7 @@ class BulletRenderEngine(GraphicsEngine):
                 view_mat=math_util.mat4(info[2]).T,
                 projection_mat=math_util.mat4(info[3]).T,
                 up=np.where(info[4])[0][0],
+                forward=math_util.vec(info[5]),
                 yaw=info[8], pitch=info[9], focal_len=info[10],
                 focus=math_util.vec(info[11]),
             )

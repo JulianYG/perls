@@ -107,10 +107,6 @@ class KeyboardEventHandler(ControlHandler):
             if 'pos' in keys and keys['pos'][1] == 'holding':
 
                 raw_vec = event_listener.HOT_KEY[keys['pos'][0]] * 30
-
-                # TODO Align it with view perspective frame
-                # transformed_vec = self._pose[:3, :3].T.dot(raw_vec)
-
                 self._signal['camera'].append(('pos', raw_vec))
 
             if 'orn' in keys and keys['orn'][1] == 'holding':
