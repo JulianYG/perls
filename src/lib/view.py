@@ -90,7 +90,7 @@ class View:
         """
         return self._engine.get_camera_image(itype=itype)
 
-    def set_render_view(self, camera_info):
+    def update(self, camera_info, params):
         """
         Update the view, mainly resetting the camera
         :param camera_info: dictionary of camera parameters.
@@ -99,10 +99,16 @@ class View:
         pitch: float degree, focus: float}
         For VR, camera_info is a tuple of
         (pos: vec3 cartesian, orn: vec4 quat)
+        :param params: Physics parameters, or state
+        parameters (object pose, etc) to interact with
+        the model dynamically.
         :return: None
         """
         if camera_info:
             self._engine.camera = camera_info
+
+        if params and self._frame == 'gui':
+            self._adapter.update_world(params)
 
     def load_config(self, description):
         """

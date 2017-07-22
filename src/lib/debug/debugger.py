@@ -116,10 +116,6 @@ class ViewDebugger(object):
 
         self._display.set_camera_pose(pos, orn)
 
-    def set_render_view(self, params):
-
-        self._display.set_render_view(params)
-
     def get_camera_image(self, itype='rgb'):
 
         return self._display.get_camera_image(itype=itype)
@@ -128,7 +124,11 @@ class ViewDebugger(object):
         self._display.load_config(desc)
 
     def run(self, target=None):
-
+        # while True:
+        #     self._display._control_interrupt()
+        #     self._display._engine.step(elapsed_time=0)
+        #
+        #     # print()
         return self._display.run(target)
 
     def close(self):
