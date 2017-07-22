@@ -164,7 +164,6 @@ class BulletRenderEngine(GraphicsEngine):
 
     ###
     #  Helper functions
-    # TODO: camera pose wrong
     def get_camera_pose(self, up=(0.,1.,0.), otype='quat'):
         view_matrix = self.camera['view_mat'].T
 

@@ -8,7 +8,9 @@ class InterruptHandler(object):
         self._rate = rate
         self._id = ps_id
         self._signal = dict(
-            tid=0, key=None, cmd=list(), instruction=list())
+            tid=0, key=None, cmd=list(), instruction=list(),
+            camera=dict(), update=0
+        )
 
     @property
     def name(self):
