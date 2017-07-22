@@ -167,8 +167,8 @@ class BulletRenderEngine(GraphicsEngine):
     def get_camera_pose(self, up=(0.,1.,0.), otype='quat'):
         view_matrix = self.camera['view_mat'].T
 
-        perm = [0, 2, 1]
-        if up == (0, 1, 0):
+        # If up axis is y
+        if up == 1:
             view_matrix = view_matrix.dot(np.array(
                 [[-1, 0, 0, 0],
                  [0, 0, 1, 0],
@@ -179,15 +179,14 @@ class BulletRenderEngine(GraphicsEngine):
         transformation_matrix = math_util.mat_inv(view_matrix)
         pos = transformation_matrix[3, :3]
         orn = math_util.mat2euler(transformation_matrix[:3, :3],
-                                  axes='sxyx')[perm]
+                                  axes='rxyx')
+        # This is some weird bullet convention..
+        orn[0] = - (np.pi + orn[0])
 
         if otype == 'quat':
             orn = math_util.euler2quat(tuple(orn))
         elif otype == 'deg':
             orn = math_util.deg(orn)
-            # This is some weird bullet convention..
-            orn[1] -= 90
-            orn[2] = 180 - orn[2]
         elif otype == 'rad':
             pass
         else:

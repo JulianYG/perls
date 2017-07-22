@@ -486,8 +486,8 @@ class Controller(object):
         camera_pos, camera_orn = display.get_camera_pose(otype='deg')
         self._states['camera']['focus'] = camera_pos
         # self._states['camera']['flen'] = 1e-3
-        self._states['camera']['pitch'] = camera_orn[1]
-        self._states['camera']['yaw'] = camera_orn[2]
+        self._states['camera']['pitch'] = camera_orn[0]
+        self._states['camera']['yaw'] = camera_orn[1]
 
     def _checker_interrupt(self, signal):
         """
