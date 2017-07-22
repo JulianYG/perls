@@ -184,7 +184,9 @@ class BulletRenderEngine(GraphicsEngine):
         # This is some weird bullet convention..
         orn[0] = - (np.pi + orn[0])
 
-        if otype == 'quat':
+        if otype == 'mat':
+            orn = transformation_matrix[:3, :3]
+        elif otype == 'quat':
             orn = math_util.euler2quat(tuple(orn))
         elif otype == 'deg':
             orn = math_util.deg(orn)

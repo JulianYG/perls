@@ -106,8 +106,9 @@ class KeyboardEventHandler(ControlHandler):
         if 'cam' in keys and keys['cam'][1] == 'holding':
             if 'pos' in keys and keys['pos'][1] == 'holding':
 
-                raw_vec = event_listener.HOT_KEY[keys['pos'][0]] * 30
-                self._signal['camera'].append(('pos', raw_vec))
+                raw_delta = event_listener.HOT_KEY[keys['pos'][0]] * 30
+                delta = math_util.vec((raw_delta[1], -raw_delta[0], raw_delta[2]))
+                self._signal['camera'].append(('pos', delta))
 
             if 'orn' in keys and keys['orn'][1] == 'holding':
 
