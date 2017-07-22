@@ -37,6 +37,7 @@ class ViewEventHandler(InterruptHandler):
 
             if 'orn' in keys and keys['orn'][1] == 'holding':
                 self._angle += math_util.deg(event_listener.HOT_KEY[keys['orn'][0]]) * 20
+
                 self._signal['pitch'] = self._angle[1]
                 self._signal['yaw'] = self._angle[2]
 
@@ -57,11 +58,12 @@ class ViewEventHandler(InterruptHandler):
         pose = math_util.pose2mat(pose)
 
         self._signal['focus'] = pose[3, :3]
+        self._signal['yaw'] = param['yaw']
+        self._signal['pitch'] = param['pitch']
+
         self._angle[1] = param['pitch']
         self._angle[2] = param['yaw']
 
-        self._signal['yaw'] = self._angle[1]
-        self._signal['pitch'] = self._angle[2]
 
     def stop(self):
         return

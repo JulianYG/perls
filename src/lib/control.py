@@ -307,12 +307,11 @@ class Controller(object):
 
                 # Perform display interruption next
                 # Update view with camera info
-                camera_param = display.info['engine']['camera_info']
-                if camera_param and event_handler:
+                if event_handler:
                     event_sig = event_handler.signal
-
                     # Updating from user input
                     if event_sig['update']:
+                        camera_param = display.info['engine']['camera_info']
                         event_handler.update_states(display.get_camera_pose(), camera_param)
                     self._display_interrupt(display, event_handler.signal)
 
