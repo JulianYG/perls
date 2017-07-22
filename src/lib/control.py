@@ -293,12 +293,7 @@ class Controller(object):
         # Next display states
         camera_param = display.info['engine']['camera_info']
         if camera_param and event_handler:
-            event_handler.update_states(
-                # Get pose of the camera
-                display.get_camera_pose(),
-                # Get camera parameters
-                dict(pitch=camera_param['pitch'],
-                     yaw=camera_param['yaw']))
+            event_handler.update_states(display.get_camera_pose(), camera_param)
 
         # Finally start control loop (Core)
         try:
@@ -312,17 +307,13 @@ class Controller(object):
 
                 # Perform display interruption next
                 # Update view with camera info
-                if event_handler:
+                camera_param = display.info['engine']['camera_info']
+                if camera_param and event_handler:
                     event_sig = event_handler.signal
 
                     # Updating from user input
                     if event_sig['update']:
-                        camera_param = display.info['engine']['camera_info']
-                        event_handler.update_states(
-                            display.get_camera_pose(),
-                            # Get camera parameters
-                            dict(pitch=camera_param['pitch'],
-                                 yaw=camera_param['yaw']))
+                        event_handler.update_states(display.get_camera_pose(), camera_param)
                     self._display_interrupt(display, event_handler.signal)
 
                 # Lastly check task completion, communicate

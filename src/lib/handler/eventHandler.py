@@ -7,8 +7,7 @@ class ViewEventHandler(InterruptHandler):
     def __init__(self, ps_id, ):
 
         super(ViewEventHandler, self).__init__(ps_id, None)
-        self._signal = dict(update=0, flen=1e-3)
-        self._pose = math_util.pose2mat(((0,0,0), (0,0,0,1)))
+        self._signal = dict(update=0, flen=1e-3, yaw=0, pitch=0)
         self._angle = math_util.zero_vec(3)
 
     @property
@@ -28,7 +27,7 @@ class ViewEventHandler(InterruptHandler):
         if 'cam' in keys and keys['cam'][1] == 'holding':
             if 'pos' in keys and keys['pos'][1] == 'holding':
 
-                raw_vec = event_listener.HOT_KEY[keys['pos'][0]] * 50
+                raw_vec = event_listener.HOT_KEY[keys['pos'][0]] * 30
 
                 # TODO Align it with view perspective frame
                 # transformed_vec = self._pose[:3, :3].T.dot(raw_vec)
@@ -37,7 +36,7 @@ class ViewEventHandler(InterruptHandler):
                 self._signal['focus'] += raw_vec  # transformed_vec
 
             if 'orn' in keys and keys['orn'][1] == 'holding':
-                self._angle += math_util.deg(event_listener.HOT_KEY[keys['orn'][0]]) * 30
+                self._angle += math_util.deg(event_listener.HOT_KEY[keys['orn'][0]]) * 20
                 self._signal['pitch'] = self._angle[1]
                 self._signal['yaw'] = self._angle[2]
 
@@ -45,10 +44,9 @@ class ViewEventHandler(InterruptHandler):
             self._signal['update'] = 1
         else:
             self._signal['update'] = 0
-
         return self._signal
 
-    def update_states(self, pose, params):
+    def update_states(self, pose, param):
         """
         Initialize/update the camera states
         :param pose: the (pos, orn) tuple of camera pose
@@ -56,13 +54,14 @@ class ViewEventHandler(InterruptHandler):
         roll, pitch, yaw (all in degrees), flen, focus (vec3 floats)
         :return: None
         """
-        self._pose = math_util.pose2mat(pose)
-        
-        for key, val in params.items():
-            self._signal[key] = val
+        pose = math_util.pose2mat(pose)
 
-        self._signal['focus'] = self._pose[3, :3]
-        self._angle = math_util.mat2euler(self._pose[:3, :3])
+        self._signal['focus'] = pose[3, :3]
+        self._angle[1] = param['pitch']
+        self._angle[2] = param['yaw']
+
+        self._signal['yaw'] = self._angle[1]
+        self._signal['pitch'] = self._angle[2]
 
     def stop(self):
         return
