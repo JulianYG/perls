@@ -143,6 +143,14 @@ def orn_add(quat1, quat2):
     return quat2euler(quat1) + quat2euler(quat2)
 
 
+def mat4(array):
+    return np.array(array, dtype=np.float32).reshape((4, 4))
+
+
+def mat3(array):
+    return np.array(array, dtype=np.float32).reshape((3, 3))
+
+
 def quat2mat(quaternion):
     q = np.array(quaternion, dtype=np.float32, copy=True)
     n = np.dot(q, q)

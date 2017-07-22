@@ -291,9 +291,8 @@ class Controller(object):
             self._states['tool'][tid] = init_pose
 
         # Next display states
-        camera_param = display.info['engine']['camera_info']
-        if camera_param and event_handler:
-            event_handler.update_states(display.get_camera_pose(), camera_param)
+        if event_handler:
+            event_handler.update_states(display.get_camera_pose(otype='deg'))
 
         # Finally start control loop (Core)
         try:
@@ -311,8 +310,7 @@ class Controller(object):
                     event_sig = event_handler.signal
                     # Updating from user input
                     if event_sig['update']:
-                        camera_param = display.info['engine']['camera_info']
-                        event_handler.update_states(display.get_camera_pose(), camera_param)
+                        event_handler.update_states(display.get_camera_pose(otype='deg'))
                     self._display_interrupt(display, event_handler.signal)
 
                 # Lastly check task completion, communicate

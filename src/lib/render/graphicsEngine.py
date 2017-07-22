@@ -111,8 +111,8 @@ class BulletRenderEngine(GraphicsEngine):
             info = p.getDebugVisualizerCamera(self._server_id)
             return dict(
                 frame_width=info[0], frame_height=info[1],
-                view_mat=np.array(info[2], dtype=np.float32).reshape((4, 4)).T,
-                projection_mat=np.array(info[3], dtype=np.float32).reshape((4, 4)).T,
+                view_mat=math_util.mat4(info[2]).T,
+                projection_mat=math_util.mat4(info[3]).T,
                 up=np.where(info[4])[0][0],
                 yaw=info[8], pitch=info[9], focal_len=info[10],
                 focus=math_util.vec(info[11]),
@@ -164,9 +164,11 @@ class BulletRenderEngine(GraphicsEngine):
 
     ###
     #  Helper functions
+    # TODO: camera pose wrong
     def get_camera_pose(self, up=(0.,1.,0.), otype='quat'):
         view_matrix = self.camera['view_mat'].T
-        perm = [2, 0, 1]
+
+        perm = [0, 2, 1]
         if up == (0, 1, 0):
             view_matrix = view_matrix.dot(np.array(
                 [[-1, 0, 0, 0],
@@ -179,10 +181,14 @@ class BulletRenderEngine(GraphicsEngine):
         pos = transformation_matrix[3, :3]
         orn = math_util.mat2euler(transformation_matrix[:3, :3],
                                   axes='sxyx')[perm]
+
         if otype == 'quat':
             orn = math_util.euler2quat(tuple(orn))
         elif otype == 'deg':
             orn = math_util.deg(orn)
+            # This is some weird bullet convention..
+            orn[1] -= 90
+            orn[2] = 180 - orn[2]
         elif otype == 'rad':
             pass
         else:

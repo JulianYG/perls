@@ -36,34 +36,32 @@ class ViewEventHandler(InterruptHandler):
                 self._signal['focus'] += raw_vec  # transformed_vec
 
             if 'orn' in keys and keys['orn'][1] == 'holding':
-                self._angle += math_util.deg(event_listener.HOT_KEY[keys['orn'][0]]) * 20
 
+                # Some conversion for intuitive keyboard pan/tilt
+                raw_delta = event_listener.HOT_KEY[keys['orn'][0]]
+                delta = math_util.vec((raw_delta[2], raw_delta[1], -raw_delta[0]))
+
+                self._angle += math_util.deg(delta) * 20
                 self._signal['pitch'] = self._angle[1]
                 self._signal['yaw'] = self._angle[2]
 
-        if 'tbd' in keys and keys['tbd'][1] == 'holding':
-            self._signal['update'] = 1
-        else:
-            self._signal['update'] = 0
+        self._signal['update'] = 1 if 'tbd' in keys and keys['tbd'][1] == 'holding' else 0
         return self._signal
 
-    def update_states(self, pose, param):
+    def update_states(self, pose):
         """
         Initialize/update the camera states
-        :param pose: the (pos, orn) tuple of camera pose
-        :param params: (key string, value) tuple of parameters:
-        roll, pitch, yaw (all in degrees), flen, focus (vec3 floats)
+        :param pose: the (pos, orn) tuple of camera pose,
+        where orn is in degrees of bullet convention
         :return: None
         """
-        pose = math_util.pose2mat(pose)
+        pos, orn = pose
+        self._signal['focus'] = pos
+        self._signal['yaw'] = orn[2]
+        self._signal['pitch'] = orn[1]
 
-        self._signal['focus'] = pose[3, :3]
-        self._signal['yaw'] = param['yaw']
-        self._signal['pitch'] = param['pitch']
-
-        self._angle[1] = param['pitch']
-        self._angle[2] = param['yaw']
-
+        self._angle[1] = orn[1]
+        self._angle[2] = orn[2]
 
     def stop(self):
         return
