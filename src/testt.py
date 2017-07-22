@@ -58,7 +58,7 @@ for x in _AXES2TUPLE.keys():
     vvv = math_util.mat2euler(xx[:3,:3])
     # print(vvv * 180 / np.pi, x)
     xxx = np.array([[-1,0,0],[0,0,1],[0,1,0]], dtype=np.float32).dot(xx[:3,:3])
-    print(math_util.mat2euler(xx[:3,:3], axes=x) * 180 / np.pi, x)
+    print(math_util.mat2euler(transform_mat[:3,:3], axes=x) * 180 / np.pi, x)
     # print(math_util.mat2quat(xx[:3, :3]))
     # print(np.array(p.getEulerFromQuaternion(math_util.mat2quat(xx[:3, :3]))) * 180 / np.pi)
 while 1:

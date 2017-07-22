@@ -21,6 +21,7 @@ _EVENT_LABEL = {
                  # in between to slide (3d-touch)
     4: 'pos',  # vec3 float cartesian relative
     5: 'orn',  # vec3 float orientation absolute
+    6: 'camera',  # indicates camera parameter
 }
 
 
@@ -47,7 +48,7 @@ class ControlHandler(InterruptHandler):
 
 class CmdEventHandler(ControlHandler):
     """
-    For algorithmic learning usage, such as 
+    For algorithmic learning usage, such as
     passing commands into gym environment.
     """
     def __init__(self, ps_id, sensitivity=1, rate=0):
@@ -84,25 +85,41 @@ class KeyboardEventHandler(ControlHandler):
     def signal(self):
         """
         Get the signal read from interruption.
-        Note keyboard event only gives high level 
+        Note keyboard event only gives high level
         instructions reach and grasp.
         :return: List of signals
         """
         self._signal['cmd'] = list()
         ins = list()
+        self._signal['camera'] = list()
 
         events = event_listener.listen_to_bullet_keyboard(self._id)
         time.sleep(1. / self._rate)
 
         # Construct dictionary {label: (key, status)}
-        keys = {event_listener.KEY_LABEL.get(int(long_key), None): None
+        keys = {event_listener.KEY_LABEL.get(int(long_key), None):
+                    (int(long_key), event_listener.KEY_STATUS[int(const)])
                 for (long_key, const) in events.items()}
 
-        if 'cam' not in keys:
-            for long_key, const in events.items():
-                key = int(long_key)
-                label = event_listener.KEY_LABEL.get(key, None)
-                status = event_listener.KEY_STATUS[int(const)]
+        # TODO: should this use <set_camera_pose>?
+        # Handle display / view settings
+        if 'cam' in keys and keys['cam'][1] == 'holding':
+            if 'pos' in keys and keys['pos'][1] == 'holding':
+
+                raw_delta = event_listener.HOT_KEY[keys['pos'][0]] * 30
+                delta = math_util.vec((raw_delta[1], -raw_delta[0], raw_delta[2]))
+                self._signal['camera'].append(('pos', delta))
+
+            if 'orn' in keys and keys['orn'][1] == 'holding':
+
+                # Some conversion for intuitive keyboard pan/tilt
+                raw_delta = event_listener.HOT_KEY[keys['orn'][0]]
+                delta = math_util.vec((raw_delta[1], -raw_delta[0])) * 20
+
+                self._signal['camera'].append(('orn', delta))
+        else:
+            # Handle environment settings
+            for label, (key, status) in keys.items():
 
                 # Using multiple if's to allow simultaneous key pressing
                 if key in range(48, 58) and status == 'releasing':
@@ -123,6 +140,7 @@ class KeyboardEventHandler(ControlHandler):
                     # Don't touch position, only orientation (quat)
                     ins.append(('reach', (None, math_util.euler2quat(self._sig_orn))))
 
+        self._signal['update'] = 1 if 'tbd' in keys and keys['tbd'][1] == 'holding' else 0
         self._signal['instruction'] = ins
         return self._signal
 
@@ -130,6 +148,7 @@ class KeyboardEventHandler(ControlHandler):
         return
 
 
+# TODO at some point
 class ViveEventHandler(ControlHandler):
     """
     Handles VR controller events/signal
@@ -200,6 +219,7 @@ class AppEventHandler(ControlHandler):
     def signal(self):
         self._signal['cmd'] = list()
         ins = list()
+        self._signal['camera'] = list()
 
         events = event_listener.listen_to_redis(
             self._comm.channels[self._channel_name])
@@ -210,11 +230,20 @@ class AppEventHandler(ControlHandler):
             # TODO: key and id
             ins.append(('rst', event_dic['rst']))
             ins.append(('grasp', event_dic['grasp']))
-            ins.append(('reach', (math_util.vec(event_dic['pos']) * self._sens, None)))
 
-            # orn = math_util.vec(event_dic['orn'])  * 3.1415927 / 180
-            orn = math_util.rad(math_util.vec(event_dic['orn']))
-            ins.append(('reach', (None, math_util.euler2quat(orn))))
+            pos_delta = math_util.vec(event_dic['pos']) * self._sens
+            orn_delta = math_util.vec(event_dic['orn'])
+
+            if event_dic['camera']:
+                ins.append(('reach', (pos_delta, None)))
+
+                # orn = math_util.vec(event_dic['orn'])  * 3.1415927 / 180
+                ins.append(
+                    ('reach',
+                     (None, math_util.euler2quat(math_util.rad(orn_delta)))))
+            else:
+                self._signal['camera'].append(('pos', pos_delta))
+                self._signal['camera'].append(('orn', math_util.rad(orn_delta)))
 
         self._signal['instruction'] = ins
         return self._signal

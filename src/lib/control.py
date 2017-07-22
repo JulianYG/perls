@@ -1,11 +1,10 @@
-
 import threading
 
 from .state import physicsEngine, robotEngine
 from .adapter import Adapter
 from .render import graphicsEngine, camera
 from .handler.base import NullHandler
-from .handler.eventHandler import ViewEventHandler
+from .handler.eventHandler import InteractiveHandler
 from .handler.controlHandler import (KeyboardEventHandler,
                                      ViveEventHandler,
                                      AppEventHandler)
@@ -62,13 +61,13 @@ class Controller(object):
         in xml format. It contains path to both env description
         and view description.
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        Note: Currently only able to run in multiple physics 
+        Note: Currently only able to run in multiple physics
         servers without GUI, along with async simulation.
         Suggest to start with single server, real time GUI first.
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        The config should specify the same set of 
+        The config should specify the same set of
         parameters for each physics server. Each physics
-        server stands for one simulation running. This 
+        server stands for one simulation running. This
         allows spawning/parallel running of multiple simulation
         for training purposes.
         """
@@ -76,19 +75,18 @@ class Controller(object):
         self._physics_servers = dict()
         self._thread_pool = list()
 
-        # space to store useful states
+        # space to store useful states.
         # Note it needs to use dictionary to store the states of
         # tools because the positions and orientations of the
         # tools cannot be determined before the control loop
         # has started for a few iterations, so that the
         # control handler cannot store the initial states of the
-        # tools. The event handler, however, can store the
-        # initial states of the camera, thus able to store
-        # the camera params within itself.
+        # tools.
         self._states = \
             dict(tool=dict(),
                  log=list(),  # The log of commands or user
                  # operations/modifications on the world
+                 camera=dict(flen=1e-3),  # The camera parameters
                  )
 
         self._init_time_stamp = None
@@ -99,10 +97,10 @@ class Controller(object):
         """
         Get information of current running controller
         :return: a dictionary of dictionaries:
-        {instance_id: 
+        {instance_id:
             {designated job: run/record/replay,
              status: pending/stopped/killed/error/finished,
-             world_name: task property related, 
+             world_name: task property related,
              view_name: exp property related,
              ... etc, all world/disp/physics_engine related info},
              control_type: keyboard/vr/...,
@@ -139,7 +137,7 @@ class Controller(object):
                 'Error loading configuration: invalid id.'
 
             # load configs
-            world, disp, ctrl_hdlr, event_hdlr = self.load_config(conf)
+            world, disp, ctrl_hdlr = self.load_config(conf)
             if num_configs > 1 and (not conf.async):
                 logerr('Currently only support multiple instances '
                        'of non-GUI frame and asynchronous simulation. '
@@ -153,22 +151,21 @@ class Controller(object):
                         'Build type: {}'.format(i, conf.build),
                         FONT.control)
                 world.notify_engine('pending')
-            self._physics_servers[conf.id] = \
-                (world, disp, ctrl_hdlr, event_hdlr)
+            self._physics_servers[conf.id] = (world, disp, ctrl_hdlr)
 
     @staticmethod
     def load_config(conf):
         """
-        Helper method to load configurations. Not recommended with 
-        outside calls unless perform manual check, since it may 
-        conflict with async/frame settings and cause bad behaviors, 
-        such as fall into control loop and cannot enter the loop 
-        of the next server, or challenge the pybullet limitation 
+        Helper method to load configurations. Not recommended with
+        outside calls unless perform manual check, since it may
+        conflict with async/frame settings and cause bad behaviors,
+        such as fall into control loop and cannot enter the loop
+        of the next server, or challenge the pybullet limitation
         of one local in-process GUI connection.
-        Note conf.id must be natural numbers in increasing order 
+        Note conf.id must be natural numbers in increasing order
         starting from 0, as in [0, 1, 2, 3, ...]
         :param conf: configuration to load.
-        Currently only support three types of engines: 
+        Currently only support three types of engines:
         Bullet Physics, Mujoco, and Gazebo.
         :return: loaded tuple (world, display, physics physics_engine)
         """
@@ -195,8 +192,7 @@ class Controller(object):
 
         # Set up control event interruption handlers
         # TODO
-        event_handler = ViewEventHandler(pe.ps_id) \
-            if conf.disp_info[1] == 'gui' else None
+
         ctrl_handler = Controller._CTRL_HANDLERS[conf.control_type](
             pe.ps_id, conf.sensitivity, conf.rate
         )
@@ -226,15 +222,15 @@ class Controller(object):
             # Disable keyboard shortcuts for keyboard control
             display.disable_hotkeys()
 
-        return world, display, ctrl_handler, event_handler
+        return world, display, ctrl_handler
 
     def start_all(self):
         """
         Kick start all instances simulation!
-        Note this can only be called when there are 
+        Note this can only be called when there are
         multiple instances of simulation servers.
-        Each simulation will happen in different 
-        threads. 
+        Each simulation will happen in different
+        threads.
         :return: None
         """
         if len(self._physics_servers) < 2:
@@ -255,8 +251,7 @@ class Controller(object):
         :return: None
         """
         # Get all handlers
-        world, display, ctrl_handler, event_handler = \
-            self._physics_servers[server_id]
+        world, display, ctrl_handler = self._physics_servers[server_id]
 
         # Preparing variables
         time_up, done, success = False, False, False
@@ -291,8 +286,7 @@ class Controller(object):
             self._states['tool'][tid] = init_pose
 
         # Next display states
-        if event_handler:
-            event_handler.update_states(display.get_camera_pose(otype='deg'))
+        self._view_update(display)
 
         # Finally start control loop (Core)
         try:
@@ -300,18 +294,9 @@ class Controller(object):
                 elt = time_util.get_elapsed_time(self._init_time_stamp)
 
                 # Perform control interruption first
-                self._control_interrupt(world, ctrl_handler.signal)
+                self._control_interrupt(world, display, ctrl_handler.signal)
                 # Update model
                 time_up = world.update(elt)
-
-                # Perform display interruption next
-                # Update view with camera info
-                if event_handler:
-                    event_sig = event_handler.signal
-                    # Updating from user input
-                    if event_sig['update']:
-                        event_handler.update_states(display.get_camera_pose(otype='deg'))
-                    self._display_interrupt(display, event_handler.signal)
 
                 # Lastly check task completion, communicate
                 # with the model
@@ -333,12 +318,12 @@ class Controller(object):
         """
         Hang the simulation.
         :param server_id: physics server id (a.k.a. simulation id,
-        configuration id) to stop. It acts as pause, 
-        can use start to resume. 
+        configuration id) to stop. It acts as pause,
+        can use start to resume.
         :return: None
         """
         world, display, ctrl_handler = self._physics_servers[server_id]
-        
+
         ctrl_handler.stop()
         world.clean_up()
         display.close()
@@ -347,8 +332,8 @@ class Controller(object):
 
     def kill(self, server_id=0):
         """
-        Kill the simulation, whatsoever the current status is. The 
-        difference from <stop> is that this method erases 
+        Kill the simulation, whatsoever the current status is. The
+        difference from <stop> is that this method erases
         the given simulation from the program.
         :param server_id: physics server id (a.k.a. simulation id,
         configuration id)) to kill.
@@ -357,16 +342,47 @@ class Controller(object):
         # TODO
         self._thread_pool[server_id] = None
 
-    def _control_interrupt(self, world, signal):
+    def _control_interrupt(self, world, display, signal):
         """
         The control interruption, jumps to control defined
         in xml file, process the control signals and
         jumps back to the loop.
         :param world: the world model, provides tools
+        :param display: the view model, set camera views
         :param signal: the signal received from control handler
         :return: None
         """
-        commands, instructions = signal['cmd'], signal['instruction']
+        commands, instructions, view, update = \
+            signal['cmd'], signal['instruction'], signal['camera'], signal['update']
+
+        # Update view perspective modified by user pressing control key
+        if update:
+            self._view_update(display)
+
+        # Check for view perspective control
+        if view:
+            for move in view:
+                mtype, delta = move
+
+                # Update camera states from control input
+                if mtype == 'pos':
+                    rot_vec = display.get_camera_pose('rad')[1]
+
+                    # The vec should be (r[0], 0, r[1]). Not incorporating
+                    # r[0] to avoid using pitch, providing more intuitive
+                    # view control
+                    align_mat = math_util.euler2mat(math_util.vec((0, 0, rot_vec[1])))
+                    self._states['camera']['focus'] += align_mat.dot(delta)
+                elif mtype == 'orn':
+                    self._states['camera']['pitch'] += delta[0]
+                    self._states['camera']['yaw'] += delta[1]
+                else:
+                    loginfo('Unrecognized view command type. Skipped',
+                            FONT.ignore)
+            # Apply state changes
+            display.set_render_view(self._states['camera'])
+
+        # Perform model / state control related functions
         if commands or instructions:
             tool = world.get_tool(signal['tid'], signal['key'])
 
@@ -386,7 +402,7 @@ class Controller(object):
                 elif method == 'pose':
                     tool.pinpoint(*value)
                 else:
-                    loginfo('Unrecognized command type. Skipped',
+                    loginfo('Unrecognized control command type. Skipped',
                             FONT.ignore)
 
             # Next perform high level instructions
@@ -401,11 +417,11 @@ class Controller(object):
                     loginfo('Resetting...', FONT.model)
                     world.reset()
 
-                    # Update the states again
+                    # Update the states
                     self._states['tool'] = world.get_states(
                         ('tool', 'tool_pose'))[0]
                     loginfo('World is reset.', FONT.model)
-                    
+
                 elif method == 'reach':
                     # Cartesian, quaternion
                     r_pos, a_orn = value
@@ -446,7 +462,7 @@ class Controller(object):
                     # If the tool is out of reach, hold the adapter states
                     # TODO: make the threshold configs
                     if math_util.rms(pos_diff) > 3. or \
-                       math_util.rms(orn_diff) > 10.:
+                                    math_util.rms(orn_diff) > 10.:
                         self._states['tool'] = world.get_states(
                             ('tool', 'tool_pose'))[0]
 
@@ -455,14 +471,14 @@ class Controller(object):
                 elif method == 'pick_and_place':
                     tool.pick_and_place(*value)
 
-        # TODO: GUI frame allow user to interact with the world
-        # # dynamically, and vividly
-        # if self._frame == 'gui':
-        #     info = self._event_handler.signal
-        #     if info:
-        #         self._adapter.update_world(info)
+                    # TODO: GUI frame allow user to interact with the world
+                    # # dynamically, and vividly
+                    # if self._frame == 'gui':
+                    #     info = self._event_handler.signal
+                    #     if info:
+                    #         self._adapter.update_world(info)
 
-    def _display_interrupt(self, display, signal):
+    def _view_update(self, display):
         """
         Display interruption, listens to display events and
         camera events, adjust view, as well as interact with
@@ -472,8 +488,11 @@ class Controller(object):
         event handler
         :return: None
         """
-        # TODO get user inputs
-        display.update(signal, None)
+        camera_pos, camera_orn = display.get_camera_pose(otype='deg')
+        self._states['camera']['focus'] = camera_pos
+        # self._states['camera']['flen'] = 1e-3
+        self._states['camera']['pitch'] = camera_orn[0]
+        self._states['camera']['yaw'] = camera_orn[1]
 
     def _checker_interrupt(self, signal):
         """
