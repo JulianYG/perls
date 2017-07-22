@@ -239,7 +239,7 @@ class BulletRenderEngine(GraphicsEngine):
                              camera_param['view_mat'],
                              camera_param['projection_mat'],
                              [0, 1, 0], [1, 1, 1],
-                             renderer=p.ER_BULLET_HARDWARE_OPENGL)
+                             renderer=p.ER_TINY_RENDERER)
         if itype == 'human':
             rgb_img = np.reshape(rgb_img, (height, width, 4)).astype(np.float32) / 255.
             plot_util.pop(rgb_img, 1.5, dict(interpolation='none'))

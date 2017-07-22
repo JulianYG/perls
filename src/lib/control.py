@@ -429,14 +429,16 @@ class Controller(object):
 
                     # Orientation is always relative to the
                     # world frame, that is, absolute
-                    r = math_util.quat2mat(tool.orn)
+                    r_vec = math_util.deg(math_util.quat2euler(tool.orn))
+                    r = math_util.rad(r_vec)
+
                     pos_diff, orn_diff = \
                         math_util.zero_vec(3), math_util.zero_vec(3)
 
                     if r_pos is not None:
                         # Increment to get absolute pos
                         # Take account of rotation
-                        i_pos += r.dot(r_pos)
+                        i_pos += math_util.euler2mat(r).dot(r_pos)
                         pos_diff, orn_diff = tool.reach(i_pos, None)
 
                     if a_orn is not None:
