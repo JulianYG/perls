@@ -349,7 +349,7 @@ def parse_arm_elem(arm_elem):
                 orn is not None else (0., 0., 0., 1.),
                 type=elem.attrib['type'],
                 name='{}_{}'.format(elem.attrib['name'], tid),
-                null_space=str2bool(elem.attrib.get('null_space', 'False')),
+                collision_checking=str2bool(elem.attrib.get('collision_checking', 'False')),
                 gripper=parse_gripper_elem([gripper_elem])[0]
             )
         )

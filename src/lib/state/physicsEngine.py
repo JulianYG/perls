@@ -310,29 +310,31 @@ class BulletPhysicsEngine(FakeStateEngine):
             if kwargs.get('reset', False):
                 assert(ctype == 'position'), \
                     'Reset joint states currently only supports position control'
+
                 for jid, val in zip(jids, vals):
                     p.resetJointState(
                         uid, jid, targetValue=val, targetVelocity=0.,
                         physicsClientId=self._physics_server_id)
-            else:
-                if ctype == 'position':
-                    p.setJointMotorControlArray(uid, jointIndices=jids,
-                                                controlMode=p.POSITION_CONTROL,
-                                                targetPositions=vals,
-                                                targetVelocities=(0.,) * len(jids),
-                                                physicsClientId=self._physics_server_id,
-                                                **kwargs)
-                elif ctype == 'velocity':
-                    p.setJointMotorControlArray(uid, jointIndices=jids,
-                                                controlMode=p.VELOCITY_CONTROL,
-                                                targetVelocities=vals,
-                                                physicsClientId=self._physics_server_id,
-                                                **kwargs)
-                elif ctype == 'torque':
-                    p.setJointMotorControlArray(uid, jointIndices=jids,
-                                                controlMode=p.TORQUE_CONTROL,
-                                                physicsClientId=self._physics_server_id,
-                                                forces=vals, **kwargs)
+            # Remove 'reset' from kwargs
+            kwargs.pop('reset', None)
+            if ctype == 'position':
+                p.setJointMotorControlArray(uid, jointIndices=jids,
+                                            controlMode=p.POSITION_CONTROL,
+                                            targetPositions=vals,
+                                            targetVelocities=(0.,) * len(jids),
+                                            physicsClientId=self._physics_server_id,
+                                            **kwargs)
+            elif ctype == 'velocity':
+                p.setJointMotorControlArray(uid, jointIndices=jids,
+                                            controlMode=p.VELOCITY_CONTROL,
+                                            targetVelocities=vals,
+                                            physicsClientId=self._physics_server_id,
+                                            **kwargs)
+            elif ctype == 'torque':
+                p.setJointMotorControlArray(uid, jointIndices=jids,
+                                            controlMode=p.TORQUE_CONTROL,
+                                            physicsClientId=self._physics_server_id,
+                                            forces=vals, **kwargs)
         except AssertionError or p.error:
             self.status = BulletPhysicsEngine._STATUS[-1]
             if p.error:

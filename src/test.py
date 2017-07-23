@@ -18,7 +18,7 @@ p.loadURDF('plane.urdf', useFixedBase=True)
 # print(w.pos)
 # print(w.tool_pos_abs)
 
-# r = k.Kuka(null_space=True, pos=[0,0,0],orn=[0,0,0,1])
+# r = k.Kuka(collision_checking=True, pos=[0,0,0],orn=[0,0,0,1])
 # r = s.Sawyer()
 # g = rg.RethinkGripper()
 # r.grasp()

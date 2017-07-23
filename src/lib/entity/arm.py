@@ -6,7 +6,7 @@ from ..utils import math_util
 class Arm(Tool):
 
     def __init__(self, tid, engine, path,
-                 pos, orn, null_space,
+                 pos, orn, collision_checking,
                  gripper):
         """
         Initialization 
@@ -20,7 +20,7 @@ class Arm(Tool):
         self._gripper = gripper
         self._rest_pose = (0., ) * self._dof
         self._end_idx = self._dof - 1
-        self._null_space = null_space
+        self._collision_checking = collision_checking
 
     @property
     def tid(self):
@@ -32,13 +32,13 @@ class Arm(Tool):
         return 'm{}'.format(self._tool_id)
 
     @property
-    def null_space(self):
+    def collision_checking(self):
         """
         Property saying if the robot is using null space to
         solve IK
         :return: Boolean
         """
-        return self._null_space
+        return self._collision_checking
 
     @property
     def pose(self):
@@ -67,14 +67,14 @@ class Arm(Tool):
         """
         return self._gripper.tool_orn
 
-    @null_space.setter
-    def null_space(self, use_ns):
+    @collision_checking.setter
+    def collision_checking(self, use_ns):
         """
         Set robot to use null space IK solver or not
         :param use_ns: True/false
         :return: None
         """
-        self._null_space = use_ns
+        self._collision_checking = use_ns
 
     @tool_pos.setter
     def tool_pos(self, pos):
@@ -87,7 +87,7 @@ class Arm(Tool):
         :return: None
         """
         target_pos = self.position_transform(pos, self.tool_orn)
-        self._move_to(target_pos, None, self._null_space)
+        self._move_to(target_pos, None, self._collision_checking)
 
     @tool_orn.setter
     def tool_orn(self, orn):
@@ -215,9 +215,7 @@ class Arm(Tool):
                  0, 'fixed',
                  [0., 0., 0.], self._tip_offset,
                  [0., 0., 0.],
-                 # This is correct default end effector orientation
-                 [0., .707, 0., .707], [0., .707, 0., .707])
-                 # [0., .0, 0., .1], [0., .0, 0., .1])
+                 [0., 1., 0., 0.], [0., 1., 0., 0.])
             # Next reset gripper
             self._gripper.reset()
 
@@ -226,7 +224,7 @@ class Arm(Tool):
             (self._joints,
              self._rest_pose,
              'position',
-             dict())
+             dict(reset=True))
 
     def reach(self, pos=None, orn=None, ftype='abs'):
         """
