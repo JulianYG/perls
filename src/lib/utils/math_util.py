@@ -80,9 +80,21 @@ def pose2mat(pose):
     """
     homo_pose_mat = np.zeros((4, 4), dtype=np.float32)
     homo_pose_mat[:3, :3] = quat2mat(pose[1])
-    homo_pose_mat[3, :3] = np.array(pose[0], dtype=np.float32)
+    homo_pose_mat[:3, 3] = np.array(pose[0], dtype=np.float32)
     homo_pose_mat[3, 3] = 1.
     return homo_pose_mat
+
+
+def mat2pose(hmat):
+    """
+    Convert a homogeneous 4x4 matrix into pose
+    :param hmat: a 4x4 homogeneous matrix
+    :return: (pos, orn) tuple where pos is 
+    vec3 float in cartesian, orn is vec4 float quaternion
+    """
+    pos = hmat[:3, 3]
+    orn = mat2quat(hmat[:3, :3])
+    return pos, orn
 
 
 def relative_pose(obj_pose, frame):

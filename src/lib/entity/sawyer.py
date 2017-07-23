@@ -17,3 +17,13 @@ class Sawyer(Arm):
         self._tip_offset = math_util.vec([0., 0., 0.155])
         self._rest_pose = (0, -1.18, 0.00, 2.18, 0.00, 0.57, 3.3161)
         self.reset()
+
+    @property
+    def pose(self):
+        """
+        Get the pose of sawyer arm base frame.
+        :return: arm base frame (pos, orn) tuple
+        """
+        # TODO : Change to correct link index # 3, pedestal fixed
+        return self.kinematics['abs_frame_pos'][0], \
+            self.kinematics['abs_frame_orn'][0]

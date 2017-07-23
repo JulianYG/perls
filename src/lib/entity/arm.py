@@ -47,7 +47,7 @@ class Arm(Tool):
         :return: arm base frame (pos, orn) tuple
         """
         return self.kinematics['abs_frame_pos'][0], \
-            self.kinematics['abs_frame_orn'][1]
+            self.kinematics['abs_frame_orn'][0]
 
     @property
     def tool_pos(self):
@@ -226,7 +226,7 @@ class Arm(Tool):
             (self._joints,
              self._rest_pose,
              'position',
-             dict(reset=True))
+             dict())
 
     def reach(self, pos=None, orn=None, ftype='abs'):
         """
