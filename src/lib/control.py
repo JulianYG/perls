@@ -416,7 +416,6 @@ class Controller(object):
                 if method == 'rst' and value:
                     loginfo('Resetting...', FONT.model)
                     world.reset()
-
                     # Update the states
                     self._states['tool'] = world.get_states(
                         ('tool', 'tool_pose'))[0]
