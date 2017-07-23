@@ -10,7 +10,7 @@ sys.path.append(pjoin(path, '../src'))
 from bullet_ import simulation
 from comm import db
 
-__package__ = 'bullet_.simulation'
+__package__ = 'sim_.simulation'
 
 from .tool import PR2
 from .arm import Sawyer, Kuka
@@ -18,7 +18,7 @@ from .interface import IVR, IKeyboard, ICmd
 from .simulator import BulletSimulator
 from .utils import build_util
 
-bullet_path = pjoin(rpath, 'src/bullet_')
+bullet_path = pjoin(rpath, 'src/sim_')
 TASK_DIR = pjoin(bullet_path, 'configs', 'task.json')
 SCENE_DIR = pjoin(bullet_path, 'configs', 'scene.json')
 RECORD_LOG_DIR = pjoin(bullet_path, 'log', 'record', 'trajectory')
@@ -35,7 +35,7 @@ def execute():
 		while 1:
 			_CONFIGS = {}
 			while not _CONFIGS:
-				for event in socket.listen_to_client():
+				for event in socket.listen_to_channel('event_channel'):
 					e = eval(event)
 					# Make sure it's config
 					if isinstance(e, dict) and 'task' in e:

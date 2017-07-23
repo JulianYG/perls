@@ -1,0 +1,6 @@
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+            <mesh filename="{file}" scale="{scale} {scale} {scale}"/>
+      </geometry>
+    </collision>

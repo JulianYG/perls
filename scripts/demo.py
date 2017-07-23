@@ -9,7 +9,7 @@ sys.path.append(pjoin(path, '../src'))
 
 from bullet_ import simulation
 
-__package__ = 'bullet_.simulation'
+__package__ = 'sim_.simulation'
 
 from .utils import io, build_util
 
@@ -62,7 +62,7 @@ def main(argv):
 		elif opt in ('-c', '--config'):
 			config = arg
 
-	wd = pjoin(rpath, 'src/bullet_')
+	wd = pjoin(rpath, 'src/sim_')
 
 	execute(config, wd)
 

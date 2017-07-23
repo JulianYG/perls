@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<disp name="example_gui">
+	<view>
+		<option
+			gui_panel="False" 
+			shadow="False"
+			wire_frame="False"
+			vr_teleporting="False"
+			vr_picking="False"
+            vr_render_controllers="False"
+            rendering="True"
+            keyboard_shortcut="False"
+            mouse_picking="False"/>
+        <camera ego="False" pitch="-35" yaw="50" focus="0 0 0" focal_len="4"/>
+	</view>
+</disp>

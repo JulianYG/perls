@@ -77,7 +77,7 @@ class VRSawyer(object):
 		self.pubsub.subscribe(**{'event_channel': self._event_handler})
 
 		# Start thread
-		# Using sleep_time=0.1 to update VR points on 10Hz
+		# Using sleep_time=0.1 to hold VR points on 10Hz
 		self.client_thread = self.pubsub.run_in_thread(sleep_time=0.1)
 
 		self.prev_time = time.time()
@@ -132,7 +132,7 @@ class VRSawyer(object):
 			self.arm_target_pos = self.arm_initial_pos + rel_pos
 
 			# Use pybullet for now...
-			sim_target_pos = self.sim_initial_pos + rel_pos
+			sim_target_pos = self.sim_initial_pos + rel_pos * 2
 
 			t = time.time() - self.prev_time
 
@@ -172,9 +172,11 @@ class VRSawyer(object):
 
 				t = time.time() - self.prev_time
 				jpos = self.joint_positions
+
 				# Needs scaling
-				jpos[5] = gripper_target_orn[0] / 2.
-				jpos[6] = gripper_target_orn[1]
+				jpos[5] = gripper_target_orn[0] / 2
+				jpos[6] = gripper_target_orn[1] / 2				
+
 				self.controller.put_item((jpos, t))
 
 			self.sim_initial_pos = p.getLinkState(sawyer, 6)[0]

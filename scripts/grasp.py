@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-__package__ = 'ros_'
+__package__ = 'real_'
 
 import time, os
 import sys
