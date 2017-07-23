@@ -39,10 +39,6 @@ vp = projmat.dot(vmat)
 p.loadURDF('cube_small.urdf',(1,0,0), useFixedBase=False)
 print(transform_mat, "Transformation matrix")
 
-xx = (np.linalg.inv(vmat.T.dot(np.array([[-1,0,0,0],[0,0,1,0],[0,1,0,0],[0,0,0,1]], dtype=np.float32))))
-
-
-print (xx)
 # print(p.getDebugVisualizerCamera())
 _AXES2TUPLE = {
     'sxyz': (0, 0, 0, 0), 'sxyx': (0, 0, 1, 0), 'sxzy': (0, 1, 0, 0),
@@ -55,12 +51,8 @@ _AXES2TUPLE = {
     'rzxz': (2, 0, 1, 1), 'rxyz': (2, 1, 0, 1), 'rzyz': (2, 1, 1, 1)}
 
 for x in _AXES2TUPLE.keys():
-    vvv = math_util.mat2euler(xx[:3,:3])
-    # print(vvv * 180 / np.pi, x)
-    xxx = np.array([[-1,0,0],[0,0,1],[0,1,0]], dtype=np.float32).dot(xx[:3,:3])
     print(math_util.mat2euler(transform_mat[:3,:3], axes=x) * 180 / np.pi, x)
-    # print(math_util.mat2quat(xx[:3, :3]))
-    # print(np.array(p.getEulerFromQuaternion(math_util.mat2quat(xx[:3, :3]))) * 180 / np.pi)
+
 while 1:
     p.stepSimulation()
     for e in p.getMouseEvents():

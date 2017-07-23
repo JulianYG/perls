@@ -101,9 +101,11 @@ def relative_pose(obj_pose, frame):
 def transform(poseA, poseB):
     """
     Transform pose into another frame
-    :param poseA:
-    :param poseB:
-    :return:
+    :param poseA: pose (pos, orn) to be transformed
+    :param poseB: pose (pos, orn) of the frame to
+    be transformed into
+    :return: The transformed pose (pos, orn) in
+    given frame
     """
     return p.multiplyTransforms(
         tuple(poseA[0]), tuple(poseA[1]),
@@ -111,23 +113,49 @@ def transform(poseA, poseB):
 
 
 def rand_bigint():
+    """
+    Generate a random big integer
+    :return: int
+    """
     return np.random.randint(low=500, high=10000)
 
 
 def vec(values):
+    """
+    Convert value tuple into a vector
+    :param values: a tuple of numbers
+    :return: vector of given values
+    """
     return np.array(values, dtype=np.float32)
 
 
 def zero_vec(size):
+    """
+    Generate a vector of zeros
+    :param size: desired size of the vector
+    :return: zero vector with given size
+    """
     return np.zeros(size, dtype=np.float32)
 
 
 def clip_vec(vec, low, high):
+    """
+    Clip the vector
+    :param vec: vector to be clipped
+    :param low: minimum value(s) in vector
+    :param high: maximum value(s) in vector
+    :return: clipped vector
+    """
     return np.clip(vec, low, high)
 
 
 def pose_diff(pose1, pose2):
-
+    """
+    Get the RMS difference between poses
+    :param pose1: (pos, orn)
+    :param pose2: (pos, orn)
+    :return: RMS difference in (pos, orn)
+    """
     pos1, orn1 = pose1
     pos2, orn2 = pose2
     pos_xdiff = np.sqrt(np.sum((pos1 - pos2) ** 2))
@@ -136,14 +164,31 @@ def pose_diff(pose1, pose2):
 
 
 def euler_diff(e1, e2):
+    """
+    Get the L1 difference between euler angles
+    :param e1: vec3 float deg/rad
+    :param e2: vec3 float deg/rad
+    :return: difference between given angles
+    """
     return e1 - e2
 
 
 def orn_add(quat1, quat2):
-    return quat2euler(quat1) + quat2euler(quat2)
+    """
+    Add two quaternions
+    :param quat1: vec4 float orientation
+    :param quat2: vec4 float orientation
+    :return: vec4 float orientation sum
+    """
+    return euler2quat(quat2euler(quat1) + quat2euler(quat2))
 
 
 def mat4(array):
+    """
+
+    :param array:
+    :return:
+    """
     return np.array(array, dtype=np.float32).reshape((4, 4))
 
 
