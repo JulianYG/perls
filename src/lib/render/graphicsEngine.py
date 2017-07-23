@@ -111,9 +111,10 @@ class BulletRenderEngine(GraphicsEngine):
             info = p.getDebugVisualizerCamera(self._server_id)
             return dict(
                 frame_width=info[0], frame_height=info[1],
-                view_mat=np.array(info[2], dtype=np.float32).reshape((4, 4)).T,
-                projection_mat=np.array(info[3], dtype=np.float32).reshape((4, 4)).T,
+                view_mat=math_util.mat4(info[2]).T,
+                projection_mat=math_util.mat4(info[3]).T,
                 up=np.where(info[4])[0][0],
+                forward=math_util.vec(info[5]),
                 yaw=info[8], pitch=info[9], focal_len=info[10],
                 focus=math_util.vec(info[11]),
             )
@@ -166,8 +167,9 @@ class BulletRenderEngine(GraphicsEngine):
     #  Helper functions
     def get_camera_pose(self, up=(0.,1.,0.), otype='quat'):
         view_matrix = self.camera['view_mat'].T
-        perm = [2, 0, 1]
-        if up == (0, 1, 0):
+
+        # If up axis is y
+        if up == 1:
             view_matrix = view_matrix.dot(np.array(
                 [[-1, 0, 0, 0],
                  [0, 0, 1, 0],
@@ -175,12 +177,16 @@ class BulletRenderEngine(GraphicsEngine):
                  [0, 0, 0, 1]],
                 dtype=np.float32
             ))
-
         transformation_matrix = math_util.mat_inv(view_matrix)
         pos = transformation_matrix[3, :3]
         orn = math_util.mat2euler(transformation_matrix[:3, :3],
-                                  axes='sxyx')[perm]
-        if otype == 'quat':
+                                  axes='rxyx')
+        # This is some weird bullet convention..
+        orn[0] = - (np.pi + orn[0])
+
+        if otype == 'mat':
+            orn = transformation_matrix[:3, :3]
+        elif otype == 'quat':
             orn = math_util.euler2quat(tuple(orn))
         elif otype == 'deg':
             orn = math_util.deg(orn)
@@ -233,7 +239,7 @@ class BulletRenderEngine(GraphicsEngine):
                              camera_param['view_mat'],
                              camera_param['projection_mat'],
                              [0, 1, 0], [1, 1, 1],
-                             renderer=p.ER_BULLET_HARDWARE_OPENGL)
+                             renderer=p.ER_TINY_RENDERER)
         if itype == 'human':
             rgb_img = np.reshape(rgb_img, (height, width, 4)).astype(np.float32) / 255.
             plot_util.pop(rgb_img, 1.5, dict(interpolation='none'))

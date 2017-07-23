@@ -105,10 +105,10 @@ class ViewDebugger(object):
     def disable_hotkeys(self):
         self._display.disable_hotkeys()
 
-    def update(self, camera, param):
-        self._display.update(camera, param)
+    def set_render_view(self, param):
+        self._display.set_render_view(param)
 
-    def get_camera_pose(self, otype='orn'):
+    def get_camera_pose(self, otype='quat'):
 
         return self._display.get_camera_pose(otype=otype)
 
