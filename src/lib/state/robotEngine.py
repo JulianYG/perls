@@ -235,6 +235,28 @@ class InteraEngine(RealStateEngine):
         """
         pass
 
+    def disable_body_joint_motors(self, uid, jids):
+        """
+        Disable the motors. This is desired for the case
+        of direct torque control, where motors need to be
+        disabled.
+        :param uid: body unique id of the arm
+        :param jids: indices of joints to be disabled
+        :return: None
+        """
+        pass
+
+    def enable_body_joint_motors(self, uid, jids):
+        """
+        Enable the motors. This is desired after using
+        direct torque control, where motors need to be
+        re-activated for other modes of control.
+        :param uid: body unique id of the arm
+        :param jids: indices of joints to be enabled
+        :return: None
+        """
+        pass
+
     def get_body_dynamics(self, uid, lid):
         """
         Get the body dynamics info

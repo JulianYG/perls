@@ -33,7 +33,7 @@ class Controller(object):
         # Simulation
         bullet=physicsEngine.BulletPhysicsEngine,
         mujoco=physicsEngine.MujocoEngine,
-        gazebo=physicsEngine.GazeboEngine,
+        gazebo=physicsEngine.OpenRaveEngine,
 
         # Reality
         intera=robotEngine.InteraEngine,

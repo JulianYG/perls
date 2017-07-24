@@ -1,5 +1,5 @@
 from .arm import Arm
-from .rethinkGripper import RethinkGripper
+from ..state.physicsEngine import OpenRaveEngine
 from ..utils import math_util
 
 
@@ -33,3 +33,21 @@ class Sawyer(Arm):
         """
         return self.kinematics['abs_frame_pos'][3], \
             self.kinematics['abs_frame_orn'][3]
+
+    def _move_to(self, pos, orn, cc=True):
+        # Convert to pose in robot base frame
+        pos, _ = math_util.get_transformed_pose((pos, orn), self.pose)
+
+        # TODO: verify orientation mismatch
+        hmat = math_util.pose2mat((pos, orn))
+        indices = [5, 10, 11, 12, 13, 15, 18]
+        ik_solution = OpenRaveEngine.solve_ik(
+            self._ik_model, pos, orn, self.joint_states[indices])
+
+        specs = self.joint_specs
+
+        self.joint_states = (
+            self._joints, ik_solution, 'position',
+            dict(forces=specs['max_force'],
+                 positionGains=(.03,) * self._dof,
+                 velocityGains=(1.,) * self._dof))

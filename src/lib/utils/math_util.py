@@ -185,6 +185,20 @@ def euler_diff(e1, e2):
     return e1 - e2
 
 
+def pos_diff(pos1, pos2):
+    """
+    Find the absolute squared difference between given positions
+    :param pos1: numbers in some vectorizable form
+    :param pos2: numbers in some vectorizable form
+    :return: deltas between pos1 and pos2, as in
+    sum((pos1 - pos2) ** 2) along axis
+    """
+    pos1 = np.array(pos1, dtype=np.float32)
+    pos2 = np.array(pos2, dtype=np.float32)
+    delta = np.sum((pos1 - pos2) ** 2, axis=1)
+    return delta
+
+
 def orn_add(quat1, quat2):
     """
     Add two quaternions
