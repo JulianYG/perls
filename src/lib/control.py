@@ -367,12 +367,10 @@ class Controller(object):
                 # Update camera states from control input
                 if mtype == 'pos':
                     rot_vec = display.get_camera_pose('rad')[1]
-                    print(rot_vec)
-                    # The vec should be (r[0], 0, r[1]). Not incorporating
-                    # r[0] to avoid using pitch, providing more intuitive
-                    # view control
+                    # Disregard pitch dimension
                     align_mat = math_util.euler2mat(math_util.vec((rot_vec[0], 0, rot_vec[1])))
-                    self._states['camera']['focus'] += align_mat.dot(delta)
+                    translation = align_mat.dot(delta)
+                    self._states['camera']['focus'] += translation
                 elif mtype == 'orn':
                     self._states['camera']['pitch'] += delta[0] * 20
                     self._states['camera']['yaw'] += delta[1] * 20
