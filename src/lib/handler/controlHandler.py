@@ -234,7 +234,7 @@ class AppEventHandler(ControlHandler):
             pos_delta = math_util.vec(event_dic['pos']) * self._sens
             orn_delta = math_util.vec(event_dic['orn'])
 
-            if event_dic['camera']:
+            if not event_dic['camera']:
                 ins.append(('reach', (pos_delta, None)))
 
                 # orn = math_util.vec(event_dic['orn'])  * 3.1415927 / 180

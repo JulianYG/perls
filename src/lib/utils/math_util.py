@@ -322,6 +322,10 @@ def mat2euler(rmat, axes='sxyz'):
     return vec((ax, ay, az))
 
 
+def fmod(val, mod):
+    return math.fmod(val, mod)
+
+
 def deg(euler):
     return np.array(euler) * 180. / np.pi
 

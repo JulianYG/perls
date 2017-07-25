@@ -4,7 +4,7 @@ import numpy as np
 import os.path as osp
 
 import pybullet as p
-import openravepy as orp
+# import openravepy as orp
 
 from .stateEngine import FakeStateEngine
 from ..utils import math_util

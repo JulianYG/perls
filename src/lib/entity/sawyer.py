@@ -42,7 +42,7 @@ class Sawyer(Arm):
         hmat = math_util.pose2mat((pos, orn))
         indices = [5, 10, 11, 12, 13, 15, 18]
         ik_solution = OpenRaveEngine.solve_ik(
-            self._ik_model, pos, orn, self.joint_states[indices])
+            self._arm_model, pos, orn, self.joint_states[indices])
 
         specs = self.joint_specs
 
