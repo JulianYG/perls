@@ -337,7 +337,6 @@ class BulletPhysicsEngine(FakeStateEngine):
             jids = [jids]
         if isinstance(vals, int):
             vals = [vals]
-
         assert (len(jids) == len(vals)), \
             'In <set_body_joint_state>: Number of joints mismatches number of values'
 

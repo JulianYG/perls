@@ -218,6 +218,7 @@ class AppEventHandler(ControlHandler):
     @property
     def signal(self):
         self._signal['cmd'] = list()
+        self._signal['update'] = 0
         ins = list()
         self._signal['camera'] = list()
 
@@ -226,24 +227,23 @@ class AppEventHandler(ControlHandler):
         time.sleep(1. / self._rate)
 
         for event_dic in events:
-
             # TODO: key and id
             ins.append(('rst', event_dic['rst']))
             ins.append(('grasp', event_dic['grasp']))
 
             pos_delta = math_util.vec(event_dic['pos']) * self._sens
             orn_delta = math_util.vec(event_dic['orn'])
-
+            
             if not event_dic['camera']:
                 ins.append(('reach', (pos_delta, None)))
-
-                # orn = math_util.vec(event_dic['orn'])  * 3.1415927 / 180
                 ins.append(
                     ('reach',
                      (None, math_util.euler2quat(math_util.rad(orn_delta)))))
             else:
                 self._signal['camera'].append(('pos', pos_delta))
-                self._signal['camera'].append(('orn', math_util.rad(orn_delta)))
+
+                orn = math_util.rad(orn_delta)
+                self._signal['camera'].append(('orn', math_util.vec((orn[1], -orn[2], 0))))
 
         self._signal['instruction'] = ins
         return self._signal

@@ -36,6 +36,7 @@ class Sawyer(Arm):
 
     def _move_to(self, pos, orn, cc=True):
         # Convert to pose in robot base frame
+        orn = orn or self.tool_orn
         pos, _ = math_util.get_transformed_pose((pos, orn), self.pose)
 
         # TODO: verify orientation mismatch
