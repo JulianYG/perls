@@ -1,8 +1,11 @@
 #!/usr/bin/env/ python
 
-import pybullet as p
 import numpy as np
 import os.path as osp
+
+import pybullet as p
+# import openravepy as orp
+
 from .stateEngine import FakeStateEngine
 from ..utils import math_util
 from ..utils.io_util import FONT, loginfo, logerr
@@ -13,8 +16,41 @@ __license__ = 'private'
 __version__ = '0.1'
 
 
-class GazeboEngine(FakeStateEngine):
-    pass
+class OpenRaveEngine(FakeStateEngine):
+
+
+    def __init__(self, e_id, identifier,
+                 max_run_time,
+                 async=False, step_size=0.001):
+        super(OpenRaveEngine, self).__init__(
+            e_id, max_run_time, async, step_size)
+
+    @staticmethod
+    def solve_ik(ik_model, pos, orn,
+                 joint_pos=None, closest=True):
+        """
+        Generate accurate IK solutions
+        :param ik_model: inverse kinematics model
+        :param pos: position in robot base frame,
+        vec3 float cartesian
+        :param orn: orientation in robot base
+        frame, vec4 float quaternion
+        :param joint_pos: current joint position as list
+        :param closest: boolean indicating whether
+        choose the closest solution in joint space
+        :return: the selected IK solution
+        """
+        dmat = math_util.pose2mat((pos, orn))
+        if not closest:
+            return ik_model.FindIKSolution(
+                dmat, orp.IkFilterOptions.CheckEnvCollisions)
+        else:
+            assert joint_pos is not None, \
+                'Selecting nearest neighbor needs current states'
+            solutions = ik_model.FindIKSolutions(
+                dmat, orp.IkFilterOptions.CheckEnvCollisions)
+            best_idx = math_util.pos_diff(solutions, joint_pos).argmin()
+            return solutions[best_idx]
 
 
 class MujocoEngine(FakeStateEngine):
@@ -301,7 +337,6 @@ class BulletPhysicsEngine(FakeStateEngine):
             jids = [jids]
         if isinstance(vals, int):
             vals = [vals]
-
         assert (len(jids) == len(vals)), \
             'In <set_body_joint_state>: Number of joints mismatches number of values'
 
@@ -310,33 +345,46 @@ class BulletPhysicsEngine(FakeStateEngine):
             if kwargs.get('reset', False):
                 assert(ctype == 'position'), \
                     'Reset joint states currently only supports position control'
+
                 for jid, val in zip(jids, vals):
                     p.resetJointState(
                         uid, jid, targetValue=val, targetVelocity=0.,
                         physicsClientId=self._physics_server_id)
-            else:
-                if ctype == 'position':
-                    p.setJointMotorControlArray(uid, jointIndices=jids,
-                                                controlMode=p.POSITION_CONTROL,
-                                                targetPositions=vals,
-                                                targetVelocities=(0.,) * len(jids),
-                                                physicsClientId=self._physics_server_id,
-                                                **kwargs)
-                elif ctype == 'velocity':
-                    p.setJointMotorControlArray(uid, jointIndices=jids,
-                                                controlMode=p.VELOCITY_CONTROL,
-                                                targetVelocities=vals,
-                                                physicsClientId=self._physics_server_id,
-                                                **kwargs)
-                elif ctype == 'torque':
-                    p.setJointMotorControlArray(uid, jointIndices=jids,
-                                                controlMode=p.TORQUE_CONTROL,
-                                                physicsClientId=self._physics_server_id,
-                                                forces=vals, **kwargs)
+            # Remove 'reset' from kwargs
+            kwargs.pop('reset', None)
+            if ctype == 'position':
+                p.setJointMotorControlArray(uid, jointIndices=jids,
+                                            controlMode=p.POSITION_CONTROL,
+                                            targetPositions=vals,
+                                            targetVelocities=(0.,) * len(jids),
+                                            physicsClientId=self._physics_server_id,
+                                            **kwargs)
+            elif ctype == 'velocity':
+                p.setJointMotorControlArray(uid, jointIndices=jids,
+                                            controlMode=p.VELOCITY_CONTROL,
+                                            targetVelocities=vals,
+                                            physicsClientId=self._physics_server_id,
+                                            **kwargs)
+            elif ctype == 'torque':
+                p.setJointMotorControlArray(uid, jointIndices=jids,
+                                            controlMode=p.TORQUE_CONTROL,
+                                            physicsClientId=self._physics_server_id,
+                                            forces=vals, **kwargs)
         except AssertionError or p.error:
             self.status = BulletPhysicsEngine._STATUS[-1]
             if p.error:
                 self._error_message.append(p.error.message)
+
+    def enable_body_joint_motors(self, uid, jids):
+        # TODO bullet does not have this function currently
+        p.setJointMotorControlArray(uid, jids, controlMode=p.VELOCITY_CONTROL,
+                                    force=len(jids) * [300],
+                                    physicsClientId=self._physics_server_id)
+
+    def disable_body_joint_motors(self, uid, jids):
+        p.setJointMotorControlArray(uid, jids, controlMode=p.VELOCITY_CONTROL,
+                                    force=len(jids) * [0],
+                                    physicsClientId=self._physics_server_id)
 
     def get_body_dynamics(self, uid, lid):
         return p.getDynamicsInfo(uid, lid, physicsClientId=self._physics_server_id)

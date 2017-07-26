@@ -1,6 +1,5 @@
-import csv
 import struct
-import pprint
+import collections
 import numpy as np
 import os, sys
 from xml.etree import ElementTree
@@ -37,148 +36,20 @@ class FONT:
     bold = '\033[1m'
     underline = '\033[4m'
 
+_env_tree = collections.namedtuple(
+    'EnvTree',
+    ['env', 'arm', 'gripper', 'hand',
+     'scene_title', 'scene']
+)
 
-class _EnvTree:
-    # TODO: is there any way to generate attr by string
-    def __init__(self, env, tool, scene):
-        self._env = env
-        self._arm, self._gripper = tool
-        self._scene_title, self._scene = scene
-
-        #TODO
-        self._hand = None
-
-    @property
-    def env(self):
-        return self._env
-
-    @property
-    def arm(self):
-        return self._arm
-
-    @property
-    def gripper(self):
-        return self._gripper
-
-    @property
-    def hand(self):
-        return self._hand
-
-    @property
-    def scene_title(self):
-        return self._scene_title
-
-    @property
-    def scene(self):
-        return self._scene
-
-
-class _ConfigTree:
-
-    def __init__(self, c_id, build,
-                 model_desc, view_desc,
-                 name, physics_engine,
-                 graphics_engine,
-                 version, job, video, async,
-                 step, max_time, log,
-                 record_name,
-                 control_type, sensitivity,
-                 rate, display_info):
-        self._conf_id = c_id
-        self._model_desc = model_desc
-        self._view_desc = view_desc
-        self._max_run_time = max_time
-        self._version = version
-        self._job = job
-        self._async = async
-        self._video = video
-        self._name = name
-        self._physics_engine = physics_engine
-        self._graphics_engine = graphics_engine
-        self._step_size = step
-        self._build = build
-        self._log_path = log
-        self._fname = record_name
-        self._control = control_type
-        self._sens = sensitivity
-        self._rate = rate
-        self._disp_info = display_info
-
-    @property
-    def build(self):
-        return self._build
-
-    @property
-    def id(self):
-        return self._conf_id
-
-    @property
-    def max_run_time(self):
-        return self._max_run_time
-
-    @property
-    def version(self):
-        return self._version
-
-    @property
-    def job(self):
-        return self._job
-
-    @property
-    def video(self):
-        return self._video
-
-    @property
-    def async(self):
-        return self._async
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def physics_engine(self):
-        return self._physics_engine
-
-    @property
-    def graphics_engine(self):
-        return self._graphics_engine
-
-    @property
-    def step_size(self):
-        return self._step_size
-
-    @property
-    def model_desc(self):
-        return self._model_desc
-
-    @property
-    def view_desc(self):
-        return self._view_desc
-
-    @property
-    def control_type(self):
-        return self._control
-
-    @property
-    def sensitivity(self):
-        return self._sens
-
-    @property
-    def rate(self):
-        return self._rate
-
-    @property
-    def record_name(self):
-        return self._fname
-
-    @property
-    def log(self):
-        return self._log_path
-
-    @property
-    def disp_info(self):
-        return self._disp_info
+_config_tree = collections.namedtuple(
+    'ConfigTree',
+    ['id', 'build', 'model_desc', 'view_desc',
+     'config_name', 'physics_engine', 'graphics_engine',
+     'min_version', 'job', 'video',
+     'async', 'step_size', 'max_run_time', 'log',
+     'record_name', 'control_type', 'sensitivity',
+     'rate', 'disp_info'])
 
 
 def str2bool(string):
@@ -278,7 +149,7 @@ def parse_env(file_path):
     else:
         scene = list()
 
-    tree = _EnvTree(env, (arm, gripper), (scene_title, scene))
+    tree = _env_tree(env, arm, gripper, None, scene_title, scene)
     return tree
 
 
@@ -349,7 +220,7 @@ def parse_arm_elem(arm_elem):
                 orn is not None else (0., 0., 0., 1.),
                 type=elem.attrib['type'],
                 name='{}_{}'.format(elem.attrib['name'], tid),
-                null_space=str2bool(elem.attrib.get('null_space', 'False')),
+                collision_checking=str2bool(elem.attrib.get('collision_checking', 'False')),
                 gripper=parse_gripper_elem([gripper_elem])[0]
             )
         )
@@ -462,14 +333,13 @@ def parse_config(file_path):
         rate = int(control_attrib.get('rate', 100))
 
         # Append one configuration
-        trees.append(_ConfigTree(
-            conf_id, build, model_desc, view_desc,
-            config_name, physics_engine, graphics_engine,
-            min_version, job, video,
-            async, step_size, max_run_time, log_path, record_name,
-            control_type, sensitivity, rate,
-            disp_info)
+        trees.append(
+            _config_tree(
+                conf_id, build, model_desc, view_desc,
+                config_name, physics_engine, graphics_engine,
+                min_version, job, video,
+                async, step_size, max_run_time, log_path, record_name,
+                control_type, sensitivity, rate,
+                disp_info)
         )
-
     return trees
-

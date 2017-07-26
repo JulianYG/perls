@@ -5,6 +5,7 @@ import os.path as osp
 import pybullet as p
 
 import numpy as np
+import math
 
 from ..utils import math_util, time_util, plot_util
 from ..utils.io_util import FONT, loginfo, parse_log
@@ -181,8 +182,15 @@ class BulletRenderEngine(GraphicsEngine):
         pos = transformation_matrix[3, :3]
         orn = math_util.mat2euler(transformation_matrix[:3, :3],
                                   axes='rxyx')
+
         # This is some weird bullet convention..
-        orn[0] = - (np.pi + orn[0])
+        # To match the degrees converted from transformation matrix into
+        # pitch/yaw angles from bullet debug visualizer
+        if math.sin(orn[2]) > 0:
+            orn[0] = - (np.pi + orn[0])
+        else:
+            orn[0] = - orn[0]
+            orn[1] = np.pi * 2 - orn[1]
 
         if otype == 'mat':
             orn = transformation_matrix[:3, :3]

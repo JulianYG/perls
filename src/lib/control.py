@@ -33,7 +33,7 @@ class Controller(object):
         # Simulation
         bullet=physicsEngine.BulletPhysicsEngine,
         mujoco=physicsEngine.MujocoEngine,
-        gazebo=physicsEngine.GazeboEngine,
+        gazebo=physicsEngine.OpenRaveEngine,
 
         # Reality
         intera=robotEngine.InteraEngine,
@@ -367,15 +367,13 @@ class Controller(object):
                 # Update camera states from control input
                 if mtype == 'pos':
                     rot_vec = display.get_camera_pose('rad')[1]
-
-                    # The vec should be (r[0], 0, r[1]). Not incorporating
-                    # r[0] to avoid using pitch, providing more intuitive
-                    # view control
-                    align_mat = math_util.euler2mat(math_util.vec((0, 0, rot_vec[1])))
-                    self._states['camera']['focus'] += align_mat.dot(delta)
+                    # Disregard pitch dimension
+                    align_mat = math_util.euler2mat(math_util.vec((rot_vec[0], 0, rot_vec[1])))
+                    translation = align_mat.dot(delta)
+                    self._states['camera']['focus'] += translation
                 elif mtype == 'orn':
-                    self._states['camera']['pitch'] += delta[0]
-                    self._states['camera']['yaw'] += delta[1]
+                    self._states['camera']['pitch'] += delta[0] * 20
+                    self._states['camera']['yaw'] += delta[1] * 20
                 else:
                     loginfo('Unrecognized view command type. Skipped',
                             FONT.ignore)
@@ -416,7 +414,6 @@ class Controller(object):
                 if method == 'rst' and value:
                     loginfo('Resetting...', FONT.model)
                     world.reset()
-
                     # Update the states
                     self._states['tool'] = world.get_states(
                         ('tool', 'tool_pose'))[0]

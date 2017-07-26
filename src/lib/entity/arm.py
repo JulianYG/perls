@@ -1,12 +1,13 @@
+import abc
 
-from .body import Body, Tool
+from .body import Tool
 from ..utils import math_util
 
 
 class Arm(Tool):
 
     def __init__(self, tid, engine, path,
-                 pos, orn, null_space,
+                 pos, orn, collision_checking,
                  gripper):
         """
         Initialization 
@@ -20,7 +21,7 @@ class Arm(Tool):
         self._gripper = gripper
         self._rest_pose = (0., ) * self._dof
         self._end_idx = self._dof - 1
-        self._null_space = null_space
+        self._collision_checking = collision_checking
 
     @property
     def tid(self):
@@ -32,13 +33,13 @@ class Arm(Tool):
         return 'm{}'.format(self._tool_id)
 
     @property
-    def null_space(self):
+    def collision_checking(self):
         """
         Property saying if the robot is using null space to
         solve IK
         :return: Boolean
         """
-        return self._null_space
+        return self._collision_checking
 
     @property
     def pose(self):
@@ -47,7 +48,7 @@ class Arm(Tool):
         :return: arm base frame (pos, orn) tuple
         """
         return self.kinematics['abs_frame_pos'][0], \
-            self.kinematics['abs_frame_orn'][1]
+            self.kinematics['abs_frame_orn'][0]
 
     @property
     def tool_pos(self):
@@ -67,14 +68,14 @@ class Arm(Tool):
         """
         return self._gripper.tool_orn
 
-    @null_space.setter
-    def null_space(self, use_ns):
+    @collision_checking.setter
+    def collision_checking(self, collision_checking):
         """
         Set robot to use null space IK solver or not
-        :param use_ns: True/false
+        :param collision_checking: True/false
         :return: None
         """
-        self._null_space = use_ns
+        self._collision_checking = collision_checking
 
     @tool_pos.setter
     def tool_pos(self, pos):
@@ -87,7 +88,7 @@ class Arm(Tool):
         :return: None
         """
         target_pos = self.position_transform(pos, self.tool_orn)
-        self._move_to(target_pos, None, self._null_space)
+        self._move_to(target_pos, None, self._collision_checking)
 
     @tool_orn.setter
     def tool_orn(self, orn):
@@ -161,6 +162,7 @@ class Arm(Tool):
         target_pos = gripper_base_pos - rotation.dot(gripper_arm_tran)
         return target_pos
 
+    @abc.abstractmethod
     def _move_to(self, pos, orn, ns=False):
         """
         Given pose, call IK to move
@@ -170,35 +172,7 @@ class Arm(Tool):
         null space solutions. Default is False.
         :return: None
         """
-        specs = self.joint_specs
-        
-        # Clip the damping factors to make sure non-zero
-        damps = math_util.clip_vec(specs['damping'], .1, 1.)
-        if ns:
-            lower_limits = math_util.vec(specs['lower'])
-            upper_limits = math_util.vec(specs['upper'])
-            ranges = upper_limits - lower_limits
-
-            # Solve using null space
-            ik_solution = self._engine.solve_ik_null_space(
-                self._uid, self._end_idx,
-                pos, orn=orn,
-                lower=lower_limits,
-                upper=upper_limits,
-                ranges=ranges,
-                rest=self._rest_pose,
-                damping=damps)
-        else:
-            ik_solution = self._engine.solve_ik(
-                self._uid, self._end_idx,
-                pos, orn=orn,
-                damping=damps)
-
-        self.joint_states = (
-            self._joints, ik_solution, 'position',
-            dict(forces=specs['max_force'],
-                 positionGains=(.03,) * self._dof,
-                 velocityGains=(1.,) * self._dof))
+        raise NotImplemented
 
     ###
     #  High level functionality
@@ -215,9 +189,7 @@ class Arm(Tool):
                  0, 'fixed',
                  [0., 0., 0.], self._tip_offset,
                  [0., 0., 0.],
-                 # This is correct default end effector orientation
-                 [0., .707, 0., .707], [0., .707, 0., .707])
-                 # [0., .0, 0., .1], [0., .0, 0., .1])
+                 [0., 1., 0., 0.], [0., 1., 0., 0.])
             # Next reset gripper
             self._gripper.reset()
 

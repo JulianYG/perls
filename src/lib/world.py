@@ -205,7 +205,7 @@ class World(object):
                 self._engine,
                 path=arm_spec['path'],
                 pos=arm_spec['pos'], orn=arm_spec['orn'],
-                null_space=arm_spec['null_space'],
+                collision_checking=arm_spec['collision_checking'],
                 gripper=gripper_body)
 
             arm_body.name = arm_spec['name']
