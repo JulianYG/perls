@@ -369,14 +369,14 @@ class Controller(object):
         """
 
         # Only keep consistency for GUI usage
-        elapsed_time = 1 if display.info['frame'] != 'gui' else elapsed_time
-
+        elapsed_time = 1 if display.info['frame'] != 'gui' else elapsed_time * 100
         commands, instructions, view, update = \
             signal['cmd'], signal['instruction'], signal['camera'], signal['update']
 
         # Update view perspective modified by user pressing control key
         if update:
             self._view_update(display)
+            return
 
         # Check for view perspective control
         if view:
@@ -386,7 +386,6 @@ class Controller(object):
                 # Update camera states from control input
                 if mtype == 'pos':
                     rot_vec = display.get_camera_pose('rad')[1]
-                    # Disregard pitch dimension
                     align_mat = math_util.euler2mat(math_util.vec((rot_vec[0], 0, rot_vec[1])))
                     translation = align_mat.dot(delta)
                     self._states['camera']['focus'] += translation * elapsed_time

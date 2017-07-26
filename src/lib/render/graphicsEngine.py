@@ -107,6 +107,10 @@ class BulletRenderEngine(GraphicsEngine):
         return info_dic
 
     @property
+    def frame(self):
+        return self._frame
+
+    @property
     def camera(self):
         if self._FRAME_TYPES[self._frame] == 1:
             info = p.getDebugVisualizerCamera(self._server_id)
