@@ -103,6 +103,7 @@ class Arm(Tool):
         :return: None
         """
         orn = math_util.quat2euler(orn)
+
         # Check if needs clip
         y, x, _ = math_util.joint_clip(
             math_util.vec((orn[1], orn[0], orn[2])), self.joint_specs)

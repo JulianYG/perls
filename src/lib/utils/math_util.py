@@ -323,7 +323,7 @@ def mat2euler(rmat, axes='sxyz'):
 
 
 def fmod(val, mod):
-    return math.fmod(val, mod)
+    return np.fmod(val, mod)
 
 
 def deg(euler):

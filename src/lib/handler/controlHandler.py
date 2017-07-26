@@ -73,10 +73,6 @@ class KeyboardEventHandler(ControlHandler):
     def __init__(self, ps_id, sensitivity=1, rate=100):
         super(KeyboardEventHandler, self).__init__(ps_id, sensitivity, rate)
 
-        # Keep a private orientation vec to simulate
-        # effect of absolute orientation
-        self._sig_orn = math_util.zero_vec(3)
-
     @property
     def name(self):
         return 'KeyboardControl'
@@ -106,7 +102,8 @@ class KeyboardEventHandler(ControlHandler):
         if 'cam' in keys and keys['cam'][1] == 'holding':
             if 'pos' in keys and keys['pos'][1] == 'holding':
 
-                raw_delta = event_listener.HOT_KEY[keys['pos'][0]] * 30
+            	# View control is 100 times more sensitive than robot control
+                raw_delta = event_listener.HOT_KEY[keys['pos'][0]] * self._sens
                 delta = math_util.vec((raw_delta[1], -raw_delta[0], raw_delta[2]))
                 self._signal['camera'].append(('pos', delta))
 
@@ -114,7 +111,7 @@ class KeyboardEventHandler(ControlHandler):
 
                 # Some conversion for intuitive keyboard pan/tilt
                 raw_delta = event_listener.HOT_KEY[keys['orn'][0]]
-                delta = math_util.vec((raw_delta[1], -raw_delta[0])) * 20
+                delta = math_util.vec((raw_delta[1], -raw_delta[0])) * self._sens * 20
 
                 self._signal['camera'].append(('orn', delta))
         else:
@@ -136,9 +133,10 @@ class KeyboardEventHandler(ControlHandler):
                 if label == 'pos' and status == 'holding':
                     ins.append(('reach', (event_listener.HOT_KEY[key] * self._sens, None)))
                 if label == 'orn' and status == 'holding':
-                    self._sig_orn += event_listener.HOT_KEY[key] * self._sens
-                    # Don't touch position, only orientation (quat)
-                    ins.append(('reach', (None, math_util.euler2quat(self._sig_orn))))
+                    orn = event_listener.HOT_KEY[key] * self._sens
+
+                    # Don't touch position, only orientation (rad)
+                    ins.append(('reach', (None, orn)))
 
         self._signal['update'] = 1 if 'tbd' in keys and keys['tbd'][1] == 'holding' else 0
         self._signal['instruction'] = ins
@@ -157,11 +155,6 @@ class ViveEventHandler(ControlHandler):
         super(ViveEventHandler, self).__init__(ps_id, sensitivity, rate)
 
         # Initialize positions
-        # Keep a private position vec to simulate
-        # effect of relative position. This is the
-        # opposite of KeyboardEventHandler
-        self._sig_orn = math_util.zero_vec(3)
-
         self._controllers = dict()
 
         c_id = event_listener.listen_to_bullet_vive(self._id)
@@ -232,18 +225,15 @@ class AppEventHandler(ControlHandler):
             ins.append(('grasp', event_dic['grasp']))
 
             pos_delta = math_util.vec(event_dic['pos']) * self._sens
-            orn_delta = math_util.vec(event_dic['orn'])
+            orn_delta = math_util.vec(event_dic['orn']) * self._sens
             
             if not event_dic['camera']:
                 ins.append(('reach', (pos_delta, None)))
-                ins.append(
-                    ('reach',
-                     (None, math_util.euler2quat(math_util.rad(orn_delta)))))
+                ins.append(('reach', (None, orn_delta)))
             else:
-                self._signal['camera'].append(('pos', pos_delta))
-
-                orn = math_util.rad(orn_delta)
-                self._signal['camera'].append(('orn', math_util.vec((orn[1], -orn[2], 0))))
+                self._signal['camera'].append(('pos', pos_delta * self._sens))
+                orn = math_util.vec((orn_delta[1], -orn_delta[2], 0)) * self._sens * 20
+                self._signal['camera'].append(('orn', orn))
 
         self._signal['instruction'] = ins
         return self._signal
