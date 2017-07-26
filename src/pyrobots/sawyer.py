@@ -8,11 +8,10 @@
 
 class SawyerArm(object):
 
-    def __init__(self, use_gripper=True):
+    def __init__(self):
 
-        self._use_gripper = use_gripper
         self._head = iif.Cuff()
-
+        self._display = iif.HeadDisplay()
         self._lights = iif.Lights()
 
         self._limb = iif.Limb()
@@ -22,8 +21,11 @@ class SawyerArm(object):
 
         self._navigator = iif.Navigator()
 
-        if self._use_gripper:
+        try:
             self._gripper = iif.Gripper()
+            self._has_gripper = True
+        except:
+            self._has_gripper = False
 
         self._robot_enable = iif.RobotEnable(True)
 
@@ -39,10 +41,18 @@ class SawyerArm(object):
     def name(self):
         return self._params.get_robot_name()
 
+    @property
+    def tool_pose(self):
+
+        return tuple(self._limb.endpoint_pose().values())
+
 
 
     @property
     def info(self):
+
+        assembly_names = self._params.get_robot_assemblies()
+        camera_info = self._params.get_camera_details()
 
         return self._info
 
@@ -103,7 +113,7 @@ class SawyerArm(object):
         maximum velocity joint can sustain,
         name string of associated link.
         """
-        pass
+        joint_names = self._params.get_joint_names('right')
 
     def get_joint_states(self, jid):
         """
@@ -155,6 +165,10 @@ class SawyerArm(object):
         return {name: self._lights.get_light_state(name)
                 for name in self._lights.list_all_lights()}
 
+    def show_image(self, image_path, rate=1.0):
+
+        self._display.display_image(image_path, display_rate=rate)
+
     def light_switch(self, name, on=True):
         """
         Set the status of given light
@@ -170,7 +184,7 @@ class SawyerArm(object):
         Returns the force sensed by the gripper in estimated Newtons.
         :return: float current force value in N-m
         """
-        if self._use_gripper:
+        if self._has_gripper:
             return self._gripper.get_force()
 
     @gripper_force.setter
@@ -180,7 +194,7 @@ class SawyerArm(object):
         :param force:
         :return:
         """
-        if self._use_gripper:
+        if self._has_gripper:
             if not self._gripper.set_holding_force(force):
                 self._params.log_message('Unable to set holding force'
                                          'for the gripper.', 'WARN')
@@ -199,7 +213,7 @@ class SawyerArm(object):
         :param slide:
         :return: None
         """
-        if self._use_gripper:
+        if self._has_gripper:
             if slide > -1:
                 # Use slide grasp in this case
                 scaled_pos = slide * self._gripper.MAX_POSITION
@@ -218,7 +232,7 @@ class SawyerArm(object):
         Call <start> to resume.
         :return: None
         """
-        if self._use_gripper:
+        if self._has_gripper:
             self._gripper.stop()
         self._robot_enable.disable()
 
@@ -228,7 +242,7 @@ class SawyerArm(object):
         :return: None
         """
         self._robot_enable.enable()
-        if self._use_gripper:
+        if self._has_gripper:
             self._gripper.start()
             if not self._gripper.is_calibrated():
                 self._gripper.calibrate()
@@ -239,7 +253,7 @@ class SawyerArm(object):
         :return: None
         """
         self._robot_enable.reset()
-        if self._use_gripper:
+        if self._has_gripper:
             self._gripper.reboot()
             self._gripper.calibrate()
         self._limb.move_to_neutral()
@@ -251,7 +265,7 @@ class SawyerArm(object):
         :return: None
         """
         self._robot_enable.stop()
-        if self._use_gripper:
+        if self._has_gripper:
             self._gripper.stop()
 
 
