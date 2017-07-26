@@ -182,7 +182,7 @@ class BulletRenderEngine(GraphicsEngine):
         pos = transformation_matrix[3, :3]
         orn = math_util.mat2euler(transformation_matrix[:3, :3],
                                   axes='rxyx')
-        
+
         # This is some weird bullet convention..
         # To match the degrees converted from transformation matrix into
         # pitch/yaw angles from bullet debug visualizer
