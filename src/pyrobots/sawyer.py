@@ -305,6 +305,7 @@ class SawyerArm(object):
             self._gripper.reboot()
             self._gripper.calibrate()
         self._limb.move_to_neutral()
+        self._gripper.start()
 
     def stop(self):
         """
