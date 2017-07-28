@@ -13,7 +13,7 @@ class SawyerArm(object):
         if rospy.get_name() == '/unnamed':
             rospy.init_node('robot')
 
-        self._head = iif.Cuff()
+        self._head = iif.Head()
         self._display = iif.HeadDisplay()
         self._lights = iif.Lights()
 
@@ -57,8 +57,8 @@ class SawyerArm(object):
     @property
     def wrench(self):
         eef_effort = self._limb.endpoint_effort()
-        force = list(eef_effort[0])
-        torque = list(eef_effort[1])
+        force = list(eef_effort['force'])
+        torque = list(eef_effort['torque'])
         return tuple(force + torque)
 
     @property
@@ -198,9 +198,14 @@ class SawyerArm(object):
         elif ctype == 'torque':
             self._limb.set_joint_torques(command)
         else:
-            self._params.log_message('Cannot recognize control type', 'WARN')
+            self._params.log_message('Cannot recognize control type', 'WARN')    
 
-    def get_light_info(self):
+    def show_image(self, image_path, rate=1.0):
+
+        self._display.display_image(image_path, display_rate=rate)
+
+    @property
+    def light(self):
         """
         Get the info (names) of all available lights
         :return: A dictionary where keys are light name strings,
@@ -209,18 +214,15 @@ class SawyerArm(object):
         return {name: self._lights.get_light_state(name)
                 for name in self._lights.list_all_lights()}
 
-    def show_image(self, image_path, rate=1.0):
-
-        self._display.display_image(image_path, display_rate=rate)
-
-    def light_switch(self, name, on=True):
+    @light.setter
+    def light(self, (name, on)):
         """
         Set the status of given light
         :param name: string name of the light
         :param on: boolean True for on, False for off
         :return: True if light state is set, False if not
         """
-        return self._lights.set_light_state(name, on)
+        self._lights.set_light_state(name, on)
 
     @property
     def gripper_force(self):
@@ -231,6 +233,7 @@ class SawyerArm(object):
         if self._has_gripper:
             return self._gripper.get_force()
 
+    # TODO: Cannot find signal 'holding_force_n' in this IO Device.
     @gripper_force.setter
     def gripper_force(self, force):
         """
@@ -296,7 +299,8 @@ class SawyerArm(object):
         Reset the robot and move to rest pose
         :return: None
         """
-        self._robot_enable.reset()
+        if self._robot_enable.state().error:
+            self._robot_enable.reset()
         if self._has_gripper:
             self._gripper.reboot()
             self._gripper.calibrate()
