@@ -68,6 +68,22 @@ class Arm(Tool):
         """
         return self._gripper.tool_orn
 
+    @Tool.v.getter
+    def v(self):
+        """
+        For robot arms, get the end effector linear velocity
+        :return: vec3 float cartesian
+        """
+        return self._gripper.v
+
+    @Tool.omega.getter
+    def omega(self):
+        """
+        Get the end effector angular velocity
+        :return: vec3 radian
+        """
+        return self._gripper.omega
+
     @collision_checking.setter
     def collision_checking(self, collision_checking):
         """

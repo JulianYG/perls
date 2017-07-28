@@ -19,7 +19,7 @@ class SawyerArm(object):
                         'right_j3', 'right_j4', 'right_j5',
                         'right_j6']
 
-        self._navigator = iif.Navigator()
+        # self._navigator = iif.Navigator()
 
         try:
             self._gripper = iif.Gripper()
@@ -43,10 +43,44 @@ class SawyerArm(object):
 
     @property
     def tool_pose(self):
-
         return tuple(self._limb.endpoint_pose().values())
 
+    @property
+    def v(self):
+        return self._limb.endpoint_velocity()['linear']
 
+    @property
+    def omega(self):
+        return self._limb.endpoint_velocity()['angular']
+
+    @property
+    def wrench(self):
+        eef_effort = self._limb.endpoint_effort()
+        force = list(eef_effort[0])
+        torque = list(eef_effort[1])
+        return tuple(force + torque)
+
+    @property
+    def joint_states(self):
+        """
+        Get the current state of robot joints
+        :return: a list of dictionaries:
+        string joint name,
+        joint position float (radian),
+        joint velocity float (rad/s),
+        wrench on joint (vec6 float, force3 + torque3),
+        applied motor torque on joint float,
+        in order from base to end effector.
+        """
+        names = self._limb.joint_names()
+        positions = self._limb.joint_angles()
+        velocities = self._limb.joint_velocities()
+        efforts = self._limb.joint_efforts()
+
+        return [dict(name=n,
+                     position=positions[n],
+                     velocity=velocities[n],
+                     effort=efforts[n]) for n in names]
 
     @property
     def info(self):
@@ -63,6 +97,26 @@ class SawyerArm(object):
         :return: None
         """
         pass
+
+    @property
+    def head_pan(self):
+        """
+        Get current pan angle of the head
+        :return: float radian
+        """
+        return self._head.pan()
+
+    @head_pan.setter
+    def head_pan(self, (angle, speed, rel)):
+        """
+        Pan at given speed to desired angle
+        :param angle: float radian
+        :param speed: float speed, 0 - 1
+        :param rel: if True, pan wrt base frame
+        :return: None
+        """
+        self._head.set_pan(angle, speed=speed,
+                           active_cancellation=rel)
 
     def get_link_name(self, uid, lid):
         """
@@ -114,21 +168,10 @@ class SawyerArm(object):
         name string of associated link.
         """
         joint_names = self._params.get_joint_names('right')
+        return joint_names
 
-    def get_joint_states(self, jid):
-        """
-        Get the current state of body joint
-        :param uid: unique integer body id
-        :param jid: integer joint id on body
-        :return: a tuple of
-        joint position float (radian),
-        joint velocity float (rad/s),
-        wrench on joint (vec6 float, force3 + torque3),
-        applied motor torque on joint float.
-        """
-        pass
-
-    def set_joint_states(self, jids, vals, ctype, kwargs):
+    @joint_states.setter
+    def joint_states(self, (jids, vals, ctype, kwargs)):
         """
         Set the body joint state
         :param uid: integer body unique id
@@ -268,9 +311,5 @@ class SawyerArm(object):
         if self._has_gripper:
             self._gripper.stop()
 
-
-
-
-
-
-
+    def shutdown(self):
+        rospy.signal_shutdown('Safely shut down Sawyer.')
