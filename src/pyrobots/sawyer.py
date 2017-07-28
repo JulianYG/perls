@@ -1,23 +1,24 @@
 #!/usr/bin/env python
 
 
-# import rospy
+import rospy
 # import rosparam
-# import intera_interface as iif
+import intera_interface as iif
 
 
 class SawyerArm(object):
 
     def __init__(self):
 
+        if rospy.get_name() == '/unnamed':
+            rospy.init_node('robot')
+
         self._head = iif.Cuff()
         self._display = iif.HeadDisplay()
         self._lights = iif.Lights()
 
         self._limb = iif.Limb()
-        self._joints = ['right_j0', 'right_j1', 'right_j2',
-                        'right_j3', 'right_j4', 'right_j5',
-                        'right_j6']
+        self._joints = self._limb.joint_names()
 
         # self._navigator = iif.Navigator()
 
@@ -88,7 +89,7 @@ class SawyerArm(object):
         assembly_names = self._params.get_robot_assemblies()
         camera_info = self._params.get_camera_details()
 
-        return self._info
+        return assembly_names, camera_info
 
     def configure(self, configs):
         """
