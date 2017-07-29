@@ -369,7 +369,7 @@ class Controller(object):
         """
 
         # Only keep consistency for GUI usage
-        elapsed_time = 1 if display.info['frame'] != 'gui' else elapsed_time * 100
+        elapsed_time = 1 if display.info['frame'] != 'gui' else elapsed_time * 50
         commands, instructions, view, update = \
             signal['cmd'], signal['instruction'], signal['camera'], signal['update']
 
@@ -441,13 +441,13 @@ class Controller(object):
                     # Cartesian, quaternion
                     r_pos, r_orn = value
                     i_pos, i_orn = self._states['tool'][tool.tid]
-
+                    
                     # Orientation is always relative to the
                     # world frame, that is, absolute
                     r_vec = math_util.quat2euler(tool.orn)
                     pos_diff, orn_diff = \
                         math_util.zero_vec(3), math_util.zero_vec(3)
-
+                    
                     if r_pos is not None:
                         # Increment to get absolute pos
                         # Take account of rotation

@@ -6,7 +6,7 @@ from ..utils import math_util
 
 class Arm(Tool):
 
-    def __init__(self, tid, engine, path,
+    def __init__(self, tid, engine, path, ik_path,
                  pos, orn, collision_checking,
                  gripper):
         """
@@ -18,6 +18,7 @@ class Arm(Tool):
         super(Arm, self).__init__(tid, engine, path, pos, orn, fixed=True)
 
         # Reset pose is defined in subclasses
+        self._ik_model = self._build_ik(path, ik_path)
         self._gripper = gripper
         self._rest_pose = (0., ) * self._dof
         self._end_idx = self._dof - 1
@@ -132,6 +133,14 @@ class Arm(Tool):
             dict(positionGains=(.05,) * 2,
                  velocityGains=(1.,) * 2))
 
+    @abc.abstractmethod
+    def _build_ik(self, path, ik_path):
+        """
+        Build the ik model for the arm.
+        :return: The built IK model in openrave.
+        """
+        raise NotImplemented
+
     def get_pose(self, uid=None, lid=None):
         """
         Get the current base pose of the tool. This is
@@ -235,6 +244,7 @@ class Arm(Tool):
         :return: delta between target and actual pose
         """
         fpos, forn = super(Arm, self).reach(pos, orn, ftype)
+
         orn_delta = math_util.zero_vec(3)
         pos_delta = math_util.zero_vec(3)
 

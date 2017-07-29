@@ -75,22 +75,18 @@ print(p.getNumJoints(r))
 p.setGravity(0,0,-9.8)
 # r.mark('haha')
 # print (p.getLinkState(r, 6)[0])
-import ikpy
-chain = ikpy.chain.Chain.from_urdf_file(
-  '../../bullet3/data/sawyer_robot/sawyer_description/urdf/sawyer.urdf',
-  base_elements=['base'],
-  active_links_mask=[False, False, False, False, False, True, False, False, False, False, True, True, True, True, False, True, False, False, True])
+# import ikpy
+# chain = ikpy.chain.Chain.from_urdf_file(
+#   '../../bullet3/data/sawyer_robot/sawyer_description/urdf/sawyer.urdf',
+#   base_elements=['base'],
+#   active_links_mask=[False, False, False, False, False, True, False, False, False, False, True, True, True, True, False, True, False, False, True])
 
-eef_pose = ((0.8, -0.12, 1.5), (0, 1, 0, 0))
-
-pose = math_util.get_transformed_pose(eef_pose, (p.getLinkState(r, 3)[0], p.getLinkState(r, 3)[1]))
-
-target_frame = np.eye(4)
-target_frame[:3, 3] = pose[0]
+# target_frame = np.eye(4)
+# target_frame[:3, 3] = pose[0]
 
 # print(target_frame)
-sol = chain.inverse_kinematics(target_frame,
-  initial_position=(0, 0, 0,0,0,0,0,0,0,0,-1.18, 0.00, 2.18, 0.00,0, 0.57, 0,0,3.3161))
+# sol = chain.inverse_kinematics(target_frame,
+  # initial_position=(0, 0, 0,0,0,0,0,0,0,0,-1.18, 0.00, 2.18, 0.00,0, 0.57, 0,0,3.3161))
 # [-0.465943   -0.89308893  2.286186    0.03158455 -2.25553708 -0.65736246
 #   2.17224787]
 # sol = [-0.07833199, -0.29562288 ,-0.01593633,-0.31518591,  0.01860969 ,-0.96004085,
@@ -136,11 +132,12 @@ sol = chain.inverse_kinematics(target_frame,
     # positionGains=[0.05] * 7, velocityGains=[1.] * 7)
 # print(p.getNumJoints(r))
 
-eef_pose = (p.getLinkState(r, 19)[0], p.getLinkState(r, 19)[1])
+# eef_pose = (p.getLinkState(r, 19)[0], p.getLinkState(r, 19)[1])
 
 # base_pose
 # pose = math_util.pose2mat(eef_pose)
 
+eef_pose = ((0.8, -0.12, 1.5), (0, 1, 0, 0))
 print(eef_pose, 'orig')
 
 pose = math_util.get_transformed_pose(eef_pose, (p.getLinkState(r, 3)[0], p.getLinkState(r, 3)[1]))

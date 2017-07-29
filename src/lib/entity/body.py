@@ -434,7 +434,8 @@ class Body(object):
         """
         max_forces = tuple(self.joint_specs['max_force'][j] for j in jid)
         if kwargs:
-            kwargs['forces'] = kwargs.get('forces', None) or max_forces
+            if 'forces' not in kwargs:
+                kwargs['forces'] = max_forces
         else:
             kwargs = dict(forces=max_forces)
         self._engine.set_body_joint_state(self._uid, jid, value, ctype, kwargs)
@@ -866,7 +867,8 @@ class Tool(Body):
         if ftype == 'rel':
             fpos, forn = math_util.get_inverse_transformed_pose(
                 # Desired pose in absolute world frame
-                (fpos or self.tool_pos, forn or self.tool_orn),
+                (self.tool_pos if fpos is None else self.tool_pos, 
+                 self.tool_orn if forn is None else self.tool_orn),
                 # tool base frame
                 self.pose)
             # Convert it back

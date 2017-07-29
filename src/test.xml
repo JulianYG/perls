@@ -10,19 +10,20 @@
 			<!-- <orn>0.0 0.0 0.0 1</orn> -->
 		</gripper>
 		<robot name="king-kong" type="kuka" collision_checking="True">
+			<asset ik_path="/home/cvgl_ros/bullet3/data/kuka_iiwa/kuka_arm.robot.xml"/>
 			<gripper name="for_king_kong" type="wsg">
 				<asset path="gripper/wsg50_one_motor_gripper_new_free_base.sdf"/>
 			</gripper>
 			<pos>0.0 1.8 0.66</pos>
 			<orn>0.0 0.0 0.0 -1.0</orn>
 		</robot>
-		<!-- <robot name="titan" type="sawyer" collision_checking="True">
-			<asset path="sawyer_robot/sawyer_description/urdf/sawyer.urdf"/>
+		<robot name="titan" type="sawyer" collision_checking="True">
+			<asset path="/home/cvgl_ros/bullet3/data/sawyer_robot/sawyer_description/urdf/sawyer.urdf" ik_path="/home/cvgl_ros/bullet3/data/sawyer_robot/sawyer_description/urdf/sawyer_base.srdf"/>
 			<gripper name="bax" type="rethink">
 				<asset path="rethink_ee_description/urdf/electric_gripper/right_standard_narrow_round.urdf"/>
 			</gripper>
 			<pos>0.0 0.2 0.9</pos>
-		</robot> -->
+		</robot>
 	</tool>
 	<scene name="default">
 		<body name="plane" fixed="True">

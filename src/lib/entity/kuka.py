@@ -1,22 +1,44 @@
 from .arm import Arm
 from .WSG50Gripper import WSG50Gripper
 from ..utils import math_util
-
+import openravepy
 
 class Kuka(Arm):
 
     def __init__(self, tool_id, engine,
                  path=None,
+                 ik_path=None,
                  pos=(0., 0., 0.67),
                  orn=(0., 0., 0., 1.),
                  collision_checking=True,
                  gripper=None):
         path = path or 'kuka_iiwa/model_vr_limits.urdf'
+        ik_path = ik_path or 'kuka_iiwa/kuka_arm.robot.xml'
         super(Kuka, self).__init__(
-            tool_id, engine, path, pos, orn, collision_checking, gripper)
+            tool_id, engine, path, ik_path, pos, orn, collision_checking, gripper)
         self._tip_offset = math_util.vec([0., 0., 0.045])
         self._rest_pose = (0., 0., 0., 1.570793, 0., -1.04719755, 0.)
         self.reset()
+
+
+    def _build_ik(self, path, ik_path):
+
+        openravepy.RaveInitialize(True, level=openravepy.DebugLevel.Error)
+        env = openravepy.Environment()
+
+        env.Load(ik_path) # load a scene
+
+        robot = env.GetRobots()[0] # get the first robot
+
+        robot.SetActiveManipulator('arm') # set the manipulator
+
+        ikmodel = openravepy.databases.inversekinematics.InverseKinematicsModel(
+            robot, iktype=openravepy.IkParameterization.Type.Transform6D
+        )
+
+        if not ikmodel.load():
+            ikmodel.autogenerate()
+        return ikmodel
 
     def _move_to(self, pos, orn, ns=False):
         """

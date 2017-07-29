@@ -4,12 +4,12 @@ import numpy as np
 import os.path as osp
 
 import pybullet as p
-# import openravepy as orp
+import openravepy as orp
 
 from .stateEngine import FakeStateEngine
 from ..utils import math_util
 from ..utils.io_util import FONT, loginfo, logerr
-
+from IPython import embed
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
 __license__ = 'private'
@@ -42,15 +42,24 @@ class OpenRaveEngine(FakeStateEngine):
         """
         dmat = math_util.pose2mat((pos, orn))
         if not closest:
-            return ik_model.FindIKSolution(
+            return ik_model.manip.FindIKSolution(
                 dmat, orp.IkFilterOptions.CheckEnvCollisions)
         else:
             assert joint_pos is not None, \
                 'Selecting nearest neighbor needs current states'
-            solutions = ik_model.FindIKSolutions(
+            solutions = ik_model.manip.FindIKSolutions(
                 dmat, orp.IkFilterOptions.CheckEnvCollisions)
-            best_idx = math_util.pos_diff(solutions, joint_pos).argmin()
-            return solutions[best_idx]
+            # embed()
+
+            # import pybullet as p
+            # p.loadURDF('cube_small.urdf', pos, useFixedBase=True)
+            # If found solution
+            if solutions.size > 0:
+                best_idx = math_util.pos_diff(solutions, joint_pos).argmin()
+                return solutions[best_idx]
+            # Otherwise stay the same
+            else:
+                return joint_pos
 
 
 class MujocoEngine(FakeStateEngine):

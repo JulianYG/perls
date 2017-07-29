@@ -419,8 +419,11 @@ def get_inverse_transformed_pose(body_pose, frame_pose):
 
 def get_transformed_pose(body_pose, frame_pose):
     transform_pose = p.invertTransform(frame_pose[0], frame_pose[1])
-    return transform(transform_pose, body_pose)
-
+    print(pose2mat(transform_pose).dot(pose2mat(body_pose)))
+    # print(transform(body_pose, transform_pose))
+    print(transform(frame_pose, body_pose))
+    mat = np.linalg.inv(pose2mat(frame_pose)).dot(pose2mat(body_pose))
+    return mat[:3, 3], mat2quat(mat[:3, :3])
 
 def get_transformed_pos(pos, translation, rotation):
     return rotation.dot(pos - translation)

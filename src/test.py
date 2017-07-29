@@ -36,7 +36,7 @@ plugin = openravepy.RaveCreateModule(env, "urdf")
 env.SetViewer('qtcoin')
 
 with env:
-    name = plugin.SendCommand('load {}sawyer_fred.urdf {}sawyer_base_fred.srdf'.format(root, root))
+    name = plugin.SendCommand('load {}sawyer-orig.urdf {}sawyer_base_fred.srdf'.format(root, root))
     robot = env.GetRobot(name)
 
 robot.SetActiveManipulator('arm')
@@ -49,8 +49,8 @@ if not ikmodel.load():
     ikmodel.autogenerate()
 
 
-m = robot.GetActiveManipulator()
-robot.SetActiveDOFs(m.GetArmIndices())
+# m = robot.GetActiveManipulator()
+# robot.SetActiveDOFs(m.GetArmIndices())
 
 r = p.loadURDF('sawyer_robot/sawyer_description/urdf/sawyer.urdf', [0,0,0.9],
     [0,0,0,1],useFixedBase=True)
@@ -190,6 +190,7 @@ while 1:
 #       restPoses=rp,#(0, -1.18, 0.00, 2.18, 0.00, 0.57, 3.3161),
             # jointDamping=(.5,) * 7)
     # print(dir(ikmodel.manip))
+    print(p.getNumJoints(r))
     sols = ikmodel.manip.FindIKSolution(tee, openravepy.IkFilterOptions.CheckEnvCollisions)
     # print(ik)
     # print(sols)

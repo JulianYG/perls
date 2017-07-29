@@ -208,10 +208,12 @@ def parse_arm_elem(arm_elem):
         # Arm must have at least one gripper.
         gripper_elem = elem.find('gripper')
         tid = int(asset.attrib.get('id', i))
+
         arm.append(
             dict(
                 id=tid,
                 path=asset.attrib.get('path', None),
+                ik_path=asset.attrib.get('ik_path', None),
                 pos=[float(f) for
                      f in pos.text.split(' ')] if 
                 pos is not None else (0., 0., 0.8),
