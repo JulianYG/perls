@@ -42,7 +42,6 @@ class Sawyer(Arm):
         openravepy.RaveInitialize(True, level=openravepy.DebugLevel.Error)
         env = openravepy.Environment()
         plugin = openravepy.RaveCreateModule(env, "urdf")
-        # env.SetViewer('qtcoin')
 
         with env:
             name = plugin.SendCommand('load {} {}'.format(path, ik_path))
@@ -59,12 +58,9 @@ class Sawyer(Arm):
     def _move_to(self, pos, orn, cc=True):
         # Convert to pose in robot base frame
         orn = orn or self.tool_orn
-        import pybullet as p
-        # p.loadURDF('cube_small.urdf', pos, useFixedBase=True)
-        pos, _ = math_util.get_transformed_pose((pos, (0, 0, 0, 1)), self.pose)
-        p.loadURDF('cube_small.urdf', pos, useFixedBase=True)
+        pos, _ = math_util.get_relative_pose((pos, orn), self.pose)
+
         # TODO: verify orientation mismatch
-        hmat = math_util.pose2mat((pos, orn))
         indices = [5, 10, 11, 12, 13, 15, 18]
 
         ik_solution = OpenRaveEngine.solve_ik(

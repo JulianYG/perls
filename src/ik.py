@@ -140,11 +140,11 @@ p.setGravity(0,0,-9.8)
 eef_pose = ((0.8, -0.12, 1.5), (0, 1, 0, 0))
 print(eef_pose, 'orig')
 
-pose = math_util.get_transformed_pose(eef_pose, (p.getLinkState(r, 3)[0], p.getLinkState(r, 3)[1]))
+pose = math_util.get_relative_pose(eef_pose, (p.getLinkState(r, 3)[0], p.getLinkState(r, 3)[1]))
 
 # for i in range(p.getNumJoints(r)):
 
-#     print(i, p.getLinkState(r, i)[-1], math_util.get_transformed_pose(eef_pose, (p.getLinkState(r, i)[0], p.getLinkState(r, i)[1])))
+#     print(i, p.getLinkState(r, i)[-1], math_util.get_relative_pose(eef_pose, (p.getLinkState(r, i)[0], p.getLinkState(r, i)[1])))
 
 tee = math_util.pose2mat((pose[0], (0, 1, 0, 0)))
 print(tee, 't')

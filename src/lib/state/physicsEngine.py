@@ -218,8 +218,8 @@ class BulletPhysicsEngine(FakeStateEngine):
     def get_body_camera_position(self, uid, (camera_pos, camera_orn)):
 
         body_pose = p.getBasePositionAndOrientation(uid, self._physics_server_id)
-        camera_frame = math_util.pose2mat((camera_pos, camera_orn))
-        frame_pose = math_util.relative_pose(body_pose, camera_frame)
+        frame_pose = math_util.get_relative_pose(
+            body_pose, (camera_pos, camera_orn))
 
         return frame_pose[3, :3]
 
@@ -227,8 +227,8 @@ class BulletPhysicsEngine(FakeStateEngine):
             self, uid, (camera_pos, camera_orn), otype):
 
         body_pose = p.getBasePositionAndOrientation(uid, self._physics_server_id)
-        camera_frame = math_util.pose2mat((camera_pos, camera_orn))
-        frame_pose = math_util.relative_pose(body_pose, camera_frame)
+        frame_pose = math_util.get_relative_pose(
+            body_pose, (camera_pos, camera_orn))
         orn = frame_pose[:3, :3]
 
         if otype == 'quat':
@@ -243,7 +243,7 @@ class BulletPhysicsEngine(FakeStateEngine):
     def get_body_relative_pose(self, uid, frame_pos, frame_orn):
 
         body_pose = p.getBasePositionAndOrientation(uid, self._physics_server_id)
-        return math_util.get_transformed_pose(body_pose, (frame_pos, frame_orn))
+        return math_util.get_relative_pose(body_pose, (frame_pos, frame_orn))
 
     def set_body_scene_pose(self, uid, pos, orn):
         status = 0

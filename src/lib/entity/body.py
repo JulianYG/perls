@@ -775,7 +775,7 @@ class Tool(Body):
         Get the tool pose relative to arm's base frame
         :return: (pos, orn) tuple
         """
-        return math_util.get_transformed_pose(self.tool_pose, self.pose)
+        return math_util.get_relative_pose(self.tool_pose, self.pose)
 
     @Body.name.setter
     def name(self, string):
@@ -865,7 +865,7 @@ class Tool(Body):
         # Relative pose: convert back to world frame
         # If we stick to pybullet IK, this is necessary
         if ftype == 'rel':
-            fpos, forn = math_util.get_inverse_transformed_pose(
+            fpos, forn = math_util.get_absolute_pose(
                 # Desired pose in absolute world frame
                 (self.tool_pos if fpos is None else self.tool_pos, 
                  self.tool_orn if forn is None else self.tool_orn),
@@ -886,7 +886,7 @@ class Tool(Body):
         :return: None
         """
         if ftype == 'rel':
-            pos, orn = math_util.get_inverse_transformed_pose(
+            pos, orn = math_util.get_absolute_pose(
                 # Desired pose in absolute world frame
                 (pos, orn),
                 # tool base frame
