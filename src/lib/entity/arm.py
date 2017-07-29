@@ -104,8 +104,8 @@ class Arm(Tool):
         and does not keep the orientation.
         :return: None
         """
-        target_pos = self.position_transform(pos, self.tool_orn)
-        self._move_to(target_pos, None, self._collision_checking)
+        # target_pos = self.position_transform(pos, self.tool_orn)
+        self._move_to(pos, None, self._collision_checking)
 
     @tool_orn.setter
     def tool_orn(self, orn):

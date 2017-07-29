@@ -9,7 +9,7 @@ import openravepy as orp
 from .stateEngine import FakeStateEngine
 from ..utils import math_util
 from ..utils.io_util import FONT, loginfo, logerr
-from IPython import embed
+
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
 __license__ = 'private'
@@ -49,16 +49,14 @@ class OpenRaveEngine(FakeStateEngine):
                 'Selecting nearest neighbor needs current states'
             solutions = ik_model.manip.FindIKSolutions(
                 dmat, orp.IkFilterOptions.CheckEnvCollisions)
-            # embed()
-
-            # import pybullet as p
-            # p.loadURDF('cube_small.urdf', pos, useFixedBase=True)
-            # If found solution
+ 
+            # If solution found 
             if solutions.size > 0:
                 best_idx = math_util.pos_diff(solutions, joint_pos).argmin()
                 return solutions[best_idx]
             # Otherwise stay the same
             else:
+                logerr('IK Response Invalid.', FONT.control)
                 return joint_pos
 
 
@@ -115,6 +113,8 @@ class BulletPhysicsEngine(FakeStateEngine):
         # Indicates which bullet physics simulation server to
         # connect to. Default is 0
         self._physics_server_id = identifier
+
+        self._sensor_enabled = False
 
     @property
     def version(self):
@@ -338,7 +338,9 @@ class BulletPhysicsEngine(FakeStateEngine):
         return tuple(info)
 
     def get_body_joint_state(self, uid, jid):
-        p.enableJointForceTorqueSensor(uid, jid, 1, physicsClientId=self._physics_server_id)
+        if not self._sensor_enabled:
+            p.enableJointForceTorqueSensor(uid, jid, 1, physicsClientId=self._physics_server_id)
+            self._sensor_enabled = True
         return p.getJointState(uid, jid, physicsClientId=self._physics_server_id)
 
     def set_body_joint_state(self, uid, jids, vals, ctype, kwargs):

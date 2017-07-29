@@ -440,18 +440,19 @@ class Controller(object):
                 elif method == 'reach':
                     # Cartesian, quaternion
                     r_pos, r_orn = value
-                    i_pos, i_orn = self._states['tool'][tool.tid]
-                    
+                    i_pos, i_orn = tool.tool_pos, math_util.quat2euler(tool.tool_orn)
+
                     # Orientation is always relative to the
                     # world frame, that is, absolute
-                    r_vec = math_util.quat2euler(tool.orn)
+                    r_mat = math_util.quat2mat(tool.orn)
+
                     pos_diff, orn_diff = \
                         math_util.zero_vec(3), math_util.zero_vec(3)
                     
                     if r_pos is not None:
                         # Increment to get absolute pos
                         # Take account of rotation
-                        i_pos += math_util.euler2mat(r_vec).dot(r_pos) * elapsed_time
+                        i_pos += r_mat.dot(r_pos) * elapsed_time
                         pos_diff, orn_diff = tool.reach(i_pos, None)
 
                     if r_orn is not None:
@@ -473,11 +474,10 @@ class Controller(object):
 
                     # If the tool is out of reach, hold the adapter states
                     # TODO: make the threshold configs
-                    if math_util.rms(pos_diff) > 3.:
-                        state_pose = world.get_states(
-                            ('tool', 'tool_pose'))[0][tool.tid]
-                        self._states['tool'][tool.tid] = \
-                            (state_pose[0], math_util.quat2euler(tool.tool_orn))
+                    # if math_util.rms(pos_diff) > 3.:
+                        
+                    #     self._states['tool'][tool.tid] = \
+                            
 
                 elif method == 'grasp':
                     tool.grasp(value)

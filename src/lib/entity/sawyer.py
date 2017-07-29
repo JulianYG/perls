@@ -34,8 +34,9 @@ class Sawyer(Arm):
         Get the pose of sawyer arm base frame.
         :return: arm base frame (pos, orn) tuple
         """
-        return self.kinematics['abs_frame_pos'][4], \
-            self.kinematics['abs_frame_orn'][4]
+        # TODO
+        return self.kinematics['abs_frame_pos'][3], \
+            self.kinematics['abs_frame_orn'][3]
 
     def _build_ik(self, path, ik_path):
 
@@ -57,16 +58,17 @@ class Sawyer(Arm):
 
     def _move_to(self, pos, orn, cc=True):
         # Convert to pose in robot base frame
-        orn = orn or self.tool_orn
-        pos, _ = math_util.get_relative_pose((pos, orn), self.pose)
+        print(pos, 'desired')
+        orn = orn or self.kinematics['orn'][6]
+        pos, orn = math_util.get_relative_pose((pos, orn), self.pose)
 
-        # TODO: verify orientation mismatch
         indices = [5, 10, 11, 12, 13, 15, 18]
 
+        # openrave quaternion uses wxyz convention
         ik_solution = OpenRaveEngine.solve_ik(
-            self._ik_model, pos, orn, 
+            self._ik_model, pos, orn[[3,0,1,2]], 
             math_util.vec(self.joint_states['pos'])[indices])
-
+        # print(self.tool_pos, pos, 'desired')
         specs = self.joint_specs
 
         self.joint_states = (
@@ -74,3 +76,4 @@ class Sawyer(Arm):
             dict(forces=math_util.vec(specs['max_force'])[indices],
                  positionGains=(.03,) * self._dof,
                  velocityGains=(1.,) * self._dof))
+        print(self.tool_pos, 'actual')
