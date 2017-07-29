@@ -208,7 +208,18 @@ def euler_diff(e1, e2):
     return e1 - e2
 
 
-def orn_add(quat1, quat2):
+def quat_diff(quat1, quat2):
+    """
+    Calculate the difference between given quaternions
+    :param quat1: The minuend vec4 float
+    :param quat2: The subtrahend vec4 float
+    :return: The difference between given quaternions in
+    radians vec3 float.
+    """
+    return quat2euler(quat1) - quat2euler(quat2)
+
+
+def quat_sum(quat1, quat2):
     """
     Add two quaternions
     :param quat1: vec4 float orientation
@@ -243,17 +254,6 @@ def quat_mul(quaternion0, quaternion1):
         x1 * w0 + y1 * z0 - z1 * y0 + w1 * x0,
         -x1 * z0 + y1 * w0 + z1 * x0 + w1 * y0,
         x1 * y0 - y1 * x0 + z1 * w0 + w1 * z0], dtype=np.float32)
-
-
-def quat_diff(quat1, quat2):
-    """
-    Calculate the difference between given quaternions
-    :param quat1: The minuend vec4 float
-    :param quat2: The subtrahend vec4 float
-    :return: The difference between given quaternions in
-    radians vec3 float.
-    """
-    return quat2euler(quat1) - quat2euler(quat2)
 
 
 def quat2euler(quaternion):
