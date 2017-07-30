@@ -89,7 +89,7 @@ class Sawyer(Arm):
     def _move_to(self, pos, orn, cc=True):
         
         # Convert to pose in robot base frame
-        orn = self.kinematics['abs_frame_orn'][18] if orn is None else orn
+        orn = self.kinematics['orn'][18] if orn is None else orn
         pos, orn = math_util.get_relative_pose((pos, orn), self.pose)
 
         indices = [5, 10, 11, 12, 13, 15, 18]

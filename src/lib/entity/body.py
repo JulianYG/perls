@@ -902,7 +902,7 @@ class Tool(Body):
                 # tool base frame
                 self.pose)
 
-        return self.position_transform(pos, orn), orn
+        return self.position_transform(pos, orn)
 
     @abc.abstractmethod
     def grasp(self, slide):

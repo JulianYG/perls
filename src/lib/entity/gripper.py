@@ -117,7 +117,7 @@ class PrismaticGripper(Tool):
         base link
         :param pos: vec3 float cartesian world frame
         :param orn: vec4 float quaternion world frame
-        :return: vec3 float cartesian world frame
+        :return: transformed pose (pos, orn) in world frame
         """
         # Get Center of Mass (CoM) of averaging
         # left/right gripper fingers
@@ -127,8 +127,7 @@ class PrismaticGripper(Tool):
                 (self.pos, self.orn), (self.tool_pos, orn))
             )
         frame = math_util.pose2mat((pos, orn)).dot(transform)
-        base_pos = math_util.mat2pose(frame)[0]
-        return base_pos
+        return math_util.mat2pose(frame)
 
     ###
     #  High level functionality

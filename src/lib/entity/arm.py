@@ -104,8 +104,8 @@ class Arm(Tool):
         and does not keep the orientation.
         :return: None
         """
-        target_pos = self.position_transform(pos, self.tool_orn)
-        self._move_to(pos, None, self._collision_checking)
+        target_pos, _ = self.position_transform(pos, self.tool_orn)
+        self._move_to(target_pos, None, self._collision_checking)
 
     @tool_orn.setter
     def tool_orn(self, orn):
@@ -157,25 +157,43 @@ class Arm(Tool):
         end effector link
         :param pos: vec3 float cartesian world frame
         :param orn: vec4 float quaternion world frame
-        :return: vec3 float cartesian world frame
+        :return: transformed pose (pos, orn) in world frame
         """
         # Get Center of Mass (CoM) of averaging
         # left/right gripper fingers
         # First get position of gripper base
 
-        gripper_base_pos = \
-            self._gripper.position_transform(pos, orn)
-        print(pos, gripper_base_pos, 'here')
+        # gripper_base_pos, gripper_base_orn = \
+        #     self._gripper.position_transform(pos, orn)
+        # print(pos, gripper_base_pos, 'here')
+
+        end_effector_info = self.kinematics
+
+        end_effector_pos, end_effector_orn = end_effector_info['pos'][18], end_effector_info['orn'][18]
+        import pybullet as p 
+        p.addUserDebugLine(pos, pos + 0.01, [1,0,0], 10, 5)
         # Repeat same procedure for gripper base link
         # and arm end effector link
-        gripper_arm_tran = gripper_base_pos - pos
+        transform = math_util.pose2mat(
+            math_util.get_relative_pose(
+                (end_effector_pos, end_effector_orn), (self.tool_pos, self.tool_orn))
+            )
+        frame = math_util.pose2mat((pos, orn)).dot(transform)
+        poss = math_util.mat2pose(frame)[0]
+        p.addUserDebugLine(poss, poss + 0.01, [0,0,1], 10, 5)
+        # print(math_util.mat2pose(frame), 'this')
+        return math_util.mat2pose(frame)
 
-        # Math:
-        # relative: transformed_pos = rotation x (pos - translation)
-        # absolute: transformed_pos = pos - rotation x abs_frame_orn
-        rotation = math_util.quat2mat(orn)
-        target_pos = gripper_base_pos - rotation.dot(gripper_arm_tran)
-        return target_pos
+
+
+        # gripper_arm_tran = gripper_base_pos - pos
+
+        # # Math:
+        # # relative: transformed_pos = rotation x (pos - translation)
+        # # absolute: transformed_pos = pos - rotation x abs_frame_orn
+        # rotation = math_util.quat2mat(orn)
+        # target_pos = gripper_base_pos - rotation.dot(gripper_arm_tran)
+        # return target_pos
 
     @abc.abstractmethod
     def _move_to(self, pos, orn, ns=False):
