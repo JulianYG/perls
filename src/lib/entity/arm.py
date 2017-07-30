@@ -170,7 +170,7 @@ class Arm(Tool):
         transform = math_util.pose2mat(
             math_util.get_relative_pose(
                 (end_effector_pos, end_effector_orn),
-                (self.tool_pos, end_effector_orn))
+                (self.tool_pos, self.tool_orn))
             )
         frame = math_util.pose2mat((pos, orn)).dot(transform)
         return math_util.mat2pose(frame)

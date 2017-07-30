@@ -367,12 +367,6 @@ class Controller(object):
         :param signal: the signal received from control handler
         :return: None
         """
-
-        import pybullet as p
-        tooll = world.get_tool('m', 1)
-        p.addUserDebugLine(tooll.tool_pos,
-                           tooll.position_transform(tooll.tool_pos, tooll.tool_orn)[0], [1, 0, 0], 5, 5)
-
         # Only keep consistency for GUI usage
         elapsed_time = 1 if display.info['frame'] != 'gui' else elapsed_time * 50
         commands, instructions, view, update = \

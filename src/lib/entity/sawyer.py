@@ -26,6 +26,7 @@ class Sawyer(Arm):
                            -1.18, 0.00, 2.18, 0.00,
                            0, 0.57, 0, 0, 3.3161, 0]
         self._dof = 7
+        self._active_joints = [5, 10, 11, 12, 13, 15, 18]
         self.reset()
 
     @property
@@ -89,20 +90,18 @@ class Sawyer(Arm):
     def _move_to(self, pos, orn, cc=True):
         
         # Convert to pose in robot base frame
-        orn = self.kinematics['orn'][18] if orn is None else orn
+        orn = self.kinematics['orn'][19] if orn is None else orn
         pos, orn = math_util.get_relative_pose((pos, orn), self.pose)
-
-        indices = [5, 10, 11, 12, 13, 15, 18]
 
         # openrave quaternion uses wxyz convention
         ik_solution = OpenRaveEngine.solve_ik(
-            self._ik_model, pos, orn[[3,0,1,2]], 
-            math_util.vec(self.joint_states['pos'])[indices])
+            self._ik_model, pos, orn[[3, 0, 1, 2]],
+            math_util.vec(self.joint_states['pos'])[self._active_joints])
 
         specs = self.joint_specs
 
         self.joint_states = (
-            indices, ik_solution, 'position',
-            dict(forces=math_util.vec(specs['max_force'])[indices],
+            self._active_joints, ik_solution, 'position',
+            dict(forces=math_util.vec(specs['max_force'])[self._active_joints],
                  positionGains=(.03,) * self._dof,
                  velocityGains=(1.,) * self._dof))

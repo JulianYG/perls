@@ -23,6 +23,8 @@ class Kuka(Arm):
         self._rest_pose = (0., 0., 0., 1.570793, 0., -1.04719755, 0.)
         self.reset()
 
+        self._active_joints = self._joints
+
     @Arm.tool_orn.setter
     def tool_orn(self, orn):
         """
