@@ -34,9 +34,39 @@ class Sawyer(Arm):
         Get the pose of sawyer arm base frame.
         :return: arm base frame (pos, orn) tuple
         """
-        # TODO
         return self.kinematics['abs_frame_pos'][3], \
             self.kinematics['abs_frame_orn'][3]
+
+    @Arm.tool_orn.setter
+    def tool_orn(self, orn):
+        """
+        Set the tool to given orientation.
+        Note setting orientation does not keep previous
+        position. Due to the limitation of common
+        robot arms, it preserves [roll, pitch] but
+        abandons [yaw].
+        :param orn: vec4 float in quaternion form,
+        or vec3 float in euler form
+        :return: None
+        """
+        if len(orn) == 4:
+            orn = math_util.quat2euler(orn)
+        
+        joint_spec = self.joint_specs
+
+        # Check if needs clip
+        y, x = math_util.clip_vec(
+            math_util.vec((orn[1], orn[0])),
+            math_util.vec(joint_spec['lower'])[[15, 18]],
+            math_util.vec(joint_spec['upper'])[[15, 18]])
+
+        # Set the joints
+        self.joint_states = (
+            # Use last two DOFs
+            [15, 18],
+            [y, x], 'position',
+            dict(positionGains=(.05,) * 2,
+                 velocityGains=(1.,) * 2))
 
     def _build_ik(self, path, ik_path):
 
@@ -57,9 +87,9 @@ class Sawyer(Arm):
         return ikmodel
 
     def _move_to(self, pos, orn, cc=True):
+        
         # Convert to pose in robot base frame
-        print(pos, 'desired')
-        orn = orn or self.kinematics['orn'][6]
+        orn = self.kinematics['abs_frame_orn'][18] if orn is None else orn
         pos, orn = math_util.get_relative_pose((pos, orn), self.pose)
 
         indices = [5, 10, 11, 12, 13, 15, 18]
@@ -68,7 +98,7 @@ class Sawyer(Arm):
         ik_solution = OpenRaveEngine.solve_ik(
             self._ik_model, pos, orn[[3,0,1,2]], 
             math_util.vec(self.joint_states['pos'])[indices])
-        # print(self.tool_pos, pos, 'desired')
+
         specs = self.joint_specs
 
         self.joint_states = (
@@ -76,4 +106,3 @@ class Sawyer(Arm):
             dict(forces=math_util.vec(specs['max_force'])[indices],
                  positionGains=(.03,) * self._dof,
                  velocityGains=(1.,) * self._dof))
-        print(self.tool_pos, 'actual')

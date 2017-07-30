@@ -169,9 +169,9 @@ print(eef_pose, 'orig')
 
 pose = math_util.get_relative_pose(eef_pose, (p.getLinkState(r, 3)[0], p.getLinkState(r, 3)[1]))
 
-# for i in range(p.getNumJoints(r)):
+for i in range(p.getNumJoints(r)):
 
-#     print(i, p.getLinkState(r, i)[-1], math_util.get_relative_pose(eef_pose, (p.getLinkState(r, i)[0], p.getLinkState(r, i)[1])))
+    print(i, p.getLinkState(r, i)[-1], math_util.get_relative_pose(eef_pose, (p.getLinkState(r, i)[0], p.getLinkState(r, i)[1])))
 
 tee = math_util.pose2mat((pose[0], (0, 1, 0, 0)))
 print(tee, 't')
@@ -190,7 +190,7 @@ while 1:
 #       restPoses=rp,#(0, -1.18, 0.00, 2.18, 0.00, 0.57, 3.3161),
             # jointDamping=(.5,) * 7)
     # print(dir(ikmodel.manip))
-    print(p.getNumJoints(r))
+    # print(p.getNumJoints(r))
     sols = ikmodel.manip.FindIKSolution(tee, openravepy.IkFilterOptions.CheckEnvCollisions)
     # print(ik)
     # print(sols)
@@ -200,14 +200,14 @@ while 1:
             targetVelocities=[0] * 7,
             positionGains=[0.05] * 7, velocityGains=[1.] * 7)
 
-    print(p.getLinkState(r, 19)[0], pose[0])
+    # print(p.getLinkState(r, 19)[0], pose[0])
 
     p.stepSimulation()
 
     # p.setRealTimeSimulation(1)
     # print(p.getLinkState(r, 6)[0])
 
-    # print([(p.getLinkState(r, i)[0],p.getJointInfo(r, i)[-1])  for i in range(23)])
+    # print([(p.getLinkState(r, i)[0],p.getJointInfo(r, i)[-1])  for i in range(20)])
     # for e in p.getMouseEvents():
     #   if e[0] == 2:
     #       print(e[1], e[2])

@@ -677,6 +677,9 @@ class Body(object):
         """
         Follow the given pos/orn with given max force
         with the base link
+        :param pos: vec3 float cartesian position in world
+        :param orn: vec4 float quaternion world orientation
+        :param max_force: maximum force to drag the object
         :return: None
         """
         # Cannot move if fixed already
@@ -684,6 +687,7 @@ class Body(object):
             loginfo('Fix-based body cannot track.',
                     FONT.warning)
             return
+
         # Need to constrain to world frame first
         if -1 not in self.attach_children:
             self.fix = (pos, orn)
@@ -851,14 +855,14 @@ class Tool(Body):
         To achieve high accuracy finger-tip manipulation,
         use <pinpoint> method instead.
         :param pos: vec3 float in cartesian
-        :param orn: vec4 float quaternion
+        :param orn: vec4 float quaternion or vec3 float in euler radian
         :param ftype: string param, coordinate system frame type.
         'abs' indicates the position is in world frame
         'rel' indicates the position is in tool frame.
         Hint:
         Default control uses world frame absolute positions.
         To align simulation with real world, use 'rel'
-        :return: Delta difference between target and actual (pos, orn)
+        :return: desired target pose
         """
         fpos, forn = pos, orn
 
@@ -874,6 +878,12 @@ class Tool(Body):
             # Convert it back
             fpos = None if pos is None else fpos
             forn = None if orn is None else forn
+
+        if fpos is not None:
+            self.tool_pos = fpos
+
+        if forn is not None:
+            self.tool_orn = forn
 
         return fpos, forn
 

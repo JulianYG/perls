@@ -1,7 +1,10 @@
+import openravepy
+
 from .arm import Arm
 from .WSG50Gripper import WSG50Gripper
+
 from ..utils import math_util
-import openravepy
+
 
 class Kuka(Arm):
 
@@ -20,6 +23,35 @@ class Kuka(Arm):
         self._rest_pose = (0., 0., 0., 1.570793, 0., -1.04719755, 0.)
         self.reset()
 
+    @Arm.tool_orn.setter
+    def tool_orn(self, orn):
+        """
+        Set the tool to given orientation.
+        Note setting orientation does not keep previous
+        position. Due to the limitation of common
+        robot arms, it preserves [roll, pitch] but
+        abandons [yaw].
+        :param orn: vec4 float in quaternion form,
+        or vec3 float in euler radian
+        :return: None
+        """
+        if len(orn) == 4:
+            orn = math_util.quat2euler(orn)
+        joint_spec = self.joint_specs
+
+        # Check if needs clip
+        y, x = math_util.clip_vec(
+            math_util.vec((orn[1], orn[0])),
+            joint_spec['lower'][-2:],
+            joint_spec['upper'][-2:])
+
+        # Set the joints
+        self.joint_states = (
+            # Use last two DOFs
+            [5, 6],
+            [y, x], 'position',
+            dict(positionGains=(.05,) * 2,
+                 velocityGains=(1.,) * 2))
 
     def _build_ik(self, path, ik_path):
 

@@ -272,22 +272,7 @@ def euler2quat(euler):
     :return: vec4 float angles in quaternion
     """
     return np.array(p.getQuaternionFromEuler(euler))
-
-
-def joint_clip(joint_pos, joint_spec):
-    """
-    Clip the joints under their limits
-    :param joint_pos: input joint positions
-    :param joint_spec: upper and lower limit specifications
-    :return: Clipped joint position values
-    """
-    joint_pos = np.clip(
-        joint_pos,
-        a_min=joint_spec['lower'][-3:],
-        a_max=joint_spec['upper'][-3:],
-        out=joint_pos)
-    return np.arcsin(np.sin(joint_pos))
-
+    
 
 """
 Matrix pose / rotation calculation / processing

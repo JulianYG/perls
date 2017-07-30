@@ -68,9 +68,10 @@ class PrismaticGripper(Tool):
         positions to achieve accuracy
         :return: vec3 float in Cartesian
         """
-        left_finger_pos = self.kinematics['pos'][self._left_finger_idx]
-        right_finger_pos = self.kinematics['pos'][self._right_finger_idx]
-        return (left_finger_pos + right_finger_pos) / 2. + self._tip_offset
+        left_finger_pos = self.kinematics['abs_frame_pos'][self._left_finger_idx]
+        right_finger_pos = self.kinematics['abs_frame_pos'][self._right_finger_idx]
+        return (left_finger_pos + right_finger_pos) / 2. + \
+            math_util.quat2mat(self.tool_orn).dot(self._tip_offset)
 
     @property
     def tool_orn(self):
@@ -107,7 +108,7 @@ class PrismaticGripper(Tool):
         :param orn: vec4 float in quaternion form
         :return: None
         """
-        self.orn = orn
+        self.track(self.pos, orn, self._max_force)
 
     def position_transform(self, pos, orn):
         """
@@ -120,14 +121,20 @@ class PrismaticGripper(Tool):
         """
         # Get Center of Mass (CoM) of averaging
         # left/right gripper fingers
-        translation = (
-            self.kinematics['pos'][self._left_finger_idx] +
-            self.kinematics['pos'][self._right_finger_idx]) / 2. -\
-            self.pos
 
-        # Since desired frame is aligned with base frame...
-        rotation = math_util.quat2mat(orn)
-        base_pos = pos - rotation.dot(translation)
+        print(pos, orn ,self.pos, self.orn)
+
+        base_pos, base_orn = math_util.get_relative_pose(
+            (pos, orn), (self.pos, self.orn))
+
+        # translation = (
+        #     self.kinematics['abs_frame_pos'][self._left_finger_idx] +
+        #     self.kinematics['abs_frame_pos'][self._right_finger_idx]) / 2. - \
+        #     self.pos
+
+        # # Since desired frame is aligned with base frame...
+        # rotation = math_util.quat2mat(orn)
+        # base_pos = pos - rotation.dot(translation)
         return base_pos
 
     ###
@@ -141,8 +148,7 @@ class PrismaticGripper(Tool):
         if not self.fix:
             self.track(pos, orn, self._max_force)
         self.grasp(0)
-        self._engine.hold()
-
+        
     def hang(self):
         """
         Hang the gripper in the world for control
@@ -156,30 +162,29 @@ class PrismaticGripper(Tool):
         """
         Reach to given pose approximately
         :param pos: vec3 float cartesian at base
-        :param orn: vec4 float quaternion
-        :return: delta between target and actual pose
+        :param orn: vec4 float quaternion, 
+        or vec3 float in euler radian
+        :return: None
         """
+        if orn is not None and len(orn) == 3:
+            orn = math_util.euler2quat(orn)
+    
         fpos, forn = super(PrismaticGripper, self).reach(pos, orn, ftype)
-
-        pos_delta = math_util.zero_vec(3)
         forn = self.tool_orn if forn is None else forn
+
+        if fpos is None:
+            fpos = self.pos
 
         # Use constraint to move gripper for simulation,
         # to avoid boundary mixing during collision
         self.track(fpos, forn, self._max_force)
-
-        orn_delta = math_util.quat_diff(self.tool_orn, forn)
-        if fpos is not None:
-            pos_delta = self.tool_pos - fpos
-
-        return pos_delta, orn_delta
 
     def pinpoint(self, pos, orn, ftype='abs'):
         """
         Accurately reach to given pose
         :param pos: vec3 float cartesian at finger tip
         :param orn: vec4 float quaternion
-        :return: None
+        :return: delta between target and actual pose
         """
         fpos, forn = super(PrismaticGripper, self).pinpoint(pos, orn, ftype)
         self.tool_pos = fpos

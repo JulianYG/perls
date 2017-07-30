@@ -438,22 +438,20 @@ class Controller(object):
                     loginfo('World is reset.', FONT.model)
 
                 elif method == 'reach':
+
                     # Cartesian, quaternion
                     r_pos, r_orn = value
-                    i_pos, i_orn = tool.tool_pos, math_util.quat2euler(tool.tool_orn)
-
+                    i_pos, i_orn = self._states['tool'][tool.tid]
+                    
                     # Orientation is always relative to the
                     # world frame, that is, absolute
                     r_mat = math_util.quat2mat(tool.orn)
 
-                    pos_diff, orn_diff = \
-                        math_util.zero_vec(3), math_util.zero_vec(3)
-                    
                     if r_pos is not None:
                         # Increment to get absolute pos
                         # Take account of rotation
-                        i_pos += r_mat.dot(r_pos) * elapsed_time
-                        pos_diff, orn_diff = tool.reach(i_pos, None)
+                        i_pos += r_mat.dot(r_pos * elapsed_time)
+                        tool.reach(i_pos, None)
 
                     if r_orn is not None:
                         ###
@@ -468,16 +466,17 @@ class Controller(object):
 
                         # TODO: maybe clipping can happen here
                         i_orn += r_orn * elapsed_time
-                        pos_diff, orn_diff = tool.reach(
-                            None, 
-                            math_util.euler2quat(math_util.fmod(i_orn, math_util.pi * 2)))
+                        tool.reach(None, i_orn)
 
-                    # If the tool is out of reach, hold the adapter states
-                    # TODO: make the threshold configs
-                    # if math_util.rms(pos_diff) > 3.:
-                        
-                    #     self._states['tool'][tool.tid] = \
-                            
+                    pos_diff = tool.tool_pos - i_pos
+                    # orn_diff = math_util.quat2euler(tool.tool_orn) - i_orn
+
+                    if math_util.rms(pos_diff) > 1.:
+                        loginfo('Out of reach. Set back.', FONT.warning)
+                        state_pose = world.get_states(
+                            ('tool', 'tool_pose'))[0][tool.tid]
+                        self._states['tool'][tool.tid] = \
+                            (state_pose[0], math_util.quat2euler(tool.tool_orn))
 
                 elif method == 'grasp':
                     tool.grasp(value)

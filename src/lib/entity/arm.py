@@ -104,7 +104,7 @@ class Arm(Tool):
         and does not keep the orientation.
         :return: None
         """
-        # target_pos = self.position_transform(pos, self.tool_orn)
+        target_pos = self.position_transform(pos, self.tool_orn)
         self._move_to(pos, None, self._collision_checking)
 
     @tool_orn.setter
@@ -119,19 +119,7 @@ class Arm(Tool):
         or vec3 float in euler form
         :return: None
         """
-        orn = math_util.quat2euler(orn)
-
-        # Check if needs clip
-        y, x, _ = math_util.joint_clip(
-            math_util.vec((orn[1], orn[0], orn[2])), self.joint_specs)
-
-        # Set the joints
-        self.joint_states = (
-            # Use last two DOFs
-            self._joints[-2:],
-            [y, x], 'position',
-            dict(positionGains=(.05,) * 2,
-                 velocityGains=(1.,) * 2))
+        raise NotImplemented
 
     @abc.abstractmethod
     def _build_ik(self, path, ik_path):
@@ -174,9 +162,10 @@ class Arm(Tool):
         # Get Center of Mass (CoM) of averaging
         # left/right gripper fingers
         # First get position of gripper base
+
         gripper_base_pos = \
             self._gripper.position_transform(pos, orn)
-
+        print(pos, gripper_base_pos, 'here')
         # Repeat same procedure for gripper base link
         # and arm end effector link
         gripper_arm_tran = gripper_base_pos - pos
@@ -215,7 +204,7 @@ class Arm(Tool):
                  0, 'fixed',
                  [0., 0., 0.], self._tip_offset,
                  [0., 0., 0.],
-                 [0., 1., 0., 0.], [0., 1., 0., 0.])
+                 [0., 0., 0., 1.], [0., 0., 0., 1.])
             # Next reset gripper
             self._gripper.reset()
 
@@ -226,38 +215,6 @@ class Arm(Tool):
              'position',
              dict(reset=True))
 
-    def reach(self, pos=None, orn=None, ftype='abs'):
-        """
-        Reach to given pose.
-        Note this operation sets position first, then
-        adjust to orientation by rotation end effector,
-        so the position is not accurate in a sense.
-        For accurate control, call <pinpoint> instead.
-        :param pos: vec3 float cartesian
-        :param orn: vec3 float quaternion
-        :param ftype: string param, coordinate system frame type.
-        'abs' indicates the position is in world frame
-        'rel' indicates the position is in tool frame.
-        Hint:
-        Default control uses world frame absolute positions.
-        To align simulation with real world, use 'rel'
-        :return: delta between target and actual pose
-        """
-        fpos, forn = super(Arm, self).reach(pos, orn, ftype)
-
-        orn_delta = math_util.zero_vec(3)
-        pos_delta = math_util.zero_vec(3)
-
-        if fpos is not None:
-            self.tool_pos = fpos
-            pos_delta = self.tool_pos - fpos
-
-        if forn is not None:
-            self.tool_orn = forn
-            orn_delta = math_util.quat_diff(self.tool_orn, forn)
-
-        return pos_delta, orn_delta
-
     def pinpoint(self, pos, orn, ftype='abs'):
         """
         Accurately reach to the given pose.
@@ -267,11 +224,14 @@ class Arm(Tool):
         :param pos: vec3 float cartesian
         :param orn: vec4 float quaternion
         :param ftype: refer to <reach~ftype>
-        :return: None
+        :return: delta between target and actual pose
         """
         target_pos, target_orn = super(Arm, self).pinpoint(pos, orn, ftype)
-        # For pinpoint, must not use null space to achieve accuracy
         self._move_to(target_pos, target_orn)
+
+        pos_delta = self.tool_pos - fpos
+        orn_delta = math_util.quat_diff(self.tool_orn, forn)
+        return pos_delta, orn_delta
 
     def grasp(self, slide=-1):
         """
