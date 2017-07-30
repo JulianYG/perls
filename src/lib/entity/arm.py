@@ -169,19 +169,18 @@ class Arm(Tool):
 
         end_effector_info = self.kinematics
 
-        end_effector_pos, end_effector_orn = end_effector_info['pos'][18], end_effector_info['orn'][18]
-        import pybullet as p 
-        p.addUserDebugLine(pos, pos + 0.01, [1,0,0], 10, 5)
+        end_effector_pos, end_effector_orn = \
+            end_effector_info['pos'][19], \
+            end_effector_info['orn'][19]
+
         # Repeat same procedure for gripper base link
         # and arm end effector link
         transform = math_util.pose2mat(
             math_util.get_relative_pose(
-                (end_effector_pos, end_effector_orn), (self.tool_pos, self.tool_orn))
+                (end_effector_pos, end_effector_orn),
+                (self.tool_pos, self.tool_orn))
             )
         frame = math_util.pose2mat((pos, orn)).dot(transform)
-        poss = math_util.mat2pose(frame)[0]
-        p.addUserDebugLine(poss, poss + 0.01, [0,0,1], 10, 5)
-        # print(math_util.mat2pose(frame), 'this')
         return math_util.mat2pose(frame)
 
 
@@ -232,6 +231,10 @@ class Arm(Tool):
              self._rest_pose,
              'position',
              dict(reset=True))
+
+        import pybullet as p
+        p.addUserDebugLine(self.tool_pos,
+        self.position_transform(self.tool_pos, self.tool_orn), [1, 0, 0], 5, 50)
 
     def pinpoint(self, pos, orn, ftype='abs'):
         """

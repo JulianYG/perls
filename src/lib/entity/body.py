@@ -867,7 +867,6 @@ class Tool(Body):
         fpos, forn = pos, orn
 
         # Relative pose: convert back to world frame
-        # If we stick to pybullet IK, this is necessary
         if ftype == 'rel':
             fpos, forn = math_util.get_absolute_pose(
                 # Desired pose in absolute world frame
