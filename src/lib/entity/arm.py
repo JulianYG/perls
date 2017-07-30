@@ -213,10 +213,6 @@ class Arm(Tool):
              'position',
              dict(reset=True))
 
-        import pybullet as p
-        p.addUserDebugLine(self.tool_pos,
-        self.position_transform(self.tool_pos, self.tool_orn)[0], [1, 0, 0], 5, 50)
-
     def pinpoint(self, pos, orn, ftype='abs'):
         """
         Accurately reach to the given pose.
