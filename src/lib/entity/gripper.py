@@ -182,6 +182,10 @@ class PrismaticGripper(Tool):
         self.tool_pos = fpos
         self.tool_orn = forn
 
+        pos_delta = self.tool_pos - pos
+        orn_delta = math_util.quat_diff(self.tool_orn, orn)
+        return pos_delta, orn_delta
+
     def grasp(self, slide):
         """
         Perform gripper close/release based on current state

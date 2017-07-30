@@ -159,40 +159,21 @@ class Arm(Tool):
         :param orn: vec4 float quaternion world frame
         :return: transformed pose (pos, orn) in world frame
         """
-        # Get Center of Mass (CoM) of averaging
-        # left/right gripper fingers
-        # First get position of gripper base
-
-        # gripper_base_pos, gripper_base_orn = \
-        #     self._gripper.position_transform(pos, orn)
-        # print(pos, gripper_base_pos, 'here')
-
         end_effector_info = self.kinematics
 
         end_effector_pos, end_effector_orn = \
-            end_effector_info['pos'][19], \
-            end_effector_info['orn'][19]
+            end_effector_info['pos'][-1], \
+            end_effector_info['orn'][-1]
 
         # Repeat same procedure for gripper base link
         # and arm end effector link
         transform = math_util.pose2mat(
             math_util.get_relative_pose(
                 (end_effector_pos, end_effector_orn),
-                (self.tool_pos, self.tool_orn))
+                (self.tool_pos, end_effector_orn))
             )
         frame = math_util.pose2mat((pos, orn)).dot(transform)
         return math_util.mat2pose(frame)
-
-
-
-        # gripper_arm_tran = gripper_base_pos - pos
-
-        # # Math:
-        # # relative: transformed_pos = rotation x (pos - translation)
-        # # absolute: transformed_pos = pos - rotation x abs_frame_orn
-        # rotation = math_util.quat2mat(orn)
-        # target_pos = gripper_base_pos - rotation.dot(gripper_arm_tran)
-        # return target_pos
 
     @abc.abstractmethod
     def _move_to(self, pos, orn, ns=False):
@@ -234,7 +215,7 @@ class Arm(Tool):
 
         import pybullet as p
         p.addUserDebugLine(self.tool_pos,
-        self.position_transform(self.tool_pos, self.tool_orn), [1, 0, 0], 5, 50)
+        self.position_transform(self.tool_pos, self.tool_orn)[0], [1, 0, 0], 5, 50)
 
     def pinpoint(self, pos, orn, ftype='abs'):
         """
@@ -250,8 +231,8 @@ class Arm(Tool):
         target_pos, target_orn = super(Arm, self).pinpoint(pos, orn, ftype)
         self._move_to(target_pos, target_orn)
 
-        pos_delta = self.tool_pos - fpos
-        orn_delta = math_util.quat_diff(self.tool_orn, forn)
+        pos_delta = self.tool_pos - pos
+        orn_delta = math_util.quat_diff(self.tool_orn, orn)
         return pos_delta, orn_delta
 
     def grasp(self, slide=-1):
