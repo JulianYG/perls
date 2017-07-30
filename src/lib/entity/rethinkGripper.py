@@ -1,4 +1,5 @@
 from .gripper import PrismaticGripper
+from ..utils import math_util
 
 
 class RethinkGripper(PrismaticGripper):
@@ -14,6 +15,8 @@ class RethinkGripper(PrismaticGripper):
         # Exactly align with world frame
         orn = (0., 0., 0., 1.) if orn is None else orn
         super(RethinkGripper, self).__init__(tool_id, engine, path, pos, orn, 1, 3)
+
+        self._tip_offset = math_util.vec((0, 0.0725, 0))
 
     def grasp(self, slide=-1):
         if slide > -1:

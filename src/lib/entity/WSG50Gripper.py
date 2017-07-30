@@ -1,4 +1,5 @@
 from .gripper import PrismaticGripper
+from ..utils import math_util
 
 
 class WSG50Gripper(PrismaticGripper):
@@ -12,6 +13,8 @@ class WSG50Gripper(PrismaticGripper):
         pos = (0., 0., 0.7) if pos is None else pos
         orn = (0., 0., 0., 1.) if orn is None else orn
         super(WSG50Gripper, self).__init__(tool_id, engine, path, pos, orn, 4, 6)
+
+        self._tip_offset = math_util.vec((0., 0, 0.15))
 
     def grasp(self, slide=-1):
         if slide > -1:

@@ -41,6 +41,3 @@ class PR2Gripper(PrismaticGripper):
                                       self.joint_specs['lower'][2]],
                                      'position', {})
                 self._close_grip = True
-        import pybullet as p
-        p.addUserDebugLine(self.position_transform(self.tool_pos, self.orn), self.tool_pos, lineWidth=5, lifeTime=10)
-        p.addUserDebugLine(self.pos, self.position_transform(self.tool_pos, self.orn), [1,0,0], lineWidth=5, lifeTime=10)

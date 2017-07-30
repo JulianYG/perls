@@ -122,19 +122,12 @@ class PrismaticGripper(Tool):
         # Get Center of Mass (CoM) of averaging
         # left/right gripper fingers
 
-        print(pos, orn ,self.pos, self.orn)
-
-        base_pos, base_orn = math_util.get_relative_pose(
-            (pos, orn), (self.pos, self.orn))
-
-        # translation = (
-        #     self.kinematics['abs_frame_pos'][self._left_finger_idx] +
-        #     self.kinematics['abs_frame_pos'][self._right_finger_idx]) / 2. - \
-        #     self.pos
-
-        # # Since desired frame is aligned with base frame...
-        # rotation = math_util.quat2mat(orn)
-        # base_pos = pos - rotation.dot(translation)
+        transform = math_util.pose2mat(
+            math_util.get_relative_pose(
+                (self.pos, self.orn), (self.tool_pos, orn))
+            )
+        frame = math_util.pose2mat((pos, orn)).dot(transform)
+        base_pos = math_util.mat2pose(frame)[0]
         return base_pos
 
     ###
