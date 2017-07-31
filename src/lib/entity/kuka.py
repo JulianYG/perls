@@ -3,22 +3,23 @@ import openravepy
 from .arm import Arm
 from .WSG50Gripper import WSG50Gripper
 
-from ..utils import math_util
+from ..utils import math_util, io_util
+
+from openravepy.misc import InitOpenRAVELogging 
+InitOpenRAVELogging()
 
 
 class Kuka(Arm):
 
     def __init__(self, tool_id, engine,
                  path=None,
-                 ik_path=None,
                  pos=(0., 0., 0.67),
                  orn=(0., 0., 0., 1.),
                  collision_checking=True,
                  gripper=None):
-        path = path or 'kuka_iiwa/model_vr_limits.urdf'
-        ik_path = ik_path or 'kuka_iiwa/kuka_arm.robot.xml'
+        path = path or '../../data/kuka_iiwa/model_vr_limits.urdf'
         super(Kuka, self).__init__(
-            tool_id, engine, path, ik_path, pos, orn, collision_checking, gripper)
+            tool_id, engine, path, pos, orn, collision_checking, gripper)
         self._tip_offset = math_util.vec([0., 0., 0.045])
         self._rest_pose = (0., 0., 0., 1.570793, 0., -1.04719755, 0.)
         self.reset()
@@ -53,12 +54,16 @@ class Kuka(Arm):
             dict(positionGains=(.05,) * 2,
                  velocityGains=(1.,) * 2))
 
-    def _build_ik(self, path, ik_path):
+    def _build_ik(self, path_root):
+
+        bullet_model_path = io_util.pjoin(path_root, 'model_vr_limits.urdf')
+        ikfast_model_path = io_util.pjoin(path_root, 'kuka_arm.robot.xml')
+        ikfast_base_path = io_util.pjoin(path_root, 'sawyer_base.srdf')
 
         openravepy.RaveInitialize(True, level=openravepy.DebugLevel.Error)
         env = openravepy.Environment()
-
-        env.Load(ik_path) # load a scene
+        print(ikfast_model_path)
+        env.Load(ikfast_model_path) # load a scene
 
         robot = env.GetRobots()[0] # get the first robot
 
@@ -70,7 +75,7 @@ class Kuka(Arm):
 
         if not ikmodel.load():
             ikmodel.autogenerate()
-        return ikmodel
+        return bullet_model_path, ikmodel
 
     def _move_to(self, pos, orn, ns=False):
         """

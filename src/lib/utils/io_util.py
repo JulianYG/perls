@@ -56,6 +56,11 @@ def str2bool(string):
     return string.lower() == 'true'
 
 
+def pjoin(dirname, fname):
+
+    return os.path.join(dirname, fname)
+
+
 def loginfo(msg, itype):
     """
     Print message and flush to terminal
@@ -213,7 +218,6 @@ def parse_arm_elem(arm_elem):
             dict(
                 id=tid,
                 path=asset.attrib.get('path', None),
-                ik_path=asset.attrib.get('ik_path', None),
                 pos=[float(f) for
                      f in pos.text.split(' ')] if 
                 pos is not None else (0., 0., 0.8),

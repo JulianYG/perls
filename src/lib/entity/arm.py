@@ -6,7 +6,7 @@ from ..utils import math_util
 
 class Arm(Tool):
 
-    def __init__(self, tid, engine, path, ik_path,
+    def __init__(self, tid, engine, path_root, 
                  pos, orn, collision_checking,
                  gripper):
         """
@@ -15,10 +15,10 @@ class Arm(Tool):
         :param pos: initial position vec3 float cartesian
         :param orn: initial orientation vec4 float quat
         """
+        path, self._ik_model = self._build_ik(path_root)
         super(Arm, self).__init__(tid, engine, path, pos, orn, fixed=True)
 
         # Reset pose is defined in subclasses
-        self._ik_model = self._build_ik(path, ik_path)
         self._gripper = gripper
         self._rest_pose = (0., ) * self._dof
         self._end_idx = self._dof - 1
@@ -67,7 +67,7 @@ class Arm(Tool):
         some offset based on robot's rest pose.
         :return: vec4 float quaternion in Cartesian
         """
-        return self._gripper.tool_orn
+        return self.kinematics['orn'][-1]
 
     @Tool.v.getter
     def v(self):
@@ -122,10 +122,13 @@ class Arm(Tool):
         raise NotImplemented
 
     @abc.abstractmethod
-    def _build_ik(self, path, ik_path):
+    def _build_ik(self, path_root):
         """
         Build the ik model for the arm.
-        :return: The built IK model in openrave.
+        :param path_root: The absolute path directory that stores 
+        pybullet asset file, and IKFast model file, base files.
+        :return: pybullet asset file path, 
+        and the built IKFast model.
         """
         raise NotImplemented
 
@@ -170,7 +173,7 @@ class Arm(Tool):
         transform = math_util.pose2mat(
             math_util.get_relative_pose(
                 (end_effector_pos, end_effector_orn),
-                (self.tool_pos, end_effector_orn))
+                (self.tool_pos, self.tool_orn))
             )
         frame = math_util.pose2mat((pos, orn)).dot(transform)
         return math_util.mat2pose(frame)

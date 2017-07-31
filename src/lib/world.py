@@ -205,7 +205,6 @@ class World(object):
                 arm_spec['id'],
                 self._engine,
                 path=arm_spec['path'],
-                ik_path=arm_spec['ik_path'],
                 pos=arm_spec['pos'], orn=arm_spec['orn'],
                 collision_checking=arm_spec['collision_checking'],
                 gripper=gripper_body)
@@ -295,7 +294,7 @@ class World(object):
         :return: render start state
         """
         status = self._engine.start_engine(frame)
-        self._engine.hold()
+        self._engine.hold(200)
         return status
 
     def notify_engine(self, stat):

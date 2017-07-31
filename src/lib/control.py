@@ -283,13 +283,7 @@ class Controller(object):
         world.boot(display.info['frame'])
 
         # Update initial states:
-        init_states = world.get_states(('tool', 'tool_pose'))[0]
-        # First control states
-        for tid, init_pose in init_states.items():
-            self._states['tool'][tid] = (
-                init_pose[0], 
-                # Use radians
-                math_util.quat2euler(init_pose[1]))
+        self._control_update(world)
 
         # Next display states
         self._view_update(display)
@@ -368,11 +362,6 @@ class Controller(object):
         :return: None
         """
 
-        import pybullet as p
-        tooll = world.get_tool('m', 1)
-        p.addUserDebugLine(tooll.tool_pos,
-                           tooll.position_transform(tooll.tool_pos, tooll.tool_orn)[0], [1, 0, 0], 5, 5)
-
         # Only keep consistency for GUI usage
         elapsed_time = 1 if display.info['frame'] != 'gui' else elapsed_time * 50
         commands, instructions, view, update = \
@@ -437,9 +426,9 @@ class Controller(object):
                 if method == 'rst' and value:
                     loginfo('Resetting...', FONT.model)
                     world.reset()
+
                     # Update the states
-                    self._states['tool'] = world.get_states(
-                        ('tool', 'tool_pose'))[0]
+                    self._control_update(world)
                     loginfo('World is reset.', FONT.model)
 
                 elif method == 'reach':
@@ -501,8 +490,6 @@ class Controller(object):
         camera events, adjust view, as well as interact with
         the world in run time if necessary
         :param display: the view side of system
-        :param signal: display signals received from
-        event handler
         :return: None
         """
         camera_pos, camerq_orn = display.get_camera_pose(otype='deg')
@@ -510,6 +497,20 @@ class Controller(object):
         # self._states['camera']['flen'] = 1e-3
         self._states['camera']['pitch'] = camerq_orn[0]
         self._states['camera']['yaw'] = camerq_orn[1]
+
+    def _control_update(self, world):
+        """
+        Update the internal control states of tool pose
+        :param world: The world model that provides tools
+        :return: None
+        """
+        init_states = world.get_states(('tool', 'tool_pose'))[0]
+        # First control states
+        for tid, init_pose in init_states.items():
+            self._states['tool'][tid] = (
+                init_pose[0], 
+                # Use radians
+                math_util.quat2euler(init_pose[1]))
 
     def _checker_interrupt(self, signal):
         """
