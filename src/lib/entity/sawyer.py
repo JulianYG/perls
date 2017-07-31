@@ -100,14 +100,14 @@ class Sawyer(Arm):
     def _move_to(self, pos, orn, cc=True):
 
         # Convert to pose in robot base frame
-        orn = self.kinematics['orn'][18] if orn is None else orn
+        orn = self.kinematics['orn'][19] if orn is None else orn
         pos, orn = math_util.get_relative_pose((pos, orn), self.pose)
 
         # openrave quaternion uses wxyz convention
         ik_solution = OpenRaveEngine.solve_ik(
             self._ik_model, pos, orn, 
             math_util.vec(self.joint_states['pos'])[self._model_joints])
-
+   
         specs = self.joint_specs
 
         self.joint_states = (
