@@ -15,7 +15,7 @@ class Arm(Tool):
         :param pos: initial position vec3 float cartesian
         :param orn: initial orientation vec4 float quat
         """
-        path, self._ik_model = self._build_ik(path_root)
+        path, self._ik_model, self._openrave_robot = self._build_ik(path_root)
         super(Arm, self).__init__(tid, engine, path, pos, orn, fixed=True)
 
         # Reset pose is defined in subclasses

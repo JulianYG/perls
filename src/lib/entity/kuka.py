@@ -56,6 +56,14 @@ class Kuka(Arm):
             dict(positionGains=(.05,) * 2,
                  velocityGains=(1.,) * 2))
 
+    def reset(self):
+        """
+        Reset tool to initial positions
+        :return: None
+        """
+        super(Kuka, self).reset()
+        self._openrave_robot.SetDOFValues(self._rest_pose, [0,1,2,3,4,5,6]) # Set the joint values
+
     def _build_ik(self, path_root):
 
         bullet_model_path = io_util.pjoin(path_root, 'model_vr_limits.urdf')
@@ -64,11 +72,9 @@ class Kuka(Arm):
 
         openravepy.RaveInitialize(True, level=openravepy.DebugLevel.Error)
         env = openravepy.Environment()
-        print(ikfast_model_path)
         env.Load(ikfast_model_path) # load a scene
 
         robot = env.GetRobots()[0] # get the first robot
-
         robot.SetActiveManipulator('arm') # set the manipulator
 
         ikmodel = openravepy.databases.inversekinematics.InverseKinematicsModel(
@@ -77,7 +83,7 @@ class Kuka(Arm):
 
         if not ikmodel.load():
             ikmodel.autogenerate()
-        return bullet_model_path, ikmodel
+        return bullet_model_path, ikmodel, robot
 
     def _move_to(self, pos, orn, ns=False):
         """

@@ -14,7 +14,7 @@ __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
 __license__ = 'private'
 __version__ = '0.1'
-
+from IPython import embed
 
 class OpenRaveEngine(FakeStateEngine):
 
@@ -41,9 +41,17 @@ class OpenRaveEngine(FakeStateEngine):
         :return: the selected IK solution
         """
         dmat = math_util.pose2mat((pos, orn))
-        if not closest:
-            return ik_model.manip.FindIKSolution(
+        if closest:
+            solution = ik_model.manip.FindIKSolution(
                 dmat, orp.IkFilterOptions.CheckEnvCollisions)
+
+            if solution is not None:
+                return solution
+            # Otherwise stay the same
+            else:
+                logerr('IK Response Invalid.', FONT.control)
+                return joint_pos
+
         else:
             assert joint_pos is not None, \
                 'Selecting nearest neighbor needs current states'

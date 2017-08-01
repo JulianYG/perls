@@ -96,7 +96,7 @@ class PrismaticGripper(Tool):
             logerr('Cannot move attached gripper.',
                    FONT.model)
             return
-
+        pos = self.position_transform(pos, self.tool_orn)[0]
         # Note here it only cares about the position,
         # thus not solving using constraints
         self.track(pos, self.tool_orn, self._max_force)
@@ -138,6 +138,7 @@ class PrismaticGripper(Tool):
         """
         pos, orn, _ = self._init_state
         if not self.fix:
+            # pos, orn = self.position_transform(pos, orn)
             self.track(pos, orn, self._max_force)
         self.grasp(0)
         

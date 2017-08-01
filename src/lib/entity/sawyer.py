@@ -20,18 +20,17 @@ class Sawyer(Arm):
         path = path or '../../data/sawyer_robot/sawyer_description/urdf/'
         super(Sawyer, self).__init__(
             tool_id, engine, path, pos, orn, collision_checking, gripper)
-        self._tip_offset = math_util.vec([0., 0., 0.155])
+        self._tip_offset = math_util.vec([0., 0., 0.153])
 
         # Active joints indices: 5, 10, 11, 12, 13, 15, 18
         # Note the urdf has been modified and removed right_hand link, joint
-        self._rest_pose = [0, 0, 0, 0, 0,
+        self._rest_pose = math_util.vec((0, 0, 0, 0, 0,
                            0, 0, 0, 0, 0,
                            -1.18, 0.00, 2.18, 0.00,
-                           0, 0.57, 0, 0, 3.3161]
+                           0, 0.57, 0, 0, 3.3161))
         self._dof = 7
-        
         self._active_joints = [5, 10, 11, 12, 13, 15, 18]
-        self._model_joints = [0, 1, 2, 3, 4, 5, 6]
+
         self.reset()
 
     @property
@@ -74,9 +73,17 @@ class Sawyer(Arm):
             dict(positionGains=(.05,) * 2,
                  velocityGains=(1.,) * 2))
 
+    def reset(self):
+        """
+        Reset tool to initial positions
+        :return: None
+        """
+        super(Sawyer, self).reset()
+        self._openrave_robot.SetDOFValues(self._rest_pose[[self._active_joints]], [1,2,3,4,5,6,7]) # Set the joint values
+
     def _build_ik(self, path_root):
 
-        bullet_model_path = io_util.pjoin(path_root, 'sawyer_orig.urdf')
+        bullet_model_path = io_util.pjoin(path_root, 'sawyer.urdf')
         ikfast_model_path = io_util.pjoin(path_root, 'sawyer_arm.urdf')
         ikfast_base_path = io_util.pjoin(path_root, 'sawyer_base.srdf')
 
@@ -95,19 +102,23 @@ class Sawyer(Arm):
         # Generate IK solver set if not already loaded
         if not ikmodel.load():
             ikmodel.autogenerate()
-        return bullet_model_path, ikmodel
+        return bullet_model_path, ikmodel, robot
 
     def _move_to(self, pos, orn, cc=True):
 
         # Convert to pose in robot base frame
-        orn = self.kinematics['orn'][19] if orn is None else orn
+        orn = self.kinematics['orn'][-1] if orn is None else orn
+
+        import pybullet as p
+        p.addUserDebugLine(pos, self.tool_pos, [1,0,0], 5, 3)
         pos, orn = math_util.get_relative_pose((pos, orn), self.pose)
 
+        
         # openrave quaternion uses wxyz convention
         ik_solution = OpenRaveEngine.solve_ik(
             self._ik_model, pos, orn, 
-            math_util.vec(self.joint_states['pos'])[self._model_joints])
-   
+            math_util.vec(self.joint_states['pos'])[self._active_joints])
+
         specs = self.joint_specs
 
         self.joint_states = (
@@ -115,3 +126,8 @@ class Sawyer(Arm):
             dict(forces=math_util.vec(specs['max_force'])[self._active_joints],
                  positionGains=(.03,) * self._dof,
                  velocityGains=(1.,) * self._dof))
+        # Set the joint values
+        self._openrave_robot.SetDOFValues(ik_solution, [1,2,3,4,5,6,7]) 
+
+        while math_util.pos_diff(math_util.vec(self.joint_states['pos'])[self._active_joints], ik_solution, 0) > .01:
+            self._engine.hold()
