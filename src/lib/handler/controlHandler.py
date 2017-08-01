@@ -102,7 +102,7 @@ class KeyboardEventHandler(ControlHandler):
         if 'cam' in keys and keys['cam'][1] == 'holding':
             if 'pos' in keys and keys['pos'][1] == 'holding':
 
-            	# View control is 100 times more sensitive than robot control
+                # View control is 100 times more sensitive than robot control
                 raw_delta = event_listener.HOT_KEY[keys['pos'][0]] * self._sens
                 delta = math_util.vec((raw_delta[1], -raw_delta[0], raw_delta[2]))
                 self._signal['camera'].append(('pos', delta))

@@ -14,7 +14,7 @@ __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
 __license__ = 'private'
 __version__ = '0.1'
-from IPython import embed
+
 
 class OpenRaveEngine(FakeStateEngine):
 
@@ -26,8 +26,8 @@ class OpenRaveEngine(FakeStateEngine):
             e_id, max_run_time, async, step_size)
 
     @staticmethod
-    def solve_ik(ik_model, pos, orn,
-                 joint_pos=None, closest=True):
+    def accurate_ik(ik_model, pos, orn,
+                    joint_pos=None, closest=True):
         """
         Generate accurate IK solutions
         :param ik_model: inverse kinematics model
@@ -41,17 +41,10 @@ class OpenRaveEngine(FakeStateEngine):
         :return: the selected IK solution
         """
         dmat = math_util.pose2mat((pos, orn))
+        solution = None
         if not closest:
             solution = ik_model.manip.FindIKSolution(
                 dmat, orp.IkFilterOptions.CheckEnvCollisions)
-
-            if solution is not None:
-                return solution
-            # Otherwise stay the same
-            else:
-                logerr('IK Response Invalid.', FONT.control)
-                return joint_pos
-
         else:
             assert joint_pos is not None, \
                 'Selecting nearest neighbor needs current states'
@@ -63,11 +56,13 @@ class OpenRaveEngine(FakeStateEngine):
                 best_idx = math_util.pos_diff(
                     solutions, joint_pos, 
                     weights=[100, 80, 60, 40, 30, 20, 5]).argmin()
-                return solutions[best_idx]
-            # Otherwise stay the same
-            else:
-                logerr('IK Response Invalid.', FONT.control)
-                return joint_pos
+                solution = solutions[best_idx]
+        # Otherwise stay the same
+        if solution is None:
+            logerr('IK Response Invalid.', FONT.control)
+            return joint_pos
+        else:
+            return solution
 
 
 class MujocoEngine(FakeStateEngine):
@@ -594,18 +589,6 @@ class BulletPhysicsEngine(FakeStateEngine):
 
     ###
     # Arm related methods
-    def solve_ik(self, uid, lid, pos, damping, orn=None):
-        if orn is None:
-            return p.calculateInverseKinematics(
-                uid, lid, targetPosition=pos,
-                jointDamping=tuple(damping),
-                physicsClientId=self._physics_server_id)
-        else:
-            return p.calculateInverseKinematics(
-                uid, lid, targetPosition=pos,
-                targetOrientation=orn, jointDamping=tuple(damping),
-                physicsClientId=self._physics_server_id)
-
     def solve_ik_null_space(self, uid, lid, pos,
                             lower, upper, ranges,
                             rest, damping, orn=None):

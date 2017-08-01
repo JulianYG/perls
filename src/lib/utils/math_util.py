@@ -7,7 +7,7 @@ Note: for all quaternions, uses [x,y,z,w]
 """
 
 pi = np.pi
-_EPS = np.finfo(float).eps * 4.
+EPS = np.finfo(float).eps * 4.
 
 # axis sequences for Euler angles
 _NEXT_AXIS = [1, 2, 0, 1]
@@ -317,7 +317,7 @@ def quat2mat(quaternion):
     """
     q = np.array(quaternion, dtype=np.float32, copy=True)[[3,0,1,2]]
     n = np.dot(q, q)
-    if n < _EPS:
+    if n < EPS:
         return np.identity(3)
     q *= math.sqrt(2.0 / n)
     q = np.outer(q, q)
@@ -401,7 +401,7 @@ def mat2euler(rmat, axes='sxyz'):
     M = np.array(rmat, dtype=np.float32, copy=False)[:3, :3]
     if repetition:
         sy = math.sqrt(M[i, j] * M[i, j] + M[i, k] * M[i, k])
-        if sy > _EPS:
+        if sy > EPS:
             ax = math.atan2(M[i, j], M[i, k])
             ay = math.atan2(sy, M[i, i])
             az = math.atan2(M[j, i], -M[k, i])
@@ -411,7 +411,7 @@ def mat2euler(rmat, axes='sxyz'):
             az = 0.0
     else:
         cy = math.sqrt(M[i, i] * M[i, i] + M[j, i] * M[j, i])
-        if cy > _EPS:
+        if cy > EPS:
             ax = math.atan2(M[k, j], M[k, k])
             ay = math.atan2(-M[k, i], cy)
             az = math.atan2(M[j, i], M[i, i])

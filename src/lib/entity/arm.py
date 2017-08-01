@@ -1,5 +1,7 @@
 import abc
 
+from ..state.physicsEngine import OpenRaveEngine
+
 from .body import Tool
 from ..utils import math_util
 
@@ -15,14 +17,16 @@ class Arm(Tool):
         :param pos: initial position vec3 float cartesian
         :param orn: initial orientation vec4 float quat
         """
-        path, self._ik_model, self._openrave_robot = self._build_ik(path_root)
+        path, self._ik_model, self._openrave_robot, self._model_dof = \
+            self._build_ik(path_root)
         super(Arm, self).__init__(tid, engine, path, pos, orn, fixed=True)
 
         # Reset pose is defined in subclasses
         self._gripper = gripper
         self._rest_pose = (0., ) * self._dof
         self._end_idx = self._dof - 1
-        self._collision_checking = collision_checking
+
+        self.collision_checking = collision_checking
 
     @property
     def tid(self):
@@ -33,14 +37,13 @@ class Arm(Tool):
         """
         return 'm{}'.format(self._tool_id)
 
-    @property
-    def collision_checking(self):
+    @abc.abstractproperty
+    def active_joints(self):
         """
-        Property saying if the robot is using null space to
-        solve IK
-        :return: Boolean
+        Return the joint indices that are active (settable)
+        :return: a list of indices integers
         """
-        return self._collision_checking
+        raise NotImplemented
 
     @property
     def pose(self):
@@ -85,15 +88,6 @@ class Arm(Tool):
         """
         return self._gripper.omega
 
-    @collision_checking.setter
-    def collision_checking(self, collision_checking):
-        """
-        Set robot to use null space IK solver or not
-        :param collision_checking: True/false
-        :return: None
-        """
-        self._collision_checking = collision_checking
-
     @tool_pos.setter
     def tool_pos(self, pos):
         """
@@ -105,7 +99,7 @@ class Arm(Tool):
         :return: None
         """
         target_pos, _ = self.position_transform(pos, self.tool_orn)
-        self._move_to(target_pos, None, self._collision_checking)
+        self._move_to(target_pos, None, False, True)
 
     @tool_orn.setter
     def tool_orn(self, orn):
@@ -116,10 +110,32 @@ class Arm(Tool):
         robot arms, it preserves [roll, pitch] but
         abandons [yaw].
         :param orn: vec4 float in quaternion form,
-        or vec3 float in euler form
+        or vec3 float in euler radian
         :return: None
         """
-        raise NotImplemented
+        if len(orn) == 4:
+            orn = math_util.quat2euler(orn)
+        joint_spec = self.joint_specs
+        eef_joints = self.active_joints[-2:]
+
+        # Set the joints if within range
+        if joint_spec['lower'][eef_joints[0]] <= orn[0] \
+                <= joint_spec['upper'][eef_joints[0]]:
+            self.joint_states = (
+                # Use last two DOFs
+                [eef_joints[0]],
+                [orn[0]], 'position',
+                dict(positionGains=(.05,),
+                     velocityGains=(1.,)))
+
+        if joint_spec['lower'][eef_joints[1]] <= orn[1] \
+                <= joint_spec['upper'][eef_joints[1]]:
+            self.joint_states = (
+                # Use last two DOFs
+                [eef_joints[1]],
+                [orn[1]], 'position',
+                dict(positionGains=(.05,),
+                     velocityGains=(1.,)))
 
     @abc.abstractmethod
     def _build_ik(self, path_root):
@@ -178,17 +194,71 @@ class Arm(Tool):
         frame = math_util.pose2mat((pos, orn)).dot(transform)
         return math_util.mat2pose(frame)
 
-    @abc.abstractmethod
-    def _move_to(self, pos, orn, ns=False):
+    def _move_to(self, pos, orn, precise, fast):
         """
         Given pose, call IK to move
         :param pos: vec3 float cartesian
         :param orn: vec4 float quaternion
-        :param ns: boolean indicating whether solve for
-        null space solutions. Default is False.
+        :param precise: boolean indicating whether
+        using precise IK for motion planning. If
+        true, reaches millimeter level accuracy. However
+        this may not be necessary for real time control,
+        in order to achieve better performance in time
+        and smoothness.
+        ***This is a trade-off between smoothness and
+         accuracy****
         :return: None
         """
-        raise NotImplemented
+        # Convert to pose in robot base frame
+        orn = self.kinematics['orn'][-1] if orn is None else orn
+        #
+        # import pybullet as p
+        # p.addUserDebugLine(pos, self.tool_pos, [1,0,0], 5, 3)
+
+        specs = self.joint_specs
+        if precise:
+            if fast:
+                # Set the joint values in openrave model
+                self._openrave_robot.SetDOFValues(
+                    math_util.vec(self.joint_states['pos'])[self.active_joints],
+                    self._model_dof)
+
+            pos, orn = math_util.get_relative_pose((pos, orn), self.pose)
+            ik_solution = OpenRaveEngine.accurate_ik(
+                self._ik_model, pos, orn,
+                math_util.vec(self.joint_states['pos'])[self.active_joints],
+                closest=not fast
+            )
+
+        else:
+            damps = math_util.clip_vec(specs['damping'], .1, 1.)
+            lower_limits = math_util.vec(specs['lower'])
+            upper_limits = math_util.vec(specs['upper'])
+            ranges = upper_limits - lower_limits
+
+            # Solve using null space
+            ik_solution = self._engine.solve_ik_null_space(
+                self._uid, self._end_idx,
+                pos, orn=orn,
+                lower=lower_limits,
+                upper=upper_limits,
+                ranges=ranges,
+                rest=self._rest_pose,
+                damping=damps)
+
+        self.joint_states = (
+            self.active_joints, ik_solution, 'position',
+            dict(forces=math_util.vec(specs['max_force'])[self.active_joints],
+                 positionGains=(.03,) * self._dof,
+                 velocityGains=(1.,) * self._dof))
+
+        # TODO :
+        # if self.collision_checking:
+        # need to wait until reached desired states, just as in real case
+        while math_util.pos_diff(math_util.vec(self.joint_states['pos'])[self.active_joints],
+                                 ik_solution, 0) > .01:
+            # self._engine.hold()
+            continue
 
     ###
     #  High level functionality
@@ -216,7 +286,8 @@ class Arm(Tool):
              'position',
              dict(reset=True))
 
-    def pinpoint(self, pos, orn, ftype='abs'):
+    def pinpoint(self, pos, orn, ftype='abs',
+                 fast=False):
         """
         Accurately reach to the given pose.
         Note this operation sets position and orientation
@@ -225,10 +296,17 @@ class Arm(Tool):
         :param pos: vec3 float cartesian
         :param orn: vec4 float quaternion
         :param ftype: refer to <reach~ftype>
+        :param fast: boolean indicating whether use fast
+        solution. Fast requires less computation
+        time, but may result in big arm movements. If set
+        to false, the solutions are weighted to find the
+        closest neighbor of current joint states.
+        ***This is a trade-off between smoothness and
+        speed***
         :return: delta between target and actual pose
         """
         target_pos, target_orn = super(Arm, self).pinpoint(pos, orn, ftype)
-        self._move_to(target_pos, target_orn)
+        self._move_to(target_pos, target_orn, True, fast)
 
         pos_delta = self.tool_pos - pos
         orn_delta = math_util.quat_diff(self.tool_orn, orn)

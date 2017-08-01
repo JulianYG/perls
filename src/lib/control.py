@@ -194,8 +194,6 @@ class Controller(object):
         display = View(conf.view_desc, Adapter(world), ge)
 
         # Set up control event interruption handlers
-        # TODO
-
         ctrl_handler = Controller._CTRL_HANDLERS[conf.control_type](
             pe.ps_id, conf.sensitivity, conf.rate
         )
@@ -397,7 +395,6 @@ class Controller(object):
             tool = world.get_tool(signal['tid'], signal['key'])
 
             # First check if there's low level commands
-            # TODO: Think if cmd/ins needs to be a class
             # A sequential list of commands to execute in order
             # These low level commands are set to absolute
             # values in all cases
@@ -436,61 +433,54 @@ class Controller(object):
                     # Cartesian, quaternion
                     r_pos, r_orn = value
                     i_pos, i_orn = self._states['tool'][tool.tid]
-                    
+
                     # Orientation is always relative to the
                     # world frame, that is, absolute
                     r_mat = math_util.quat2mat(tool.orn)
 
                     if r_pos is not None:
+                        # Scaling down the speed for robot arm
+                        if tool.tid[0] == 'm':
+                            r_pos /= 8.
+
                         # Increment to get absolute pos
                         # Take account of rotation
-                        if tool.tid[0] == 'm':
-                            r_pos /= 8.    
                         i_pos += r_mat.dot(r_pos * elapsed_time)
                         tool.reach(i_pos, None)
 
                     if r_orn is not None:
                         ###
-                        # Note: clipping does not happen here because
-                        # arm and gripper are treated in the same way.
-                        # Clipping would result in gripper not able to
-                        # change orn. However, clipping here would give
-                        # arm perfect response. Currently the arm end
-                        # effector will switch position when reaching its
-                        # limit. This is trade-off, sadly.
                         # Can try directly setting joint states here
-
-                        # TODO: maybe clipping can happen here
                         i_orn += r_orn * elapsed_time
                         if tool.tid[0] == 'm':
                             eef_joints = tool.active_joints[-2:]
                             joint_spec = tool.joint_specs
 
+                            # Perform the clipping here
                             i_orn = math_util.clip_vec(
                                 math_util.vec((i_orn[1], i_orn[0])),
                                 math_util.vec(joint_spec['lower'])[eef_joints],
                                 math_util.vec(joint_spec['upper'])[eef_joints])
-                            i_orn = math_util.vec((i_orn[0], i_orn[1], None))
+                            i_orn = math_util.vec((i_orn[0], i_orn[1], 0))
+
+                            self._states['tool'][tool.tid][1] = \
+                                math_util.vec((i_orn[1], i_orn[0], 0))
+                        else:
+                            self._states['tool'][tool.tid][1] = \
+                                math_util.vec(i_orn)
                         tool.reach(None, i_orn)
 
                     pos_diff = tool.tool_pos - i_pos
-                    # orn_diff = math_util.quat2euler(tool.tool_orn) - i_orn
-                    print(tool.tool_pos, pos_diff, i_pos)
-                    if math_util.rms(pos_diff) > .1:
+                    # TODO: debug here
+                    # print(tool.tool_pos, pos_diff, i_pos)
+
+                    if math_util.rms(pos_diff) > .2:
                         loginfo('Tool position out of reach. Set back.',
                                 FONT.warning)
                         state_pose = world.get_states(
                             ('tool', 'tool_pose'))[0][tool.tid]
                         self._states['tool'][tool.tid] = \
-                            (state_pose[0], math_util.quat2euler(tool.tool_orn))
-
-                    # if math_util.rms(orn_diff) > 0.1:
-                    #     loginfo('Tool orientation out of reach. Set back.',
-                    #             FONT.warning)
-                    #     state_pose = world.get_states(
-                    #         ('tool', 'tool_pose'))[0][tool.tid]
-                    #     self._states['tool'][tool.tid] = \
-                    #         (tool.tool_pos, state_pose[1])
+                            [state_pose[0], math_util.quat2euler(tool.tool_orn)]
 
                 elif method == 'grasp':
                     tool.grasp(value)
@@ -527,10 +517,10 @@ class Controller(object):
         init_states = world.get_states(('tool', 'tool_pose'))[0]
         # First control states
         for tid, init_pose in init_states.items():
-            self._states['tool'][tid] = (
+            self._states['tool'][tid] = [
                 init_pose[0], 
                 # Use radians
-                math_util.quat2euler(init_pose[1]))
+                math_util.quat2euler(init_pose[1])]
 
     def _checker_interrupt(self, signal):
         """

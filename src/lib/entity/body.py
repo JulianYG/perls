@@ -42,6 +42,7 @@ class Body(object):
 
         self._children = dict() # No children constraints initially
         self._texture = dict()  # No texture initially
+
         self._uid, self._links, self._joints = \
             self._engine.load_asset(path, pos, orn, fixed)
         self._name = self._engine.get_body_name(self._uid)
@@ -459,7 +460,7 @@ class Body(object):
     @attach_children.setter
     def attach_children(
             self, (lid, child_uid, child_lid, jtype, jaxis,
-            parent_pos, child_pos, parent_orn, child_orn)):
+                   parent_pos, child_pos, parent_orn, child_orn)):
         """
         Attach a child body B on this parent body A
         Required input:
@@ -820,7 +821,8 @@ class Tool(Body):
         """
         raise NotImplemented
 
-    ### Helper functions
+    ###
+    #  Helper functions
 
     @abc.abstractmethod
     def position_transform(self, pos, orn):
