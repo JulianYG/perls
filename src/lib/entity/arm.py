@@ -206,7 +206,8 @@ class Arm(Tool):
         in order to achieve better performance in time
         and smoothness.
         ***This is a trade-off between smoothness and
-         accuracy****
+         accuracy***
+        :param fast: refer to <pinpoint::fast>
         :return: None
         """
         # Convert to pose in robot base frame
