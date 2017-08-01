@@ -131,7 +131,7 @@ class KeyboardEventHandler(ControlHandler):
                 if label == 'grasp' and status == 'releasing':
                     ins.append((label, -1))
                 if label == 'pos' and status == 'holding':
-                    ins.append(('reach', (event_listener.HOT_KEY[key] * self._sens / 10, None)))
+                    ins.append(('reach', (event_listener.HOT_KEY[key] * self._sens, None)))
                 if label == 'orn' and status == 'holding':
                     orn = event_listener.HOT_KEY[key] * self._sens
 

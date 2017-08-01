@@ -41,7 +41,7 @@ class OpenRaveEngine(FakeStateEngine):
         :return: the selected IK solution
         """
         dmat = math_util.pose2mat((pos, orn))
-        if closest:
+        if not closest:
             solution = ik_model.manip.FindIKSolution(
                 dmat, orp.IkFilterOptions.CheckEnvCollisions)
 
@@ -60,7 +60,9 @@ class OpenRaveEngine(FakeStateEngine):
  
             # If solution found 
             if solutions.size > 0:
-                best_idx = math_util.pos_diff(solutions, joint_pos).argmin()
+                best_idx = math_util.pos_diff(
+                    solutions, joint_pos, 
+                    weights=[100, 80, 60, 40, 30, 20, 5]).argmin()
                 return solutions[best_idx]
             # Otherwise stay the same
             else:

@@ -129,7 +129,7 @@ def pose_diff(pose1, pose2):
     return pos_xdiff, orn_xdiff
 
 
-def pos_diff(pos1, pos2, axis=1):
+def pos_diff(pos1, pos2, axis=1, weights=None):
     """
     Find the absolute squared difference between given positions
     :param pos1: numbers in some vectorizable form
@@ -139,7 +139,10 @@ def pos_diff(pos1, pos2, axis=1):
     """
     pos1 = np.array(pos1, dtype=np.float32)
     pos2 = np.array(pos2, dtype=np.float32)
-    delta = np.sum((pos1 - pos2) ** 2, axis=axis)
+    if weights is None:
+        delta = np.sum((pos1 - pos2) ** 2, axis=axis)
+    else:
+        delta = np.sum(((pos1 - pos2) * weights) ** 2, axis=axis)
     return delta
 
 

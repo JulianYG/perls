@@ -444,6 +444,8 @@ class Controller(object):
                     if r_pos is not None:
                         # Increment to get absolute pos
                         # Take account of rotation
+                        if tool.tid[0] == 'm':
+                            r_pos /= 8.    
                         i_pos += r_mat.dot(r_pos * elapsed_time)
                         tool.reach(i_pos, None)
 
@@ -460,12 +462,21 @@ class Controller(object):
 
                         # TODO: maybe clipping can happen here
                         i_orn += r_orn * elapsed_time
+                        if tool.tid[0] == 'm':
+                            eef_joints = tool.active_joints[-2:]
+                            joint_spec = tool.joint_specs
+
+                            i_orn = math_util.clip_vec(
+                                math_util.vec((i_orn[1], i_orn[0])),
+                                math_util.vec(joint_spec['lower'])[eef_joints],
+                                math_util.vec(joint_spec['upper'])[eef_joints])
+                            i_orn = math_util.vec((i_orn[0], i_orn[1], None))
                         tool.reach(None, i_orn)
 
                     pos_diff = tool.tool_pos - i_pos
                     # orn_diff = math_util.quat2euler(tool.tool_orn) - i_orn
-
-                    if math_util.rms(pos_diff) > .5:
+                    print(tool.tool_pos, pos_diff, i_pos)
+                    if math_util.rms(pos_diff) > .1:
                         loginfo('Tool position out of reach. Set back.',
                                 FONT.warning)
                         state_pose = world.get_states(

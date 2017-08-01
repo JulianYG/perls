@@ -29,8 +29,7 @@ class Sawyer(Arm):
                            -1.18, 0.00, 2.18, 0.00,
                            0, 0.57, 0, 0, 3.3161))
         self._dof = 7
-        self._active_joints = [5, 10, 11, 12, 13, 15, 18]
-
+        self.active_joints = [5, 10, 11, 12, 13, 15, 18]
         self.reset()
 
     @property
@@ -68,7 +67,7 @@ class Sawyer(Arm):
         # Set the joints
         self.joint_states = (
             # Use last two DOFs
-            [15, 18],
+            self.active_joints[-2:],
             [y, x], 'position',
             dict(positionGains=(.05,) * 2,
                  velocityGains=(1.,) * 2))
@@ -79,7 +78,7 @@ class Sawyer(Arm):
         :return: None
         """
         super(Sawyer, self).reset()
-        self._openrave_robot.SetDOFValues(self._rest_pose[[self._active_joints]], [1,2,3,4,5,6,7]) # Set the joint values
+        self._openrave_robot.SetDOFValues(self._rest_pose[[self.active_joints]], [1,2,3,4,5,6,7]) # Set the joint values
 
     def _build_ik(self, path_root):
 
@@ -117,17 +116,18 @@ class Sawyer(Arm):
         # openrave quaternion uses wxyz convention
         ik_solution = OpenRaveEngine.solve_ik(
             self._ik_model, pos, orn, 
-            math_util.vec(self.joint_states['pos'])[self._active_joints])
+            math_util.vec(self.joint_states['pos'])[self.active_joints])
 
         specs = self.joint_specs
 
         self.joint_states = (
-            self._active_joints, ik_solution, 'position',
-            dict(forces=math_util.vec(specs['max_force'])[self._active_joints],
+            self.active_joints, ik_solution, 'position',
+            dict(forces=math_util.vec(specs['max_force'])[self.active_joints],
                  positionGains=(.03,) * self._dof,
                  velocityGains=(1.,) * self._dof))
         # Set the joint values
         self._openrave_robot.SetDOFValues(ik_solution, [1,2,3,4,5,6,7]) 
 
-        while math_util.pos_diff(math_util.vec(self.joint_states['pos'])[self._active_joints], ik_solution, 0) > .01:
-            self._engine.hold()
+        while math_util.pos_diff(math_util.vec(self.joint_states['pos'])[self.active_joints], ik_solution, 0) > .01:
+            # self._engine.hold()
+            continue
