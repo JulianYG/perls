@@ -595,17 +595,17 @@ class BulletPhysicsEngine(FakeStateEngine):
         if orn is None:
             return p.calculateInverseKinematics(
                 uid, lid,
-                targetPosition=pos,
+                targetPosition=tuple(pos),
                 lowerLimits=tuple(lower), upperLimits=tuple(upper),
-                jointRanges=tuple(ranges), restPoses=rest,
+                jointRanges=tuple(ranges), restPoses=tuple(rest),
                 jointDamping=tuple(damping),
                 physicsClientId=self._physics_server_id)   
         else:
             return p.calculateInverseKinematics(
-                uid, lid, targetPosition=pos,
-                targetOrientation=orn,
+                uid, lid, targetPosition=tuple(pos),
+                targetOrientation=tuple(orn),
                 lowerLimits=tuple(lower), upperLimits=tuple(upper),
-                jointRanges=tuple(ranges), restPoses=rest,
+                jointRanges=tuple(ranges), restPoses=tuple(rest),
                 jointDamping=tuple(damping),
                 physicsClientId=self._physics_server_id)
 

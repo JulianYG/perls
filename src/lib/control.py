@@ -441,7 +441,7 @@ class Controller(object):
                     if r_pos is not None:
                         # Scaling down the speed for robot arm
                         if tool.tid[0] == 'm':
-                            r_pos /= 8.
+                            r_pos /= 7.5
 
                         # Increment to get absolute pos
                         # Take account of rotation
@@ -463,24 +463,29 @@ class Controller(object):
                                 math_util.vec(joint_spec['upper'])[eef_joints])
                             i_orn = math_util.vec((i_orn[0], i_orn[1], 0))
 
+                            # Update the tool's orientation
                             self._states['tool'][tool.tid][1] = \
                                 math_util.vec((i_orn[1], i_orn[0], 0))
                         else:
+
+                            # Update the tool's orientation
                             self._states['tool'][tool.tid][1] = \
                                 math_util.vec(i_orn)
+
                         tool.reach(None, i_orn)
 
-                    pos_diff = tool.tool_pos - i_pos
-                    # TODO: debug here
-                    # print(tool.tool_pos, pos_diff, i_pos)
+                        # Update the tool's position as orientation changes
+                        self._states['tool'][tool.tid][0] = world.get_states(
+                            ('tool', 'tool_pose'))[0][tool.tid][0]
 
-                    if math_util.rms(pos_diff) > .2:
+                    pos_diff = tool.tool_pos - i_pos
+
+                    if math_util.rms(pos_diff) > tool.tolerance:
                         loginfo('Tool position out of reach. Set back.',
                                 FONT.warning)
                         state_pose = world.get_states(
                             ('tool', 'tool_pose'))[0][tool.tid]
-                        self._states['tool'][tool.tid] = \
-                            [state_pose[0], math_util.quat2euler(tool.tool_orn)]
+                        self._states['tool'][tool.tid][0] = state_pose[0]
 
                 elif method == 'grasp':
                     tool.grasp(value)

@@ -70,12 +70,21 @@ class Arm(Tool):
         some offset based on robot's rest pose.
         :return: vec4 float quaternion in Cartesian
         """
-        return self.kinematics['orn'][-1]
+        return self.kinematics['orn'][self._end_idx]
+
+    @property
+    def tolerance(self):
+        """
+        Get the error margin of tool tip position due to  
+        rotation. 
+        :return: float scalar distance
+        """
+        return math_util.rms(self.tool_pos - self.kinematics['pos'][self._end_idx])
 
     @Tool.v.getter
     def v(self):
         """
-        For robot arms, get the end effector linear velocity
+        For robot arms, get the end effector linear velocityGainsy
         :return: vec3 float cartesian
         """
         return self._gripper.v
@@ -194,7 +203,7 @@ class Arm(Tool):
         frame = math_util.pose2mat((pos, orn)).dot(transform)
         return math_util.mat2pose(frame)
 
-    def _move_to(self, pos, orn, precise, fast):
+    def _move_to(self, pos, orn, precise, fast, max_iter=200):
         """
         Given pose, call IK to move
         :param pos: vec3 float cartesian
@@ -208,15 +217,13 @@ class Arm(Tool):
         ***This is a trade-off between smoothness and
          accuracy***
         :param fast: refer to <pinpoint::fast>
+        :param max_iter: refer to <pinpoint::max_iter>
         :return: None
         """
         # Convert to pose in robot base frame
-        orn = self.kinematics['orn'][-1] if orn is None else orn
-        #
-        # import pybullet as p
-        # p.addUserDebugLine(pos, self.tool_pos, [1,0,0], 5, 3)
-
+        orn = self.kinematics['orn'][self._end_idx] if orn is None else orn
         specs = self.joint_specs
+        print(orn, 'orn')
         if precise:
             if fast:
                 # Set the joint values in openrave model
@@ -225,11 +232,11 @@ class Arm(Tool):
                     self._model_dof)
 
             pos, orn = math_util.get_relative_pose((pos, orn), self.pose)
+            print(pos, orn, 'transformed')
             ik_solution = OpenRaveEngine.accurate_ik(
                 self._ik_model, pos, orn,
                 math_util.vec(self.joint_states['pos'])[self.active_joints],
-                closest=not fast
-            )
+                closest=not fast)
 
         else:
             damps = math_util.clip_vec(specs['damping'], .1, 1.)
@@ -256,10 +263,8 @@ class Arm(Tool):
         # TODO :
         # if self.collision_checking:
         # need to wait until reached desired states, just as in real case
-        while math_util.pos_diff(math_util.vec(self.joint_states['pos'])[self.active_joints],
-                                 ik_solution, 0) > .01:
-            # self._engine.hold()
-            continue
+        for _ in range(max_iter):
+            self._engine.step(0)
 
     ###
     #  High level functionality
@@ -288,7 +293,7 @@ class Arm(Tool):
              dict(reset=True))
 
     def pinpoint(self, pos, orn, ftype='abs',
-                 fast=False):
+                 fast=False, max_iter=200):
         """
         Accurately reach to the given pose.
         Note this operation sets position and orientation
@@ -304,10 +309,14 @@ class Arm(Tool):
         closest neighbor of current joint states.
         ***This is a trade-off between smoothness and
         speed***
+        :param max_iter: maximum iterations in either real 
+        time or non-real time simulation for the arm to
+        reach the desired position.
         :return: delta between target and actual pose
         """
         target_pos, target_orn = super(Arm, self).pinpoint(pos, orn, ftype)
-        self._move_to(target_pos, target_orn, True, fast)
+        print(target_pos, 'desired pos')
+        self._move_to(target_pos, target_orn, True, fast, max_iter)
 
         pos_delta = self.tool_pos - pos
         orn_delta = math_util.quat_diff(self.tool_orn, orn)

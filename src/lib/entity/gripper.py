@@ -81,6 +81,15 @@ class PrismaticGripper(Tool):
         """
         return self.orn
 
+    @property
+    def tolerance(self):
+        """
+        Get the error margin of tool tip position due to  
+        rotation. 
+        :return: float scalar distance
+        """
+        return math_util.rms(self.tool_pos - self.pos)
+
     @traction.setter
     def traction(self, f):
         self._max_force = f
@@ -105,9 +114,12 @@ class PrismaticGripper(Tool):
     def tool_orn(self, orn):
         """
         Set the gripper to given orientation
-        :param orn: vec4 float in quaternion form
+        :param orn: vec4 float in quaternion form or 
+        vec3 float in euler radian form
         :return: None
         """
+        if len(orn) == 3:
+            orn = math_util.euler2quat(orn)
         self.track(self.pos, orn, self._max_force)
 
     def position_transform(self, pos, orn):
@@ -141,7 +153,7 @@ class PrismaticGripper(Tool):
             # pos, orn = self.position_transform(pos, orn)
             self.track(pos, orn, self._max_force)
         self.grasp(0)
-        
+
     def hang(self):
         """
         Hang the gripper in the world for control
@@ -150,27 +162,6 @@ class PrismaticGripper(Tool):
         self.attach_children = (
             -1, -1, -1, 'fixed', [0., 0., 0.],
             [0., 0., 0.], self.pos, None, self.orn)
-
-    def reach(self, pos=None, orn=None, ftype='abs'):
-        """
-        Reach to given pose approximately
-        :param pos: vec3 float cartesian at base
-        :param orn: vec4 float quaternion, 
-        or vec3 float in euler radian
-        :return: None
-        """
-        if orn is not None and len(orn) == 3:
-            orn = math_util.euler2quat(orn)
-    
-        fpos, forn = super(PrismaticGripper, self).reach(pos, orn, ftype)
-        forn = self.tool_orn if forn is None else forn
-
-        if fpos is None:
-            fpos = self.pos
-
-        # Use constraint to move gripper for simulation,
-        # to avoid boundary mixing during collision
-        self.track(fpos, forn, self._max_force)
 
     def pinpoint(self, pos, orn, ftype='abs'):
         """

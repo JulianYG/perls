@@ -782,6 +782,15 @@ class Tool(Body):
         """
         return math_util.get_relative_pose(self.tool_pose, self.pose)
 
+    @abc.abstractproperty
+    def tolerance(self):
+        """
+        Get the error margin of tool tip position due to  
+        rotation. 
+        :return: float scalar distance
+        """
+        return NotImplemented
+
     @Body.name.setter
     def name(self, string):
         """
@@ -864,7 +873,7 @@ class Tool(Body):
         Hint:
         Default control uses world frame absolute positions.
         To align simulation with real world, use 'rel'
-        :return: desired target pose
+        :return: None
         """
         fpos, forn = pos, orn
 
@@ -885,8 +894,6 @@ class Tool(Body):
 
         if forn is not None:
             self.tool_orn = forn
-
-        return fpos, forn
 
     def pinpoint(self, pos, orn, ftype='abs'):
         """

@@ -23,16 +23,16 @@ class PushCube(PerlsEnv):
     def _reset(self):
 
         super(PushCube, self)._reset()
-
-        for _ in range(200):
-            # move robot to initial position
-            self._robot.pinpoint(
-                (.8, .0, .6),
-                math_util.euler2quat(
-                    [-math_util.pi, -math_util.pi / 2., 0.]),
-                ftype='rel')
-            self._world.update()
-        print(self._get_relative_pose()[0][0])
+        import pybullet as p 
+        # p.loadURDF('cube_small.urdf', (-1.3, 0. , 0.8), useFixedBase=True)
+        # move robot to initial position
+        self._robot.pinpoint(
+            (0.45, 0.169 , 0.015),
+            math_util.euler2quat((0,0,0)),
+               # [-math_util.pi, -math_util.pi / 2., 0.]),
+            ftype='rel', max_iter=500)
+        print(self._robot.tool_pos, 'actual abs')
+        print(self._get_relative_pose()[0][0], 'actual rel')
         return self._get_relative_pose()
 
     def _get_relative_pose(self):

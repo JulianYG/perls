@@ -36,7 +36,7 @@ plugin = openravepy.RaveCreateModule(env, "urdf")
 env.SetViewer('qtcoin')
 
 with env:
-    name = plugin.SendCommand('load {}sawyer-orig.urdf {}sawyer_base_fred.srdf'.format(root, root))
+    name = plugin.SendCommand('load {}sawyer_fred.urdf {}sawyer_base_fred.srdf'.format(root, root))
     robot = env.GetRobot(name)
 
 robot.SetActiveManipulator('arm')
@@ -52,7 +52,7 @@ if not ikmodel.load():
 # m = robot.GetActiveManipulator()
 # robot.SetActiveDOFs(m.GetArmIndices())
 
-r = p.loadURDF('sawyer_robot/sawyer_description/urdf/sawyer.urdf', [0,0,0.9],
+r = p.loadURDF('sawyer_robot/sawyer_description/urdf/sawyer_arm.urdf', [0,0,0.9],
     [0,0,0,1],useFixedBase=True)
 
 
@@ -91,9 +91,9 @@ rp=[0, -1.18, 0.00, 2.18, 0.00, 0.57, 3.3161]
 # jd=[0.1,0.1,0.1,0.1,0.1,0.1,0.1]
 # print([p.getJointInfo(r, i) for i in range(p.getNumJoints(r))])
 
-rr = [5, 10, 11, 12, 13, 15, 18]
+
 for i in range(7):
-    p.resetJointState(r,rr[i],rp[i])
+    p.resetJointState(r,i,rp[i])
 
 robot.SetDOFValues(rp, [1, 2, 3, 4, 5, 6, 7])
 
@@ -160,19 +160,25 @@ p.setGravity(0,0,-9.8)
     # positionGains=[0.05] * 7, velocityGains=[1.] * 7)
 # print(p.getNumJoints(r))
 
-eef_pose = (p.getLinkState(r, 19)[0], p.getLinkState(r, 19)[1])
+eef_pose = (p.getLinkState(r, 6)[0], p.getLinkState(r, 6)[1])
 
 # base_pose
 # pose = math_util.pose2mat(eef_pose)
 
 print(eef_pose, 'orig')
+fpos = list(p.getLinkState(r, 0)[0])
+# fpos[0] += 0.26
+# fpos[1] += 0.345
+# fpos[2] -= 0.22
+print(fpos)
+pose = math_util.get_relative_pose(eef_pose, (tuple(fpos), (0,0,0,1)))
+print(pose, 'wtfffffffff')
+for i in range(7):
 
-pose = math_util.get_relative_pose(eef_pose, (p.getLinkState(r, 3)[0], p.getLinkState(r, 3)[1]))
-
-for i in range(p.getNumJoints(r)):
-
-    print(i, p.getLinkState(r, i)[-1], math_util.get_relative_pose(eef_pose, (p.getLinkState(r, i)[0], p.getLinkState(r, i)[1])))
-
+    rel1, rels = math_util.get_relative_pose(eef_pose, (p.getLinkState(r, i)[4], p.getLinkState(r, i)[5]))
+    print(i, tuple(rel1))#, tuple(rels))
+    print(i, p.getJointInfo(r, i))
+print(math_util.get_relative_pose(eef_pose, p.getBasePositionAndOrientation(r)))
 tee = math_util.pose2mat((pose[0], (0, 1, 0, 0)))
 print(tee, 't')
 
@@ -195,7 +201,7 @@ while 1:
     # print(ik)
     # print(sols)
     # print(len(sols))
-    p.setJointMotorControlArray(r, rr, 
+    p.setJointMotorControlArray(r, range(7), 
             p.POSITION_CONTROL, targetPositions=sols, 
             targetVelocities=[0] * 7,
             positionGains=[0.05] * 7, velocityGains=[1.] * 7)
