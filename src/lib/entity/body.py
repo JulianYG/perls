@@ -205,8 +205,10 @@ class Body(object):
         values are arranged in link indices order.
         """
         info_dict = dict(
+            index=[],
             name=[],
             jtype=[],
+            active=[],
             pos_idx=[],
             vel_idx=[],
             damping=[],
@@ -218,10 +220,12 @@ class Body(object):
         )
         for jid in self._joints:
             info = self._engine.get_body_joint_info(self._uid, jid)
+            info_dict['index'].append(info[0])
             info_dict['name'].append(info[1])
             info_dict['jtype'].append(info[2])
             info_dict['pos_idx'].append(info[3])
             info_dict['vel_idx'].append(info[4])
+            info_dict['active'].append(info[5])
             info_dict['damping'].append(info[6])
             info_dict['friction'].append(info[7])
             info_dict['lower'].append(info[8])
@@ -884,7 +888,7 @@ class Tool(Body):
                 (self.tool_pos if fpos is None else self.tool_pos, 
                  self.tool_orn if forn is None else self.tool_orn),
                 # tool base frame
-                self.pose)
+                ((0, 0, 0.9), (0, 0, 0, 1)))
             # Convert it back
             fpos = None if pos is None else fpos
             forn = None if orn is None else forn

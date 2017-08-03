@@ -25,22 +25,12 @@ class Sawyer(Arm):
         #                    -1.18, 0.00, 2.18, 0.00,
         #                    0, 0.57, 0, 0, 3.3161))
         # Before pose was [4]
-        self._rest_pose = math_util.vec((0, -1.18, 0.00,
-                                         2.18, 0.00, 0.57, 3.3161))
-        self._dof = 7
-        # self._active_dof = [5, 10, 11, 12, 13, 15, 18]
-        self._active_dof = range(7)
-        # self._active_dof = [1,2,3,4,5,6,7]
+        self._rest_pose = math_util.vec((0, -1.18, 0.00, 2.18, 0.00, 0.57, 3.3161))
+        self._active_dof = [j for j in self._joints if self.joint_specs['active'][j]\
+            and 'right' in self.joint_specs['name'][j]]
 
+        self._dof = len(self._active_dof)
         self.reset()
-
-    @property
-    def active_joints(self):
-        """
-        Return the joint indices that are active (settable)
-        :return: a list of indices integers
-        """
-        return self._active_dof
 
     @property
     def tolerance(self):
@@ -53,24 +43,21 @@ class Sawyer(Arm):
 
     def _build_ik(self, path_root):
 
-        bullet_model_path = io_util.pjoin(path_root, 'sawyer_arm.urdf')#'sawyer.urdf')
-        ikfast_model_path = io_util.pjoin(path_root, 'sawyer_arm_ikfast.urdf')
-        ikfast_base_path = io_util.pjoin(path_root, 'sawyer_base.srdf')
+        model_path = io_util.pjoin(path_root, 'sawyer_arm.urdf')
+        base_path = io_util.pjoin(path_root, 'sawyer_base.srdf')
 
         openravepy.RaveInitialize(True, level=openravepy.DebugLevel.Error)
         env = openravepy.Environment()
         plugin = openravepy.RaveCreateModule(env, "urdf")
-
+        
         with env:
-            name = plugin.SendCommand('load {} {}'.format(ikfast_model_path, ikfast_base_path))
+            name = plugin.SendCommand('load {} {}'.format(model_path, base_path))
             robot = env.GetRobot(name)
+            robot.SetTransform(openravepy.matrixFromPose([1,0,0,0,0,0,-0.08]))
 
-        robot.SetActiveManipulator('arm')
+        robot.SetActiveManipulator('gripper')
         ikmodel = openravepy.databases.inversekinematics.InverseKinematicsModel(
                 robot, iktype=openravepy.IkParameterization.Type.Transform6D
         )
-        # Generate IK solver set if not already loaded
-        if not ikmodel.load():
-            ikmodel.autogenerate()
-        print(robot.GetActiveDOFValues(), robot.GetActiveDOF(), robot.GetActiveJointIndices(), robot.GetActiveManipulator())
-        return bullet_model_path, ikmodel, robot, [1, 2, 3, 4, 5, 6, 7]
+        ikmodel.load()
+        return model_path, ikmodel, robot, range(7)

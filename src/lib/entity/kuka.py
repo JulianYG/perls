@@ -19,15 +19,8 @@ class Kuka(Arm):
             tool_id, engine, path, pos, orn, collision_checking, gripper)
         self._tip_offset = math_util.vec([0., 0., 0.045])
         self._rest_pose = (0., 0., 0., 1.570793, 0., -1.04719755, 0.)
+        self._active_dof = self._joints
         self.reset()
-
-    @property
-    def active_joints(self):
-        """
-        Return the joint indices that are active (settable)
-        :return: a list of indices integers
-        """
-        return self._joints
 
     def _build_ik(self, path_root):
 
@@ -45,6 +38,6 @@ class Kuka(Arm):
             robot, iktype=openravepy.IkParameterization.Type.Transform6D
         )
 
-        if not ikmodel.load():
-            ikmodel.autogenerate()
+        ikmodel.load()
+
         return bullet_model_path, ikmodel, robot, range(7)

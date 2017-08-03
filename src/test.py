@@ -26,20 +26,23 @@ import math
 import openravepy
 
 from lib.utils import math_util
+np.set_printoptions(precision=8, suppress=True)
 
-
-root = '/home/cvgl_ros/ros_ws/src/sawyer_robot_openrave/sawyer_description_openrave/urdf/'
+root = '/home/cvgl_ros/bullet3/data/sawyer_robot/sawyer_description/urdf/'
 
 openravepy.RaveInitialize(True, level=openravepy.DebugLevel.Error)
 env = openravepy.Environment()
 plugin = openravepy.RaveCreateModule(env, "urdf")
-env.SetViewer('qtcoin')
+# env.SetViewer('qtcoin')
 
 with env:
-    name = plugin.SendCommand('load {}sawyer_fred.urdf {}sawyer_base_fred.srdf'.format(root, root))
+    name = plugin.SendCommand('load {}sawyer_arm.urdf {}sawyer_base.srdf'.format(root, root))
     robot = env.GetRobot(name)
+    robot.SetTransform(openravepy.matrixFromPose([1,0,0,0,0,0,-0.08]))
+    # print(dir(robot))
+# print(robot.GetTransformPose())
 
-robot.SetActiveManipulator('arm')
+robot.SetActiveManipulator('gripper')
 
 ikmodel = openravepy.databases.inversekinematics.InverseKinematicsModel(
         robot, iktype=openravepy.IkParameterization.Type.Transform6D
@@ -95,7 +98,7 @@ rp=[0, -1.18, 0.00, 2.18, 0.00, 0.57, 3.3161]
 for i in range(7):
     p.resetJointState(r,i,rp[i])
 
-robot.SetDOFValues(rp, [1, 2, 3, 4, 5, 6, 7])
+robot.SetDOFValues(rp, range(7))
 
 print(ikmodel.manip.GetEndEffectorTransform(), 'a' * 20)
 
@@ -160,26 +163,26 @@ p.setGravity(0,0,-9.8)
     # positionGains=[0.05] * 7, velocityGains=[1.] * 7)
 # print(p.getNumJoints(r))
 
-eef_pose = (p.getLinkState(r, 6)[0], p.getLinkState(r, 6)[1])
+eef_pose = (p.getLinkState(r, 6)[4], p.getLinkState(r, 6)[5])
 
 # base_pose
 # pose = math_util.pose2mat(eef_pose)
 
 print(eef_pose, 'orig')
-fpos = list(p.getLinkState(r, 0)[0])
-# fpos[0] += 0.26
-# fpos[1] += 0.345
-# fpos[2] -= 0.22
-print(fpos)
-pose = math_util.get_relative_pose(eef_pose, (tuple(fpos), (0,0,0,1)))
+
+pose = math_util.get_relative_pose(eef_pose, (list(p.getLinkState(r, 0)[4]), list(p.getLinkState(r, 0)[5])))
 print(pose, 'wtfffffffff')
 for i in range(7):
 
     rel1, rels = math_util.get_relative_pose(eef_pose, (p.getLinkState(r, i)[4], p.getLinkState(r, i)[5]))
+
     print(i, tuple(rel1))#, tuple(rels))
     print(i, p.getJointInfo(r, i))
+
+# print(math_util.get_relative_pose(eef_pose, (p.getLinkState(r, i)[0], p.getLinkState(r, i)[1])))
 print(math_util.get_relative_pose(eef_pose, p.getBasePositionAndOrientation(r)))
-tee = math_util.pose2mat((pose[0], (0, 1, 0, 0)))
+# pose[0][2] = 0.24
+tee = math_util.pose2mat(pose)
 print(tee, 't')
 
 print(math_util.mat2pose(tee))

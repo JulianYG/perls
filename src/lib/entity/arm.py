@@ -43,7 +43,7 @@ class Arm(Tool):
         Return the joint indices that are active (settable)
         :return: a list of indices integers
         """
-        raise NotImplemented
+        return self._active_dof
 
     @property
     def pose(self):
@@ -51,8 +51,9 @@ class Arm(Tool):
         Get the pose of arm base frame.
         :return: arm base frame (pos, orn) tuple
         """
-        return self.kinematics['abs_frame_pos'][0], \
-            self.kinematics['abs_frame_orn'][0]
+        kinematics = self.kinematics
+        return kinematics['abs_frame_pos'][0], \
+            kinematics['abs_frame_orn'][0]
 
     @property
     def tool_pos(self):
@@ -152,7 +153,7 @@ class Arm(Tool):
         Build the ik model for the arm.
         :param path_root: The absolute path directory that stores 
         pybullet asset file, and IKFast model file, base files.
-        :return: pybullet asset file path, 
+        :return: pybullet asset file path
         and the built IKFast model.
         """
         raise NotImplemented
@@ -190,8 +191,8 @@ class Arm(Tool):
         end_effector_info = self.kinematics
 
         end_effector_pos, end_effector_orn = \
-            end_effector_info['pos'][-1], \
-            end_effector_info['orn'][-1]
+            end_effector_info['abs_frame_pos'][self._end_idx], \
+            end_effector_info['abs_frame_orn'][self._end_idx]
 
         # Repeat same procedure for gripper base link
         # and arm end effector link
@@ -223,7 +224,7 @@ class Arm(Tool):
         # Convert to pose in robot base frame
         orn = self.kinematics['orn'][self._end_idx] if orn is None else orn
         specs = self.joint_specs
-        print(orn, 'orn')
+        
         if precise:
             if fast:
                 # Set the joint values in openrave model
@@ -231,8 +232,10 @@ class Arm(Tool):
                     math_util.vec(self.joint_states['pos'])[self.active_joints],
                     self._model_dof)
 
+            pos, orn = math_util.mat2pose(math_util.pose2mat((self.kinematics['rel_pos'][6], self.kinematics['rel_orn'][6])).dot(math_util.pose2mat((pos, orn))))
             pos, orn = math_util.get_relative_pose((pos, orn), self.pose)
-            print(pos, orn, 'transformed')
+
+
             ik_solution = OpenRaveEngine.accurate_ik(
                 self._ik_model, pos, orn,
                 math_util.vec(self.joint_states['pos'])[self.active_joints],
@@ -287,7 +290,7 @@ class Arm(Tool):
 
         # Lastly reset arm
         self.joint_states = \
-            (self._joints,
+            (self.active_joints,
              self._rest_pose,
              'position',
              dict(reset=True))
@@ -315,7 +318,6 @@ class Arm(Tool):
         :return: delta between target and actual pose
         """
         target_pos, target_orn = super(Arm, self).pinpoint(pos, orn, ftype)
-        print(target_pos, 'desired pos')
         self._move_to(target_pos, target_orn, True, fast, max_iter)
 
         pos_delta = self.tool_pos - pos
