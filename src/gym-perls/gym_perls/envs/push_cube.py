@@ -27,7 +27,8 @@ class PushCube(PerlsEnv):
         # move robot to initial position
         # TODO: orientation offset
         offset = self._robot.pinpoint(
-            (-0.29, 0.189, 0.829),
+            (-.8, 1.7, 0.7),
+            #(-0.29, 0.189, 0.829),
             (0,1,0,0),
                 # math_util.euler2quat([-math_util.pi, -math_util.pi / 2., 0.]),
             ftype='abs',max_iter=500)
