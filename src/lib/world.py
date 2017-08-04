@@ -134,6 +134,7 @@ class World(object):
             tool.reset()
         for body in self._bodies.values():
             body.reset()
+        self._engine.hold()
 
     def load_body(self, file_path, pos, orn,
                   fixed=False, record=False):
@@ -205,7 +206,7 @@ class World(object):
                 self._engine,
                 path=arm_spec['path'],
                 pos=arm_spec['pos'], orn=arm_spec['orn'],
-                null_space=arm_spec['null_space'],
+                collision_checking=arm_spec['collision_checking'],
                 gripper=gripper_body)
 
             arm_body.name = arm_spec['name']
@@ -292,7 +293,9 @@ class World(object):
         for use of type check
         :return: render start state
         """
-        return self._engine.start_engine(frame)
+        status = self._engine.start_engine(frame)
+        self._engine.hold(200)
+        return status
 
     def notify_engine(self, stat):
         """

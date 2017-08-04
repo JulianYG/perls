@@ -4,7 +4,7 @@ from .stateEngine import RealStateEngine
 
 # import rospy
 # import rosparam
-# import intera_interface
+# import intera_interface as iif
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
@@ -18,23 +18,34 @@ class InteraEngine(RealStateEngine):
 
         super(InteraEngine, self).__init__(e_id, max_run_time)
 
-        # TODO: may need to make sawyer as input
-        self._limb = intera_interface.Limb('right')
-        self._gripper = intera_interface.Gripper('right')
+        self._head = iif.Cuff()
 
-        self._info = rospy.get_param()
+        self._lights = iif.Lights()
+
+        self._limb = iif.Limb('right')
+
+        self._navigator = iif.Navigator()
+
+        self._gripper = iif.Gripper('right')
+
+        self._robot_enable = iif.RobotEnable(True)
+
+        self._params = iif.RobotParams()
 
     @property
     def version(self):
-        return None
+        return dict(SDKVersion=iif.settings.SDK_VERSION,
+                    SDK2Gripper=iif.settings.VERSIONS_SDK2GRIPPER,
+                    SDK2Robot=iif.settings.VERSIONS_SDK2ROBOT)
 
     @property
     def info(self):
-        return None
+
+        return self._info
 
     def configure(self, configs):
         """
-        Configure the real state render (robot)
+        Configure the real state of robot
         :param configs: configuration
         :return: None
         """
@@ -234,6 +245,28 @@ class InteraEngine(RealStateEngine):
         :return: None
         """
         pass
+
+    def disable_body_joint_motors(self, uid, jids):
+        """
+        Disable the motors. This is desired for the case
+        of direct torque control, where motors need to be
+        disabled.
+        :param uid: body unique id of the arm
+        :param jids: indices of joints to be disabled
+        :return: None
+        """
+        self._robot_enable.disable()
+
+    def enable_body_joint_motors(self, uid, jids):
+        """
+        Enable the motors. This is desired after using
+        direct torque control, where motors need to be
+        re-activated for other modes of control.
+        :param uid: body unique id of the arm
+        :param jids: indices of joints to be enabled
+        :return: None
+        """
+        self._robot_enable.enable()
 
     def get_body_dynamics(self, uid, lid):
         """

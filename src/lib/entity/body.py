@@ -42,6 +42,7 @@ class Body(object):
 
         self._children = dict() # No children constraints initially
         self._texture = dict()  # No texture initially
+
         self._uid, self._links, self._joints = \
             self._engine.load_asset(path, pos, orn, fixed)
         self._name = self._engine.get_body_name(self._uid)
@@ -204,8 +205,10 @@ class Body(object):
         values are arranged in link indices order.
         """
         info_dict = dict(
+            index=[],
             name=[],
             jtype=[],
+            active=[],
             pos_idx=[],
             vel_idx=[],
             damping=[],
@@ -217,10 +220,12 @@ class Body(object):
         )
         for jid in self._joints:
             info = self._engine.get_body_joint_info(self._uid, jid)
+            info_dict['index'].append(info[0])
             info_dict['name'].append(info[1])
             info_dict['jtype'].append(info[2])
             info_dict['pos_idx'].append(info[3])
             info_dict['vel_idx'].append(info[4])
+            info_dict['active'].append(info[5])
             info_dict['damping'].append(info[6])
             info_dict['friction'].append(info[7])
             info_dict['lower'].append(info[8])
@@ -434,7 +439,8 @@ class Body(object):
         """
         max_forces = tuple(self.joint_specs['max_force'][j] for j in jid)
         if kwargs:
-            kwargs['forces'] = kwargs.get('forces', None) or max_forces
+            if 'forces' not in kwargs:
+                kwargs['forces'] = max_forces
         else:
             kwargs = dict(forces=max_forces)
         self._engine.set_body_joint_state(self._uid, jid, value, ctype, kwargs)
@@ -458,7 +464,7 @@ class Body(object):
     @attach_children.setter
     def attach_children(
             self, (lid, child_uid, child_lid, jtype, jaxis,
-            parent_pos, child_pos, parent_orn, child_orn)):
+                   parent_pos, child_pos, parent_orn, child_orn)):
         """
         Attach a child body B on this parent body A
         Required input:
@@ -676,6 +682,9 @@ class Body(object):
         """
         Follow the given pos/orn with given max force
         with the base link
+        :param pos: vec3 float cartesian position in world
+        :param orn: vec4 float quaternion world orientation
+        :param max_force: maximum force to drag the object
         :return: None
         """
         # Cannot move if fixed already
@@ -683,6 +692,7 @@ class Body(object):
             loginfo('Fix-based body cannot track.',
                     FONT.warning)
             return
+
         # Need to constrain to world frame first
         if -1 not in self.attach_children:
             self.fix = (pos, orn)
@@ -774,7 +784,16 @@ class Tool(Body):
         Get the tool pose relative to arm's base frame
         :return: (pos, orn) tuple
         """
-        return math_util.get_transformed_pose(self.tool_pose, self.pose)
+        return math_util.get_relative_pose(self.tool_pose, self.pose)
+
+    @abc.abstractproperty
+    def tolerance(self):
+        """
+        Get the error margin of tool tip position due to  
+        rotation. 
+        :return: float scalar distance
+        """
+        return NotImplemented
 
     @Body.name.setter
     def name(self, string):
@@ -815,7 +834,8 @@ class Tool(Body):
         """
         raise NotImplemented
 
-    ### Helper functions
+    ###
+    #  Helper functions
 
     @abc.abstractmethod
     def position_transform(self, pos, orn):
@@ -850,30 +870,34 @@ class Tool(Body):
         To achieve high accuracy finger-tip manipulation,
         use <pinpoint> method instead.
         :param pos: vec3 float in cartesian
-        :param orn: vec4 float quaternion
+        :param orn: vec4 float quaternion or vec3 float in euler radian
         :param ftype: string param, coordinate system frame type.
         'abs' indicates the position is in world frame
         'rel' indicates the position is in tool frame.
         Hint:
         Default control uses world frame absolute positions.
         To align simulation with real world, use 'rel'
-        :return: Delta difference between target and actual (pos, orn)
+        :return: None
         """
         fpos, forn = pos, orn
 
         # Relative pose: convert back to world frame
-        # If we stick to pybullet IK, this is necessary
         if ftype == 'rel':
-            fpos, forn = math_util.get_inverse_transformed_pose(
+            fpos, forn = math_util.get_absolute_pose(
                 # Desired pose in absolute world frame
-                (fpos or self.tool_pos, forn or self.tool_orn),
+                (self.tool_pos if fpos is None else self.tool_pos, 
+                 self.tool_orn if forn is None else self.tool_orn),
                 # tool base frame
-                self.pose)
+                ((0, 0, 0.9), (0, 0, 0, 1)))
             # Convert it back
             fpos = None if pos is None else fpos
             forn = None if orn is None else forn
 
-        return fpos, forn
+        if fpos is not None:
+            self.tool_pos = fpos
+
+        if forn is not None:
+            self.tool_orn = forn
 
     def pinpoint(self, pos, orn, ftype='abs'):
         """
@@ -884,13 +908,12 @@ class Tool(Body):
         :return: None
         """
         if ftype == 'rel':
-            pos, orn = math_util.get_inverse_transformed_pose(
+            pos, orn = math_util.get_absolute_pose(
                 # Desired pose in absolute world frame
                 (pos, orn),
                 # tool base frame
                 self.pose)
-
-        return self.position_transform(pos, orn), orn
+        return self.position_transform(pos, orn)
 
     @abc.abstractmethod
     def grasp(self, slide):
