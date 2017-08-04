@@ -188,11 +188,11 @@ class Arm(Tool):
         :param orn: vec4 float quaternion world frame
         :return: transformed pose (pos, orn) in world frame
         """
-        end_effector_info = self.kinematics
+        kinematics = self.kinematics
 
         end_effector_pos, end_effector_orn = \
-            end_effector_info['abs_frame_pos'][self._end_idx], \
-            end_effector_info['abs_frame_orn'][self._end_idx]
+            kinematics['abs_frame_pos'][self._end_idx], \
+            kinematics['abs_frame_orn'][self._end_idx]
 
         # Repeat same procedure for gripper base link
         # and arm end effector link
@@ -222,25 +222,21 @@ class Arm(Tool):
         :return: None
         """
         # Convert to pose in robot base frame
-        orn = self.kinematics['orn'][self._end_idx] if orn is None else orn
+        orn = self.kinematics['abs_frame_orn'][self._end_idx] if orn is None else orn
         specs = self.joint_specs
-        
+       
         if precise:
             if fast:
                 # Set the joint values in openrave model
                 self._openrave_robot.SetDOFValues(
                     math_util.vec(self.joint_states['pos'])[self.active_joints],
                     self._model_dof)
-
-            pos, orn = math_util.mat2pose(math_util.pose2mat((self.kinematics['rel_pos'][6], self.kinematics['rel_orn'][6])).dot(math_util.pose2mat((pos, orn))))
             pos, orn = math_util.get_relative_pose((pos, orn), self.pose)
-
 
             ik_solution = OpenRaveEngine.accurate_ik(
                 self._ik_model, pos, orn,
                 math_util.vec(self.joint_states['pos'])[self.active_joints],
                 closest=not fast)
-
         else:
             damps = math_util.clip_vec(specs['damping'], .1, 1.)
             lower_limits = math_util.vec(specs['lower'])
@@ -260,7 +256,7 @@ class Arm(Tool):
         self.joint_states = (
             self.active_joints, ik_solution, 'position',
             dict(forces=math_util.vec(specs['max_force'])[self.active_joints],
-                 positionGains=(.03,) * self._dof,
+                 positionGains=(.05,) * self._dof,
                  velocityGains=(1.,) * self._dof))
 
         # TODO :

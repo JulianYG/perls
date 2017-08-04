@@ -55,13 +55,13 @@ if not ikmodel.load():
 # m = robot.GetActiveManipulator()
 # robot.SetActiveDOFs(m.GetArmIndices())
 
-r = p.loadURDF('sawyer_robot/sawyer_description/urdf/sawyer_arm.urdf', [0,0,0.9],
+r = p.loadURDF('sawyer_robot/sawyer_description/urdf/sawyer_arm.urdf', [-0.7,0,0.9],
     [0,0,0,1],useFixedBase=True)
 
 
 # r = p.loadURDF('kuka_iiwa/model.urdf', [0,0,0.],
 #   [0,0,0,1],useFixedBase=True)
-# p.resetBasePositionAndOrientation(r, (0,0,0),(0,0,0,1))
+p.resetBasePositionAndOrientation(r, (-0.7,0,0.9),(0,0,0,1))
 
 # print(p.getBasePositionAndOrientation(r))
 # p.setJointMotorControlArray(r, [0,1,2,3,4,5,6], 
@@ -163,15 +163,17 @@ p.setGravity(0,0,-9.8)
     # positionGains=[0.05] * 7, velocityGains=[1.] * 7)
 # print(p.getNumJoints(r))
 
-eef_pose = (p.getLinkState(r, 6)[4], p.getLinkState(r, 6)[5])
+eef_pose = ((-0.29, 0.189, 0.829), p.getLinkState(r, 6)[5])
 
 # base_pose
 # pose = math_util.pose2mat(eef_pose)
 
 print(eef_pose, 'orig')
-
+print((list(p.getLinkState(r, 0)[4]), list(p.getLinkState(r, 0)[5])), 'what???')
 pose = math_util.get_relative_pose(eef_pose, (list(p.getLinkState(r, 0)[4]), list(p.getLinkState(r, 0)[5])))
 print(pose, 'wtfffffffff')
+
+print((list(p.getLinkState(r, 0)[4]), list(p.getLinkState(r, 0)[5])), 'base pose')
 for i in range(7):
 
     rel1, rels = math_util.get_relative_pose(eef_pose, (p.getLinkState(r, i)[4], p.getLinkState(r, i)[5]))
@@ -186,7 +188,7 @@ tee = math_util.pose2mat(pose)
 print(tee, 't')
 
 print(math_util.mat2pose(tee))
-
+sols = ikmodel.manip.FindIKSolution(tee, openravepy.IkFilterOptions.CheckEnvCollisions)
 while 1:
     # print(p.getQuaternionFromEuler((0, 0, np.pi * 2)))
     
@@ -200,7 +202,7 @@ while 1:
             # jointDamping=(.5,) * 7)
     # print(dir(ikmodel.manip))
     # print(p.getNumJoints(r))
-    sols = ikmodel.manip.FindIKSolution(tee, openravepy.IkFilterOptions.CheckEnvCollisions)
+    
     # print(ik)
     # print(sols)
     # print(len(sols))
@@ -229,7 +231,7 @@ while 1:
     # (g.reach((0.8, -0.5,  1.), p.getQuaternionFromEuler((np.pi/2, -np.pi/2, 0))), 'delta')
     # print(r.tool_pos_abs, r.tool_orn_abs)
 
-    # print(p.getLinkState(r, 6)[0])
+    # print(p.getLinkState(r, 6)[4])
 
 
 

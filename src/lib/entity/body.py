@@ -913,7 +913,6 @@ class Tool(Body):
                 (pos, orn),
                 # tool base frame
                 self.pose)
-
         return self.position_transform(pos, orn)
 
     @abc.abstractmethod
