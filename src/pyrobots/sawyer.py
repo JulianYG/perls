@@ -44,7 +44,12 @@ class SawyerArm(object):
 
     @property
     def tool_pose(self):
-        return tuple(self._limb.endpoint_pose().values())
+        """
+        Get the pose of the end effector.
+        :return: vec3 float, vec4 float pos, orn tuple
+        """
+        pose = self._limb.endpoint_pose().values()
+        return (pose[0].x, pose[0].y, pose[0].z), (pose[1].x, pose[1].y, pose[1].z, pose[1].w)
 
     @property
     def v(self):
@@ -78,10 +83,10 @@ class SawyerArm(object):
         velocities = self._limb.joint_velocities()
         efforts = self._limb.joint_efforts()
 
-        return [dict(name=n,
-                     position=positions[n],
-                     velocity=velocities[n],
-                     effort=efforts[n]) for n in names]
+        return dict(name=names,
+                    position=[positions[n] for n in names],
+                    velocity=[velocities[n] for n in names],
+                    effort=[efforts[n] for n in names])
 
     @property
     def info(self):
@@ -187,7 +192,9 @@ class SawyerArm(object):
         """
         assert len(jids) == len(vals), 'Joint indices and values mismatch'
         # Safety call
-        self._limb.set_joint_position_speed(kwargs.get('max_speed'), 0.3)
+        self._limb.set_joint_position_speed(kwargs.get('max_speed', 0.3))
+
+        del kwargs['max_speed']
 
         command = {self._joints[i]: vals[i] for i in range(len(vals))}
         if ctype == 'position':
