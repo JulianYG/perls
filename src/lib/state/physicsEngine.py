@@ -54,7 +54,7 @@ class OpenRaveEngine(FakeStateEngine):
             # If solution found 
             if solutions.size > 0:
                 best_idx = math_util.pos_diff(
-                    solutions, joint_pos, 
+                    solutions, joint_pos, axis=1,
                     weights=[100, 80, 60, 40, 30, 20, 5]).argmin()
                 solution = solutions[best_idx]
         # Otherwise stay the same

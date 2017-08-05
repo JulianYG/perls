@@ -885,8 +885,8 @@ class Tool(Body):
         if ftype == 'rel':
             fpos, forn = math_util.get_absolute_pose(
                 # Desired pose in absolute world frame
-                (self.tool_pos if fpos is None else self.tool_pos, 
-                 self.tool_orn if forn is None else self.tool_orn),
+                (self.tool_pos if fpos is None else fpos, 
+                 self.tool_orn if forn is None else forn),
                 # tool base frame
                 ((0, 0, 0.9), (0, 0, 0, 1)))
             # Convert it back
@@ -913,6 +913,7 @@ class Tool(Body):
                 (pos, orn),
                 # tool base frame
                 self.pose)
+
         return self.position_transform(pos, orn)
 
     @abc.abstractmethod
