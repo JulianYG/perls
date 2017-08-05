@@ -56,6 +56,16 @@ class Arm(Tool):
             kinematics['abs_frame_orn'][0]
 
     @property
+    def eef_pose(self):
+        """
+        Get the end effector pose of the robot.
+        :return: (pos, orn) tuple of the end effector
+        """
+        kinematics = self.kinematics
+        return kinematics['pos'][self._end_idx], \
+            kinematics['orn'][self._end_idx]
+
+    @property
     def tool_pos(self):
         """
         Get the position of the tool. This is semantic
@@ -327,7 +337,7 @@ class Arm(Tool):
 
         # TODO: orn diff flip
         return math_util.pose_diff(self.tool_pose, (orig_pos, orig_orn))
-        
+
     def grasp(self, slide=-1):
         """
         Perform gripper close/release based on current state
