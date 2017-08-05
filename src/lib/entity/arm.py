@@ -24,7 +24,7 @@ class Arm(Tool):
         # Reset pose is defined in subclasses
         self._gripper = gripper
         self._rest_pose = (0., ) * self._dof
-        self._end_idx = self._dof - 1
+        self._end_idx = self.active_joints[-1]
 
         self.collision_checking = collision_checking
 
@@ -43,7 +43,7 @@ class Arm(Tool):
         Return the joint indices that are active (settable)
         :return: a list of indices integers
         """
-        return self._active_dof
+        return NotImplemented
 
     @property
     def pose(self):
@@ -224,13 +224,14 @@ class Arm(Tool):
         # Convert to pose in robot base frame
         orn = self.kinematics['abs_frame_orn'][self._end_idx] if orn is None else orn
         specs = self.joint_specs
-       
+
         if precise:
             if fast:
                 # Set the joint values in openrave model
                 self._openrave_robot.SetDOFValues(
                     math_util.vec(self.joint_states['pos'])[self.active_joints],
                     self._model_dof)
+
             pos, orn = math_util.get_relative_pose((pos, orn), self.pose)
 
             ik_solution = OpenRaveEngine.accurate_ik(
@@ -265,6 +266,7 @@ class Arm(Tool):
         for _ in range(max_iter):
             self._engine.step(0)
 
+        
     ###
     #  High level functionality
     def reset(self):
@@ -311,15 +313,21 @@ class Arm(Tool):
         :param max_iter: maximum iterations in either real 
         time or non-real time simulation for the arm to
         reach the desired position.
-        :return: delta between target and actual pose
+        :return: rms delta between target and actual pose
         """
+        if ftype == 'abs':
+            orig_pos, orig_orn = pos, orn
+
+        elif ftype == 'rel':
+            orig_pos, orig_orn = math_util.get_absolute_pose(
+                (pos, orn), self.pose)
+        
         target_pos, target_orn = super(Arm, self).pinpoint(pos, orn, ftype)
         self._move_to(target_pos, target_orn, True, fast, max_iter)
 
-        pos_delta = self.tool_pos - pos
-        orn_delta = math_util.quat_diff(self.tool_orn, orn)
-        return pos_delta, orn_delta
-
+        # TODO: orn diff flip
+        return math_util.pose_diff(self.tool_pose, (orig_pos, orig_orn))
+        
     def grasp(self, slide=-1):
         """
         Perform gripper close/release based on current state

@@ -28,7 +28,8 @@ import openravepy
 from lib.utils import math_util
 np.set_printoptions(precision=8, suppress=True)
 
-root = '/home/cvgl_ros/bullet3/data/sawyer_robot/sawyer_description/urdf/'
+# root = '/home/cvgl_ros/bullet3/data/sawyer_robot/sawyer_description/urdf/'
+root = '/home/cvgl_ros/ros_ws/src/sawyer_robot_openrave/sawyer_description_openrave/urdf/'
 
 openravepy.RaveInitialize(True, level=openravepy.DebugLevel.Error)
 env = openravepy.Environment()
@@ -36,13 +37,14 @@ plugin = openravepy.RaveCreateModule(env, "urdf")
 # env.SetViewer('qtcoin')
 
 with env:
-    name = plugin.SendCommand('load {}sawyer_arm.urdf {}sawyer_base.srdf'.format(root, root))
+    name = plugin.SendCommand('load {}sawyer_rounded.urdf {}sawyer.srdf'.format(root, root))
     robot = env.GetRobot(name)
-    robot.SetTransform(openravepy.matrixFromPose([1,0,0,0,0,0,-0.08]))
+    # robot.SetTransform(openravepy.matrixFromPose([1,0,0,0,0,0,-0.08]))
     # print(dir(robot))
 # print(robot.GetTransformPose())
 
 robot.SetActiveManipulator('gripper')
+# robot.SetActiveManipulator('arm')
 
 ikmodel = openravepy.databases.inversekinematics.InverseKinematicsModel(
         robot, iktype=openravepy.IkParameterization.Type.Transform6D
@@ -55,13 +57,13 @@ if not ikmodel.load():
 # m = robot.GetActiveManipulator()
 # robot.SetActiveDOFs(m.GetArmIndices())
 
-r = p.loadURDF('sawyer_robot/sawyer_description/urdf/sawyer_arm.urdf', [-0.7,0,0.9],
+r = p.loadURDF('sawyer_robot/sawyer_description/urdf/sawyer.urdf', [0,0,0.9],
     [0,0,0,1],useFixedBase=True)
 
 
 # r = p.loadURDF('kuka_iiwa/model.urdf', [0,0,0.],
 #   [0,0,0,1],useFixedBase=True)
-p.resetBasePositionAndOrientation(r, (-0.7,0,0.9),(0,0,0,1))
+p.resetBasePositionAndOrientation(r, (0,0,0.9),(0,0,0,1))
 
 # print(p.getBasePositionAndOrientation(r))
 # p.setJointMotorControlArray(r, [0,1,2,3,4,5,6], 
@@ -94,9 +96,9 @@ rp=[0, -1.18, 0.00, 2.18, 0.00, 0.57, 3.3161]
 # jd=[0.1,0.1,0.1,0.1,0.1,0.1,0.1]
 # print([p.getJointInfo(r, i) for i in range(p.getNumJoints(r))])
 
-
+rr = [5, 10, 11, 12, 13, 15, 18]
 for i in range(7):
-    p.resetJointState(r,i,rp[i])
+    p.resetJointState(r,rr[i],rp[i])
 
 robot.SetDOFValues(rp, range(7))
 
@@ -163,32 +165,42 @@ p.setGravity(0,0,-9.8)
     # positionGains=[0.05] * 7, velocityGains=[1.] * 7)
 # print(p.getNumJoints(r))
 
-eef_pose = ((-0.29, 0.189, 0.829), p.getLinkState(r, 6)[5])
+eef_pose = ((0.4495784342288971, 0.16030000150203705, 1.140254020690918), p.getLinkState(r, 18)[5])
 
 # base_pose
 # pose = math_util.pose2mat(eef_pose)
 
 print(eef_pose, 'orig')
-print((list(p.getLinkState(r, 0)[4]), list(p.getLinkState(r, 0)[5])), 'what???')
+
 pose = math_util.get_relative_pose(eef_pose, (list(p.getLinkState(r, 0)[4]), list(p.getLinkState(r, 0)[5])))
 print(pose, 'wtfffffffff')
 
 print((list(p.getLinkState(r, 0)[4]), list(p.getLinkState(r, 0)[5])), 'base pose')
-for i in range(7):
+for i in range(19):
 
     rel1, rels = math_util.get_relative_pose(eef_pose, (p.getLinkState(r, i)[4], p.getLinkState(r, i)[5]))
 
     print(i, tuple(rel1))#, tuple(rels))
     print(i, p.getJointInfo(r, i))
 
-# print(math_util.get_relative_pose(eef_pose, (p.getLinkState(r, i)[0], p.getLinkState(r, i)[1])))
-print(math_util.get_relative_pose(eef_pose, p.getBasePositionAndOrientation(r)))
 # pose[0][2] = 0.24
 tee = math_util.pose2mat(pose)
 print(tee, 't')
 
 print(math_util.mat2pose(tee))
 sols = ikmodel.manip.FindIKSolution(tee, openravepy.IkFilterOptions.CheckEnvCollisions)
+
+# ik = p.calculateInverseKinematics(r, 18, (0.4495784342288971, 0.16030000150203705, 1.140254020690918), 
+#     (0, 1, 0, 0),
+#     lowerLimits=(-3.05, -3.82, -3.05, -3.05, -2.98, -2.98, -4.71), 
+#     upperLimits=(3.05, 2.28, 3.05, 3.05, 2.98, 2.98, 4.71),
+#       jointRanges=(6.1, 6.1, 6.1, 6.1, 5.96, 5.96, 9.4), 
+
+#       restPoses=(0, -1.18, 0.00, 2.18, 0.00, 0.57, 3.3161),
+#             jointDamping=(.1,) * 7)
+
+# print(ik)
+
 while 1:
     # print(p.getQuaternionFromEuler((0, 0, np.pi * 2)))
     
@@ -206,7 +218,7 @@ while 1:
     # print(ik)
     # print(sols)
     # print(len(sols))
-    p.setJointMotorControlArray(r, range(7), 
+    p.setJointMotorControlArray(r, rr, 
             p.POSITION_CONTROL, targetPositions=sols, 
             targetVelocities=[0] * 7,
             positionGains=[0.05] * 7, velocityGains=[1.] * 7)
@@ -231,7 +243,7 @@ while 1:
     # (g.reach((0.8, -0.5,  1.), p.getQuaternionFromEuler((np.pi/2, -np.pi/2, 0))), 'delta')
     # print(r.tool_pos_abs, r.tool_orn_abs)
 
-    # print(p.getLinkState(r, 6)[4])
+    # print(p.getLinkState(r, 18)[4])
 
 
 

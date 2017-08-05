@@ -18,19 +18,23 @@ class Sawyer(Arm):
             tool_id, engine, path, pos, orn, collision_checking, gripper)
         self._tip_offset = math_util.vec([0., 0., 0.153])
 
-        # Active joints indices: 5, 10, 11, 12, 13, 15, 18
-        # Note the urdf has been modified and removed right_hand link, joint
-        # self._rest_pose = math_util.vec((0, 0, 0, 0, 0,
-        #                    0, 0, 0, 0, 0,
-        #                    -1.18, 0.00, 2.18, 0.00,
-        #                    0, 0.57, 0, 0, 3.3161))
+        # Note the urdf has been modified and removed right_hand link & joint
+        # self._rest_pose = math_util.vec(
+            # (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1.18, 0.00, 2.18, 0.00,
+             # 0, 0.57, 0, 0, 3.3161))
         # Before pose was [4]
         self._rest_pose = math_util.vec((0, -1.18, 0.00, 2.18, 0.00, 0.57, 3.3161))
-        self._active_dof = [j for j in self._joints if self.joint_specs['active'][j]\
-            and 'right' in self.joint_specs['name'][j]]
 
-        self._dof = len(self._active_dof)
+        self._dof = 7
         self.reset()
+
+    @property
+    def active_joints(self):
+        """
+        Return the joint indices that are active (settable)
+        :return: a list of indices integers
+        """
+        return [5, 10, 11, 12, 13, 15, 18]
 
     @property
     def tolerance(self):
@@ -43,8 +47,8 @@ class Sawyer(Arm):
 
     def _build_ik(self, path_root):
 
-        model_path = io_util.pjoin(path_root, 'sawyer_arm.urdf')
-        base_path = io_util.pjoin(path_root, 'sawyer_base.srdf')
+        model_path = io_util.pjoin(path_root, 'sawyer.urdf')
+        base_path = io_util.pjoin(path_root, 'sawyer.srdf')
 
         openravepy.RaveInitialize(True, level=openravepy.DebugLevel.Error)
         env = openravepy.Environment()
@@ -53,7 +57,6 @@ class Sawyer(Arm):
         with env:
             name = plugin.SendCommand('load {} {}'.format(model_path, base_path))
             robot = env.GetRobot(name)
-            robot.SetTransform(openravepy.matrixFromPose([1,0,0,0,0,0,-0.08]))
 
         robot.SetActiveManipulator('gripper')
         ikmodel = openravepy.databases.inversekinematics.InverseKinematicsModel(
