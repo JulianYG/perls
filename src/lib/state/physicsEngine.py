@@ -57,6 +57,7 @@ class OpenRaveEngine(FakeStateEngine):
                     solutions, joint_pos, axis=1,
                     weights=[100, 80, 60, 40, 30, 20, 5]).argmin()
                 solution = solutions[best_idx]
+
         # Otherwise stay the same
         if solution is None:
             logerr('IK Response Invalid.', FONT.control)
