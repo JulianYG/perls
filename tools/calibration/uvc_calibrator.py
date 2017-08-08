@@ -21,22 +21,10 @@ import rosparam
 import intera_interface
 import time
 
-
 from .camera import UVCCamera
 from robot import Robot
 
 # USB Camera matrix 
-# dimension (640, 480)
-# _UK = np.array([
-# 	[600.153387, 0, 315.459915], 
-# 	[0, 598.015225, 222.933946], 
-# 	[0,          0,          1]
-# 	], np.float32)
-
-# # USB Camera Distortion
-# _UD = np.array([0.147084, -0.257330, 
-# 	0.003032, -0.006975, 0.000000], np.float32)
-
 # Dimension (1280, 720)
 _UK = np.array([
 	[927.902447 ,0.000000 ,641.850659],
@@ -44,15 +32,17 @@ _UK = np.array([
 	[0.000000, 0.000000 ,1.000000]
 	], dtype=np.float32)
 
+# USB Camera Distortion
 _UD = np.array([
 	0.078759, -0.143339, -0.000887 ,-0.001555 ,0.000000
 	], dtype=np.float32)
 
-class Tracker():
+
+class UVCCalibrator:
 
 	def __init__(self, camera, robot, board_size=(2,2), itermat=(8, 9),
 		z=0, K=None, D=None, debug=False, 
-		calib='../../../tools/calibration/calib_data'):
+		calib='calib_data/logitech'):
 
 		self._camera = camera
 
@@ -99,8 +89,8 @@ class Tracker():
 
 	def track(self):
 
-		invRotation_dir = pjoin(self._calib_directory, 'Tracker_inverseRotation.p')
-		translation_dir = pjoin(self._calib_directory, 'Tracker_translation.p')
+		invRotation_dir = pjoin(self._calib_directory, 'UVCTracker_rotation.p')
+		translation_dir = pjoin(self._calib_directory, 'UVCTracker_translation.p')
 
 		if os.path.exists(invRotation_dir) and os.path.exists(translation_dir):
 			
