@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-A tracker that calibrates by tracking the robot gripper 
+A tracker that calibrates by tracking the robot gripper
 """
 
 import pickle
@@ -73,7 +73,7 @@ class KinectTracker():
 
         self._arm = intera_interface.Limb()
         self._gripper = intera_interface.Gripper()
-       
+
         self._transformation = np.eye(4)
         self._transformation[:3, :3] = r_mat
         self._transformation[:3, 3] = t_vec
@@ -104,9 +104,9 @@ class KinectTracker():
         self._intrinsics_RGB = k if k is not None else self._to_matrix(self._device.getColorCameraParams())
         self._distortion_RGB = d
 
-        self._registration = Registration(self._device.getIrCameraParams(), 
+        self._registration = Registration(self._device.getIrCameraParams(),
             self._device.getColorCameraParams())
-        
+
 
         self._undistorted = Frame(512, 424, 4)
         self._registered = Frame(512, 424, 4)
@@ -123,7 +123,7 @@ class KinectTracker():
             print('computing...')
             self._compute()
 
-    def reach_absolute(self, endState): 
+    def reach_absolute(self, endState):
         ns = "ExternalTools/right/PositionKinematicsNode/IKService"
         iksvc = rospy.ServiceProxy(ns, SolvePositionIK)
         ikreq = SolvePositionIKRequest()
@@ -187,14 +187,14 @@ class KinectTracker():
     def _to_matrix(param):
 
         return np.array([
-            [param.fx, 0, param.cx], 
-            [0, param.fy, param.cy], 
-            [0, 0, 1]], 
+            [param.fx, 0, param.cx],
+            [0, param.fy, param.cy],
+            [0, 0, 1]],
             dtype=np.float32)
 
     def click_and_grasp(self):
 
-        
+
         global mouseX, mouseY
 
         mouseX = 0
@@ -214,10 +214,10 @@ class KinectTracker():
         while True:
             color, _, _ = self.snapshot()
 
-            undistorted_color = cv2.undistort(color.asarray(), self._intrinsics_RGB, self._distortion_RGB)    
+            undistorted_color = cv2.undistort(color.asarray(), self._intrinsics_RGB, self._distortion_RGB)
             color = cv2.flip(undistorted_color, 1)
             cv2.circle(color, (mouseX, mouseY), 1, (0, 0, 255), 10)
-    
+
             rgb = cv2.resize(color, (1920, 1080))
             cv2.imshow("kinect-rgb", rgb)
             self._listener.release(self._frames)
@@ -235,10 +235,10 @@ class KinectTracker():
             self._frames[pylibfreenect2.FrameType.Ir], \
             self._frames[pylibfreenect2.FrameType.Depth]
 
-        self._registration.apply(color, depth, 
+        self._registration.apply(color, depth,
             self._undistorted,
-            self._registered, 
-            bigdepth=self._big_depth, 
+            self._registered,
+            bigdepth=self._big_depth,
             color_depth_map=self._color_depth_map)
 
         return color, ir, depth
@@ -251,7 +251,7 @@ class KinectTracker():
 
     def move_to_with_grasp(self, x, y, z, hover, dive):
         self._gripper.set_position(self._gripper.MAX_POSITION)
-        self._arm.set_joint_position_speed(0.1)        
+        self._arm.set_joint_position_speed(0.1)
         self.move_to(x, y, z + hover)
         time.sleep(0.7)
         self.move_to(x, y, z + dive)
@@ -268,38 +268,40 @@ class KinectTracker():
         self._arm.set_joint_position_speed(0.1)
         self.move_to(x, y, z + hover)
         time.sleep(0.2)
-        
+
         self.move_to(x, y, z + drop_height)
         time.sleep(.8)
 
         if drop:
             self._gripper.set_position(self._gripper.MAX_POSITION)
             time.sleep(.5)
-        
-
-if rospy.get_name() == '/unnamed':
-    rospy.init_node('kinect_grasp')
-
-
-rotation_dir = pjoin('../../../tools/calibration/calib_data/kinect', 'KinectTracker_rotation.p')
-translation_dir = pjoin('../../../tools/calibration/calib_data/kinect', 'KinectTracker_translation.p')
-intrinsics_RGB = np.array([[1.0450585754139581e+03, 0., 9.2509741958808945e+02], 
-                       [0., 1.0460057005089166e+03, 5.3081782987073052e+02], 
-                       [0., 0., 1.]], dtype=np.float32)
-
-distortion_RGB = np.array([ 1.8025470248423700e-02, -4.0380385825573024e-02,
-       -6.1365440651701009e-03, -1.4119705487162354e-03,
-       9.5413324012517888e-04 ], dtype=np.float32)
-
-
-with open(rotation_dir, 'rb') as f:
-    r = pickle.load(f)
-
-with open(translation_dir, 'rb') as f:
-    t = np.squeeze(pickle.load(f))
 
 
 
-tracker = KinectTracker(r, t, intrinsics_RGB, distortion_RGB)
+if __name__ == '__main__':
+    if rospy.get_name() == '/unnamed':
+        rospy.init_node('kinect_grasp')
 
-tracker.click_and_grasp()
+
+    rotation_dir = pjoin('../../../tools/calibration/calib_data/kinect', 'KinectTracker_rotation.p')
+    translation_dir = pjoin('../../../tools/calibration/calib_data/kinect', 'KinectTracker_translation.p')
+    intrinsics_RGB = np.array([[1.0450585754139581e+03, 0., 9.2509741958808945e+02],
+                        [0., 1.0460057005089166e+03, 5.3081782987073052e+02],
+                        [0., 0., 1.]], dtype=np.float32)
+
+    distortion_RGB = np.array([ 1.8025470248423700e-02, -4.0380385825573024e-02,
+        -6.1365440651701009e-03, -1.4119705487162354e-03,
+        9.5413324012517888e-04 ], dtype=np.float32)
+
+
+    with open(rotation_dir, 'rb') as f:
+        r = pickle.load(f)
+
+    with open(translation_dir, 'rb') as f:
+        t = np.squeeze(pickle.load(f))
+
+
+
+    tracker = KinectTracker(r, t, intrinsics_RGB, distortion_RGB)
+
+    tracker.click_and_grasp()
