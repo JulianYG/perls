@@ -41,7 +41,7 @@ except:
         from pylibfreenect2 import CpuPacketPipeline
         pipeline = CpuPacketPipeline()
 
-KINECT_DEPTH_SHIFT = -29.84013555237548
+KINECT_DEPTH_SHIFT = -22.54013555237548
 GRIPPER_SHIFT = 0.0251
 
 class KinectTracker():
@@ -180,7 +180,7 @@ class KinectTracker():
     global_x, global_y = 858, 489
     def match_eval(self):
     	
-    	LENGTH = 0.24406304511449886
+    	LENGTH = 0.133 #0.24406304511449886
 
         def mouse_callback(event, x, y, flags, params):
             if event == 1:
@@ -204,7 +204,7 @@ class KinectTracker():
                 point[1] = cam_y
                 point[2] = depth_avg
 
-                ori = p.getQuaternionFromEuler((np.pi, 0, 0))
+                ori = [0, 0, 1, 0] #p.getQuaternionFromEuler((np.pi, 0, 0))
                 z = np.array(p.getMatrixFromQuaternion(ori)).reshape(3,3)[-1]
                 x = np.array(p.getMatrixFromQuaternion(ori)).reshape(3,3)[0]
                 y = np.array(p.getMatrixFromQuaternion(ori)).reshape(3,3)[1]
@@ -213,7 +213,8 @@ class KinectTracker():
                 print("== xyz in robot frame: {}".format(target_point * 1000))
                 print(z)
                 # print(target_point - z * LENGTH + np.array([0, 0, -1] * 0.05))
-                target_point = target_point - z * LENGTH + np.array([0, 0, 1]) * 0.02
+                target_point = target_point - z * GRIPPER_SHIFT
+
                 print("== desired endeffector pos: {}".format(target_point * 1000))
                 # print(target_point)
                 end_state = dict(position=target_point,
@@ -430,12 +431,12 @@ class KinectTracker():
 
     def track(self):
 
-        invRotation_dir = pjoin(self._calib_directory, 'KinectTracker_rotation.p')
+        rotation_dir = pjoin(self._calib_directory, 'KinectTracker_rotation.p')
         translation_dir = pjoin(self._calib_directory, 'KinectTracker_translation.p')
 
-        if os.path.exists(invRotation_dir) and os.path.exists(translation_dir):
+        if os.path.exists(rotation_dir) and os.path.exists(translation_dir):
             
-            with open(invRotation_dir, 'rb') as f:
+            with open(rotation_dir, 'rb') as f:
                 rotation = pickle.load(f)
 
             with open(translation_dir, 'rb') as f:
@@ -598,8 +599,8 @@ distortion_RGB = np.array([ 1.8025470248423700e-02, -4.0380385825573024e-02,
 tracker = KinectTracker(robot, board_size=(4,4), itermat=(15, 15), intrinsics_RGB=intrinsics_RGB, distortion_RGB=distortion_RGB)
 np.set_printoptions(formatter={'float': lambda x: "{0:0.8f}".format(x)})
 
-# tracker.find_constant()
 tracker.match_eval()
+# tracker.find_constant()
 # tracker.turn_off()
 
 

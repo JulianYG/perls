@@ -106,8 +106,7 @@ class Robot(object):
 		if (resp.result_type[0] > 0):
 			limb_joints = dict(zip(resp.joints[0].name, resp.joints[0].position)) # format IK response for compatability with Limb
 			self.limb.move_to_joint_positions(limb_joints)
-			# print(limb_joints)
-			# self.limb.set_joint_positions(limb_joints)
+			
 			rospy.loginfo("Move to position succeeded")
 
 		else:
