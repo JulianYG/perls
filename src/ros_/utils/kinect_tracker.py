@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-A tracker that calibrates by tracking the robot gripper 
+A tracker that calibrates by tracking the robot gripper
 """
 
 import pickle
@@ -19,98 +19,100 @@ from sensor_msgs.msg import CameraInfo, Image
 import rospy
 import rosparam
 import intera_interface
+from intera_interface import CHECK_VERSION
+
+from geometry_msgs.msg import (
+    PoseStamped,
+    Pose,
+    Point,
+    Quaternion,
+)
+from std_msgs.msg import Header
+from sensor_msgs.msg import JointState
+
 import time
 
 sys.path.append(os.path.abspath('../'))
-from robot import Robot
 
-# USB Camera matrix 
-# dimension (640, 480)
-# _UK = np.array([
-#   [600.153387, 0, 315.459915], 
-#   [0, 598.015225, 222.933946], 
-#   [0,          0,          1]
-#   ], np.float32)
+from intera_core_msgs.srv import (
+    SolvePositionIK,
+    SolvePositionIKRequest,
+    SolvePositionFK,
+    SolvePositionFKRequest
+)
 
-# # USB Camera Distortion
-# _UD = np.array([0.147084, -0.257330, 
-#   0.003032, -0.006975, 0.000000], np.float32)
+import pylibfreenect2
+from pylibfreenect2 import Freenect2, SyncMultiFrameListener
+from pylibfreenect2 import FrameType, Registration, Frame
+from pylibfreenect2 import createConsoleLogger, setGlobalLogger
+from pylibfreenect2 import LoggerLevel
+from pylibfreenect2.libfreenect2 import IrCameraParams, ColorCameraParams
+try:
+    from pylibfreenect2 import OpenCLPacketPipeline
+    pipeline = OpenCLPacketPipeline()
+except:
+    try:
+        from pylibfreenect2 import OpenGLPacketPipeline
+        pipeline = OpenGLPacketPipeline()
+    except:
+        from pylibfreenect2 import CpuPacketPipeline
+        pipeline = CpuPacketPipeline()
 
-# Dimension (1280, 720)
+KINECT_DEPTH_SHIFT = -22.54013555237548
+GRIPPER_SHIFT = 0.0251
+LENGTH = 0.133
 
-
-_UK = np.array([
-    [927.902447 ,0.000000 ,641.850659],
-    [0.000000, 921.598756, 345.336021],
-    [0.000000, 0.000000 ,1.000000]
-    ], dtype=np.float32)
-
-_UD = np.array([
-    0.078759, -0.143339, -0.000887 ,-0.001555 ,0.000000
-    ], dtype=np.float32)
-
+FINGER_OFFSET = 0.066
 
 class KinectTracker():
 
-    def __init__(self, robot, board_size=(2,2), itermat=(8, 9), 
-        K=None, D=None,
-        calib='../../../tools/calibration/calib_data/kinect'):
+    def __init__(self, r_mat, t_vec, k, d):
 
         if rospy.get_name() == '/unnamed':
             rospy.init_node('kinect_calibration')
 
-        self._board_size = board_size
-        self._checker_size = 0.0274
+        self._arm = intera_interface.Limb()
+        self._gripper = intera_interface.Gripper()
 
-        self._arm = robot
-        self._grid = itermat
+        self._transformation = np.eye(4)
+        self._transformation[:3, :3] = r_mat
+        self._transformation[:3, 3] = t_vec
 
-        self._camera_man = None
 
-        self._calib_directory = calib
+        fn = Freenect2()
+        num_devices = fn.enumerateDevices()
+        if num_devices == 0:
+            print("No device connected!")
+            sys.exit(1)
 
-        self.K = K
-        self.d = D
-        self.T = None
-        self.invR = None
-        # self.calibration_points = []
-        self.image_points, self.gripper_points = [], []
+        # Turn on kinect
+        serial = fn.getDeviceSerialNumber(0)
+        self._fn = fn
+        self._serial = serial
 
-        self.depth_image = None
+        self._device = self._fn.openDevice(self._serial, pipeline=pipeline)
 
-        self.track()
+        self._listener = SyncMultiFrameListener(
+            FrameType.Color | FrameType.Ir | FrameType.Depth)
 
-    def track(self):
+        # Register listeners
+        self._device.setColorFrameListener(self._listener)
+        self._device.setIrAndDepthFrameListener(self._listener)
+        self._device.start()
 
-        # Preparing...
-        invRotation_dir = pjoin(self._calib_directory, 'KinectTracker_inverseRotation.p')
-        translation_dir = pjoin(self._calib_directory, 'KinectTracker_translation.p')
+        # NOTE: must be called after device.start()
+        self._intrinsics_RGB = k if k is not None else self._to_matrix(self._device.getColorCameraParams())
+        self._distortion_RGB = d
 
-        if os.path.exists(invRotation_dir) and os.path.exists(translation_dir):
-            
-            with open(invRotation_dir, 'rb') as f:
-                ir = pickle.load(f)
-            self.invR = ir
+        self._registration = Registration(self._device.getIrCameraParams(),
+            self._device.getColorCameraParams())
 
-            with open(translation_dir, 'rb') as f:
-                t = pickle.load(f)
-            self.T = t
-        
-            return t, ir
 
-        
-        info = dict(
-            board_size=self._board_size,
-            directory=self._calib_directory
-            )
+        self._undistorted = Frame(512, 424, 4)
+        self._registered = Frame(512, 424, 4)
 
-        # After preparation is done, kickstart tracking!
-        self._camera_man = rospy.Subscriber('/kinect2/hd/image_color_rect', 
-            Image, self.tracking_callback)
-
-        rospy.on_shutdown(self.clean_shutdown)
-        rospy.loginfo("Kinect calibration node running. Ctrl-c to quit")
-        rospy.spin()
+        self._big_depth = Frame(1920, 1082, 4)
+        self._color_depth_map = np.zeros((424, 512),  np.int32).ravel()
 
     def clean_shutdown(self):
 
@@ -121,186 +123,185 @@ class KinectTracker():
             print('computing...')
             self._compute()
 
-    def tracking_callback(self, img_data):
-
-        cv_image = CvBridge().imgmsg_to_cv2(img_data, 'bgr8')
-
-        # Match with pattern location
-
-        detected, pix = self._detect_center(cv_image)
-
-        # Skip if not found pattern
-        if not detected:
-            return
-
-        # Get the real position
-        gripper_pos = np.array(self._arm.get_tool_pose()[0], 
-                               dtype=np.float32)
-
-        self.image_points.append(pix)
-        self.gripper_points.append(gripper_pos)
-        print('{} image saved.'.format(len(self.image_points)))
-
-
-    def _compute(self):
-
-        # Solve for matrices
-        retval, rvec, tvec = cv2.solvePnP(
-            np.array(self.gripper_points, dtype=np.float32), 
-            np.array(self.image_points, dtype=np.float32), 
-            self.K,
-            # Give none, assuming feeding in undistorted images 
-            None)
-            # 
-            #self.d)
-
-        print('Solving matrices...')
-
-        rotMatrix = cv2.Rodrigues(rvec)[0]
-        invRotation = np.linalg.inv(rotMatrix)
-            
-        data = dict(inverseRotation=invRotation,
-                    translation=tvec,
-                    intrinsics=self.K,
-                    distortion=self.d)
-
-        for name, mat in data.items():
-            with open(pjoin(self._calib_directory, 
-                '{}_{}.p'.format(self.__class__.__name__, name)), 'wb') as f:
-                pickle.dump(mat, f)
-
-        print('Writing matrices...')
-
-        self.T = tvec
-        self.invR = invRotation
-
-        return tvec, invRotation
-
-    @staticmethod
-    def convert(u, v, z, K, T, invR):
-
-        # Pixel value
-        p = np.array([u, v, 1], dtype=np.float32)
-
-        tempMat = invR * K
-        tempMat2 = tempMat.dot(p)
-        tempMat3 = invR.dot(np.reshape(T, 3))
-
-        # approx height of each block + 
-        # (inv Rotation matrix * inv Camera matrix * point)
-        # inv Rotation matrix * tvec
-        s = (z + tempMat3[2]) / tempMat2[2]
-
-        # s * [u,v,1] = M(R * [X,Y,Z] - t)  
-        # ->   R^-1 * (M^-1 * s * [u,v,1] - t) = [X,Y,Z] 
-
-        temp = np.linalg.inv(K).dot(s * p)
-        temp2 = temp - np.reshape(T, 3)
-
-        gripper_coords = invR.dot(temp2)
-
-        return gripper_coords
-
-    def _detect_center(self, cv_img):
-        
-        # Look for pattern
-        foundPattern, usbCamCornerPoints = cv2.findChessboardCorners(
-            cv_img, self._board_size, None,
-            cv2.CALIB_CB_ADAPTIVE_THRESH
-        )
-
-        cv2.drawChessboardCorners(cv_img, self._board_size, 
-              usbCamCornerPoints, foundPattern)
-
-        cv2.imshow('kinect_calibrate', cv_img)
-        key = cv2.waitKey(500) & 0xff
-
-        if key == 115:
-            print('Recognizing pattern...')
-
-            if not foundPattern:
-                print('Pattern not found.')
-                return False, None  
-
-            else:
-                cv2.cornerSubPix(cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY), 
-                        usbCamCornerPoints, (11, 11), (-1, -1), 
-                        (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001))
-
-                usbCamCornerPoints = np.squeeze(usbCamCornerPoints)
-                recognized_pix = np.mean(usbCamCornerPoints, axis=0)
-            
-                return True, recognized_pix
-
-        return False, None
-
-    
-    def rgb_callback(self, img):
-
-        cv_image = CvBridge().imgmsg_to_cv2(img, 'bgr8')
-        print("????")
-        def mouse_callback(event, x, y, flags, params):
-            if event == 1 and self.depth_image is not None:
-                # print(self.depth_image.shape)  # 1080, 1920
-                # print(self.depth_image[y][x] / 1000.)
-                print((x, y), self.convert(x, y, 
-                    #1.22 - self.depth_image[y][x] / 1000., 
-                    -0.1,
-                    self.K, self.T, self.invR))
+    def reach_absolute(self, endState):
+        ns = "ExternalTools/right/PositionKinematicsNode/IKService"
+        iksvc = rospy.ServiceProxy(ns, SolvePositionIK)
+        ikreq = SolvePositionIKRequest()
+        hdr = Header(stamp=rospy.Time.now(), frame_id='base')
+        poses = {
+            'right': PoseStamped(
+                header=hdr,
+                pose=Pose(
+                    position=Point(*(endState['position'])),
+                    orientation=Quaternion(*(endState['orientation'])),
+                ),
+            ),
+        }
+        # Add desired pose for inverse kinematics
+        ikreq.pose_stamp.append(poses["right"])
+        # Request inverse kinematics from base to "right_hand" link
+        ikreq.tip_names.append('right_hand')
 
         try:
+            rospy.wait_for_service(ns, 5.0)
+            resp = iksvc(ikreq) # get IK response
+        except (rospy.ServiceException, rospy.ROSException), e:
+            rospy.logerr("Service call failed: %s" % (e,))
+            return False
 
-            cv2.namedWindow("kinect-rgb", cv2.CV_WINDOW_AUTOSIZE)
-            cv2.imshow("kinect-rgb", cv_image)
+        if (resp.result_type[0] > 0):
+            limb_joints = dict(zip(resp.joints[0].name, resp.joints[0].position))
+            self._arm.move_to_joint_positions(limb_joints)
+            rospy.loginfo("Move to position succeeded")
 
-            cv2.setMouseCallback('kinect-rgb', mouse_callback, cv_image)
-            cv2.waitKey(200)
+        else:
+            rospy.logerr("IK response is not valid")
+            return False
 
-        except CvBridgeError, err:
-            rospy.logerr(err)
-            return
+    def convert(self, u, v):
+
+        depth_map = cv2.flip(self._big_depth.asarray(np.float32)[1:-1, :], 1)
+        depth_avg = depth_map[v, u] + KINECT_DEPTH_SHIFT
+
+        print("== depth: {}".format(depth_avg))
+        cam_x = (u - self._intrinsics_RGB[0, 2]) / self._intrinsics_RGB[0, 0] * depth_avg
+        cam_y = (v - self._intrinsics_RGB[1, 2]) / self._intrinsics_RGB[1, 1] * depth_avg
+
+        point = np.ones((4,), dtype=np.float32)
+        point[0] = cam_x
+        point[1] = cam_y
+        point[2] = depth_avg
+
+        target_point = np.linalg.inv(self._transformation).dot(point)[:3] / 1000
+        print("== xyz in robot frame: {}".format(target_point * 1000))
+        # print('getpoint3d: {}'.format(self._registration.getPointXYZ(Frame(512, 424, 4), u, v)))
+
+        target_point[2] += LENGTH + 0.015
+        # Prevent collision
+        # target_point += 0.015
+        print("== desired endeffector pos: {}".format(target_point * 1000))
+
+        return target_point
+
+    @staticmethod
+    def _to_matrix(param):
+
+        return np.array([
+            [param.fx, 0, param.cx],
+            [0, param.fy, param.cy],
+            [0, 0, 1]],
+            dtype=np.float32)
+
+    def click_and_grasp(self):
 
 
-    def depth_callback(self, img):
+        global mouseX, mouseY
 
-        cv_image = CvBridge().imgmsg_to_cv2(img)
-        self.depth_image = cv_image
+        mouseX = 0
+        mouseY = 0
 
+        def mouse_callback(event, x, y, flags, params):
+            if event == 1:
+                mouseX, mouseY = x, y
+                gripper_pos = self.convert(x, y)
 
-    def match_eval(self):
-
-        # After preparation is done, kickstart tracking!
-        self._camera_man = rospy.Subscriber('/kinect2/hd/image_color_rect', 
-            Image, self.rgb_callback)
-
-        self._depth_camera = rospy.Subscriber('/kinect2/hd/image_depth_rect', 
-            Image, self.depth_callback)
-
-        rospy.on_shutdown(self.clean_shutdown)
-        rospy.loginfo("Kinect evaluation node running. Ctrl-c to quit")
-        rospy.spin()
+                self.move_to_with_lift(*gripper_pos, hover=0.3, drop_height=0.2)
 
 
+        cv2.namedWindow('kinect-rgb', cv2.CV_WINDOW_AUTOSIZE)
+        cv2.setMouseCallback('kinect-rgb', mouse_callback)
 
-if rospy.get_name() == '/unnamed':
-    rospy.init_node('kinect_tracker')
+        while True:
+            color, _, _ = self.snapshot()
+
+            undistorted_color = cv2.undistort(color.asarray(), self._intrinsics_RGB, self._distortion_RGB)
+            color = cv2.flip(undistorted_color, 1)
+            cv2.circle(color, (mouseX, mouseY), 1, (0, 0, 255), 10)
+
+            rgb = cv2.resize(color, (1920, 1080))
+            cv2.imshow("kinect-rgb", rgb)
+            self._listener.release(self._frames)
+
+            key = cv2.waitKey(delay=1)
+            if key == ord('q'):
+                break
+
+    def snapshot(self):
+
+        self._frames = self._listener.waitForNewFrame()
+
+        color, ir, depth = \
+            self._frames[pylibfreenect2.FrameType.Color],\
+            self._frames[pylibfreenect2.FrameType.Ir], \
+            self._frames[pylibfreenect2.FrameType.Depth]
+
+        self._registration.apply(color, depth,
+            self._undistorted,
+            self._registered,
+            bigdepth=self._big_depth,
+            color_depth_map=self._color_depth_map)
+
+        return color, ir, depth
+
+    def move_to(self, x, y, z):
+
+        end_state = dict(position=(x, y, z), orientation=(0, 1, 0, 0))
+        self.reach_absolute(end_state)
+        print("== move to {} success".format(self._arm.endpoint_pose()))
+
+    def move_to_with_grasp(self, x, y, z, hover, dive):
+        self._gripper.set_position(self._gripper.MAX_POSITION)
+        self._arm.set_joint_position_speed(0.1)
+        self.move_to(x, y, z + hover)
+        time.sleep(0.7)
+        self.move_to(x, y, z + dive)
+        self._arm.set_joint_position_speed(0.03)
+        self.move_to(x, y, z - FINGER_OFFSET)
+        time.sleep(0.8)
+        self._gripper.set_position(0)
+
+    def move_to_with_lift(self, x, y, z,
+        hover=0.4, dive=0.05, drop=True, drop_height=0.3):
+
+        self.move_to_with_grasp(x, y, z, hover, dive)
+        time.sleep(.75)
+        self._arm.set_joint_position_speed(0.1)
+        self.move_to(x, y, z + hover)
+        time.sleep(0.2)
+
+        self.move_to(x, y, z + drop_height)
+        time.sleep(.8)
+
+        if drop:
+            self._gripper.set_position(self._gripper.MAX_POSITION)
+            time.sleep(.5)
 
 
-limb = intera_interface.Limb('right')
-limb.set_joint_position_speed(0.2)
-robot = Robot(limb, None)
+
+if __name__ == '__main__':
+    if rospy.get_name() == '/unnamed':
+        rospy.init_node('kinect_grasp')
 
 
-dimension = (1920, 1080)
-intrinsics = np.array([[1.0741796970429734e+03, 0., 9.3488214133804252e+02], 
-                       [0., 1.0640064260133906e+03, 6.0428649994134821e+02], 
-                       [0., 0., 1.]], dtype=np.float32)
+    rotation_dir = pjoin('../../../tools/calibration/calib_data/kinect', 'KinectTracker_rotation.p')
+    translation_dir = pjoin('../../../tools/calibration/calib_data/kinect', 'KinectTracker_translation.p')
+    intrinsics_RGB = np.array([[1.0450585754139581e+03, 0., 9.2509741958808945e+02],
+                        [0., 1.0460057005089166e+03, 5.3081782987073052e+02],
+                        [0., 0., 1.]], dtype=np.float32)
 
-distortion = np.array([ 3.4454149657654337e-02, 9.7555269933206498e-02,
-       1.2981879029576470e-02, 2.7898744906562916e-04,
-       -2.0379307133765162e-01 ], dtype=np.float32)
+    distortion_RGB = np.array([ 1.8025470248423700e-02, -4.0380385825573024e-02,
+        -6.1365440651701009e-03, -1.4119705487162354e-03,
+        9.5413324012517888e-04 ], dtype=np.float32)
 
-tracker = KinectTracker(robot, board_size= (9,6), itermat=(3,4), K=intrinsics,
-    D=distortion)
 
-tracker.match_eval()
+    with open(rotation_dir, 'rb') as f:
+        r = pickle.load(f)
+
+    with open(translation_dir, 'rb') as f:
+        t = np.squeeze(pickle.load(f))
+
+
+
+    tracker = KinectTracker(r, t, intrinsics_RGB, distortion_RGB)
+
+    tracker.click_and_grasp()
