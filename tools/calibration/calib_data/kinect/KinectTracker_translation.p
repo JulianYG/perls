@@ -11,12 +11,13 @@ p3
 tp4
 Rp5
 (I1
-(I5
+(I3
+I1
 tp6
 cnumpy
 dtype
 p7
-(S'f4'
+(S'f8'
 p8
 I0
 I1
@@ -30,7 +31,7 @@ I-1
 I0
 tp12
 bI00
-S'fL\xa1=u\xc7\x12\xbe\x90\x85h\xba$\xd1\xcb\xba\x00\x00\x00\x00'
+S'\x03\xc1\xa8\xe53\xf9W\xc0\x96\xf5w`\xcf\x90\x85\xc0{\xb5od\xbfq\x8c@'
 p13
 tp14
 b.

@@ -128,7 +128,10 @@ class View:
         1 represents success of replay, and -1 represent
         error state.
         """
-        return self._engine.boot(targets)
+        status = self._engine.boot(targets)
+        if status > -1:
+            self._frame = self._engine.frame
+        return status
 
     def close(self):
         """

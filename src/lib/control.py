@@ -33,7 +33,7 @@ class Controller(object):
         # Simulation
         bullet=physicsEngine.BulletPhysicsEngine,
         mujoco=physicsEngine.MujocoEngine,
-        gazebo=physicsEngine.GazeboEngine,
+        gazebo=physicsEngine.OpenRaveEngine,
 
         # Reality
         intera=robotEngine.InteraEngine,
@@ -90,6 +90,9 @@ class Controller(object):
                  )
 
         self._init_time_stamp = None
+
+        # For coonsistency across different clock speeds
+        self._update_time_stamp = None
         self._build()
 
     @property
@@ -191,8 +194,6 @@ class Controller(object):
         display = View(conf.view_desc, Adapter(world), ge)
 
         # Set up control event interruption handlers
-        # TODO
-
         ctrl_handler = Controller._CTRL_HANDLERS[conf.control_type](
             pe.ps_id, conf.sensitivity, conf.rate
         )
@@ -280,21 +281,27 @@ class Controller(object):
         world.boot(display.info['frame'])
 
         # Update initial states:
-        init_states = world.get_states(('tool', 'tool_pose'))[0]
-        # First control states
-        for tid, init_pose in init_states.items():
-            self._states['tool'][tid] = init_pose
+        self._control_update(world)
 
         # Next display states
         self._view_update(display)
 
+        self._update_time_stamp = time_util.get_abs_time()
+
         # Finally start control loop (Core)
         try:
             while not time_up or done:
+
                 elt = time_util.get_elapsed_time(self._init_time_stamp)
 
+                time_since_last_update = time_util.get_elapsed_time(self._update_time_stamp)
+                self._update_time_stamp = time_util.get_abs_time()
+
                 # Perform control interruption first
-                self._control_interrupt(world, display, ctrl_handler.signal)
+                self._control_interrupt(
+                    world, display, 
+                    ctrl_handler.signal, time_since_last_update)
+
                 # Update model
                 time_up = world.update(elt)
 
@@ -342,7 +349,7 @@ class Controller(object):
         # TODO
         self._thread_pool[server_id] = None
 
-    def _control_interrupt(self, world, display, signal):
+    def _control_interrupt(self, world, display, signal, elapsed_time):
         """
         The control interruption, jumps to control defined
         in xml file, process the control signals and
@@ -352,12 +359,16 @@ class Controller(object):
         :param signal: the signal received from control handler
         :return: None
         """
+        
+        # Only keep consistency for GUI usage
+        elapsed_time = 1 if display.info['frame'] != 'gui' else elapsed_time * 50
         commands, instructions, view, update = \
             signal['cmd'], signal['instruction'], signal['camera'], signal['update']
 
         # Update view perspective modified by user pressing control key
         if update:
             self._view_update(display)
+            return
 
         # Check for view perspective control
         if view:
@@ -367,15 +378,12 @@ class Controller(object):
                 # Update camera states from control input
                 if mtype == 'pos':
                     rot_vec = display.get_camera_pose('rad')[1]
-
-                    # The vec should be (r[0], 0, r[1]). Not incorporating
-                    # r[0] to avoid using pitch, providing more intuitive
-                    # view control
-                    align_mat = math_util.euler2mat(math_util.vec((0, 0, rot_vec[1])))
-                    self._states['camera']['focus'] += align_mat.dot(delta)
+                    align_mat = math_util.euler2mat(math_util.vec((rot_vec[0], 0, rot_vec[1])))
+                    translation = align_mat.dot(delta)
+                    self._states['camera']['focus'] += translation * elapsed_time
                 elif mtype == 'orn':
-                    self._states['camera']['pitch'] += delta[0]
-                    self._states['camera']['yaw'] += delta[1]
+                    self._states['camera']['pitch'] += delta[0] * elapsed_time
+                    self._states['camera']['yaw'] += delta[1] * elapsed_time
                 else:
                     loginfo('Unrecognized view command type. Skipped',
                             FONT.ignore)
@@ -387,7 +395,6 @@ class Controller(object):
             tool = world.get_tool(signal['tid'], signal['key'])
 
             # First check if there's low level commands
-            # TODO: Think if cmd/ins needs to be a class
             # A sequential list of commands to execute in order
             # These low level commands are set to absolute
             # values in all cases
@@ -416,56 +423,69 @@ class Controller(object):
                 if method == 'rst' and value:
                     loginfo('Resetting...', FONT.model)
                     world.reset()
+
                     # Update the states
-                    self._states['tool'] = world.get_states(
-                        ('tool', 'tool_pose'))[0]
+                    self._control_update(world)
                     loginfo('World is reset.', FONT.model)
 
                 elif method == 'reach':
+
                     # Cartesian, quaternion
-                    r_pos, a_orn = value
-                    i_pos, _ = self._states['tool'][tool.tid]
+                    r_pos, r_orn = value
+                    i_pos, i_orn = self._states['tool'][tool.tid]
 
                     # Orientation is always relative to the
                     # world frame, that is, absolute
-                    r_vec = math_util.deg(math_util.quat2euler(tool.orn))
-                    r = math_util.rad(r_vec)
-
-                    pos_diff, orn_diff = \
-                        math_util.zero_vec(3), math_util.zero_vec(3)
+                    r_mat = math_util.quat2mat(tool.orn)
 
                     if r_pos is not None:
+                        # Scaling down the speed for robot arm
+                        if tool.tid[0] == 'm':
+                            r_pos /= 7.5
+
                         # Increment to get absolute pos
                         # Take account of rotation
-                        i_pos += math_util.euler2mat(r).dot(r_pos)
-                        pos_diff, orn_diff = tool.reach(i_pos, None)
+                        i_pos += r_mat.dot(r_pos * elapsed_time)
+                        tool.pinpoint(i_pos, tool.tool_orn)
 
-                    if a_orn is not None:
+                    if r_orn is not None:
                         ###
-                        # Note: clipping does not happen here because
-                        # arm and gripper are treated in the same way.
-                        # Clipping would result in gripper not able to
-                        # change orn. However, clipping here would give
-                        # arm perfect response. Currently the arm end
-                        # effector will switch position when reaching its
-                        # limit. This is trade-off, sadly.
                         # Can try directly setting joint states here
-                        pos_diff, orn_diff = tool.reach(None, a_orn)
+                        i_orn += r_orn * elapsed_time
+                        if tool.tid[0] == 'm':
+                            eef_joints = tool.active_joints[-2:]
+                            joint_spec = tool.joint_specs
 
-                    # Update state orientation all the time
-                    # Note by intuition, position should be updated too.
-                    # However, due to the limitation of IK, it will
-                    # cause robot arm act weirdly.
-                    state_pose = self._states['tool'][tool.tid]
-                    self._states['tool'][tool.tid] = \
-                        (state_pose[0], tool.tool_orn)
+                            # Perform the clipping here
+                            i_orn = math_util.clip_vec(
+                                math_util.vec((i_orn[1], i_orn[0])),
+                                math_util.vec(joint_spec['lower'])[eef_joints],
+                                math_util.vec(joint_spec['upper'])[eef_joints])
+                            i_orn = math_util.vec((i_orn[0], i_orn[1], 0))
 
-                    # If the tool is out of reach, hold the adapter states
-                    # TODO: make the threshold configs
-                    if math_util.rms(pos_diff) > 3. or \
-                                    math_util.rms(orn_diff) > 10.:
-                        self._states['tool'] = world.get_states(
-                            ('tool', 'tool_pose'))[0]
+                            # Update the tool's orientation
+                            self._states['tool'][tool.tid][1] = \
+                                math_util.vec((i_orn[1], i_orn[0], 0))
+                        else:
+
+                            # Update the tool's orientation
+                            self._states['tool'][tool.tid][1] = \
+                                math_util.vec(i_orn)
+
+                        tool.pinpoint(tool.tool_pos, i_orn)
+
+                        # Update the tool's position as orientation changes
+                        self._states['tool'][tool.tid][0] = world.get_states(
+                            ('tool', 'tool_pose'))[0][tool.tid][0]
+
+                    pos_diff = tool.tool_pos - i_pos
+
+                    if math_util.rms(pos_diff) > tool.tolerance:
+                        loginfo('Tool position out of reach. Set back.',
+                                FONT.warning)
+                        state_pose = world.get_states(
+                            ('tool', 'tool_pose'))[0][tool.tid]
+                        self._states['tool'][tool.tid][0] = state_pose[0]
 
                 elif method == 'grasp':
                     tool.grasp(value)
@@ -485,15 +505,27 @@ class Controller(object):
         camera events, adjust view, as well as interact with
         the world in run time if necessary
         :param display: the view side of system
-        :param signal: display signals received from
-        event handler
         :return: None
         """
-        camera_pos, camera_orn = display.get_camera_pose(otype='deg')
+        camera_pos, camerq_orn = display.get_camera_pose(otype='deg')
         self._states['camera']['focus'] = camera_pos
         # self._states['camera']['flen'] = 1e-3
-        self._states['camera']['pitch'] = camera_orn[0]
-        self._states['camera']['yaw'] = camera_orn[1]
+        self._states['camera']['pitch'] = camerq_orn[0]
+        self._states['camera']['yaw'] = camerq_orn[1]
+
+    def _control_update(self, world):
+        """
+        Update the internal control states of tool pose
+        :param world: The world model that provides tools
+        :return: None
+        """
+        init_states = world.get_states(('tool', 'tool_pose'))[0]
+        # First control states
+        for tid, init_pose in init_states.items():
+            self._states['tool'][tid] = [
+                init_pose[0], 
+                # Use radians
+                math_util.quat2euler(init_pose[1])]
 
     def _checker_interrupt(self, signal):
         """

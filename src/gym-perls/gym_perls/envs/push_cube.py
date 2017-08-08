@@ -24,15 +24,17 @@ class PushCube(PerlsEnv):
 
         super(PushCube, self)._reset()
 
-        for _ in range(200):
-            # move robot to initial position
-            self._robot.pinpoint(
-                (.8, .0, .6),
-                math_util.euler2quat(
-                    [-math_util.pi, -math_util.pi / 2., 0.]),
-                ftype='rel')
-            self._world.update()
-        print(self._get_relative_pose()[0][0])
+        # move robot to initial position
+        # TODO: orientation offset
+        offset = self._robot.pinpoint(
+            (0.65, 0.16, 0.24),
+            # (-0.29, 0.189, 0.829),
+            (0,1,0,0),
+                # math_util.euler2quat([-math_util.pi, -math_util.pi / 2., 0.]),
+            ftype='rel',max_iter=500)
+        print(offset)
+        # self._robot.joint_states = (range(7), [0] * 7, 'position', None)
+
         return self._get_relative_pose()
 
     def _get_relative_pose(self):
@@ -51,3 +53,4 @@ class PushCube(PerlsEnv):
         # TODO: then read robot state, and get the stuff we care about again. 
 
         self._world.update()
+        # print(math_util.get_relative_pose((self._robot.kinematics['abs_frame_pos'][6], self._robot.kinematics['abs_frame_orn'][6]), (self._robot.pose)))
