@@ -392,10 +392,9 @@ class BulletPhysicsEngine(FakeStateEngine):
             if p.error:
                 self._error_message.append(p.error.message)
 
-    def enable_body_joint_motors(self, uid, jids):
-        # TODO bullet does not have this function currently
+    def enable_body_joint_motors(self, uid, jids, forces):
         p.setJointMotorControlArray(uid, jids, controlMode=p.VELOCITY_CONTROL,
-                                    force=len(jids) * [300],
+                                    force=forces,
                                     physicsClientId=self._physics_server_id)
 
     def disable_body_joint_motors(self, uid, jids):

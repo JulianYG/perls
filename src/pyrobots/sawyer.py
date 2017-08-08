@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 
-
 import rospy
-# import rosparam
 import intera_interface as iif
 
 
 class SawyerArm(object):
 
     def __init__(self):
-
+        """
+        Initialize set of wrappers
+        """
         if rospy.get_name() == '/unnamed':
             rospy.init_node('robot')
 
@@ -34,12 +34,21 @@ class SawyerArm(object):
 
     @property
     def version(self):
+        """
+        List current versions of wrapped SDK,
+        gripper, and robot
+        :return: dictionary of version strings
+        """
         return dict(SDKVersion=iif.settings.SDK_VERSION,
                     SDK2Gripper=iif.settings.VERSIONS_SDK2GRIPPER,
                     SDK2Robot=iif.settings.VERSIONS_SDK2ROBOT)
 
     @property
     def name(self):
+        """
+        Get the name of the robot
+        :return: 'Sawyer'
+        """
         return self._params.get_robot_name()
 
     @property
@@ -49,18 +58,31 @@ class SawyerArm(object):
         :return: vec3 float, vec4 float pos, orn tuple
         """
         pose = self._limb.endpoint_pose().values()
-        return (pose[0].x, pose[0].y, pose[0].z), (pose[1].x, pose[1].y, pose[1].z, pose[1].w)
+        return (pose[0].x, pose[0].y, pose[0].z), \
+               (pose[1].x, pose[1].y, pose[1].z, pose[1].w)
 
     @property
     def v(self):
+        """
+        Get the current linear velocity of end effector
+        :return: vec3 float cartesian m/s
+        """
         return self._limb.endpoint_velocity()['linear']
 
     @property
     def omega(self):
+        """
+        Get the current angular velocity of end effector
+        :return: vec3 float euler radian /s
+        """
         return self._limb.endpoint_velocity()['angular']
 
     @property
     def wrench(self):
+        """
+        Get the wrent (mx, my, mz, fx, fy, fz) on end effector
+        :return: vec6 float tuple
+        """
         eef_effort = self._limb.endpoint_effort()
         force = list(eef_effort['force'])
         torque = list(eef_effort['torque'])
@@ -90,7 +112,10 @@ class SawyerArm(object):
 
     @property
     def info(self):
-
+        """
+        Get informations about parameters of the robot
+        :return: names and information
+        """
         assembly_names = self._params.get_robot_assemblies()
         camera_info = self._params.get_camera_details()
 
@@ -102,7 +127,7 @@ class SawyerArm(object):
         :param configs: configuration
         :return: None
         """
-        pass
+        return NotImplemented
 
     @property
     def head_pan(self):
@@ -131,7 +156,7 @@ class SawyerArm(object):
         :param lid: integer link id of body
         :return: name string of link on body
         """
-        pass
+        return NotImplemented
 
     def get_link_state(self, lid):
         """
@@ -148,7 +173,7 @@ class SawyerArm(object):
         cartesian link world linear velocity,
         radian link world angular velocity.
         """
-        pass
+        return NotImplemented
 
     def get_joint_info(self, jid):
         """
@@ -194,6 +219,7 @@ class SawyerArm(object):
         # Safety call
         self._limb.set_joint_position_speed(kwargs.get('max_speed', 0.3))
 
+        # Not passing this to <move_to_joint_positions>
         del kwargs['max_speed']
 
         command = {self._joints[i]: vals[i] for i in range(len(vals))}
@@ -208,7 +234,12 @@ class SawyerArm(object):
             self._params.log_message('Cannot recognize control type', 'WARN')    
 
     def show_image(self, image_path, rate=1.0):
-
+        """
+        Display given image on sawyer head display
+        :param image_path: absolute path string of the image
+        :param rate: refresh rate
+        :return: None
+        """
         self._display.display_image(image_path, display_rate=rate)
 
     @property
@@ -324,5 +355,10 @@ class SawyerArm(object):
         if self._has_gripper:
             self._gripper.stop()
 
+    @staticmethod
     def shutdown(self):
+        """
+        Safely shut down the robot controller
+        :return: None
+        """
         rospy.signal_shutdown('Safely shut down Sawyer.')

@@ -348,13 +348,14 @@ class StateEngine(object):
         return NotImplemented
 
     @abc.abstractmethod
-    def enable_body_joint_motors(self, uid, jids):
+    def enable_body_joint_motors(self, uid, jids, forces):
         """
         Enable the motors. This is desired after using
         direct torque control, where motors need to be
         re-activated for other modes of control.
         :param uid: body unique id of the arm
         :param jids: indices of joints to be enabled
+        :param forces: force arrays to set all joints
         :return: None
         """
         return NotImplemented
