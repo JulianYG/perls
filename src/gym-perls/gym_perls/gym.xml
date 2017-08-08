@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<batch>
+	<config name="default" id="0">
+		<build type="Debug">
+			<graphics name="TPS" engine="bullet" type="gui" key="0"/>
+			<physics engine="bullet" version="20170601"/>
+			<job name="run" video="False" log_path="" filename=""/>
+			<property async="True" step_size="0.001" max_run_time="900000"/>
+		</build>
+		<control type="off" sensitivity="20" rate="100"/>
+		<env>./push.xml</env>
+		<disp>./exp.xml</disp>
+	</config>
+</batch>

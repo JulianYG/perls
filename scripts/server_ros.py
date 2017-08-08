@@ -77,7 +77,7 @@ class VRSawyer(object):
 		self.pubsub.subscribe(**{'event_channel': self._event_handler})
 
 		# Start thread
-		# Using sleep_time=0.1 to update VR points on 10Hz
+		# Using sleep_time=0.1 to hold VR points on 10Hz
 		self.client_thread = self.pubsub.run_in_thread(sleep_time=0.1)
 
 		self.prev_time = time.time()
