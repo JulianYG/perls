@@ -14,9 +14,7 @@ sys.path.append(os.path.abspath('../'))
 
 KINECT_DEPTH_SHIFT = -22.54013555237548
 GRIPPER_SHIFT = 0.0251
-LENGTH = 0.133
-
-FINGER_OFFSET = 0.066
+LENGTH = 0.16
 
 
 class KinectConverter:
@@ -65,7 +63,7 @@ class KinectConverter:
             print("== xyz in robot frame: {}".format(target_point * 1000))
 
         # Prevent collision
-        target_point[2] += LENGTH + 0.015
+        target_point[2] += LENGTH + 0.02
         if self.verbose:
             print("== desired endeffector pos: {}".format(target_point * 1000))
 

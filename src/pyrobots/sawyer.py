@@ -20,6 +20,13 @@ from intera_core_msgs.srv import (
     SolvePositionFKRequest
 )
 
+import time
+
+KINECT_DEPTH_SHIFT = -22.54013555237548
+GRIPPER_SHIFT = 0.0251
+LENGTH = 0.133
+FINGER_OFFSET = 0.066
+
 
 class SawyerArm(object):
 
@@ -248,7 +255,7 @@ class SawyerArm(object):
         elif ctype == 'torque':
             self._limb.set_joint_torques(command)
         else:
-            self._params.log_message('Cannot recognize control type', 'WARN')    
+            self._params.log_message('Cannot recognize control type', 'WARN')
 
     def show_image(self, image_path, rate=1.0):
         """
@@ -308,7 +315,7 @@ class SawyerArm(object):
         Set the end effector pose
         :param pose: (pos, orn) tuple vec3 float cartesian in robot base frame,
         and vec4 float quaternion in robot base frame.
-        """ 
+        """
         ns = "ExternalTools/right/PositionKinematicsNode/IKService"
         iksvc = rospy.ServiceProxy(ns, SolvePositionIK)
         ikreq = SolvePositionIKRequest()
@@ -424,3 +431,66 @@ class SawyerArm(object):
         :return: None
         """
         rospy.signal_shutdown('Safely shut down Sawyer.')
+
+    def move_to(self, x, y, z, orn=(0, 0, 0, 1)):
+        """
+        Move to given position.
+        :param x: x coordinate position relative to robot base
+        :param y: y coordinate position relative to robot base
+        :param z: z coordinate position relative to robot base
+        :return: None
+        """
+        self.tool_pose = ((x, y, z), orn)
+
+    def move_to_with_grasp(self, x, y, z, hover, dive, orn=(0, 0, 0, 1)):
+        """
+        Move to given position and grasp
+        :param x: refer to <move_to::x>
+        :param y: refer to <move_to::y>
+        :param z: refer to <move_to::z>
+        :param hover: the distance above object before grasping, in meters
+        :param dive: the distance before gripper slows down
+        for a grasp, in meters
+        :return: None
+        """
+        self.grasp(1)
+        self.set_max_speed(0.15)
+        self.move_to(x, y, z + hover, orn)
+        time.sleep(0.7)
+        self.move_to(x, y, z + dive, orn)
+        self.set_max_speed(0.05)
+        self.move_to(x, y, z - FINGER_OFFSET, orn)
+        time.sleep(0.8)
+        self.grasp(0)
+
+    def move_to_with_lift(self,
+                          x, y, z,
+                          hover=0.4,
+                          dive=0.05,
+                          drop=True,
+                          drop_height=0.3,
+                          orn=(0, 0, 0, 1)):
+        """
+        Move to given position, grasp the object,
+        and lift up the object.
+        :param x: refer to <move_to::x>
+        :param y: refer to <move_to::y>
+        :param z: refer to <move_to::z>
+        :param hover: refer to <move_to_with_grasp::hover>
+        :param dive: refer to <move_to_with_grasp::dive>
+        :param drop: boolean whether drop the object after lift
+        :param drop_height: the height when releasing grasped object
+        :return: None
+        """
+        self.move_to_with_grasp(x, y, z, hover, dive)
+        time.sleep(.75)
+        self.set_max_speed(0.1)
+        self.move_to(x, y, z + hover)
+        time.sleep(0.2)
+
+        self.move_to(x, y, z + drop_height)
+        time.sleep(.8)
+
+        if drop:
+            self.grasp(1)
+            time.sleep(.5)

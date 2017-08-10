@@ -22,7 +22,6 @@ import time
 
 sys.path.append(os.path.abspath('../'))
 
-
 import pylibfreenect2
 from pylibfreenect2 import Freenect2, SyncMultiFrameListener
 from pylibfreenect2 import FrameType, Registration, Frame
@@ -42,12 +41,6 @@ except:
 
 from sawyer import SawyerArm
 from utils.kinect_converter import KinectConverter
-
-KINECT_DEPTH_SHIFT = -22.54013555237548
-GRIPPER_SHIFT = 0.0251
-LENGTH = 0.133
-
-FINGER_OFFSET = 0.066
 
 
 class Tracker:
@@ -130,7 +123,7 @@ class Tracker:
                 mouseX, mouseY = x, y
                 gripper_pos = self._converter.convert(x, y, self._big_depth)
 
-                self.move_to_with_lift(*gripper_pos, hover=0.3, drop_height=0.2)
+                self._robot.move_to_with_lift(*gripper_pos, hover=0.3, drop_height=0.2)
 
         cv2.namedWindow('kinect-rgb', cv2.CV_WINDOW_AUTOSIZE)
         cv2.setMouseCallback('kinect-rgb', mouse_callback)
@@ -161,7 +154,7 @@ class Tracker:
 
         self._listener.release(self._frames)
 
-        self.move_to_with_lift(*gripper_pos, hover=0.3, drop_height=0.2)
+        self._robot.move_to_with_lift(*gripper_pos, hover=0.3, drop_height=0.2)
 
         if self.verbose:
             cv2.circle(color, (u, v), 1, (0, 255, 0), 10)
@@ -190,69 +183,6 @@ class Tracker:
 
         return color, ir, depth
 
-    def move_to(self, x, y, z, orn=(0, 0, 0, 1)):
-        """
-        Move to given position.
-        :param x: x coordinate position relative to robot base
-        :param y: y coordinate position relative to robot base
-        :param z: z coordinate position relative to robot base
-        :return: None
-        """
-        self._robot.tool_pose = ((x, y, z), orn)
-        if self.verbose:
-            print("== move to {} success".format(self._robot.tool_pose))
-
-    def move_to_with_grasp(self, x, y, z, hover, dive):
-        """
-        Move to given position and grasp
-        :param x: refer to <move_to::x>
-        :param y: refer to <move_to::y>
-        :param z: refer to <move_to::z>
-        :param hover: the distance above object before grasping, in meters
-        :param dive: the distance before gripper slows down
-        for a grasp, in meters
-        :return: None
-        """
-        self._robot.grasp(1)
-        self._robot.set_max_speed(0.1)
-        self.move_to(x, y, z + hover)
-        time.sleep(0.7)
-        self.move_to(x, y, z + dive)
-        self._robot.set_max_speed(0.03)
-        self.move_to(x, y, z - FINGER_OFFSET)
-        time.sleep(0.8)
-        self._robot.grasp(0)
-
-    def move_to_with_lift(self,
-                          x, y, z,
-                          hover=0.4,
-                          dive=0.05,
-                          drop=True,
-                          drop_height=0.3):
-        """
-        Move to given position, grasp the object,
-        and lift up the object.
-        :param x: refer to <move_to::x>
-        :param y: refer to <move_to::y>
-        :param z: refer to <move_to::z>
-        :param hover: refer to <move_to_with_grasp::hover>
-        :param dive: refer to <move_to_with_grasp::dive>
-        :param drop: boolean whether drop the object after lift
-        :param drop_height: the height when releasing grasped object
-        :return: None
-        """
-        self.move_to_with_grasp(x, y, z, hover, dive)
-        time.sleep(.75)
-        self._robot.set_max_speed(0.1)
-        self.move_to(x, y, z + hover)
-        time.sleep(0.2)
-
-        self.move_to(x, y, z + drop_height)
-        time.sleep(.8)
-
-        if drop:
-            self._robot.grasp(1)
-            time.sleep(.5)
 
 if __name__ == '__main__':
     if rospy.get_name() == '/unnamed':

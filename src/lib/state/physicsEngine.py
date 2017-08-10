@@ -42,9 +42,12 @@ class OpenRaveEngine(FakeStateEngine):
         """
         dmat = math_util.pose2mat((pos, orn))
         solution = None
+        print(dir(orp.IkFilterOptions))
         if not closest:
             solution = ik_model.manip.FindIKSolution(
                 dmat, orp.IkFilterOptions.CheckEnvCollisions)
+
+
         else:
             assert joint_pos is not None, \
                 'Selecting nearest neighbor needs current states'
