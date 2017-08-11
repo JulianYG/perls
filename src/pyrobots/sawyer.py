@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import sys, time
 import rospy
 import intera_interface as iif
 from intera_interface import CHECK_VERSION
@@ -10,8 +11,6 @@ from geometry_msgs.msg import (
     Point,
     Quaternion,
 )
-from std_msgs.msg import Header
-from sensor_msgs.msg import JointState
 
 from intera_core_msgs.srv import (
     SolvePositionIK,
@@ -20,7 +19,16 @@ from intera_core_msgs.srv import (
     SolvePositionFKRequest
 )
 
-import time
+import moveit_commander
+from moveit_msgs.msg import (
+    Grasp,
+    GripperTranslation,
+    DisplayTrajectory
+)
+
+from std_msgs.msg import Header
+from sensor_msgs.msg import JointState
+
 
 KINECT_DEPTH_SHIFT = -22.54013555237548
 GRIPPER_SHIFT = 0.0251
@@ -55,6 +63,11 @@ class SawyerArm(object):
         self._robot_enable = iif.RobotEnable(True)
 
         self._params = iif.RobotParams()
+
+        # Initialize motion planning part
+        moveit_commander.roscpp_initialize(sys.argv)
+        self._scene = moveit_commander.PlanningSceneInterface()
+        self._group = moveit_commander.MoveGroupCommander("right_arm")
 
     @property
     def version(self):
@@ -316,38 +329,55 @@ class SawyerArm(object):
         :param pose: (pos, orn) tuple vec3 float cartesian in robot base frame,
         and vec4 float quaternion in robot base frame.
         """
-        ns = "ExternalTools/right/PositionKinematicsNode/IKService"
-        iksvc = rospy.ServiceProxy(ns, SolvePositionIK)
-        ikreq = SolvePositionIKRequest()
-        hdr = Header(stamp=rospy.Time.now(), frame_id='base')
-        poses = {
-            'right': PoseStamped(
-                header=hdr,
-                pose=Pose(
-                    position=Point(*(pose[0])),
-                    orientation=Quaternion(pose[1][3], pose[1][0], pose[1][1], pose[1][2]),
-                ),
-            ),
-        }
-        # Add desired pose for inverse kinematics
-        ikreq.pose_stamp.append(poses["right"])
-        # Request inverse kinematics from base to "right_hand" link
-        ikreq.tip_names.append('right_hand')
+        target_pose = Pose()
+        gripper_pose.position.x = pose[0][0]
+        gripper_pose.position.y = pose[0][1]
+        gripper_pose.position.z = pose[0][2]
+        gripper_pose.orientation.x = pose[1][0]
+        gripper_pose.orientation.y = pose[1][1]
+        gripper_pose.orientation.z = pose[1][2]
+        gripper_pose.orientation.w = pose[1][3]
 
-        try:
-            rospy.wait_for_service(ns, 5.0)
-            resp = iksvc(ikreq) # get IK response
-        except (rospy.ServiceException, rospy.ROSException), e:
-            rospy.logerr("Service call failed: %s" % (e,))
-            return False
+        self._group.set_pose_target(target_pose)
+        plan = self._group.plan()
 
-        if resp.result_type[0] > 0:
-            limb_joints = dict(zip(resp.joints[0].name, resp.joints[0].position))
-            self._limb.move_to_joint_positions(limb_joints)
-            rospy.loginfo("Move to position succeeded")
+        if len(plan.joint_trajectory.points) == 0:
+            print('No viable plan to reach target pose.')
         else:
-            rospy.logerr("IK response is not valid")
-            return False
+            self._group.execute(plan)
+
+        # ns = "ExternalTools/right/PositionKinematicsNode/IKService"
+        # iksvc = rospy.ServiceProxy(ns, SolvePositionIK)
+        # ikreq = SolvePositionIKRequest()
+        # hdr = Header(stamp=rospy.Time.now(), frame_id='base')
+        # poses = {
+        #     'right': PoseStamped(
+        #         header=hdr,
+        #         pose=Pose(
+        #             position=Point(*(pose[0])),
+        #             orientation=Quaternion(pose[1][3], pose[1][0], pose[1][1], pose[1][2]),
+        #         ),
+        #     ),
+        # }
+        # # Add desired pose for inverse kinematics
+        # ikreq.pose_stamp.append(poses["right"])
+        # # Request inverse kinematics from base to "right_hand" link
+        # ikreq.tip_names.append('right_hand')
+
+        # try:
+        #     rospy.wait_for_service(ns, 5.0)
+        #     resp = iksvc(ikreq) # get IK response
+        # except (rospy.ServiceException, rospy.ROSException), e:
+        #     rospy.logerr("Service call failed: %s" % (e,))
+        #     return False
+
+        # if resp.result_type[0] > 0:
+        #     limb_joints = dict(zip(resp.joints[0].name, resp.joints[0].position))
+        #     self._limb.move_to_joint_positions(limb_joints)
+        #     rospy.loginfo("Move to position succeeded")
+        # else:
+        #     rospy.logerr("IK response is not valid")
+        #     return False
 
     def set_max_speed(self, factor):
 
