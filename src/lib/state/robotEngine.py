@@ -8,7 +8,7 @@ sys.path.append(os.path.abspath(os.path.join(__file__, '../../pyrobots')))
 import rospy
 import moveit_commander
 
-from sawyer import SawyerArm
+# from sawyer import SawyerArm
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'

@@ -24,10 +24,10 @@ import tf
 sys.path.append(os.path.abspath('../'))
 from sawyer import SawyerArm
 def show_endpoints(position,quat,frame='/base'):
-    rate = rospy.Rate(5)
+    rate = rospy.Rate(1)
 
     iterations = 0
-    while not rospy.is_shutdown() and iterations <= 100:
+    while not rospy.is_shutdown() and iterations <= 1:
         pub = rospy.Publisher('object_grasps', Marker, queue_size = 10)
         marker = Marker()
         marker.header.frame_id = '/base'
@@ -45,16 +45,17 @@ def show_endpoints(position,quat,frame='/base'):
 
         t = rospy.Duration()
         marker.lifetime = t
-        marker.scale.z = 0.05
-        marker.scale.y = 0.1
+        marker.scale.z = 0.025
         marker.scale.x = 0.05
+        marker.scale.y = 0.175
         marker.color.r = random.random()
         marker.color.g = random.random()
         marker.color.b = random.random()
         marker.color.a = 1.0
 
         pub.publish(marker)
-        #iterations+=1
+        iterations+=1
+        rate.sleep()
         #marker.type = marker.LINE_LIST
         #marker.id = 1
         #marker.scale.x = 0.001
@@ -118,25 +119,25 @@ if __name__ == '__main__':
         vis.title('Planned grasp on depth (Q=%.3f)' %(action.q_value))
         vis.show()
     pose = action.grasp.pose()
-    sawyer = SawyerArm()
+    sawyer = SawyerArm(motion_planning=False)
     t = tf.Transformer(True, rospy.Duration(10.0))
     m = TransformStamped()
     m.header.frame_id = "/grasp"
     m.child_frame_id = "/ee"
-    m.transform.translation.x = 0
+    m.transform.translation.x = 0.055
     m.transform.translation.y = 0
     m.transform.translation.z = 0
-    m.transform.rotation.w = 0
-    m.transform.rotation.x = 1#0.707
-    m.transform.rotation.y = 0
-    m.transform.rotation.z = 1#.707#-0.707
+    m.transform.rotation.w = 0.68#0.707
+    m.transform.rotation.x = -0.25#0.707
+    m.transform.rotation.y = 0#0.707
+    m.transform.rotation.z = -0.68 #.707#-0.707
     t.setTransform(m)
     m = TransformStamped()
     m.header.frame_id = "/kinect2_ir_optical_frame"
     m.child_frame_id = "/grasp"
     m.transform.translation.x = pose.position[0]
     m.transform.translation.y = pose.position[1]
-    m.transform.translation.z = pose.position[2]-0.075
+    m.transform.translation.z = pose.position[2]
     m.transform.rotation.w = pose.quaternion[0]
     m.transform.rotation.x = pose.quaternion[1]
     m.transform.rotation.y = pose.quaternion[2]
@@ -146,13 +147,14 @@ if __name__ == '__main__':
     m.header.frame_id = "/base"
     m.child_frame_id = "/kinect2_ir_optical_frame"
     m.transform.translation.x = 0.6901
-    m.transform.translation.y = 0.045893
-    m.transform.translation.z = 1.1102
+    m.transform.translation.y = 0.105893
+    m.transform.translation.z = 1.00102
     m.transform.rotation.w = 0
-    m.transform.rotation.x = 1
-    m.transform.rotation.y = 1
+    m.transform.rotation.x = 0.707
+    m.transform.rotation.y = 0.707
     m.transform.rotation.z = 0
     t.setTransform(m)
     pos, quat = t.lookupTransform("/base", "/ee", rospy.Time())
+    print(quat)
     show_endpoints(pos,quat)
-    #sawyer.move_to_with_grasp(pos[0],pos[1],pos[2]+0.1,0.1,0.05,quat)
+    sawyer.move_to_with_grasp(pos[0],pos[1],pos[2]+0.125,0.1,0.05,quat)

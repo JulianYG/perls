@@ -199,6 +199,6 @@ if __name__ == '__main__':
         9.5413324012517888e-04], dtype=np.float32)
 
     converter = KinectConverter(intrinsics_RGB, distortion_RGB)
-    sawyer = SawyerArm()
+    sawyer = SawyerArm(motion_planning=True)
     tracker = Tracker(sawyer, converter, intrinsics_RGB, distortion_RGB)
     tracker.grasp_by_click()

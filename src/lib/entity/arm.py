@@ -1,4 +1,5 @@
 import abc
+import json
 
 from ..state.physicsEngine import OpenRaveEngine
 
@@ -265,39 +266,39 @@ class Arm(Tool):
                 damping=damps)
 
         # TODO :
-        if self.collision_checking:
+        # if self.collision_checking:
 
-            request = {
-              "basic_info" : {
-                "n_steps" : 10,
-                "manip" : "rightarm", # see below for valid values
-                "start_fixed" : True # i.e., DOF values at first timestep are fixed based on current robot state
-              },
-              "costs" : [
-              {
-                "type" : "joint_vel", # joint-space velocity cost
-                "params": {"coeffs" : [1]} # a list of length one is automatically expanded to a list of length n_dofs
-                # also valid: [1.9, 2, 3, 4, 5, 5, 4, 3, 2, 1]
-              },
-              {
-                "type" : "collision",
-                "params" : {
-                  "coeffs" : [20], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
-                  "dist_pen" : [0.025] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
-                },    
-              }
-              ],
-              "constraints" : [
-              {
-                "type" : "joint", # joint-space target
-                "params" : {"vals" : ik_solution} # length of vals = # dofs of manip
-              }
-              ],
-              "init_info" : {
-                  "type" : "straight_line", # straight line in joint space.
-                  "endpoint" : ik_solution
-              }
-            }
+        #     request = {
+        #       "basic_info" : {
+        #         "n_steps" : 10,
+        #         "manip" : "rightarm", # see below for valid values
+        #         "start_fixed" : True # i.e., DOF values at first timestep are fixed based on current robot state
+        #       },
+        #       "costs" : [
+        #       {
+        #         "type" : "joint_vel", # joint-space velocity cost
+        #         "params": {"coeffs" : [1]} # a list of length one is automatically expanded to a list of length n_dofs
+        #         # also valid: [1.9, 2, 3, 4, 5, 5, 4, 3, 2, 1]
+        #       },
+        #       {
+        #         "type" : "collision",
+        #         "params" : {
+        #           "coeffs" : [20], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
+        #           "dist_pen" : [0.025] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
+        #         },    
+        #       }
+        #       ],
+        #       "constraints" : [
+        #       {
+        #         "type" : "joint", # joint-space target
+        #         "params" : {"vals" : ik_solution} # length of vals = # dofs of manip
+        #       }
+        #       ],
+        #       "init_info" : {
+        #           "type" : "straight_line", # straight line in joint space.
+        #           "endpoint" : ik_solution
+        #       }
+        #     }
 
         self.joint_states = (
             self.active_joints, ik_solution, 'position',
@@ -305,17 +306,17 @@ class Arm(Tool):
                  positionGains=(.05,) * self._dof,
                  velocityGains=(1.,) * self._dof))
 
-        s = json.dumps(request) # convert dictionary into json-formatted string
-        prob = trajoptpy.ConstructProblem(s, env) # create object that stores optimization problem
-        t_start = time.time()
-        result = trajoptpy.OptimizeProblem(prob) # do optimization
-        t_elapsed = time.time() - t_start
-        print result
-        print "optimization took %.3f seconds"%t_elapsed
+        # s = json.dumps(request) # convert dictionary into json-formatted string
+        # prob = trajoptpy.ConstructProblem(s, env) # create object that stores optimization problem
+        # t_start = time.time()
+        # result = trajoptpy.OptimizeProblem(prob) # do optimization
+        # t_elapsed = time.time() - t_start
+        # print result
+        # print "optimization took %.3f seconds"%t_elapsed
 
-        from trajoptpy.check_traj import traj_is_safe
-        prob.SetRobotActiveDOFs() # set robot DOFs to DOFs in optimization problem
-        assert traj_is_safe(result.GetTraj(), robot) # Check that trajectory is collision free
+        # from trajoptpy.check_traj import traj_is_safe
+        # prob.SetRobotActiveDOFs() # set robot DOFs to DOFs in optimization problem
+        # assert traj_is_safe(result.GetTraj(), robot) # Check that trajectory is collision free
 
         # need to wait until reached desired states, just as in real case
         for _ in range(max_iter):
