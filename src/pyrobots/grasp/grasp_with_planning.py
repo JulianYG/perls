@@ -25,9 +25,6 @@ sys.path.append(os.path.abspath('../'))
 from sawyer import SawyerArm
 from utils.kinect_converter import KinectConverter
 
-global mouseX, mouseY
-mouseX = 0
-mouseY = 0
 
 class Tracker:
     """
@@ -48,6 +45,9 @@ class Tracker:
 
         self.verbose = verbose
 
+        self.mouseX = 0
+        self.mouseY = 0
+
         self._robot = robot
         self._converter = converter
 
@@ -65,7 +65,6 @@ class Tracker:
         """
         rospy.loginfo('Shutting down kinect calibration.')
         cv2.destroyWindow('kinect_grasp')
-      
 
     def rgb_callback(self, img_data, info):
         """
@@ -86,7 +85,7 @@ class Tracker:
             cv2.setMouseCallback('kinect_grasp', info[1])
             cv2.imshow('kinect_grasp', color)
         else:
-            mouseX, mouseY = info[1](color)
+            self.mouseX, self.mouseY = info[1](color)
             
         cv2.waitKey(1)
 
@@ -99,23 +98,24 @@ class Tracker:
     def depth_callback(self, img_data, info):
 
         depth_image = CvBridge().imgmsg_to_cv2(img_data, 'mono8')
-        if 0< mouseX <= 1920 and 0 < mouseY <= 1080:
-            gripper_pos = self._converter.convert(mouseX, mouseY, depth_image)
+        if 0 < self.mouseX <= 1920 and 0 < self.mouseY <= 1080:
+            gripper_pos = self._converter.convert(
+                self.mouseX, self.mouseY, depth_image)
+            self._robot.move_to_with_lift(*gripper_pos, hover=0.3, drop_height=0.2)
         else:
             print('x, y coordinates out of pixel range')
-        self._robot.move_to_with_lift(*gripper_pos, hover=0.3, drop_height=0.2)
 
     def run(self, info):
 
-        self._rgb = rospy.Subscriber('/kinect2/hd/image_color_rect', 
+        self._rgb = rospy.Subscriber(
+            '/kinect2/hd/image_color_rect',
             Image, self.rgb_callback, callback_args=info)
 
-        self._big_depth = rospy.Subscriber('/kinect2/hd/image_depth_rect',
+        self._big_depth = rospy.Subscriber(
+            '/kinect2/hd/image_depth_rect',
             Image, self.depth_callback)
 
         try:
-            # print('started?')
-
             rospy.spin()
 
         except KeyboardInterrupt:
@@ -123,7 +123,6 @@ class Tracker:
             self._rgb.unregister()
             self._big_depth.unregister()
             sys.exit(0)
-
 
 if __name__ == '__main__':
     if rospy.get_name() == '/unnamed':
@@ -143,12 +142,8 @@ if __name__ == '__main__':
     sawyer = SawyerArm()
     tracker = Tracker(sawyer, converter, intrinsics_RGB, distortion_RGB)
 
-
     def mouse_callback(event, x, y, flags, params):
         if event == 1:
-            mouseX, mouseY = x, y
-            # gripper_pos = self._converter.convert(x, y, )
-
-            # self._robot.move_to_with_lift(*gripper_pos, hover=0.3, drop_height=0.2)
+            tracker.mouseX, tracker.mouseY = x, y
 
     tracker.run(('mouse', mouse_callback))
