@@ -330,13 +330,13 @@ class SawyerArm(object):
         and vec4 float quaternion in robot base frame.
         """
         target_pose = Pose()
-        gripper_pose.position.x = pose[0][0]
-        gripper_pose.position.y = pose[0][1]
-        gripper_pose.position.z = pose[0][2]
-        gripper_pose.orientation.x = pose[1][0]
-        gripper_pose.orientation.y = pose[1][1]
-        gripper_pose.orientation.z = pose[1][2]
-        gripper_pose.orientation.w = pose[1][3]
+        target_pose.position.x = pose[0][0]
+        target_pose.position.y = pose[0][1]
+        target_pose.position.z = pose[0][2]
+        target_pose.orientation.x = pose[1][0]
+        target_pose.orientation.y = pose[1][1]
+        target_pose.orientation.z = pose[1][2]
+        target_pose.orientation.w = pose[1][3]
 
         self._group.set_pose_target(target_pose)
         plan = self._group.plan()
