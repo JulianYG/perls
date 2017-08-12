@@ -82,7 +82,7 @@ class InteraEngine(RealStateEngine):
         """
         pass
 
-    def get_body_camera_position(self, uid, (camera_pos, camera_orn)):
+    def get_body_camera_position(self, uid, camera_pos, camera_orn):
         """
         Get body position in the camera frame
         :param uid: integer body unique id
@@ -95,7 +95,7 @@ class InteraEngine(RealStateEngine):
         pass
 
     def get_body_camera_orientation(
-            self, uid, (camera_pos, camera_orn), otype):
+            self, uid, camera_pos, camera_orn, otype):
         """
         Get body orientation in the camera frame
         :param uid: integer body unique id
