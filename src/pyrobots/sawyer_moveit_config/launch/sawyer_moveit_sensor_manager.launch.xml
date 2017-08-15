@@ -15,7 +15,7 @@
          <!-- octomap parameters for moveit -->
          <!-- <group ns="move_group" > -->
              <param name="octomap_frame" type="string" value="/kinect2_ir_optical_frame" />
-             <param name="octomap_resolution" type="double" value="0.02" />
+             <param name="octomap_resolution" type="double" value="0.015" />
              <rosparam command="load" file="$(find sawyer_moveit_config)/config/kinect_sensor.yaml" />
              <!-- </group> -->
      </group>

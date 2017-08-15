@@ -130,7 +130,6 @@ class Tracker:
 
         while True:
             color, _, _ = self.snapshot()
-
             undistorted_color = cv2.undistort(color.asarray(), self._intrinsics_RGB, self._distortion_RGB)
             color = cv2.flip(undistorted_color, 1)
             cv2.circle(color, (mouseX, mouseY), 1, (0, 0, 255), 10)
@@ -199,6 +198,6 @@ if __name__ == '__main__':
         9.5413324012517888e-04], dtype=np.float32)
 
     converter = KinectConverter(intrinsics_RGB, distortion_RGB)
-    sawyer = SawyerArm(motion_planning=True)
+    sawyer = SawyerArm(motion_planning=False)
     tracker = Tracker(sawyer, converter, intrinsics_RGB, distortion_RGB)
     tracker.grasp_by_click()

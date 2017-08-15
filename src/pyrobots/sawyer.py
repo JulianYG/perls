@@ -69,6 +69,7 @@ class SawyerArm(object):
             moveit_commander.roscpp_initialize(sys.argv)
             self._scene = moveit_commander.PlanningSceneInterface()
             self._group = moveit_commander.MoveGroupCommander("right_arm")
+        self._safe = False
 
     @property
     def version(self):
@@ -330,22 +331,25 @@ class SawyerArm(object):
         :param pose: (pos, orn) tuple vec3 float cartesian in robot base frame,
         and vec4 float quaternion in robot base frame.
         """
-        if self.motion_planning:
+        if self.motion_planning and not self._safe:
             gripper_pose = Pose()
 
             gripper_pose.position.x = pose[0][0]
             gripper_pose.position.y = pose[0][1]
             gripper_pose.position.z = pose[0][2]
-            gripper_pose.orientation.x = pose[1][0]
-            gripper_pose.orientation.y = pose[1][1]
-            gripper_pose.orientation.z = pose[1][2]
-            gripper_pose.orientation.w = pose[1][3]
 
-            self._group.set_pose_target(target_pose)
+            # TODO: need a transformation for pose
+            gripper_pose.orientation.x = 1#pose[1][0]
+            gripper_pose.orientation.y = 0#pose[1][1]
+            gripper_pose.orientation.z = 0#pose[1][2]
+            gripper_pose.orientation.w = 0#pose[1][3]
+
+            self._group.set_pose_target(gripper_pose)
             plan = self._group.plan()
 
             if len(plan.joint_trajectory.points) == 0:
                 print('No viable plan to reach target pose.')
+                return False
             else:
                 self._group.execute(plan)
         else:
@@ -375,7 +379,6 @@ class SawyerArm(object):
                 return False
             if resp.result_type[0] > 0:
                 limb_joints = dict(zip(resp.joints[0].name, resp.joints[0].position))
-                print(limb_joints)
                 self._limb.move_to_joint_positions(limb_joints)
                 rospy.loginfo("Move to position succeeded")
             else:
@@ -385,6 +388,8 @@ class SawyerArm(object):
     def set_max_speed(self, factor):
 
         self._limb.set_joint_position_speed(factor)
+        if self.motion_planning:
+            self._group.set_max_velocity_scaling_factor(factor)
 
     def set_grasp_weight(self, weight):
         """
@@ -489,6 +494,7 @@ class SawyerArm(object):
         self.grasp(1)
         self.set_max_speed(0.15)
         self.move_to(x, y, z + hover, orn)
+        self._safe = True
         time.sleep(0.7)
         self.move_to(x, y, z + dive, orn)
         self.set_max_speed(0.05)
@@ -515,9 +521,11 @@ class SawyerArm(object):
         :param drop_height: the height when releasing grasped object
         :return: None
         """
+        self._safe = False
         self.move_to_with_grasp(x, y, z, hover, dive)
         time.sleep(.75)
         self.set_max_speed(0.1)
+        self._safe = True
         self.move_to(x, y, z + hover)
         time.sleep(0.2)
 

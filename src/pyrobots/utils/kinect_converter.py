@@ -14,7 +14,7 @@ sys.path.append(os.path.abspath('../'))
 
 KINECT_DEPTH_SHIFT = -22.54013555237548
 GRIPPER_SHIFT = 0.0251
-LENGTH = 0.16
+LENGTH = 0.143
 
 
 class KinectConverter:
@@ -49,10 +49,14 @@ class KinectConverter:
         :return: vec3 float cartesian position of end effector
         """
         point = np.ones((4,), dtype=np.float32)
-        
-        depth_map = cv2.flip(depth.asarray(np.float32)[1:-1, :], 1)
-        z = depth_map[v, u] + KINECT_DEPTH_SHIFT
 
+        if not isinstance(depth, np.ndarray):
+            depth_map = cv2.flip(depth.asarray(np.float32)[1: -1, :], 1)
+        
+        else:
+            depth_map = depth
+
+        z = depth_map[v, u] + KINECT_DEPTH_SHIFT
         cam_x = (u - self._intrinsics_RGB[0, 2]) / self._intrinsics_RGB[0, 0] * z
         cam_y = (v - self._intrinsics_RGB[1, 2]) / self._intrinsics_RGB[1, 1] * z
         point[:3] = (cam_x, cam_y, z)
