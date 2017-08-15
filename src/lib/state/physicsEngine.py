@@ -224,7 +224,7 @@ class BulletPhysicsEngine(FakeStateEngine):
         else:
             loginfo('Unrecognized orientation form.', FONT.ignore)
 
-    def get_body_camera_position(self, uid, (camera_pos, camera_orn)):
+    def get_body_camera_position(self, uid, camera_pos, camera_orn):
 
         body_pose = p.getBasePositionAndOrientation(uid, self._physics_server_id)
         frame_pose = math_util.get_relative_pose(
@@ -233,7 +233,7 @@ class BulletPhysicsEngine(FakeStateEngine):
         return frame_pose[3, :3]
 
     def get_body_camera_orientation(
-            self, uid, (camera_pos, camera_orn), otype):
+            self, uid, camera_pos, camera_orn, otype):
 
         body_pose = p.getBasePositionAndOrientation(uid, self._physics_server_id)
         frame_pose = math_util.get_relative_pose(
