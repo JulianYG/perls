@@ -1,15 +1,13 @@
 import abc
-import json
-
-from ..state.physicsEngine import OpenRaveEngine
 
 from .body import Tool
 from ..utils import math_util
+from ..utils.io_util import loginfo, FONT
 
 
 class Arm(Tool):
 
-    def __init__(self, tid, engine, path_root, 
+    def __init__(self, tid, engine, path,
                  pos, orn, collision_checking,
                  gripper):
         """
@@ -18,8 +16,6 @@ class Arm(Tool):
         :param pos: initial position vec3 float cartesian
         :param orn: initial orientation vec4 float quat
         """
-        path, self._ik_model, self._openrave_robot, self._model_dof = \
-            self._build_ik(path_root)
         super(Arm, self).__init__(tid, engine, path, pos, orn, fixed=True)
 
         # Reset pose is defined in subclasses
@@ -158,17 +154,6 @@ class Arm(Tool):
                 dict(positionGains=(.05,),
                      velocityGains=(1.,)))
 
-    @abc.abstractmethod
-    def _build_ik(self, path_root):
-        """
-        Build the ik model for the arm.
-        :param path_root: The absolute path directory that stores 
-        pybullet asset file, and IKFast model file, base files.
-        :return: pybullet asset file path
-        and the built IKFast model.
-        """
-        raise NotImplemented
-
     def get_pose(self, uid=None, lid=None):
         """
         Get the current base pose of the tool. This is
@@ -236,34 +221,34 @@ class Arm(Tool):
         orn = self.kinematics['abs_frame_orn'][self._end_idx] if orn is None else orn
         specs = self.joint_specs
 
-        if precise:
-            if fast or self.collision_checking:
-                # Set the joint values in openrave model
-                self._openrave_robot.SetDOFValues(
-                    math_util.vec(self.joint_states['pos'])[self.active_joints],
-                    self._model_dof)
+        # if precise:
+        #     if fast or self.collision_checking:
+        #         # Set the joint values in openrave model
+        #         self._openrave_robot.SetDOFValues(
+        #             math_util.vec(self.joint_states['pos'])[self.active_joints],
+        #             self._model_dof)
+        #
+        #     pos, orn = math_util.get_relative_pose((pos, orn), self.pose)
+        #
+        #     ik_solution = OpenRaveEngine.accurate_ik(
+        #         self._ik_model, pos, orn,
+        #         math_util.vec(self.joint_states['pos'])[self.active_joints],
+        #         closest=not fast)
+        # else:
+        damps = math_util.clip_vec(specs['damping'], .1, 1.)
+        lower_limits = math_util.vec(specs['lower'])
+        upper_limits = math_util.vec(specs['upper'])
+        ranges = upper_limits - lower_limits
 
-            pos, orn = math_util.get_relative_pose((pos, orn), self.pose)
-
-            ik_solution = OpenRaveEngine.accurate_ik(
-                self._ik_model, pos, orn,
-                math_util.vec(self.joint_states['pos'])[self.active_joints],
-                closest=not fast)
-        else:
-            damps = math_util.clip_vec(specs['damping'], .1, 1.)
-            lower_limits = math_util.vec(specs['lower'])
-            upper_limits = math_util.vec(specs['upper'])
-            ranges = upper_limits - lower_limits
-
-            # Solve using null space
-            ik_solution = self._engine.solve_ik_null_space(
-                self._uid, self._end_idx,
-                pos, orn=orn,
-                lower=lower_limits,
-                upper=upper_limits,
-                ranges=ranges,
-                rest=self._rest_pose,
-                damping=damps)
+        # Solve using null space
+        ik_solution = self._engine.solve_ik_null_space(
+            self._uid, self._end_idx,
+            pos, orn=orn,
+            lower=lower_limits,
+            upper=upper_limits,
+            ranges=ranges,
+            rest=self._rest_pose,
+            damping=damps)
 
         # TODO :
         # if self.collision_checking:
@@ -376,6 +361,10 @@ class Arm(Tool):
         elif ftype == 'rel':
             orig_pos, orig_orn = math_util.get_absolute_pose(
                 (pos, orn), self.pose)
+        else:
+            loginfo('Cannot recognize frame type, assuming absolute',
+                    FONT.ignore)
+            orig_pos, orig_orn = pos, orn
         
         target_pos, target_orn = super(Arm, self).pinpoint(pos, orn, ftype)
         self._move_to(target_pos, target_orn, True, fast, max_iter)

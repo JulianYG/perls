@@ -18,16 +18,16 @@ __version__ = '0.1'
 
 class InteraEngine(RealStateEngine):
 
-    def __init__(self, e_id, max_run_time):
+    def __init__(self, e_id, max_run_time, plan=True):
 
         super(InteraEngine, self).__init__(e_id, max_run_time)
 
         self._uids = dict()
 
         moveit_commander.roscpp_initialize(sys.argv)
-        self._robot = SawyerArm()
-        self._virtual_scene = moveit_commander.PlanningSceneInterface()
-        self._group = moveit_commander.MoveGroupCommander("right_arm")
+        self._robot = SawyerArm(plan)
+        # self._virtual_scene = moveit_commander.PlanningSceneInterface()
+        # self._group = moveit_commander.MoveGroupCommander("right_arm")
 
     @property
     def version(self):

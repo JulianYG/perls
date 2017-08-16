@@ -1,6 +1,6 @@
 import threading
 
-from .state import physicsEngine, robotEngine
+from .state import physicsEngine#, robotEngine
 from .adapter import Adapter
 from .render import graphicsEngine, camera
 from .handler.base import NullHandler
@@ -33,10 +33,10 @@ class Controller(object):
         # Simulation
         bullet=physicsEngine.BulletPhysicsEngine,
         mujoco=physicsEngine.MujocoEngine,
-        gazebo=physicsEngine.OpenRaveEngine,
+        # gazebo=physicsEngine.OpenRaveEngine,
 
         # Reality
-        intera=robotEngine.InteraEngine,
+        # intera=robotEngine.InteraEngine,
     )
 
     _GRAPHICS_ENGINES = dict(
@@ -467,12 +467,11 @@ class Controller(object):
                             self._states['tool'][tool.tid][1] = \
                                 math_util.vec((i_orn[1], i_orn[0], 0))
                         else:
-
                             # Update the tool's orientation
                             self._states['tool'][tool.tid][1] = \
                                 math_util.vec(i_orn)
-
-                        tool.pinpoint(tool.tool_pos, i_orn)
+                        tool.reach(None, i_orn)
+                            # tool.pinpoint(tool.tool_pos, i_orn)
 
                         # Update the tool's position as orientation changes
                         self._states['tool'][tool.tid][0] = world.get_states(

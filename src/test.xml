@@ -10,7 +10,6 @@
 			<!-- <orn>0.0 0.0 0.0 1</orn> -->
 		</gripper>
 		<robot name="king-kong" type="kuka" collision_checking="True">
-			<asset path="/home/cvgl_ros/bullet3/data/kuka_iiwa"/>
 			<gripper name="for_king_kong" type="wsg">
 				<asset path="gripper/wsg50_one_motor_gripper_new_free_base.sdf"/>
 			</gripper>
@@ -18,7 +17,6 @@
 			<orn>0.0 0.0 0.0 -1.0</orn>
 		</robot>
 		<robot name="titan" type="sawyer" collision_checking="True">
-			<asset path="/home/cvgl_ros/bullet3/data/sawyer_robot/sawyer_description/urdf"/>
 			<gripper name="bax" type="rethink">
 				<asset path="rethink_ee_description/urdf/electric_gripper/right_standard_narrow_round.urdf"/>
 			</gripper>
