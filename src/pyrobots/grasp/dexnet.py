@@ -157,4 +157,4 @@ if __name__ == '__main__':
     pos, quat = t.lookupTransform("/base", "/ee", rospy.Time())
     print(quat)
     show_endpoints(pos,quat)
-    sawyer.move_to_with_grasp(pos[0],pos[1],pos[2]+0.125,0.1,0.05,quat)
+    #sawyer.move_to_with_grasp(pos[0],pos[1],pos[2]+0.125,0.1,0.05,quat)

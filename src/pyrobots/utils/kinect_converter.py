@@ -20,7 +20,7 @@ LENGTH = 0.143
 class KinectConverter:
 
 
-    def __init__(self, k, d, 
+    def __init__(self, k, d,
         param_dir='../../../tools/calibration/calib_data/kinect',
         verbose=False):
 
@@ -52,7 +52,7 @@ class KinectConverter:
 
         if not isinstance(depth, np.ndarray):
             depth_map = cv2.flip(depth.asarray(np.float32)[1: -1, :], 1)
-        
+
         else:
             depth_map = depth
 
@@ -61,7 +61,7 @@ class KinectConverter:
         cam_y = (v - self._intrinsics_RGB[1, 2]) / self._intrinsics_RGB[1, 1] * z
         point[:3] = (cam_x, cam_y, z)
         target_point = np.linalg.inv(self._transformation).dot(point)[:3] / 1000
-        
+
         if self.verbose:
             print("== depth: {}".format(depth_avg))
             print("== xyz in robot frame: {}".format(target_point * 1000))
@@ -72,3 +72,15 @@ class KinectConverter:
             print("== desired endeffector pos: {}".format(target_point * 1000))
 
         return target_point
+
+    def convert_inverse(self, x, y, z):
+        """
+        Convert gripper coordinates tp pixel values
+        :param x: x
+        :param y: y
+        :param z: z
+        :return: u,v - image pixels coords
+        """
+        u = x/z * self._intrinsics_RGB[0, 0] +  self._intrinsics_RGB[0, 2]
+        v = y/z * self._intrinsics_RGB[1, 1] +  self._intrinsics_RGB[1, 2]
+        return u,v
