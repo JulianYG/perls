@@ -446,7 +446,7 @@ class Controller(object):
                         # Increment to get absolute pos
                         # Take account of rotation
                         i_pos += r_mat.dot(r_pos * elapsed_time)
-                        tool.pinpoint(i_pos, tool.tool_orn)
+                        tool.reach(i_pos, None)
 
                     if r_orn is not None:
                         ###
@@ -471,12 +471,10 @@ class Controller(object):
                             self._states['tool'][tool.tid][1] = \
                                 math_util.vec(i_orn)
                         tool.reach(None, i_orn)
-                            # tool.pinpoint(tool.tool_pos, i_orn)
 
                         # Update the tool's position as orientation changes
                         self._states['tool'][tool.tid][0] = world.get_states(
                             ('tool', 'tool_pose'))[0][tool.tid][0]
-
                     pos_diff = tool.tool_pos - i_pos
 
                     if math_util.rms(pos_diff) > tool.tolerance:
