@@ -20,14 +20,13 @@ class WSG50Gripper(PrismaticGripper):
         if slide > -1:
             slide = float(slide)
             # TODO: figure out why the finger slides
-            self.joint_states = ([1, 2, 3, 4, 6],
-                                 [self.joint_specs['upper'][1] +
-                                  slide * (self.joint_specs['upper'][1] -
-                                           self.joint_specs['lower'][1]),
-                                  0, 0,
-                                  self.joint_specs['upper'][4] * slide,
-                                  self.joint_specs['upper'][6] * slide],
-                                 'position', {})
+            self.joint_positions = [
+                None, self.joint_specs['upper'][1] +
+                      slide * (self.joint_specs['upper'][1] -
+                               self.joint_specs['lower'][1]),
+                0, 0, self.joint_specs['upper'][4] * slide, None,
+                self.joint_specs['upper'][6] * slide, None
+            ]
             if slide == 0.:
                 self._close_grip = False
             elif slide == 1.:
@@ -35,19 +34,17 @@ class WSG50Gripper(PrismaticGripper):
         else:
             if self._close_grip:
                 # Release in this case
-                self.joint_states = ([1, 2, 3, 4, 6],
-                                 [self.joint_specs['upper'][1],
-                                  -0.22, 0.22,
-                                  self.joint_specs['lower'][4],
-                                  self.joint_specs['lower'][6]],
-                                 'position', {})
+                self.joint_positions = [
+                    None, self.joint_specs['upper'][1],
+                    -0.22, 0.22, self.joint_specs['lower'][4],
+                    None, self.joint_specs['lower'][6], None
+                ]
                 self._close_grip = False
             else:
                 # Close in this case
-                self.joint_states = ([1, 2, 3, 4, 6],
-                                 [self.joint_specs['lower'][1],
-                                  0.72, -0.72,
-                                  self.joint_specs['upper'][4],
-                                  self.joint_specs['upper'][6]],
-                                 'position', {})
+                self.joint_positions = [
+                    None, self.joint_specs['lower'][1],
+                    -0.22, 0.22, self.joint_specs['upper'][4],
+                    None, self.joint_specs['upper'][6], None
+                ]
                 self._close_grip = True

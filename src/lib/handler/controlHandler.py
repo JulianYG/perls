@@ -52,7 +52,8 @@ class CmdEventHandler(ControlHandler):
     passing commands into gym environment.
     """
     def __init__(self, ps_id, sensitivity=1, rate=0):
-        super(CmdEventHandler, self).__init__(ps_id, 1, 0)
+        super(CmdEventHandler, self).__init__(
+            ps_id, sensitivity, rate)
 
     @property
     def name(self):
@@ -60,6 +61,8 @@ class CmdEventHandler(ControlHandler):
 
     # TODO
     def signal(self):
+
+        # Probably listen to redis?
         pass
 
     def stop(self):

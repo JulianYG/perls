@@ -285,7 +285,6 @@ class Controller(object):
 
         # Next display states
         self._view_update(display)
-
         self._update_time_stamp = time_util.get_abs_time()
 
         # Finally start control loop (Core)
