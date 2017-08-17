@@ -289,7 +289,7 @@ class Controller(object):
 
         # Finally start control loop (Core)
         try:
-            while not time_up or done:
+            while not time_up and not done:
 
                 elt = time_util.get_elapsed_time(self._init_time_stamp)
 
@@ -307,32 +307,38 @@ class Controller(object):
                 # Lastly check task completion, communicate
                 # with the model
                 # TODO
-                # done, success = self._checker_interrupt()
+                done, success = world.check_states()
 
             if success:
                 loginfo('Task success! Exiting simulation...',
                         FONT.disp)
+                self.stop(server_id, 0)
             else:
                 loginfo('Task failed! Exiting simulation...',
                         FONT.disp)
+                self.stop(server_id, 1)
+            
         except KeyboardInterrupt:
             loginfo('User exits the program by ctrl+c.',
                     FONT.warning)
-            self.stop(server_id)
+            self.stop(server_id, -1)
 
-    def stop(self, server_id):
+    def stop(self, server_id, exit_status):
         """
         Hang the simulation.
         :param server_id: physics server id (a.k.a. simulation id,
         configuration id) to stop. It acts as pause,
         can use start to resume.
+        :param exit_status: an integer indicating the status 
+        of task completion, 0 for success, 1 for fail, and 
+        -1 for error exit.
         :return: None
         """
         world, display, ctrl_handler = self._physics_servers[server_id]
 
         ctrl_handler.stop()
         world.clean_up()
-        display.close()
+        display.close(exit_status)
 
         loginfo('Safe exit.', FONT.control)
 
@@ -532,14 +538,3 @@ class Controller(object):
                 init_pose[0], 
                 # Use radians
                 math_util.quat2euler(init_pose[1])]
-
-    def _checker_interrupt(self, signal):
-        """
-        Checker interrupt, performs checking on current
-        world states and report status.
-        :return: (done, success) tuple, where 'done' is
-        boolean and 'success' is a scalar, either 0/1
-        binary, or float in [0,1] representing quality.
-        """
-        status = self._adapter.check_world_states()
-        return status

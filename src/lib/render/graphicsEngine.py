@@ -7,7 +7,10 @@ import pybullet as p
 import numpy as np
 import math
 
-from ..utils import math_util, time_util, plot_util
+from ..utils import (io_util,
+                     math_util, 
+                     time_util, 
+                     plot_util)
 from ..utils.io_util import FONT, loginfo, parse_log
 
 from .renderEngine import GraphicsEngine
@@ -73,8 +76,13 @@ class BulletRenderEngine(GraphicsEngine):
         self._log_path = dict(
             device=osp.join(log_dir, 'device'),
             trajectory=osp.join(log_dir, 'trajectory'),
+            success_dir=osp.join(log_dir, 'trajectory', 'success'),
+            fail_dir=osp.join(log_dir, 'trajectory', 'fail'),
             video=osp.join(log_dir, 'video')
         )
+
+        self._base_file_name = ''
+
         # If not exist, create the paths
         for path in self._log_path.values():
             if not osp.exists(path):
@@ -279,14 +287,19 @@ class BulletRenderEngine(GraphicsEngine):
                 'Must provide record file name!'
             time_stamp = time_util.get_full_time_stamp()
 
+            self._base_file_name = '{}_{}.bin'.format(
+                self._record_name, time_stamp)
+
+            abs_file_name = osp.join(
+                self._log_path['trajectory'],
+                self._base_file_name)
+
             # Record only objects that are tracked
             if target_uids:
                 self._logging_id.append(
                     p.startStateLogging(
                         p.STATE_LOGGING_GENERIC_ROBOT,
-                        osp.join(self._log_path['trajectory'],
-                                 '{}_{}.bin'.format(
-                                     self._record_name, time_stamp)),
+                        abs_file_name,
                         objectUniqueIds=target_uids,
                         physicsClientId=self._server_id
                     )
@@ -296,9 +309,7 @@ class BulletRenderEngine(GraphicsEngine):
                 self._logging_id.append(
                     p.startStateLogging(
                         p.STATE_LOGGING_GENERIC_ROBOT,
-                        osp.join(self._log_path['trajectory'],
-                                 '{}_{}.bin'.format(
-                                     self._record_name, time_stamp)),
+                        abs_file_name,
                         physicsClientId=self._server_id
                     )
                 )
@@ -320,9 +331,7 @@ class BulletRenderEngine(GraphicsEngine):
                 self._logging_id.append(
                     p.startStateLogging(
                         p.STATE_LOGGING_VR_CONTROLLERS,
-                        osp.join(self._log_path['device'],
-                                 '{}_{}.bin'.format(
-                                     self._record_name, time_stamp)),
+                        abs_file_name,
                         deviceTypeFilter=p.VR_DEVICE_HMD,
                         physicsClientId = self._server_id
                     )
@@ -362,8 +371,34 @@ class BulletRenderEngine(GraphicsEngine):
             return 1
         return 0
 
-    def stop(self):
+    def stop(self, exit_code):
 
         # Stop state logging if any
         for lid in self._logging_id:
             p.stopStateLogging(lid, self._server_id)
+
+        if self._job == 'record':
+            if exit_code < 0:
+                loginfo('Record file not classified.', FONT.ignore)
+
+            # Save success and failure cases separately
+            elif exit_code == 0:
+                io_util.fmove(
+                    osp.join(
+                        self._log_path['trajectory'],
+                        self._base_file_name), 
+                    osp.join(
+                        self._log_path['success_dir'],
+                        self._base_file_name)
+                )
+
+            # Just ignore the case of error
+            elif exit_code == 1:
+                io_util.fmove(
+                    osp.join(
+                        self._log_path['trajectory'],
+                        self._base_file_name), 
+                    osp.join(
+                        self._log_path['fail_dir'],
+                        self._base_file_name)
+                )

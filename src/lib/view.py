@@ -133,9 +133,10 @@ class View:
             self._frame = self._engine.frame
         return status
 
-    def close(self):
+    def close(self, exit_code):
         """
         Exit routine for display.
+        :param exit_code: boolean indicating exit status for the task
         :return: None
         """
-        self._engine.stop()
+        self._engine.stop(exit_code)

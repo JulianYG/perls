@@ -66,7 +66,7 @@ class World(object):
         TODO: user activities, body time stamps}
         """
         return dict(
-            name=self.name_str,
+            task='_'.join(list(self.name_str)),
             tools=[t.name for t in self._tools.values()],
             tracking_bodies=[b[1] for b in self._target_bodies],
             assets=self._bodies.keys(),
@@ -160,11 +160,12 @@ class World(object):
         :return: None
         """
         parse_tree = io_util.parse_env(file_name)
-        self.name_str = parse_tree.env['title']
+        self.name_str = (parse_tree.env['title'], parse_tree.scene_title)
 
         # Load task completion checker
-        self._checker = taskHandler.Checker(self._engine.ps_id, 
-                                            self.name_str)
+        self._checker = taskHandler.Checker(
+            self._engine.ps_id, self.name_str[1])
+
         for gripper in parse_tree.gripper:
             gripper_body = self.GRIPPER_TYPE[gripper['type']](
                 gripper['id'],
@@ -305,6 +306,15 @@ class World(object):
         :return: None
         """
         self._engine.status = stat
+
+    def check_states(self):
+        """
+        Check the current world state, see if 
+        the task is completed.
+        :return: tuple boolean <done, success> indicating whether 
+        task is done, and whether it is successful.
+        """
+        return self._checker.check(self._bodies)
 
     def update(self, elp=0):
         """

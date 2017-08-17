@@ -76,6 +76,10 @@ def pjoin(dirname, fname):
 
     return os.path.join(dirname, fname)
 
+def fmove(prev, new):
+
+    os.rename(prev, new)
+
 
 def loginfo(msg, itype):
     """
