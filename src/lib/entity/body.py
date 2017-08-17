@@ -33,6 +33,9 @@ class Body(object):
         pos = pos or (0., 0., 0.)
         orn = orn or (0., 0., 0., 1.)
 
+        if len(orn) == 3:
+            orn = math_util.euler2quat(orn)
+
         # Store original info for reset
         self._init_state = (pos, orn, fixed)
         self._engine = engine
