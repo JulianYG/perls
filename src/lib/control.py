@@ -429,59 +429,69 @@ class Controller(object):
 
                 elif method == 'reach':
 
-                    # Cartesian, quaternion
                     r_pos, r_orn = value
-                    i_pos, i_orn = self._states['tool'][tool.tid]
 
-                    # Orientation is always relative to the
-                    # world frame, that is, absolute
-                    r_mat = math_util.quat2mat(tool.orn)
+                    # Use relative pose control for devices
+                    if display.info['frame'] != 'vr':
 
-                    if r_pos is not None:
-                        # Scaling down the speed for robot arm
-                        if tool.tid[0] == 'm':
-                            r_pos /= 7.5
+                        # Cartesian, quaternion
+                        i_pos, i_orn = self._states['tool'][tool.tid]
 
-                        # Increment to get absolute pos
-                        # Take account of rotation
-                        i_pos += r_mat.dot(r_pos * elapsed_time)
-                        tool.reach(i_pos, None)
+                        # Orientation is always relative to the
+                        # world frame, that is, absolute
+                        r_mat = math_util.quat2mat(tool.orn)
 
-                    if r_orn is not None:
-                        ###
-                        # Can try directly setting joint states here
-                        i_orn += r_orn * elapsed_time
-                        if tool.tid[0] == 'm':
-                            eef_joints = tool.active_joints[-2:]
-                            joint_spec = tool.joint_specs
+                        if r_pos is not None:
+                            # Scaling down the speed for robot arm
+                            if tool.tid[0] == 'm':
+                                r_pos /= 7.5
 
-                            # Perform the clipping here
-                            i_orn = math_util.clip_vec(
-                                math_util.vec((i_orn[1], i_orn[0])),
-                                math_util.vec(joint_spec['lower'])[eef_joints],
-                                math_util.vec(joint_spec['upper'])[eef_joints])
-                            i_orn = math_util.vec((i_orn[0], i_orn[1], 0))
+                            # Increment to get absolute pos
+                            # Take account of rotation
+                            i_pos += r_mat.dot(r_pos * elapsed_time)
+                            tool.reach(i_pos, None)
 
-                            # Update the tool's orientation
-                            self._states['tool'][tool.tid][1] = \
-                                math_util.vec((i_orn[1], i_orn[0], 0))
-                        else:
-                            # Update the tool's orientation
-                            self._states['tool'][tool.tid][1] = \
-                                math_util.vec(i_orn)
-                        tool.reach(None, i_orn)
+                        if r_orn is not None:
+                            ###
+                            # Can try directly setting joint states here
+                            i_orn += r_orn * elapsed_time
+                            if tool.tid[0] == 'm':
+                                eef_joints = tool.active_joints[-2:]
+                                joint_spec = tool.joint_specs
 
-                        # Update the tool's position as orientation changes
-                        self._states['tool'][tool.tid][0] = world.get_states(
-                            ('tool', 'tool_pose'))[0][tool.tid][0]
-                    pos_diff = tool.tool_pos - i_pos
+                                # Perform the clipping here
+                                i_orn = math_util.clip_vec(
+                                    math_util.vec((i_orn[1], i_orn[0])),
+                                    math_util.vec(joint_spec['lower'])[eef_joints],
+                                    math_util.vec(joint_spec['upper'])[eef_joints])
+                                i_orn = math_util.vec((i_orn[0], i_orn[1], 0))
 
-                    if math_util.rms(pos_diff) > tool.tolerance:
-                        loginfo('Tool position out of reach. Set back.',
-                                FONT.warning)
-                        state_pose = world.get_states(
-                            ('tool', 'tool_pose'))[0][tool.tid]
-                        self._states['tool'][tool.tid][0] = state_pose[0]
+                                # Update the tool's orientation
+                                self._states['tool'][tool.tid][1] = \
+                                    math_util.vec((i_orn[1], i_orn[0], 0))
+                            else:
+                                # Update the tool's orientation
+                                self._states['tool'][tool.tid][1] = \
+                                    math_util.vec(i_orn)
+                            tool.reach(None, i_orn)
+
+                            # Update the tool's position as orientation changes
+                            self._states['tool'][tool.tid][0] = world.get_states(
+                                ('tool', 'tool_pose'))[0][tool.tid][0]
+
+                        pos_diff = tool.tool_pos - i_pos
+
+                        if math_util.rms(pos_diff) > tool.tolerance:
+                            loginfo('Tool position out of reach. Set back.',
+                                    FONT.warning)
+                            state_pose = world.get_states(
+                                ('tool', 'tool_pose'))[0][tool.tid]
+                            self._states['tool'][tool.tid][0] = state_pose[0]
+                    else:
+                        # Special case: use absolute pose for VR
+                        threshold = 1.3
+                        if math_util.rms(tool.tool_pos - r_pos) < threshold:
+                            tool.reach(r_pos, r_orn)
 
                 elif method == 'grasp':
                     tool.grasp(value)

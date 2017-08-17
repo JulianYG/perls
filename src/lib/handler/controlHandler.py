@@ -136,7 +136,6 @@ class KeyboardEventHandler(ControlHandler):
                     ins.append(('reach', (event_listener.HOT_KEY[key] * self._sens, None)))
                 if label == 'orn' and status == 'holding':
                     orn = event_listener.HOT_KEY[key] * self._sens
-
                     # Don't touch position, only orientation (rad)
                     ins.append(('reach', (None, orn)))
 
@@ -193,16 +192,16 @@ class ViveEventHandler(ControlHandler):
                 ins.append(('rst', 1))
 
             # Engage button
-            if engage_flag == 'triggered':
-                self._pos = math_util.vec(pos)
-                self._orn = math_util.quat2euler(orn)
+            # if engage_flag == 'triggered':
+            #     self._pos = math_util.vec(pos)
+            #     self._orn = math_util.quat2euler(orn)
 
             if engage_flag == 'pressing':
-                diff_pos = pos - self._pos
-                diff_orn = math_util.quat2euler(orn) - self._orn
+                # diff_pos = pos - self._pos
+                # diff_orn = math_util.quat2euler(orn) - self._orn
 
-                ins.append(('reach', (diff_pos * self._sens, None)))
-                ins.append(('reach', (None, diff_orn * self._sens)))
+                ins.append(('reach', (pos, None)))
+                ins.append(('reach', (None, math_util.quat2euler(orn))))
 
         self._signal['instruction'] = ins
 
