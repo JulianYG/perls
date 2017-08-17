@@ -2,6 +2,7 @@
 
 import os
 import os.path as osp
+from ..utils.io_util import pjoin
 import pybullet as p
 
 import numpy as np
@@ -72,14 +73,18 @@ class BulletRenderEngine(GraphicsEngine):
         self._server_id = -1
 
         # Initialize logging paths
+
         log_dir = log_dir or \
-                  osp.abspath(osp.join(osp.dirname(__file__), '../../log'))
+                  osp.abspath(pjoin(osp.dirname(__file__), '../../log'))
         self._log_path = dict(
-            device=osp.join(log_dir, 'device'),
-            trajectory=osp.join(log_dir, 'trajectory'),
-            success_dir=osp.join(log_dir, 'trajectory', 'success'),
-            fail_dir=osp.join(log_dir, 'trajectory', 'fail'),
-            video=osp.join(log_dir, 'video')
+            root=log_dir,
+            device=pjoin(log_dir, 'device'),
+            trajectory=pjoin(log_dir, 'trajectory'),
+            success_rl=pjoin(log_dir, 'learning', 'success'),
+            fail_rl=pjoin(log_dir, 'learning', 'fail'),
+            success_dir=pjoin(log_dir, 'trajectory', 'success'),
+            fail_dir=pjoin(log_dir, 'trajectory', 'fail'),
+            video=pjoin(log_dir, 'video')
         )
 
         self._base_file_name = ''
@@ -294,36 +299,25 @@ class BulletRenderEngine(GraphicsEngine):
             self._base_file_name = '{}_{}.bin'.format(
                 self._record_name, time_stamp)
 
-            abs_file_name = osp.join(
+            abs_file_name = pjoin(
                 self._log_path['trajectory'],
                 self._base_file_name)
 
-            # Record only objects that are tracked
-            if target_uids:
-                self._logging_id.append(
-                    p.startStateLogging(
-                        p.STATE_LOGGING_GENERIC_ROBOT,
-                        abs_file_name,
-                        objectUniqueIds=target_uids,
-                        physicsClientId=self._server_id
-                    )
+            # Record every object for visual replay purpose
+            self._logging_id.append(
+                p.startStateLogging(
+                    p.STATE_LOGGING_GENERIC_ROBOT,
+                    abs_file_name,
+                    physicsClientId=self._server_id
                 )
-            else:
-                # Record every object
-                self._logging_id.append(
-                    p.startStateLogging(
-                        p.STATE_LOGGING_GENERIC_ROBOT,
-                        abs_file_name,
-                        physicsClientId=self._server_id
-                    )
-                )
+            )
 
             # Record mp4 video if indicated
             if self._record_video:
                 self._logging_id.append(
                     p.startStateLogging(
                         p.STATE_LOGGING_VIDEO_MP4,
-                        osp.join(self._log_path['video'],
+                        pjoin(self._log_path['video'],
                                  '{}_{}.mp4'.format(
                                      self._record_name, time_stamp)),
                         physicsClientId=self._server_id
@@ -344,9 +338,9 @@ class BulletRenderEngine(GraphicsEngine):
 
         elif self._job == 'replay':
 
-            objects = osp.join(self._log_path['trajectory'],
+            objects = pjoin(self._log_path['trajectory'],
                                '{}.bin'.format(self._record_name))
-            device = osp.join(self._log_path['device'],
+            device = pjoin(self._log_path['device'],
                               '{}.bin'.format(self._record_name))
 
             # Can change verbosity later
@@ -357,8 +351,6 @@ class BulletRenderEngine(GraphicsEngine):
                     format(self._record_name), FONT.control)
             for record in obj_log:
                 # time_stamp = float(record[1])
-
-                print(record)
                 obj = record[2]
                 pos = record[3: 6]
                 orn = record[6: 10]
@@ -391,10 +383,10 @@ class BulletRenderEngine(GraphicsEngine):
             # Save success and failure cases separately
             elif exit_code == 0:
                 io_util.fmove(
-                    osp.join(
+                    pjoin(
                         self._log_path['trajectory'],
                         self._base_file_name), 
-                    osp.join(
+                    pjoin(
                         self._log_path['success_dir'],
                         self._base_file_name)
                 )
@@ -402,10 +394,10 @@ class BulletRenderEngine(GraphicsEngine):
             # Just ignore the case of error
             elif exit_code == 1:
                 io_util.fmove(
-                    osp.join(
+                    pjoin(
                         self._log_path['trajectory'],
                         self._base_file_name), 
-                    osp.join(
+                    pjoin(
                         self._log_path['fail_dir'],
                         self._base_file_name)
                 )

@@ -26,6 +26,14 @@ class PrismaticGripper(Tool):
         self.reset()
 
     @property
+    def type(self):
+        """
+        Get the type of the body.
+        :return: string
+        """
+        return 'gripper'
+
+    @property
     def tid(self):
         """
         A tool id specifically assigned to this tool.

@@ -1,4 +1,5 @@
 import struct
+import pickle
 import collections
 import numpy as np
 import os, sys
@@ -72,9 +73,10 @@ def str2bool(string):
     return string.lower() == 'true'
 
 
-def pjoin(dirname, fname):
+def pjoin(*fname):
 
-    return os.path.join(dirname, fname)
+    return os.path.join(*fname)
+
 
 def fmove(prev, new):
 
@@ -96,6 +98,12 @@ def logerr(msg, etype):
     # msg = pprint.pformat(msg)
     sys.stderr.write('{}{}\n{}'.format(
         etype[1] + FONT.bold, msg, FONT.end))
+
+
+def write_log(log, dest):
+
+    with open(dest, 'wb') as f:
+        pickle.dump(log, f)
 
 
 def parse_log(file, verbose=True):

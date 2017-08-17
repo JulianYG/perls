@@ -88,7 +88,7 @@ class Controller(object):
                  # operations/modifications on the world
                  camera=dict(flen=1e-3),  # The camera parameters
                  )
-
+        self._data_log = {}
         self._init_time_stamp = None
 
         # For coonsistency across different clock speeds
@@ -301,6 +301,10 @@ class Controller(object):
                     world, display, 
                     ctrl_handler.signal, time_since_last_update)
 
+                if display.record:
+
+                    self._record_interrupt(world, elt)
+
                 # Update model
                 time_up = world.update(elt)
 
@@ -313,10 +317,20 @@ class Controller(object):
                 loginfo('Task success! Exiting simulation...',
                         FONT.disp)
                 self.stop(server_id, 0)
+                io_util.write_log(
+                    self._data_log,
+                    io_util.pjoin(
+                        display.info['engine']['log_info']['success_rl'],
+                        display.info['engine']['record_name']))
             else:
                 loginfo('Task failed! Exiting simulation...',
                         FONT.disp)
                 self.stop(server_id, 1)
+                io_util.write_log(
+                    self._data_log,
+                    io_util.pjoin(
+                        display.info['engine']['log_info']['fail_rl'],
+                        display.info['engine']['record_name']))
             
         except KeyboardInterrupt:
             loginfo('User exits the program by ctrl+c.',
@@ -353,6 +367,51 @@ class Controller(object):
         """
         # TODO
         self._thread_pool[server_id] = None
+
+    def _record_interrupt(self, world, time_stamp):
+
+        for name, _ in world.target:
+            entity = world.body[name]
+
+            if entity.type == 'body':
+
+                entity_log = self._data_log.get(
+                    name, {'pose': []})
+
+                pose = entity.pose
+                pose = (pose[0].tolist(), pose[1])
+                entity_log['pose'].append(
+                    (time_stamp, pose)
+                )
+
+                self._data_log[name] = entity_log
+
+            elif entity.type == 'arm':
+
+                arm_log = self._data_log.get(
+                    name, {'pose': [],
+                           'joint_position': [],
+                           'joint_velocity': [],
+                           'joint_torque': []})
+
+                tool_pose = entity.tool_pose
+                tool_pose = (tool_pose[0].tolist(),
+                             tool_pose[1])
+
+                arm_log['pose'].append(
+                    (time_stamp, tool_pose)
+                )
+                arm_log['joint_position'].append(
+                    (time_stamp, entity.joint_positions)
+                )
+                arm_log['joint_velocity'].append(
+                    (time_stamp, entity.joint_velocities)
+                )
+                arm_log['joint_torque'].append(
+                    (time_stamp, entity.joint_torques)
+                )
+
+                self._data_log[name] = arm_log
 
     def _control_interrupt(self, world, display, signal, elapsed_time):
         """

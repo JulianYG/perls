@@ -53,6 +53,14 @@ class Body(object):
     ###
     # Basic info
     @property
+    def type(self):
+        """
+        Get the type of the body.
+        :return: string
+        """
+        return 'body'
+
+    @property
     def pos(self):
         """
         Get base position of the body in absolute world frame

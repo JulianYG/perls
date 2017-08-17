@@ -97,6 +97,14 @@ class ViewDebugger(object):
         self._display = display
 
     @property
+    def record(self):
+        """
+
+        :return:
+        """
+        return self._display.record
+
+    @property
     def info(self):
         info_dic = self._display.info
         return info_dic

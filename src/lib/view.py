@@ -28,6 +28,16 @@ class View:
         self._simulation_server_id = graphics_engine.ps_id
         self._frame = 'off'
 
+        self._record = True if self._engine.info['job'] == 'record' else False
+
+    @property
+    def record(self):
+        """
+
+        :return:
+        """
+        return self._record
+
     @property
     def info(self):
         """

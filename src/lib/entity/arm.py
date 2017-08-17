@@ -26,6 +26,14 @@ class Arm(Tool):
         self.collision_checking = collision_checking
 
     @property
+    def type(self):
+        """
+        Get the type of the body.
+        :return: string
+        """
+        return 'arm'
+
+    @property
     def tid(self):
         """
         A tool id specifically assigned to this tool.
