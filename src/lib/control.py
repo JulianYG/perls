@@ -265,10 +265,10 @@ class Controller(object):
 
         if status == -1:
             logerr('Error loading simulation', FONT.control)
-            self.stop(server_id)
+            self.stop(server_id, 0)
             return
         elif status == 1:
-            self.stop(server_id)
+            self.stop(server_id, 0)
             loginfo('Replay finished. Exiting...', FONT.control)
             return
         elif status == 2:

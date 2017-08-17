@@ -1,16 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <batch>
+
+	<!-- The following is for collecting demonstrations. -->
 	<config name="default" id="0">
 		<build type="Debug">
-			<graphics name="first person human demo" engine="bullet" type="gui" key="0"/>
+			<graphics name="first person human demo" engine="bullet" type="vr" key="0"/>
 			<physics engine="bullet" version="20170601"/>
-			<job name="record" video="False" log_path="" filename="testpush"/>
+			<job name="replay" video="False" log_path="" filename="fail/testpush_2017-08-17-00-28-49"/>
 			<property async="False" step_size="0.001" max_run_time="10e6"/>
 		</build>
 		<control type="vive" sensitivity="20" rate="100"/>
 		<env>push.xml</env>
 		<disp>disp.xml</disp>
 	</config>
+
+	<!-- The following is for replaying demonstrations. -->
+<!-- 	<config name="default" id="0">
+		<build type="Debug">
+			<graphics name="first person human demo" engine="bullet" type="vr" key="0"/>
+			<physics engine="bullet" version="20170601"/>
+			<job name="replay" video="False" log_path="" filename="testpush_2017-08-17-00-19-57"/>
+			<property async="False" step_size="0.001" max_run_time="10e6"/>
+		</build>
+		<control type="vive" sensitivity="20" rate="100"/>
+		<env>push.xml</env>
+		<disp>disp.xml</disp>
+	</config> -->
+
 
 	<!-- <config name="default" id="1">
 		<build type="Release">
