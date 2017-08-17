@@ -12,5 +12,6 @@
             keyboard_shortcut="False"
             mouse_picking="False"/>
         <camera ego="False" pitch="-35" yaw="50" focus="0 0 0" focal_len="4"/>
+		<replay delay="0.001"/>
 	</view>
 </disp>

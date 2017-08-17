@@ -293,8 +293,9 @@ def parse_disp(file_path):
                        focus=[float(x) for
                               x in camera_attrib.get('focus', '0 0 0').split(' ')],
                        flen=float(camera_attrib.get('focal_len', 4)))
-
-    return camera_info, options
+    replay_attrib = root.find('./view/replay').attrib
+    replay_info = dict(delay=float(replay_attrib.get('delay', 1e-4)))
+    return camera_info, replay_info, options
 
 
 def parse_config(file_path):

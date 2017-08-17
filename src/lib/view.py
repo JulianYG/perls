@@ -112,10 +112,12 @@ class View:
         :return: None
         """
         # Setup camera is for replay function
-        camera_info, option_dic = io_util.parse_disp(description)
+        camera_info, replay_info, option_dic = \
+            io_util.parse_disp(description)
 
         # Configure display
-        self._engine.configure_display(option_dic, camera_info)
+        self._engine.configure_display(
+            option_dic, camera_info, replay_info)
 
     def run(self, targets=None):
         """

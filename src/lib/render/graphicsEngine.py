@@ -66,6 +66,7 @@ class BulletRenderEngine(GraphicsEngine):
 
         self._record_video = video
         self._record_name = 'perls_record'
+        self._replay_delay = 1e-4
 
         self._logging_id = list()
         self._server_id = -1
@@ -228,7 +229,7 @@ class BulletRenderEngine(GraphicsEngine):
         # Convert to bullet constant
         self._disp_args[0] = self._FRAME_TYPES[self._frame]
         # The core step: connect to bullet physics server
-        if self._frame != 'vr':
+        if self._frame != 'vr' or self._job == 'replay':
             self._server_id = p.connect(*self._disp_args)
         else:
             self._server_id = p.connect(self._disp_args[0])
@@ -241,7 +242,7 @@ class BulletRenderEngine(GraphicsEngine):
     ###
     # General display related methods
 
-    def configure_display(self, config, camera_args):
+    def configure_display(self, config, camera_args, replay_args):
         # All about cameras
 
         for name, switch in config.items():
@@ -249,8 +250,9 @@ class BulletRenderEngine(GraphicsEngine):
                 self._DISP_CONF[name],
                 switch, physicsClientId=self._server_id)
 
-            # Setup camera
-            self.camera = camera_args
+        # Setup camera
+        self.camera = camera_args
+        self._replay_delay = replay_args['delay']
 
     def disable_hotkeys(self):
         p.configureDebugVisualizer(9, 0, self._server_id)
@@ -364,9 +366,10 @@ class BulletRenderEngine(GraphicsEngine):
                     if qid > -1:
                         p.resetJointState(obj, i, record[qid - 7 + 17])
 
-                # TODO: think about changing delay
-                time_util.pause(1e-4)
+                time_util.pause(self._replay_delay)
 
+            loginfo('Finished replay {}'.format(self._record_name),
+                    FONT.control)
             # TODO: figure out using HMD log to revive FPS
             return 1
         return 0
