@@ -87,7 +87,7 @@ class BulletRenderEngine(GraphicsEngine):
             video=pjoin(log_dir, 'video')
         )
 
-        self._base_file_name = ''
+        self._base_file_name = self._record_name
 
         # If not exist, create the paths
         for path in self._log_path.values():
@@ -114,7 +114,7 @@ class BulletRenderEngine(GraphicsEngine):
             name='Bullet Graphics Engine: {}'.
                  format(self._disp_name),
             job=self._job,
-            record_name=self._record_name,
+            record_name=self._base_file_name,
             log_info=self._log_path,
             camera_info=self.camera
         )

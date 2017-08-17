@@ -423,7 +423,6 @@ class Controller(object):
         :param signal: the signal received from control handler
         :return: None
         """
-        
         # Only keep consistency for GUI usage
         elapsed_time = 1 if display.info['frame'] != 'gui' else elapsed_time * 50
         commands, instructions, view, update = \

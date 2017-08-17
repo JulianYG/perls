@@ -23,7 +23,7 @@ class Checker(InterruptHandler):
             if cube.pos[2] >= 0.68:
                 # If the cube jumps too high
                 return True, False
-            
+
             # Consider the case when the cube is down on the ground
             if cube.pos[2] <= 0.06:
                 done = True
@@ -31,8 +31,8 @@ class Checker(InterruptHandler):
 
                 # Only allow pushing towards one side, 
                 # falling into one specific region
-                if -.25 <= cube.pos[1] <= .25 and \
-                   .25 <= cube.pos[0] <= .375:
+                if -.275 <= cube.pos[1] <= .275 and \
+                   .25 <= cube.pos[0] <= .65:
                     success = True
 
                 return done, success
