@@ -7,7 +7,7 @@
 			<job name="run" video="False" log_path="" filename="hello_world_ExampleBrowser_2017-07-04-02-34-46"/>
 			<property async="False" step_size="0.001" max_run_time="10e6"/>
 		</build>
-		<control type="keyboard" sensitivity="20" rate="100"/>
+		<control type="vive" sensitivity="20" rate="100"/>
 		<env>test.xml</env>
 		<disp>disp.xml</disp>
 	</config>
