@@ -157,10 +157,7 @@ class ViveEventHandler(ControlHandler):
 
         # Initialize positions
         self._controllers = dict()
-
-        self._pos = None
-        self._orn = None
-
+        
         c_id = event_listener.listen_to_bullet_vive(self._id)
 
     @property
@@ -180,9 +177,9 @@ class ViveEventHandler(ControlHandler):
 
         for c_id, pos, orn, slide, _, _, button, _ in events:
 
-            engage_flag = button[32]
-            reset_flag = button[1]
-            scroll_flag = button[2]
+            engage_flag = event_listener.KEY_STATUS[button[32]]
+            reset_flag = event_listener.KEY_STATUS[button[1]]
+            scroll_flag = event_listener.KEY_STATUS[button[2]]
 
             # Always use the gripper slider
             ins.append(('grasp', slide))
@@ -192,16 +189,9 @@ class ViveEventHandler(ControlHandler):
                 ins.append(('rst', 1))
 
             # Engage button
-            # if engage_flag == 'triggered':
-            #     self._pos = math_util.vec(pos)
-            #     self._orn = math_util.quat2euler(orn)
-
-            if engage_flag == 'pressing':
-                # diff_pos = pos - self._pos
-                # diff_orn = math_util.quat2euler(orn) - self._orn
-
-                ins.append(('reach', (pos, None)))
-                ins.append(('reach', (None, math_util.quat2euler(orn))))
+            if engage_flag == 'holding':
+                a_orn = math_util.quat2euler(orn)
+                ins.append(('reach', (pos, a_orn[[1, 0, 2]])))
 
         self._signal['instruction'] = ins
 

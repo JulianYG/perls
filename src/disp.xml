@@ -5,9 +5,9 @@
 			gui_panel="False" 
 			shadow="False"
 			wire_frame="False"
-			vr_teleporting="False"
+			vr_teleporting="True"
 			vr_picking="False"
-            vr_render_controllers="False"
+            vr_render_controllers="True"
             rendering="True"
             keyboard_shortcut="False"
             mouse_picking="False"/>
