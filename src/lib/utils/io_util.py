@@ -9,9 +9,25 @@ __email__ = 'julianyg@stanford.edu'
 __license__ = 'private'
 __version__ = '0.1'
 
+
 # Force automatic flush when printing
-sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
-sys.stderr = os.fdopen(sys.stderr.fileno(), 'w', 0)
+class Unbuffered(object):
+    def __init__(self, stream):
+        self._stream = stream
+
+    def write(self, datum):
+        self._stream.write(datum)
+        self._stream.flush()
+
+    def writelines(self, data):
+        self._stream.writelines(data)
+        self._stream.flush()
+
+    def __getattr__(self, attr):
+        return getattr(self._stream, attr)
+
+sys.stdout = Unbuffered(sys.stdout)
+sys.stderr = Unbuffered(sys.stderr)
 
 np.set_printoptions(precision=3, suppress=True)
 _singleton_elem = ElementTree.Element(0)

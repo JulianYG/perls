@@ -1,9 +1,6 @@
 import redis
 import sys
-if sys.version[0] == '2':
-    from queue import Queue
-else:
-    from Queue import Queue
+from queue import Queue
 
 
 class RedisComm(object):

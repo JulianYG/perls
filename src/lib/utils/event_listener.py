@@ -1,8 +1,10 @@
+import ast
+
 from pybullet import (getKeyboardEvents,
                       getVREvents,
                       getMouseEvents)
-from math_util import vec
-import ast
+from .math_util import vec
+
 
 _X_POS_VEC = vec((.001, .0, .0))
 _X_NEG_VEC = vec((-.001, .0, .0))

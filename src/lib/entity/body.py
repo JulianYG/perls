@@ -283,12 +283,13 @@ class Body(object):
         self._name = string
 
     @fix.setter
-    def fix(self, (pos, orn)):
+    def fix(self, pose):
         """
         Fix the entity to given absolute pose
         :param pos: position vec3 float cartesian to fix at
         :return: None
         """
+        pos, orn = pose
         pos = self.pos if pos is None else pos
         orn = self.orn if orn is None else orn
         self.attach_children = (
@@ -382,16 +383,17 @@ class Body(object):
             self._engine.set_body_dynamics(self._uid, link_id, d_info)
 
     @attach_children.setter
-    def attach_children(
-            self, (lid, child_uid, child_lid, jtype, jaxis,
-                   parent_pos, child_pos, parent_orn, child_orn)):
+    def attach_children(self, attach_info):
         """
         Attach a child body B on this parent body A
-        Required input:
+        :param attach_info:
         an info list:
         [j_0 A, j_0 B, type, jAxis, jPivotA, jPivotB, jOrnA, jOrnB]
         :return: None
         """
+        lid, child_uid, child_lid, jtype, jaxis, \
+        parent_pos, child_pos, parent_orn, child_orn = attach_info
+
         # TODO: add if/else for changing constraint
         if parent_orn is None:
             parent_orn = [0., 0., 0., 1.]
@@ -428,20 +430,22 @@ class Body(object):
                 del self._children[child]
 
     @visual_shape.setter
-    def visual_shape(self, (path, name, qid, sid, rgba, spec)):
+    def visual_shape(self, visual_info):
         """
         Reset visual shape data to change the texture of a shape. 
         Currently only affects the software renderer (getCameraImage), 
         does not show up on OpenGL window
-        :param path: the path of texture file (png, jpg, etc)
-        :param name: a string of name to associate with the texture,
-        suggested to be something recognizable, like 'sky', 'rainbow'.
-        :param qid: joint index
-        :param sid: shape index ()
-        :param rgba: vec4 in range [0, 1]. No transparent alpha yet
-        :param spec: RGB 0-100 vec3
+        :param visual_info: a tuple of 
+        path: the path of texture file (png, jpg, etc);
+        name: a string of name to associate with the texture,
+        suggested to be something recognizable, like 'sky', 'rainbow';
+        qid: joint index;
+        sid: shape index ();
+        rgba: vec4 in range [0, 1]. No transparent alpha yet;
+        spec: RGB 0-100 vec3;
         :return: None
         """
+        path, name, qid, sid, rgba, spec = visual_info
         texture_id = self._engine.set_body_visual_shape(
             self._uid, path, qid, sid, rgba, spec)
 
@@ -454,23 +458,23 @@ class Body(object):
         pass
         
     @mark.setter
-    def mark(self, (text, font_size, color, lid, time)):
+    def mark(self, marker_info):
         """
         Add marker text to this body.
         ### Note: 
         Use None for lid for base link!
-        :param text: text string to display
-        :param font_size: float scalar of text size.
-        By default is 2.5
-        :param color: RGB color, vec3 float in [0,1]. 
-        By default is red
-        :param time: float time to display, 0 for permanent.
-        By default is 10 seconds
-        :param lid: link id to display on this body
+        :param marker_info: a tuple of 
+        text string to display, float scalar of text size.
+        By default is 2.5, 
+        RGB color, vec3 float in [0,1]. 
+        By default is red,
+        float time to display, 0 for permanent.
+        By default is 10 seconds,
+        link id to display on this body
         :return: None
         """
         # Need a few tricks to hack link index for base
-
+        text, font_size, color, lid, time = marker_info
         mid = self._engine.add_body_text_marker(
             text, self.kinematics['pos'][lid or 0],
             font_size, color, self.uid, lid or -1, time

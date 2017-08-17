@@ -120,7 +120,6 @@ class KeyboardEventHandler(ControlHandler):
         else:
             # Handle environment settings
             for label, (key, status) in keys.items():
-
                 # Using multiple if's to allow simultaneous key pressing
                 if key in range(48, 58) and status == 'releasing':
                     # 'id' key_type
@@ -172,6 +171,8 @@ class ViveEventHandler(ControlHandler):
     @property
     def signal(self):
         self._signal['cmd'] = list()
+        self._signal['camera'] = list()
+        self._signal['update'] = 0
         ins = list()
 
         events = event_listener.listen_to_bullet_vive(
@@ -181,24 +182,22 @@ class ViveEventHandler(ControlHandler):
         for c_id, pos, orn, slide, _, _, button, _ in events:
 
             engage_flag = button[32]
-
             reset_flag = button[1]
-
             scroll_flag = button[2]
 
             # Always use the gripper slider
             ins.append(('grasp', slide))
 
             # Reset button
-            if event_listener.KEY_STATUS[reset_flag] == 'pressing':
+            if reset_flag == 'pressing':
                 ins.append(('rst', 1))
 
             # Engage button
-            if event_listener.KEY_STATUS[engage_flag] == 'triggered':
+            if engage_flag == 'triggered':
                 self._pos = math_util.vec(pos)
                 self._orn = math_util.quat2euler(orn)
 
-            if event_listener.KEY_STATUS[engage_flag] == 'pressing':
+            if engage_flag == 'pressing':
                 diff_pos = pos - self._pos
                 diff_orn = math_util.quat2euler(orn) - self._orn
 

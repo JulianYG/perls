@@ -112,7 +112,8 @@ class BulletRenderEngine(GraphicsEngine):
 
     @property
     def camera(self):
-        if self._FRAME_TYPES[self._frame] == 1:
+        if self._FRAME_TYPES[self._frame] == 1 or \
+           self._FRAME_TYPES[self._frame] == 3:
             info = p.getDebugVisualizerCamera(self._server_id)
             return dict(
                 frame_width=info[0], frame_height=info[1],
@@ -146,17 +147,17 @@ class BulletRenderEngine(GraphicsEngine):
                 params['focus'],
                 self._server_id
             )
-        elif self._frame == 'vr':
-            cam_pos, cam_orn = params
-            p.setVRCameraState(
-                rootPosition=cam_pos,
-                rootOrientation=cam_orn,
-                physicsClientId=self._server_id
-            )
-        else:
-            loginfo('Cannot set camera under frame type <{}>.'.
-                    format(self._frame),
-                    FONT.warning)
+        # elif self._frame == 'vr':
+        #     cam_pos, cam_orn = params
+        #     p.setVRCameraState(
+        #         rootPosition=cam_pos,
+        #         rootOrientation=cam_orn,
+        #         physicsClientId=self._server_id
+        #     )
+        # else:
+        #     loginfo('Cannot set camera under frame type <{}>.'.
+        #             format(self._frame),
+        #             FONT.warning)
 
     @record_name.setter
     def record_name(self, name):
@@ -171,6 +172,7 @@ class BulletRenderEngine(GraphicsEngine):
     ###
     #  Helper functions
     def get_camera_pose(self, up=(0.,1.,0.), otype='quat'):
+
         view_matrix = self.camera['view_mat'].T
 
         # If up axis is y
@@ -218,7 +220,10 @@ class BulletRenderEngine(GraphicsEngine):
         # Convert to bullet constant
         self._disp_args[0] = self._FRAME_TYPES[self._frame]
         # The core step: connect to bullet physics server
-        self._server_id = p.connect(*self._disp_args)
+        if self._frame != 'vr':
+            self._server_id = p.connect(*self._disp_args)
+        else:
+            self._server_id = p.connect(self._disp_args[0])
         p.setInternalSimFlags(0, self._server_id)
         p.resetSimulation(self._server_id)
 
