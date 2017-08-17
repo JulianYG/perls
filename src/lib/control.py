@@ -13,6 +13,7 @@ from .utils import io_util, time_util, math_util
 from .utils.io_util import (FONT,
                             loginfo,
                             logerr)
+from .utils.math_util import approximate
 from .view import View
 from .world import World
 
@@ -370,6 +371,8 @@ class Controller(object):
 
     def _record_interrupt(self, world, time_stamp):
 
+        time_stamp = approximate(time_stamp, 5)
+
         for name, _ in world.target:
             entity = world.body[name]
 
@@ -379,7 +382,8 @@ class Controller(object):
                     name, {'pose': []})
 
                 pose = entity.pose
-                pose = (pose[0].tolist(), pose[1])
+                pose = (approximate(pose[0], 5).tolist(),
+                        approximate(pose[1], 5).tolist())
                 entity_log['pose'].append(
                     (time_stamp, pose)
                 )
@@ -395,20 +399,23 @@ class Controller(object):
                            'joint_torque': []})
 
                 tool_pose = entity.tool_pose
-                tool_pose = (tool_pose[0].tolist(),
-                             tool_pose[1])
+                tool_pose = (approximate(tool_pose[0], 5).tolist(),
+                             approximate(tool_pose[1], 5).tolist())
 
                 arm_log['pose'].append(
                     (time_stamp, tool_pose)
                 )
                 arm_log['joint_position'].append(
-                    (time_stamp, entity.joint_positions)
+                    (time_stamp,
+                     approximate(entity.joint_positions, 5).tolist())
                 )
                 arm_log['joint_velocity'].append(
-                    (time_stamp, entity.joint_velocities)
+                    (time_stamp,
+                     approximate(entity.joint_velocities, 5).tolist())
                 )
                 arm_log['joint_torque'].append(
-                    (time_stamp, entity.joint_torques)
+                    (time_stamp,
+                     approximate(entity.joint_torques, 5).tolist())
                 )
 
                 self._data_log[name] = arm_log
