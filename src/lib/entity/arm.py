@@ -254,15 +254,20 @@ class Arm(Tool):
         ranges = upper_limits - lower_limits
 
         if ctype == 'position':
-            # Solve using null space
-            ik_solution = self._engine.solve_ik_null_space(
-                self._uid, self._end_idx,
-                pos, orn=orn,
-                lower=lower_limits,
-                upper=upper_limits,
-                ranges=ranges,
-                rest=self._rest_pose,
-                damping=damps)
+
+            if fast:
+                ik_solution = self._engine.solve_ik(
+                    self._uid, self._end_idx, pos, damps, orn=orn)
+            else:
+                # Solve using null space
+                ik_solution = self._engine.solve_ik_null_space(
+                    self._uid, self._end_idx,
+                    pos, orn=orn,
+                    lower=lower_limits,
+                    upper=upper_limits,
+                    ranges=ranges,
+                    rest=self._rest_pose,
+                    damping=damps)
 
             # TODO :
             # if self.collision_checking:

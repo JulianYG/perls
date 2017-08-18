@@ -5,7 +5,7 @@
 			<gripper name="bax" type="rethink">
 				<asset path="rethink_ee_description/urdf/electric_gripper/right_standard_narrow_round.urdf"/>
 			</gripper>
-			<pos>-0.4 -0.4 0.9</pos>
+			<pos>-0.4 -0.0 0.9</pos>
 		</robot>
 	</tool>
 	<scene name="peg">

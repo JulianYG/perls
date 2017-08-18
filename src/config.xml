@@ -6,11 +6,11 @@
 		<build type="Debug">
 			<graphics name="first person human demo" engine="bullet" type="vr" key="0"/>
 			<physics engine="bullet" version="20170601"/>
-			<job name="run" video="False" log_path="" filename="pushtest"/>
+			<job name="record" video="False" log_path="" filename="push"/>
 			<property async="False" step_size="0.001" max_run_time="10e6"/>
 		</build>
 		<control type="vive" sensitivity="20" rate="100"/>
-		<env>peg.xml</env>
+		<env>push.xml</env>
 		<disp>disp.xml</disp>
 	</config>
 

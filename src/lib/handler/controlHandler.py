@@ -182,7 +182,7 @@ class ViveEventHandler(ControlHandler):
             scroll_flag = event_listener.KEY_STATUS[button[2]]
 
             # Always use the gripper slider
-            ins.append(('grasp', slide))
+            ins.append(('grasp', 1))
 
             # Reset button
             if reset_flag == 'pressing':

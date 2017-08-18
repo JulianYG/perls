@@ -679,6 +679,14 @@ class Tool(Body):
         return NotImplemented
 
     @abc.abstractproperty
+    def close_grip(self):
+        """
+        State of current tool, whether grasping
+        :return: a boolean indicating gripper status
+        """
+        return NotImplemented
+
+    @abc.abstractproperty
     def pose(self):
         """
         Get the base frame pose of the tool
