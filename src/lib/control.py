@@ -1,4 +1,4 @@
-import threading
+import multiprocessing
 
 from .state import physicsEngine#, robotEngine
 from .adapter import Adapter
@@ -74,7 +74,7 @@ class Controller(object):
         """
         self._config = config_batch
         self._physics_servers = dict()
-        self._thread_pool = list()
+        self._process_pool = list()
 
         # space to store useful states.
         # Note it needs to use dictionary to store the states of
@@ -241,8 +241,8 @@ class Controller(object):
             return
         for s_id in range(len(self._physics_servers)):
             # Dispatch to new threads
-            t = threading.Thread(target=self.start, args=(s_id,))
-            self._thread_pool.append(t)
+            t = multiprocessing.Process(target=self.start, args=(s_id,))
+            self._process_pool.append(t)
             t.start()
 
     def start(self, server_id=0):
@@ -341,9 +341,8 @@ class Controller(object):
     def stop(self, server_id, exit_status):
         """
         Hang the simulation.
-        :param server_id: physics server id (a.k.a. simulation id,
-        configuration id) to stop. It acts as pause,
-        can use start to resume.
+        :param server_id: physics server id (a.k.a.
+        simulation id, configuration id) to stop.
         :param exit_status: an integer indicating the status 
         of task completion, 0 for success, 1 for fail, and 
         -1 for error exit.
@@ -367,7 +366,8 @@ class Controller(object):
         :return: None
         """
         # TODO
-        self._thread_pool[server_id] = None
+        self._process_pool[server_id].terminate()
+        self._process_pool[server_id] = None
 
     def _record_interrupt(self, world, time_stamp):
 

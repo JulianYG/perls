@@ -38,16 +38,16 @@ KEY_LABEL = {65284: 'rst', # F5 for reset
              65296: 'orn',  # 'roll_clockwise', -->
              65297: 'orn',  # 'pitch_up', ^
              65298: 'orn',  # 'pitch_down', v
-             113: 'orn',  # 'yaw_left', Q
-             101: 'orn',  # 'yaw_right, E
+             114: 'orn',  # 'yaw_left', R
+             102: 'orn',  # 'yaw_right, F
 
              # 6dof Position control
              119: 'pos',  # 'x_forward', W
              115: 'pos',  # 'x_backward', S
              97: 'pos',   # 'y_left', A
              100: 'pos',   # 'y_right', D
-             114: 'pos',   # 'z_up', R
-             102: 'pos',   # 'z_down', F
+             101: 'pos',   # 'z_up', E
+             113: 'pos',   # 'z_down', Q
 
              # Tool mega-control
              32: 'grasp',  # Space
