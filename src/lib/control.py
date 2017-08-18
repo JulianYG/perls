@@ -179,7 +179,8 @@ class Controller(object):
             conf.disp_info,
             conf.job,
             conf.video,
-            log_dir=conf.log
+            conf.log,
+            conf.config_name
         )
 
         # Initialize physics render (state render)
@@ -208,11 +209,14 @@ class Controller(object):
             display = tester.ViewTester(display)
 
         # Give record name for physics physics_engine
-        if conf.job == 'record' or conf.job == 'replay':
+        if conf.job == 'record':
             ge.record_name = \
-                conf.record_name or \
+                conf.config_name or \
                 '{}_{}'.format(world.info['name'],
                                display.info['name'])
+        elif conf.job == 'replay':
+            ge.record_name = '{}/{}'.format(
+                conf.config_name, conf.replay_name)
 
         # connect to bullet graphics/display render server,
         # Build display first to load world faster
@@ -550,7 +554,8 @@ class Controller(object):
                             self._states['tool'][tool.tid][0] = world.get_states(
                                 ('tool', 'tool_pose'))[0][tool.tid][0]
 
-                        pos_diff = tool.tool_pos - i_pos
+                        pos_diff = tool.tool_pos - i_pos \
+                            if tool.tid[0] == 'g' else tool.eef_pose[0] - i_pos
 
                         if math_util.rms(pos_diff) > tool.tolerance:
                             loginfo('Tool position out of reach. Set back.',

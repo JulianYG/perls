@@ -43,6 +43,14 @@ class Arm(Tool):
         return 'm{}'.format(self._tool_id)
 
     @abc.abstractproperty
+    def close_grip(self):
+        """
+        Check if the gripper of arm is closed
+        :return: boolean
+        """
+        return self._gripper.close_grip
+
+    @abc.abstractproperty
     def active_joints(self):
         """
         Return the joint indices that are active (settable)

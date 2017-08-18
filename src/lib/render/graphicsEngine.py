@@ -47,7 +47,7 @@ class BulletRenderEngine(GraphicsEngine):
 
     def __init__(self, disp_info,
                  job='run', video=False,
-                 log_dir=''):
+                 log_dir='', task=''):
         """
 
         :param disp_info:
@@ -66,7 +66,7 @@ class BulletRenderEngine(GraphicsEngine):
         self._job = job
 
         self._record_video = video
-        self._record_name = 'perls_record'
+        self._record_name = task
         self._replay_delay = 1e-4
 
         self._logging_id = list()
@@ -80,10 +80,14 @@ class BulletRenderEngine(GraphicsEngine):
             root=log_dir,
             device=pjoin(log_dir, 'device'),
             trajectory=pjoin(log_dir, 'trajectory'),
-            success_rl=pjoin(log_dir, 'learning', 'success'),
-            fail_rl=pjoin(log_dir, 'learning', 'fail'),
-            success_dir=pjoin(log_dir, 'trajectory', 'success'),
-            fail_dir=pjoin(log_dir, 'trajectory', 'fail'),
+            success_rl=pjoin(log_dir, 'learning',
+                             self._record_name, 'success'),
+            fail_rl=pjoin(log_dir, 'learning',
+                          self._record_name, 'fail'),
+            success_trajectory=pjoin(log_dir, 'trajectory',
+                                     self._record_name, 'success'),
+            fail_trajectory=pjoin(log_dir, 'trajectory',
+                                  self._record_name, 'fail'),
             video=pjoin(log_dir, 'video')
         )
 
@@ -296,8 +300,7 @@ class BulletRenderEngine(GraphicsEngine):
                 'Must provide record file name!'
             time_stamp = time_util.get_full_time_stamp()
 
-            self._base_file_name = '{}_{}.bin'.format(
-                self._record_name, time_stamp)
+            self._base_file_name = '{}.bin'.format(time_stamp)
 
             abs_file_name = pjoin(
                 self._log_path['trajectory'],
@@ -318,8 +321,8 @@ class BulletRenderEngine(GraphicsEngine):
                     p.startStateLogging(
                         p.STATE_LOGGING_VIDEO_MP4,
                         pjoin(self._log_path['video'],
-                                 '{}_{}.mp4'.format(
-                                     self._record_name, time_stamp)),
+                              self._record_name,
+                              '{}.mp4'.format(time_stamp)),
                         physicsClientId=self._server_id
                     )
                 )
@@ -339,9 +342,9 @@ class BulletRenderEngine(GraphicsEngine):
         elif self._job == 'replay':
 
             objects = pjoin(self._log_path['trajectory'],
-                               '{}.bin'.format(self._record_name))
+                            '{}.bin'.format(self._record_name))
             device = pjoin(self._log_path['device'],
-                              '{}.bin'.format(self._record_name))
+                           '{}.bin'.format(self._record_name))
 
             # Can change verbosity later
             obj_log = parse_log(objects, verbose=False)
@@ -387,7 +390,7 @@ class BulletRenderEngine(GraphicsEngine):
                         self._log_path['trajectory'],
                         self._base_file_name), 
                     pjoin(
-                        self._log_path['success_dir'],
+                        self._log_path['success_trajectory'],
                         self._base_file_name)
                 )
 
@@ -398,6 +401,6 @@ class BulletRenderEngine(GraphicsEngine):
                         self._log_path['trajectory'],
                         self._base_file_name), 
                     pjoin(
-                        self._log_path['fail_dir'],
+                        self._log_path['fail_trajectory'],
                         self._base_file_name)
                 )

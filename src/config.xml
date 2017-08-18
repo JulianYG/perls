@@ -2,11 +2,11 @@
 <batch>
 
 	<!-- The following is for collecting demonstrations. -->
-	<config name="default" id="0" clone="20">
+	<config name="push" id="0" clone="20">
 		<build type="Debug">
 			<graphics name="first person human demo" engine="bullet" type="vr" key="0"/>
 			<physics engine="bullet" version="20170601"/>
-			<job name="record" video="False" log_path="" filename="push"/>
+			<job name="record" video="False" log_path="" replay_path="fail/2017-08-18-16-27-37"/>
 			<property async="False" step_size="0.001" max_run_time="10e6"/>
 		</build>
 		<control type="vive" sensitivity="20" rate="100"/>

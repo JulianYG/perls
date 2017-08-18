@@ -21,7 +21,8 @@ class PR2Gripper(PrismaticGripper):
                 self.joint_specs['upper'][0] * (1. - slide),
                 None,
                 self.joint_specs['upper'][2] * (1. - slide),
-                None]
+                None
+            ]
 
             if slide == 0:
                 self._close_grip = False

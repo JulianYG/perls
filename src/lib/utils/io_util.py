@@ -65,8 +65,8 @@ _config_tree = collections.namedtuple(
      'config_name', 'physics_engine', 'graphics_engine',
      'min_version', 'job', 'video',
      'async', 'step_size', 'max_run_time', 'log',
-     'record_name', 'control_type', 'sensitivity',
-     'rate', 'disp_info'])
+     'control_type', 'sensitivity',
+     'rate', 'disp_info', 'replay_name'])
 
 
 def str2bool(string):
@@ -335,6 +335,7 @@ def parse_config(file_path):
         min_version = physics_attrib.get('version', '20170101')
 
         display_name = graphics_attrib['name']
+        replay_name = job_attrib.get('replay_path', '')
 
         display_type = graphics_attrib['type'].lower()
         disp_args = [display_type]
@@ -355,7 +356,6 @@ def parse_config(file_path):
         job = job_attrib.get('name', 'run').lower()
         video = str2bool(job_attrib.get('video', 'False'))
         log_path = job_attrib.get('log_path', '')
-        record_name = job_attrib.get('filename', '')
 
         async = str2bool(property_attrib.get('async', 'False'))
         step_size = float(property_attrib.get(
@@ -373,8 +373,8 @@ def parse_config(file_path):
                 conf_id, build, model_desc, view_desc,
                 config_name, physics_engine, graphics_engine,
                 min_version, job, video,
-                async, step_size, max_run_time, log_path, record_name,
+                async, step_size, max_run_time, log_path,
                 control_type, sensitivity, rate,
-                disp_info)
+                disp_info, replay_name)
         )
     return trees

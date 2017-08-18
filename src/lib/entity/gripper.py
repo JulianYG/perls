@@ -34,6 +34,14 @@ class PrismaticGripper(Tool):
         return 'gripper'
 
     @property
+    def close_grip(self):
+        """
+        Status of gripper, whether it's closed
+        :return: boolean
+        """
+        return self._close_grip
+
+    @property
     def tid(self):
         """
         A tool id specifically assigned to this tool.
