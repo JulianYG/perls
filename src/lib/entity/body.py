@@ -880,8 +880,8 @@ class Tool(Body):
         else:
             vals, kwargs = value, {}
 
-        jids = [j for j, val in enumerate(vals) if val]
-        value = [v for v in vals if v]
+        jids = [j for j, val in enumerate(vals) if val is not None]
+        value = [v for v in vals if v is not None]
 
         if 'forces' not in kwargs:
             kwargs['forces'] = tuple(self.joint_specs['max_force'][j] for j in jids)
@@ -908,8 +908,8 @@ class Tool(Body):
         else:
             vals, kwargs = value, {}
 
-        jids = [j for j, val in enumerate(vals) if val]
-        value = [v for v in vals if v]
+        jids = [j for j, val in enumerate(vals) if val is not None]
+        value = [v for v in vals if v is not None]
 
         if 'forces' not in kwargs:
             kwargs['forces'] = tuple(self.joint_specs['max_force'][j] for j in jids)
@@ -933,8 +933,8 @@ class Tool(Body):
                 'Input number of torque values must match the number of joints')
         torques = value[0] if isinstance(value, tuple) else value
         kwargs = value[1] if isinstance(value, tuple) else {}
-        jids = [j for j, val in enumerate(torques) if val]
-        value = [v for v in value if v]
+        jids = [j for j, val in enumerate(torques) if val is not None]
+        value = [v for v in value if v is not None]
         self._engine.set_body_joint_state(self._uid, jids, value, 'torque', kwargs)
 
     ###
