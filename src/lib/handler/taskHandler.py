@@ -20,6 +20,8 @@ class Checker(InterruptHandler):
 
             cube = body_dict['cube_0']
 
+            table = body_dict['table_0']
+
             if cube.pos[2] >= 0.68:
                 # If the cube jumps too high
                 return True, False
@@ -31,8 +33,8 @@ class Checker(InterruptHandler):
 
                 # Only allow pushing towards one side, 
                 # falling into one specific region
-                if -.275 <= cube.pos[1] <= .275 and \
-                   .25 <= cube.pos[0] <= .65:
+                if table.pos[1] -.275 <= cube.pos[1] <= table.pos[1] + .275 and \
+                   table.pos[0] + .25 <= cube.pos[0] <= table.pos[0] + .65:
                     success = True
 
                 return done, success
