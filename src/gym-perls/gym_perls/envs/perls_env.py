@@ -38,6 +38,21 @@ class PerlsEnv(gym.Env):
         self._status = self._display.run(None)
         self._world.boot(self._display.info['frame'])
 
+    @abc.abstractproperty
+    def state(self):
+
+        return NotImplemented
+
+    @abc.abstractproperty
+    def done(self):
+
+        return NotImplemented
+
+    @abc.abstractproperty
+    def reward(self):
+
+        return NotImplemented
+
     def _seed(self, seed=None):
         """
         Set the random seed for environment
