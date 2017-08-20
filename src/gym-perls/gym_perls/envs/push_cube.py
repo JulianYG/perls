@@ -32,7 +32,7 @@ class PushCube(PerlsEnv):
     def done(self):
 
         return False
-    
+
     @property
     def reward(self):
 

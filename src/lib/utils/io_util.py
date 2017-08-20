@@ -13,6 +13,7 @@ __version__ = '0.1'
 
 # Force automatic flush when printing
 class Unbuffered(object):
+
     def __init__(self, stream):
         self._stream = stream
 
@@ -103,7 +104,8 @@ def logerr(msg, etype):
 def write_log(log, dest):
 
     with open(dest, 'wb') as f:
-        pickle.dump(log, f)
+        # Python 2 & 3 compatible
+        pickle.dump(log, f, protocol=2)
 
 
 def parse_log(file, verbose=True):
