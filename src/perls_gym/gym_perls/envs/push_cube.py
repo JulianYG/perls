@@ -3,6 +3,8 @@
 from .perls_env import PerlsEnv
 from lib.utils import math_util
 
+# TODO: register gym env
+# TODO: cutoff demons when cube z pos decreases??
 
 class PushCube(PerlsEnv):
     """
@@ -20,6 +22,7 @@ class PushCube(PerlsEnv):
         self._cube = self._world.body['cube_0']
         self._robot = self._world.tool['m0']
         self._table = self._world.body['table_0']
+        self._z_pos = self._cube.pos[2]
 
     @property
     def state(self):
@@ -30,19 +33,30 @@ class PushCube(PerlsEnv):
 
     @property
     def done(self):
+        # done if cube falls off table
+        if (self._cube.pos[2] < self._z_pos):
+            return True
 
         return False
 
     @property
     def reward(self):
 
-        x_left = 0.676
-        y_left = -0.58
+        # x_left = 0.676
+        # y_left = -0.58
 
-        x_right = 0.676
-        y_right = -0.018
-        
-        return self._table.pos - self._cube.pos
+        # x_right = 0.676
+        # y_right = -0.018
+
+        # if cube goes out of bounds, give negative reward
+        if (self._cube.pos[1] <= -0.58) or (self._cube.pos[1] >= -0.018):
+            return -100
+
+        # TODO: put negative reward for other side of table too?
+
+        # square difference in x distance
+        return -((self._cube.pos[0] - 0.68) ** 2)
+        #return self._table.pos - self._cube.pos
 
     def _reset(self):
 
