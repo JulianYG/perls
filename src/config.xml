@@ -15,7 +15,7 @@
 	</config>
 
 	<!-- The following is for replaying demonstrations. -->
-<!-- 	<config name="default" id="0">
+	<!-- 	<config name="default" id="0">
 		<build type="Debug">
 			<graphics name="first person human demo" engine="bullet" type="vr" key="0"/>
 			<physics engine="bullet" version="20170601"/>

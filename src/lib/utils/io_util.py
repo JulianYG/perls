@@ -296,14 +296,19 @@ def parse_disp(file_path):
     option_attrib = root.find('./view/option').attrib
     options = dict((k, str2bool(v)) for (k, v) in option_attrib.items())
 
-    camera_attrib = root.find('./view/camera').attrib
+    camera_node = root.find('./view/camera')
+    camera_attrib = camera_node.attrib if camera_node else {}
+
     camera_info = dict(egocentric=str2bool(camera_attrib.get('ego', 'False')),
                        pitch=float(camera_attrib.get('pitch', -35.)),
                        yaw=float(camera_attrib.get('yaw', 50.)),
                        focus=[float(x) for
                               x in camera_attrib.get('focus', '0 0 0').split(' ')],
                        flen=float(camera_attrib.get('focal_len', 4)))
-    replay_attrib = root.find('./view/replay').attrib
+
+    replay_node = root.find('./view/replay')
+
+    replay_attrib = replay_node.attrib if replay_node else {}
     replay_info = dict(delay=float(replay_attrib.get('delay', 1e-4)))
     return camera_info, replay_info, options
 
@@ -318,9 +323,10 @@ def parse_config(file_path):
     for conf in configs:
 
         build = conf.find('./build').attrib['type'].lower()
-        model_desc = conf.find('./env').text
-        view_desc = conf.find('./disp').text
-
+        model_desc = pjoin(os.path.dirname(file_path),
+                           conf.find('./env').text)
+        view_desc = pjoin(os.path.dirname(file_path),
+                          conf.find('./disp').text)
         config_name = conf.attrib['name']
         conf_id = int(conf.attrib['id'])
 
