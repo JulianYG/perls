@@ -1,5 +1,5 @@
 
-from src.gym import gym_perls as gym
+from src.gym import gym_perls
 
 # from src.lib import entity
 # from src.lib.control import Controller
