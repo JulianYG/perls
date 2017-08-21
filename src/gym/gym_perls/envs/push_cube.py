@@ -42,12 +42,6 @@ class PushCube(PerlsEnv):
     @property
     def reward(self):
 
-        # x_left = 0.676
-        # y_left = -0.58
-
-        # x_right = 0.676
-        # y_right = -0.018
-
         # if cube goes out of bounds, give negative reward
         if (self._cube.pos[1] <= -0.58) or (self._cube.pos[1] >= -0.018):
             return -100
@@ -56,7 +50,6 @@ class PushCube(PerlsEnv):
 
         # square difference in x distance
         return -((self._cube.pos[0] - 0.68) ** 2)
-        #return self._table.pos - self._cube.pos
 
     def _reset(self):
 
@@ -82,6 +75,8 @@ class PushCube(PerlsEnv):
         # TODO: then read robot state, and get the stuff we care about again. 
 
         self._robot.joint_torques = action
-        self._world.update()
+        # rate / step size = 0.01 / 0.001 = 10
+        for _ in range(10):
+            self._world.update()
 
         return self.state, self.reward, self.done, {'state': self.state}
