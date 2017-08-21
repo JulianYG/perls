@@ -19,7 +19,6 @@ class Checker(InterruptHandler):
         if self._name == 'push':
 
             cube = body_dict['cube_0']
-
             table = body_dict['table_0']
 
             if cube.pos[2] >= 0.68:
@@ -30,6 +29,7 @@ class Checker(InterruptHandler):
             if cube.pos[2] <= 0.06:
                 done = True
                 success = False
+
 
                 # Only allow pushing towards one side, 
                 # falling into one specific region

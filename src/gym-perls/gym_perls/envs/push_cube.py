@@ -36,7 +36,13 @@ class PushCube(PerlsEnv):
     @property
     def reward(self):
 
-        return self._robot.eef_pose - self._cube.get_pose(self._robot.uid, 0)
+        x_left = 0.676
+        y_left = -0.58
+
+        x_right = 0.676
+        y_right = -0.018
+        
+        return self._table.pos - self._cube.pos
 
     def _reset(self):
 
