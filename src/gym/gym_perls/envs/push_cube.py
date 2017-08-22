@@ -6,6 +6,7 @@ from lib.utils import math_util
 # TODO: register gym env
 # TODO: cutoff demons when cube z pos decreases??
 
+
 class PushCube(PerlsEnv):
     """
     Pushing cube across the table
@@ -33,10 +34,10 @@ class PushCube(PerlsEnv):
 
     @property
     def done(self):
-        # done if cube falls off table
-        if (self._cube.pos[2] < self._z_pos):
-            return True
 
+        # done if cube falls off table
+        if self._cube.pos[2] < self._z_pos:
+            return True
         return False
 
     @property
@@ -54,6 +55,15 @@ class PushCube(PerlsEnv):
     def _reset(self):
 
         super(PushCube, self)._reset()
+        self._display.set_render_view(
+            dict(
+                dim=(256, 256),
+                flen=3,
+                yaw=30,
+                pitch=20,
+                focus=(0.5, 0.5, 0)
+            )
+        )
 
         # move robot to initial position
         # TODO: orientation offset

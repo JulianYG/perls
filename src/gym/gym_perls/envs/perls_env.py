@@ -31,7 +31,7 @@ class PerlsEnv(gym.Env):
         """
         Initialize the environment
         :param conf_path: the absolute path string to
-        the configuration file, default is 'gym.xml'
+        the configuration file, default is 'gym-disp.xml'
         """
         conf = io_util.parse_config(conf_path)[0]
         self._world, self._display, _ = Controller.load_config(conf)
@@ -68,7 +68,7 @@ class PerlsEnv(gym.Env):
         :return: None
         """
         self._world.clean_up()
-        self._display.close()
+        self._display.close(0)
 
     def _render(self, mode='human', close=True):
         """

@@ -63,6 +63,17 @@ class BulletRenderEngine(GraphicsEngine):
         self._disp_name, self._frame, self._disp_args = \
             disp_info
 
+        # Default settings for rendering
+        self._render_param = dict(
+            frame_width=224, frame_height=224,
+            view_mat=p.computeViewMatrixFromYawPitchRoll(
+                (0, 0, 0), 5, 50, -35, 0, 2),
+            projection_mat=p.computeProjectionMatrixFOV(60, 1, 0.02, 100),
+            up=(0, 0, 1),
+            forward=(-0.6275, 0.5265, -0.5736),
+            yaw=50, pitch=-35, focal_len=5,
+            focus=(0, 0, 0)
+        )
         self._job = job
 
         self._record_video = video
@@ -143,8 +154,10 @@ class BulletRenderEngine(GraphicsEngine):
                 focus=math_util.vec(info[11]),
             )
         else:
-            loginfo('Camera not available under frame {}'.format(self._frame), FONT.ignore)
-            return {}
+            loginfo('Camera not available under frame {}, '
+                    'use default values instead'.format(self._frame),
+                    FONT.ignore)
+            return self._render_param
 
     @property
     def record_name(self):
@@ -165,6 +178,21 @@ class BulletRenderEngine(GraphicsEngine):
                 params['focus'],
                 self._server_id
             )
+        else:
+            if 'dim' in params:
+                self._render_param['frame_width'] = params['dim'][0]
+                self._render_param['frame_height'] = params['dim'][1]
+
+            for name, val in params.items():
+                if name != 'dim':
+                    self._render_param[name] = val
+
+            # Update view matrix again
+            self._render_param['view_mat'] = \
+                p.computeViewMatrixFromYawPitchRoll(
+                    params['focus'], params['flen'],
+                    params['yaw'], params['pitch'], 0, 2)
+
         # elif self._frame == 'vr':
         #     cam_pos, cam_orn = params
         #     p.setVRCameraState(
@@ -290,7 +318,6 @@ class BulletRenderEngine(GraphicsEngine):
 
         elif itype == 'segment':
             return np.reshape(seg_img, (height, width)).astype(np.float32)
-
         else:
             loginfo('Unrecognized image type', FONT.ignore)
 
@@ -380,10 +407,12 @@ class BulletRenderEngine(GraphicsEngine):
             p.stopStateLogging(lid, self._server_id)
 
         if self._job == 'record':
+
+            # Just ignore the case of error
             if exit_code < 0:
                 loginfo('Record file not classified.', FONT.ignore)
 
-            # Save success and failure cases separately
+            # Save for success cases
             elif exit_code == 0:
                 io_util.fmove(
                     pjoin(
@@ -394,8 +423,8 @@ class BulletRenderEngine(GraphicsEngine):
                         self._base_file_name)
                 )
 
-            # Just ignore the case of error
-            elif exit_code == 1:
+            # Save for failure cases
+            elif exit_code > 0:
                 io_util.fmove(
                     pjoin(
                         self._log_path['trajectory'],

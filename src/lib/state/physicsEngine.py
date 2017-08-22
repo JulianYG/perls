@@ -7,7 +7,7 @@ import pybullet as p
 
 from .stateEngine import FakeStateEngine
 from ..utils import math_util
-from ..utils.io_util import FONT, loginfo, logerr
+from ..utils.io_util import pjoin, FONT, loginfo, logerr
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
@@ -119,6 +119,9 @@ class BulletPhysicsEngine(FakeStateEngine):
 
     def load_asset(self, file_path, pos, orn, fixed):
         uid = -1
+        file_path = pjoin(osp.dirname(__file__),
+                          '../../../data',
+                          file_path)
         try:
             if osp.basename(file_path).split('.')[1] == 'urdf':
                 uid = p.loadURDF(
@@ -332,10 +335,14 @@ class BulletPhysicsEngine(FakeStateEngine):
                                             physicsClientId=self._physics_server_id,
                                             **kwargs)
             elif ctype == 'torque':
+                force = math_util.vec(vals)
+
+                # Use some small values instead of disabling the motors
+                force[force == 0] = 1e-6
                 p.setJointMotorControlArray(uid, jointIndices=jids,
                                             controlMode=p.TORQUE_CONTROL,
                                             physicsClientId=self._physics_server_id,
-                                            forces=vals, **kwargs)
+                                            forces=force, **kwargs)
         except AssertionError or p.error:
             self.status = BulletPhysicsEngine._STATUS[-1]
             if p.error:
