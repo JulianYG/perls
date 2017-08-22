@@ -75,6 +75,9 @@ class ModelDebugger(object):
         tool = self._world.get_tool(_id, key)
         return tool
 
+    def check_states(self):
+        return self._world.check_states()
+
     def get_states(self, *args):
         return self._world.get_states(*args)
 
@@ -92,6 +95,14 @@ class ViewDebugger(object):
 
     def __init__(self, display):
         self._display = display
+
+    @property
+    def record(self):
+        """
+
+        :return:
+        """
+        return self._display.record
 
     @property
     def info(self):
@@ -131,5 +142,5 @@ class ViewDebugger(object):
         #     # print()
         return self._display.run(target)
 
-    def close(self):
-        self._display.close()
+    def close(self, exit_code):
+        self._display.close(exit_code)

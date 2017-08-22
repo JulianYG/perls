@@ -1,18 +1,50 @@
 #!/usr/bin/env python
 
+import sys, time
 import rospy
 import intera_interface as iif
+from intera_interface import CHECK_VERSION
+
+from geometry_msgs.msg import (
+    PoseStamped,
+    Pose,
+    Point,
+    Quaternion,
+)
+
+from intera_core_msgs.srv import (
+    SolvePositionIK,
+    SolvePositionIKRequest,
+    SolvePositionFK,
+    SolvePositionFKRequest
+)
+
+import moveit_commander
+from moveit_msgs.msg import (
+    Grasp,
+    GripperTranslation,
+    DisplayTrajectory
+)
+
+from std_msgs.msg import Header
+from sensor_msgs.msg import JointState
+
+
+KINECT_DEPTH_SHIFT = -22.54013555237548
+GRIPPER_SHIFT = 0.0251
+LENGTH = 0.133
+FINGER_OFFSET = 0.066
 
 
 class SawyerArm(object):
 
-    def __init__(self):
+    def __init__(self, motion_planning=True):
         """
         Initialize set of wrappers
         """
         if rospy.get_name() == '/unnamed':
             rospy.init_node('robot')
-
+        self.motion_planning = motion_planning
         self._head = iif.Head()
         self._display = iif.HeadDisplay()
         self._lights = iif.Lights()
@@ -31,6 +63,13 @@ class SawyerArm(object):
         self._robot_enable = iif.RobotEnable(True)
 
         self._params = iif.RobotParams()
+
+        # Initialize motion planning part
+        if motion_planning:
+            moveit_commander.roscpp_initialize(sys.argv)
+            self._scene = moveit_commander.PlanningSceneInterface()
+            self._group = moveit_commander.MoveGroupCommander("right_arm")
+        self._safe = False
 
     @property
     def version(self):
@@ -231,7 +270,7 @@ class SawyerArm(object):
         elif ctype == 'torque':
             self._limb.set_joint_torques(command)
         else:
-            self._params.log_message('Cannot recognize control type', 'WARN')    
+            self._params.log_message('Cannot recognize control type', 'WARN')
 
     def show_image(self, image_path, rate=1.0):
         """
@@ -283,6 +322,74 @@ class SawyerArm(object):
             if not self._gripper.set_holding_force(force):
                 self._params.log_message('Unable to set holding force'
                                          'for the gripper.', 'WARN')
+
+    # TODO: Use sawyer internal IK for now
+    @tool_pose.setter
+    def tool_pose(self, pose):
+        """
+        Set the end effector pose
+        :param pose: (pos, orn) tuple vec3 float cartesian in robot base frame,
+        and vec4 float quaternion in robot base frame.
+        """
+        if self.motion_planning and not self._safe:
+            gripper_pose = Pose()
+
+            gripper_pose.position.x = pose[0][0]
+            gripper_pose.position.y = pose[0][1]
+            gripper_pose.position.z = pose[0][2]
+
+            # TODO: need a transformation for pose
+            gripper_pose.orientation.x = 1#pose[1][0]
+            gripper_pose.orientation.y = 0#pose[1][1]
+            gripper_pose.orientation.z = 0#pose[1][2]
+            gripper_pose.orientation.w = 0#pose[1][3]
+
+            self._group.set_pose_target(gripper_pose)
+            plan = self._group.plan()
+
+            if len(plan.joint_trajectory.points) == 0:
+                print('No viable plan to reach target pose.')
+                return False
+            else:
+                self._group.execute(plan)
+        else:
+            ns = "ExternalTools/right/PositionKinematicsNode/IKService"
+            iksvc = rospy.ServiceProxy(ns, SolvePositionIK)
+            ikreq = SolvePositionIKRequest()
+            hdr = Header(stamp=rospy.Time.now(), frame_id='base')
+            poses = {
+                'right': PoseStamped(
+                    header=hdr,
+                    pose=Pose(
+                        position=Point(*(pose[0])),
+                        orientation=Quaternion(pose[1][3], pose[1][0], pose[1][1], pose[1][2]),
+                    ),
+                ),
+            }
+            # Add desired pose for inverse kinematics
+            ikreq.pose_stamp.append(poses["right"])
+            # Request inverse kinematics from base to "right_hand" link
+            ikreq.tip_names.append('right_hand')
+
+            try:
+                rospy.wait_for_service(ns, 5.0)
+                resp = iksvc(ikreq) # get IK response
+            except (rospy.ServiceException, rospy.ROSException), e:
+                rospy.logerr("Service call failed: %s" % (e,))
+                return False
+            if resp.result_type[0] > 0:
+                limb_joints = dict(zip(resp.joints[0].name, resp.joints[0].position))
+                self._limb.move_to_joint_positions(limb_joints)
+                rospy.loginfo("Move to position succeeded")
+            else:
+                rospy.logerr("IK response is not valid")
+                return False
+
+    def set_max_speed(self, factor):
+
+        self._limb.set_joint_position_speed(factor)
+        if self.motion_planning:
+            self._group.set_max_velocity_scaling_factor(factor)
 
     def set_grasp_weight(self, weight):
         """
@@ -362,3 +469,69 @@ class SawyerArm(object):
         :return: None
         """
         rospy.signal_shutdown('Safely shut down Sawyer.')
+
+    def move_to(self, x, y, z, orn=(0, 0, 0, 1)):
+        """
+        Move to given position.
+        :param x: x coordinate position relative to robot base
+        :param y: y coordinate position relative to robot base
+        :param z: z coordinate position relative to robot base
+        :return: None
+        """
+        self.tool_pose = ((x, y, z), orn)
+
+    def move_to_with_grasp(self, x, y, z, hover, dive, orn=(0, 0, 0, 1)):
+        """
+        Move to given position and grasp
+        :param x: refer to <move_to::x>
+        :param y: refer to <move_to::y>
+        :param z: refer to <move_to::z>
+        :param hover: the distance above object before grasping, in meters
+        :param dive: the distance before gripper slows down
+        for a grasp, in meters
+        :return: None
+        """
+        self.grasp(1)
+        self.set_max_speed(0.15)
+        self.move_to(x, y, z + hover, orn)
+        self._safe = True
+        time.sleep(0.7)
+        self.move_to(x, y, z + dive, orn)
+        self.set_max_speed(0.05)
+        self.move_to(x, y, z - FINGER_OFFSET, orn)
+        time.sleep(0.8)
+        self.grasp(0)
+
+    def move_to_with_lift(self,
+                          x, y, z,
+                          hover=0.4,
+                          dive=0.05,
+                          drop=True,
+                          drop_height=0.3,
+                          orn=(0, 0, 0, 1)):
+        """
+        Move to given position, grasp the object,
+        and lift up the object.
+        :param x: refer to <move_to::x>
+        :param y: refer to <move_to::y>
+        :param z: refer to <move_to::z>
+        :param hover: refer to <move_to_with_grasp::hover>
+        :param dive: refer to <move_to_with_grasp::dive>
+        :param drop: boolean whether drop the object after lift
+        :param drop_height: the height when releasing grasped object
+        :return: None
+        """
+        self._safe = False
+        self.move_to_with_grasp(x, y, z, hover, dive)
+        time.sleep(.75)
+        self.set_max_speed(0.1)
+        self._safe = True
+        self.move_to(x, y, z + hover)
+        time.sleep(0.2)
+
+        self.move_to(x, y, z + drop_height)
+        time.sleep(.8)
+
+        if drop:
+            self.grasp(1)
+            time.sleep(.5)

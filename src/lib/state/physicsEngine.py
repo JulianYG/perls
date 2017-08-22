@@ -4,66 +4,15 @@ import numpy as np
 import os.path as osp
 
 import pybullet as p
-import openravepy as orp
 
 from .stateEngine import FakeStateEngine
 from ..utils import math_util
-from ..utils.io_util import FONT, loginfo, logerr
+from ..utils.io_util import pjoin, FONT, loginfo, logerr
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
 __license__ = 'private'
 __version__ = '0.1'
-
-
-class OpenRaveEngine(FakeStateEngine):
-
-
-    def __init__(self, e_id, identifier,
-                 max_run_time,
-                 async=False, step_size=0.001):
-        super(OpenRaveEngine, self).__init__(
-            e_id, max_run_time, async, step_size)
-
-    @staticmethod
-    def accurate_ik(ik_model, pos, orn,
-                    joint_pos=None, closest=True):
-        """
-        Generate accurate IK solutions
-        :param ik_model: inverse kinematics model
-        :param pos: position in robot base frame,
-        vec3 float cartesian
-        :param orn: orientation in robot base
-        frame, vec4 float quaternion
-        :param joint_pos: current joint position as list
-        :param closest: boolean indicating whether
-        choose the closest solution in joint space
-        :return: the selected IK solution
-        """
-        dmat = math_util.pose2mat((pos, orn))
-        solution = None
-        if not closest:
-            solution = ik_model.manip.FindIKSolution(
-                dmat, orp.IkFilterOptions.CheckEnvCollisions)
-        else:
-            assert joint_pos is not None, \
-                'Selecting nearest neighbor needs current states'
-            solutions = ik_model.manip.FindIKSolutions(
-                dmat, orp.IkFilterOptions.CheckEnvCollisions)
- 
-            # If solution found 
-            if solutions.size > 0:
-                best_idx = math_util.pos_diff(
-                    solutions, joint_pos, axis=1,
-                    weights=[100, 80, 60, 40, 30, 20, 5]).argmin()
-                solution = solutions[best_idx]
-
-        # Otherwise stay the same
-        if solution is None:
-            logerr('IK Response Invalid.', FONT.control)
-            return joint_pos
-        else:
-            return solution
 
 
 class MujocoEngine(FakeStateEngine):
@@ -170,6 +119,9 @@ class BulletPhysicsEngine(FakeStateEngine):
 
     def load_asset(self, file_path, pos, orn, fixed):
         uid = -1
+        file_path = pjoin(osp.dirname(__file__),
+                          '../../../data',
+                          file_path)
         try:
             if osp.basename(file_path).split('.')[1] == 'urdf':
                 uid = p.loadURDF(
@@ -383,10 +335,14 @@ class BulletPhysicsEngine(FakeStateEngine):
                                             physicsClientId=self._physics_server_id,
                                             **kwargs)
             elif ctype == 'torque':
+                force = math_util.vec(vals)
+
+                # Use some small values instead of disabling the motors
+                force[force == 0] = 1e-6
                 p.setJointMotorControlArray(uid, jointIndices=jids,
                                             controlMode=p.TORQUE_CONTROL,
                                             physicsClientId=self._physics_server_id,
-                                            forces=vals, **kwargs)
+                                            forces=force, **kwargs)
         except AssertionError or p.error:
             self.status = BulletPhysicsEngine._STATUS[-1]
             if p.error:
@@ -589,6 +545,19 @@ class BulletPhysicsEngine(FakeStateEngine):
 
     ###
     # Arm related methods
+
+    def solve_ik(self, uid, lid, pos, damping, orn=None):
+        if orn is None:
+            return p.calculateInverseKinematics(
+                uid, lid, targetPosition=pos,
+                jointDamping=tuple(damping),
+                physicsClientId=self._physics_server_id)
+        else:
+            return p.calculateInverseKinematics(
+                uid, lid, targetPosition=pos,
+                targetOrientation=orn, jointDamping=tuple(damping),
+                physicsClientId=self._physics_server_id)
+
     def solve_ik_null_space(self, uid, lid, pos,
                             lower, upper, ranges,
                             rest, damping, orn=None):

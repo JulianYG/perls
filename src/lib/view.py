@@ -28,6 +28,16 @@ class View:
         self._simulation_server_id = graphics_engine.ps_id
         self._frame = 'off'
 
+        self._record = True if self._engine.info['job'] == 'record' else False
+
+    @property
+    def record(self):
+        """
+
+        :return:
+        """
+        return self._record
+
     @property
     def info(self):
         """
@@ -112,10 +122,12 @@ class View:
         :return: None
         """
         # Setup camera is for replay function
-        camera_info, option_dic = io_util.parse_disp(description)
+        camera_info, replay_info, option_dic = \
+            io_util.parse_disp(description)
 
         # Configure display
-        self._engine.configure_display(option_dic, camera_info)
+        self._engine.configure_display(
+            option_dic, camera_info, replay_info)
 
     def run(self, targets=None):
         """
@@ -133,9 +145,10 @@ class View:
             self._frame = self._engine.frame
         return status
 
-    def close(self):
+    def close(self, exit_code):
         """
         Exit routine for display.
+        :param exit_code: boolean indicating exit status for the task
         :return: None
         """
-        self._engine.stop()
+        self._engine.stop(exit_code)

@@ -52,7 +52,8 @@ class CmdEventHandler(ControlHandler):
     passing commands into gym environment.
     """
     def __init__(self, ps_id, sensitivity=1, rate=0):
-        super(CmdEventHandler, self).__init__(ps_id, 1, 0)
+        super(CmdEventHandler, self).__init__(
+            ps_id, sensitivity, rate)
 
     @property
     def name(self):
@@ -60,6 +61,8 @@ class CmdEventHandler(ControlHandler):
 
     # TODO
     def signal(self):
+
+        # Probably listen to redis?
         pass
 
     def stop(self):
@@ -117,7 +120,6 @@ class KeyboardEventHandler(ControlHandler):
         else:
             # Handle environment settings
             for label, (key, status) in keys.items():
-
                 # Using multiple if's to allow simultaneous key pressing
                 if key in range(48, 58) and status == 'releasing':
                     # 'id' key_type
@@ -134,7 +136,6 @@ class KeyboardEventHandler(ControlHandler):
                     ins.append(('reach', (event_listener.HOT_KEY[key] * self._sens, None)))
                 if label == 'orn' and status == 'holding':
                     orn = event_listener.HOT_KEY[key] * self._sens
-
                     # Don't touch position, only orientation (rad)
                     ins.append(('reach', (None, orn)))
 
@@ -156,7 +157,7 @@ class ViveEventHandler(ControlHandler):
 
         # Initialize positions
         self._controllers = dict()
-
+        
         c_id = event_listener.listen_to_bullet_vive(self._id)
 
     @property
@@ -166,6 +167,8 @@ class ViveEventHandler(ControlHandler):
     @property
     def signal(self):
         self._signal['cmd'] = list()
+        self._signal['camera'] = list()
+        self._signal['update'] = 0
         ins = list()
 
         events = event_listener.listen_to_bullet_vive(
@@ -173,10 +176,24 @@ class ViveEventHandler(ControlHandler):
         time.sleep(1. / self._rate)
 
         for c_id, pos, orn, slide, _, _, button, _ in events:
-            # TODO
-            pass
 
-        self._signal['ins'] = ins
+            engage_flag = event_listener.KEY_STATUS[button[32]]
+            reset_flag = event_listener.KEY_STATUS[button[1]]
+            scroll_flag = event_listener.KEY_STATUS[button[2]]
+
+            # Always use the gripper slider
+            ins.append(('grasp', 1))
+
+            # Reset button
+            if reset_flag == 'pressing':
+                ins.append(('rst', 1))
+
+            # Engage button
+            if engage_flag == 'holding':
+                a_orn = math_util.quat2euler(orn)
+                ins.append(('reach', (pos, a_orn[[1, 0, 2]])))
+
+        self._signal['instruction'] = ins
 
         return self._signal
 

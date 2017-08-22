@@ -1,4 +1,5 @@
 import struct
+import pickle
 import collections
 import numpy as np
 import os, sys
@@ -9,9 +10,26 @@ __email__ = 'julianyg@stanford.edu'
 __license__ = 'private'
 __version__ = '0.1'
 
+
 # Force automatic flush when printing
-sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
-sys.stderr = os.fdopen(sys.stderr.fileno(), 'w', 0)
+class Unbuffered(object):
+
+    def __init__(self, stream):
+        self._stream = stream
+
+    def write(self, datum):
+        self._stream.write(datum)
+        self._stream.flush()
+
+    def writelines(self, data):
+        self._stream.writelines(data)
+        self._stream.flush()
+
+    def __getattr__(self, attr):
+        return getattr(self._stream, attr)
+
+sys.stdout = Unbuffered(sys.stdout)
+sys.stderr = Unbuffered(sys.stderr)
 
 np.set_printoptions(precision=3, suppress=True)
 _singleton_elem = ElementTree.Element(0)
@@ -48,17 +66,22 @@ _config_tree = collections.namedtuple(
      'config_name', 'physics_engine', 'graphics_engine',
      'min_version', 'job', 'video',
      'async', 'step_size', 'max_run_time', 'log',
-     'record_name', 'control_type', 'sensitivity',
-     'rate', 'disp_info'])
+     'control_type', 'sensitivity',
+     'rate', 'disp_info', 'replay_name'])
 
 
 def str2bool(string):
     return string.lower() == 'true'
 
 
-def pjoin(dirname, fname):
+def pjoin(*fname):
 
-    return os.path.join(dirname, fname)
+    return os.path.join(*fname)
+
+
+def fmove(prev, new):
+
+    os.rename(prev, new)
 
 
 def loginfo(msg, itype):
@@ -76,6 +99,13 @@ def logerr(msg, etype):
     # msg = pprint.pformat(msg)
     sys.stderr.write('{}{}\n{}'.format(
         etype[1] + FONT.bold, msg, FONT.end))
+
+
+def write_log(log, dest):
+
+    with open(dest, 'wb') as f:
+        # Python 2 & 3 compatible
+        pickle.dump(log, f, protocol=2)
 
 
 def parse_log(file, verbose=True):
@@ -266,7 +296,9 @@ def parse_disp(file_path):
     option_attrib = root.find('./view/option').attrib
     options = dict((k, str2bool(v)) for (k, v) in option_attrib.items())
 
-    camera_attrib = root.find('./view/camera').attrib
+    camera_node = root.find('./view/camera')
+    camera_attrib = camera_node.attrib if camera_node else {}
+
     camera_info = dict(egocentric=str2bool(camera_attrib.get('ego', 'False')),
                        pitch=float(camera_attrib.get('pitch', -35.)),
                        yaw=float(camera_attrib.get('yaw', 50.)),
@@ -274,7 +306,11 @@ def parse_disp(file_path):
                               x in camera_attrib.get('focus', '0 0 0').split(' ')],
                        flen=float(camera_attrib.get('focal_len', 4)))
 
-    return camera_info, options
+    replay_node = root.find('./view/replay')
+
+    replay_attrib = replay_node.attrib if replay_node else {}
+    replay_info = dict(delay=float(replay_attrib.get('delay', 1e-4)))
+    return camera_info, replay_info, options
 
 
 def parse_config(file_path):
@@ -287,9 +323,10 @@ def parse_config(file_path):
     for conf in configs:
 
         build = conf.find('./build').attrib['type'].lower()
-        model_desc = conf.find('./env').text
-        view_desc = conf.find('./disp').text
-
+        model_desc = pjoin(os.path.dirname(file_path),
+                           conf.find('./env').text)
+        view_desc = pjoin(os.path.dirname(file_path),
+                          conf.find('./disp').text)
         config_name = conf.attrib['name']
         conf_id = int(conf.attrib['id'])
 
@@ -306,6 +343,7 @@ def parse_config(file_path):
         min_version = physics_attrib.get('version', '20170101')
 
         display_name = graphics_attrib['name']
+        replay_name = job_attrib.get('replay_path', '')
 
         display_type = graphics_attrib['type'].lower()
         disp_args = [display_type]
@@ -326,7 +364,6 @@ def parse_config(file_path):
         job = job_attrib.get('name', 'run').lower()
         video = str2bool(job_attrib.get('video', 'False'))
         log_path = job_attrib.get('log_path', '')
-        record_name = job_attrib.get('filename', '')
 
         async = str2bool(property_attrib.get('async', 'False'))
         step_size = float(property_attrib.get(
@@ -344,8 +381,8 @@ def parse_config(file_path):
                 conf_id, build, model_desc, view_desc,
                 config_name, physics_engine, graphics_engine,
                 min_version, job, video,
-                async, step_size, max_run_time, log_path, record_name,
+                async, step_size, max_run_time, log_path,
                 control_type, sensitivity, rate,
-                disp_info)
+                disp_info, replay_name)
         )
     return trees

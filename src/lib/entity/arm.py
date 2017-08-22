@@ -1,14 +1,13 @@
 import abc
 
-from ..state.physicsEngine import OpenRaveEngine
-
 from .body import Tool
 from ..utils import math_util
+from ..utils.io_util import loginfo, FONT
 
 
 class Arm(Tool):
 
-    def __init__(self, tid, engine, path_root, 
+    def __init__(self, tid, engine, path,
                  pos, orn, collision_checking,
                  gripper):
         """
@@ -17,8 +16,6 @@ class Arm(Tool):
         :param pos: initial position vec3 float cartesian
         :param orn: initial orientation vec4 float quat
         """
-        path, self._ik_model, self._openrave_robot, self._model_dof = \
-            self._build_ik(path_root)
         super(Arm, self).__init__(tid, engine, path, pos, orn, fixed=True)
 
         # Reset pose is defined in subclasses
@@ -29,6 +26,14 @@ class Arm(Tool):
         self.collision_checking = collision_checking
 
     @property
+    def type(self):
+        """
+        Get the type of the body.
+        :return: string
+        """
+        return 'arm'
+
+    @property
     def tid(self):
         """
         A tool id specifically assigned to this tool.
@@ -36,6 +41,14 @@ class Arm(Tool):
         :return: integer tool id
         """
         return 'm{}'.format(self._tool_id)
+
+    @abc.abstractproperty
+    def close_grip(self):
+        """
+        Check if the gripper of arm is closed
+        :return: boolean
+        """
+        return self._gripper.close_grip
 
     @abc.abstractproperty
     def active_joints(self):
@@ -141,32 +154,22 @@ class Arm(Tool):
         # Set the joints if within range
         if joint_spec['lower'][eef_joints[0]] <= orn[0] \
                 <= joint_spec['upper'][eef_joints[0]]:
-            self.joint_states = (
-                # Use last two DOFs
-                [eef_joints[0]],
-                [orn[0]], 'position',
-                dict(positionGains=(.05,),
-                     velocityGains=(1.,)))
+
+            jpos = [None] * self._dof
+            jpos[eef_joints[0]] = orn[0]
+            self.joint_positions = (
+                jpos, dict(positionGains=(.05,),
+                           velocityGains=(1.,))
+            )
 
         if joint_spec['lower'][eef_joints[1]] <= orn[1] \
                 <= joint_spec['upper'][eef_joints[1]]:
-            self.joint_states = (
-                # Use last two DOFs
-                [eef_joints[1]],
-                [orn[1]], 'position',
-                dict(positionGains=(.05,),
-                     velocityGains=(1.,)))
-
-    @abc.abstractmethod
-    def _build_ik(self, path_root):
-        """
-        Build the ik model for the arm.
-        :param path_root: The absolute path directory that stores 
-        pybullet asset file, and IKFast model file, base files.
-        :return: pybullet asset file path
-        and the built IKFast model.
-        """
-        raise NotImplemented
+            jpos = [None] * self._dof
+            jpos[eef_joints[1]] = orn[1]
+            self.joint_positions = (
+                jpos, dict(positionGains=(.05,),
+                           velocityGains=(1.,))
+            )
 
     def get_pose(self, uid=None, lid=None):
         """
@@ -214,7 +217,8 @@ class Arm(Tool):
         frame = math_util.pose2mat((pos, orn)).dot(transform)
         return math_util.mat2pose(frame)
 
-    def _move_to(self, pos, orn, precise, fast, max_iter=200):
+    def _move_to(self, pos, orn, precise, fast,
+                 max_iter=200, ctype='position'):
         """
         Given pose, call IK to move
         :param pos: vec3 float cartesian
@@ -229,53 +233,109 @@ class Arm(Tool):
          accuracy***
         :param fast: refer to <pinpoint::fast>
         :param max_iter: refer to <pinpoint::max_iter>
+        :param ctype: the control type. Specify among
+        <'position', 'velocity', 'torque'> to perform certain
+        controlling.
         :return: None
         """
         # Convert to pose in robot base frame
         orn = self.kinematics['abs_frame_orn'][self._end_idx] if orn is None else orn
         specs = self.joint_specs
 
-        if precise:
+        # if precise:
+        #     if fast or self.collision_checking:
+        #         # Set the joint values in openrave model
+        #         self._openrave_robot.SetDOFValues(
+        #             math_util.vec(self.joint_states['pos'])[self.active_joints],
+        #             self._model_dof)
+        #
+        #     pos, orn = math_util.get_relative_pose((pos, orn), self.pose)
+        #
+        #     ik_solution = OpenRaveEngine.accurate_ik(
+        #         self._ik_model, pos, orn,
+        #         math_util.vec(self.joint_states['pos'])[self.active_joints],
+        #         closest=not fast)
+        # else:
+        damps = math_util.clip_vec(specs['damping'], .1, 1.)
+        lower_limits = math_util.vec(specs['lower'])
+        upper_limits = math_util.vec(specs['upper'])
+        ranges = upper_limits - lower_limits
+
+        if ctype == 'position':
+
             if fast:
-                # Set the joint values in openrave model
-                self._openrave_robot.SetDOFValues(
-                    math_util.vec(self.joint_states['pos'])[self.active_joints],
-                    self._model_dof)
+                ik_solution = self._engine.solve_ik(
+                    self._uid, self._end_idx, pos, damps, orn=orn)
+            else:
+                # Solve using null space
+                ik_solution = self._engine.solve_ik_null_space(
+                    self._uid, self._end_idx,
+                    pos, orn=orn,
+                    lower=lower_limits,
+                    upper=upper_limits,
+                    ranges=ranges,
+                    rest=self._rest_pose,
+                    damping=damps)
 
-            pos, orn = math_util.get_relative_pose((pos, orn), self.pose)
+            # TODO :
+            # if self.collision_checking:
 
-            ik_solution = OpenRaveEngine.accurate_ik(
-                self._ik_model, pos, orn,
-                math_util.vec(self.joint_states['pos'])[self.active_joints],
-                closest=not fast)
-        else:
-            damps = math_util.clip_vec(specs['damping'], .1, 1.)
-            lower_limits = math_util.vec(specs['lower'])
-            upper_limits = math_util.vec(specs['upper'])
-            ranges = upper_limits - lower_limits
+            #     request = {
+            #       "basic_info" : {
+            #         "n_steps" : 10,
+            #         "manip" : "rightarm", # see below for valid values
+            #         "start_fixed" : True # i.e., DOF values at first timestep are fixed based on current robot state
+            #       },
+            #       "costs" : [
+            #       {
+            #         "type" : "joint_vel", # joint-space velocity cost
+            #         "params": {"coeffs" : [1]} # a list of length one is automatically expanded to a list of length n_dofs
+            #         # also valid: [1.9, 2, 3, 4, 5, 5, 4, 3, 2, 1]
+            #       },
+            #       {
+            #         "type" : "collision",
+            #         "params" : {
+            #           "coeffs" : [20], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
+            #           "dist_pen" : [0.025] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
+            #         },
+            #       }
+            #       ],
+            #       "constraints" : [
+            #       {
+            #         "type" : "joint", # joint-space target
+            #         "params" : {"vals" : ik_solution} # length of vals = # dofs of manip
+            #       }
+            #       ],
+            #       "init_info" : {
+            #           "type" : "straight_line", # straight line in joint space.
+            #           "endpoint" : ik_solution
+            #       }
+            #     }
 
-            # Solve using null space
-            ik_solution = self._engine.solve_ik_null_space(
-                self._uid, self._end_idx,
-                pos, orn=orn,
-                lower=lower_limits,
-                upper=upper_limits,
-                ranges=ranges,
-                rest=self._rest_pose,
-                damping=damps)
+            self.joint_positions = (
+                ik_solution,
+                dict(positionGains=(.05,) * self._dof,
+                     velocityGains=(1.,) * self._dof)
+            )
+        # TODO
 
-        self.joint_states = (
-            self.active_joints, ik_solution, 'position',
-            dict(forces=math_util.vec(specs['max_force'])[self.active_joints],
-                 positionGains=(.05,) * self._dof,
-                 velocityGains=(1.,) * self._dof))
+        # elif ctype == 'torque':
 
-        # TODO :
-        # if self.collision_checking:
+        # s = json.dumps(request) # convert dictionary into json-formatted string
+        # prob = trajoptpy.ConstructProblem(s, env) # create object that stores optimization problem
+        # t_start = time.time()
+        # result = trajoptpy.OptimizeProblem(prob) # do optimization
+        # t_elapsed = time.time() - t_start
+        # print result
+        # print "optimization took %.3f seconds"%t_elapsed
+
+        # from trajoptpy.check_traj import traj_is_safe
+        # prob.SetRobotActiveDOFs() # set robot DOFs to DOFs in optimization problem
+        # assert traj_is_safe(result.GetTraj(), robot) # Check that trajectory is collision free
+
         # need to wait until reached desired states, just as in real case
-        for _ in range(max_iter):
-            self._engine.step(0)
-
+        # for _ in range(max_iter):
+        #     self._engine.step(0)
         
     ###
     #  High level functionality
@@ -296,11 +356,11 @@ class Arm(Tool):
             # Next reset gripper
             self._gripper.reset()
 
+        self._engine.hold()
+
         # Lastly reset arm
-        self.joint_states = \
-            (self.active_joints,
+        self.joint_positions = (
              self._rest_pose,
-             'position',
              dict(reset=True))
 
     def pinpoint(self, pos, orn, ftype='abs',
@@ -331,6 +391,10 @@ class Arm(Tool):
         elif ftype == 'rel':
             orig_pos, orig_orn = math_util.get_absolute_pose(
                 (pos, orn), self.pose)
+        else:
+            loginfo('Cannot recognize frame type, assuming absolute',
+                    FONT.ignore)
+            orig_pos, orig_orn = pos, orn
         
         target_pos, target_orn = super(Arm, self).pinpoint(pos, orn, ftype)
         self._move_to(target_pos, target_orn, True, fast, max_iter)

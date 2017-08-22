@@ -1,6 +1,6 @@
-import threading
+import multiprocessing
 
-from .state import physicsEngine, robotEngine
+from .state import physicsEngine#, robotEngine
 from .adapter import Adapter
 from .render import graphicsEngine, camera
 from .handler.base import NullHandler
@@ -13,6 +13,7 @@ from .utils import io_util, time_util, math_util
 from .utils.io_util import (FONT,
                             loginfo,
                             logerr)
+from .utils.math_util import approximate
 from .view import View
 from .world import World
 
@@ -33,10 +34,10 @@ class Controller(object):
         # Simulation
         bullet=physicsEngine.BulletPhysicsEngine,
         mujoco=physicsEngine.MujocoEngine,
-        gazebo=physicsEngine.OpenRaveEngine,
+        # gazebo=physicsEngine.OpenRaveEngine,
 
         # Reality
-        intera=robotEngine.InteraEngine,
+        # intera=robotEngine.InteraEngine,
     )
 
     _GRAPHICS_ENGINES = dict(
@@ -73,7 +74,7 @@ class Controller(object):
         """
         self._config = config_batch
         self._physics_servers = dict()
-        self._thread_pool = list()
+        self._process_pool = list()
 
         # space to store useful states.
         # Note it needs to use dictionary to store the states of
@@ -88,7 +89,7 @@ class Controller(object):
                  # operations/modifications on the world
                  camera=dict(flen=1e-3),  # The camera parameters
                  )
-
+        self._data_log = {}
         self._init_time_stamp = None
 
         # For coonsistency across different clock speeds
@@ -178,7 +179,8 @@ class Controller(object):
             conf.disp_info,
             conf.job,
             conf.video,
-            log_dir=conf.log
+            conf.log,
+            conf.config_name
         )
 
         # Initialize physics render (state render)
@@ -207,11 +209,14 @@ class Controller(object):
             display = tester.ViewTester(display)
 
         # Give record name for physics physics_engine
-        if conf.job == 'record' or conf.job == 'replay':
+        if conf.job == 'record':
             ge.record_name = \
-                conf.record_name or \
+                conf.config_name or \
                 '{}_{}'.format(world.info['name'],
                                display.info['name'])
+        elif conf.job == 'replay':
+            ge.record_name = '{}/{}'.format(
+                conf.config_name, conf.replay_name)
 
         # connect to bullet graphics/display render server,
         # Build display first to load world faster
@@ -240,8 +245,8 @@ class Controller(object):
             return
         for s_id in range(len(self._physics_servers)):
             # Dispatch to new threads
-            t = threading.Thread(target=self.start, args=(s_id,))
-            self._thread_pool.append(t)
+            t = multiprocessing.Process(target=self.start, args=(s_id,))
+            self._process_pool.append(t)
             t.start()
 
     def start(self, server_id=0):
@@ -265,10 +270,10 @@ class Controller(object):
 
         if status == -1:
             logerr('Error loading simulation', FONT.control)
-            self.stop(server_id)
+            self.stop(server_id, -1)
             return
         elif status == 1:
-            self.stop(server_id)
+            self.stop(server_id, 0)
             loginfo('Replay finished. Exiting...', FONT.control)
             return
         elif status == 2:
@@ -285,12 +290,11 @@ class Controller(object):
 
         # Next display states
         self._view_update(display)
-
         self._update_time_stamp = time_util.get_abs_time()
 
         # Finally start control loop (Core)
         try:
-            while not time_up or done:
+            while not time_up and not done:
 
                 elt = time_util.get_elapsed_time(self._init_time_stamp)
 
@@ -302,38 +306,57 @@ class Controller(object):
                     world, display, 
                     ctrl_handler.signal, time_since_last_update)
 
+                if display.record:
+
+                    self._record_interrupt(world, elt)
+
                 # Update model
                 time_up = world.update(elt)
 
                 # Lastly check task completion, communicate
                 # with the model
                 # TODO
-                # done, success = self._checker_interrupt()
+                done, success = world.check_states()
 
             if success:
                 loginfo('Task success! Exiting simulation...',
                         FONT.disp)
+                self.stop(server_id, 0)
+                io_util.write_log(
+                    self._data_log,
+                    io_util.pjoin(
+                        display.info['engine']['log_info']['success_rl'],
+                        display.info['engine']['record_name']))
             else:
                 loginfo('Task failed! Exiting simulation...',
                         FONT.disp)
+                self.stop(server_id, 1)
+                io_util.write_log(
+                    self._data_log,
+                    io_util.pjoin(
+                        display.info['engine']['log_info']['fail_rl'],
+                        display.info['engine']['record_name']))
+            
         except KeyboardInterrupt:
             loginfo('User exits the program by ctrl+c.',
                     FONT.warning)
-            self.stop(server_id)
+            self.stop(server_id, -1)
 
-    def stop(self, server_id):
+    def stop(self, server_id, exit_status):
         """
         Hang the simulation.
-        :param server_id: physics server id (a.k.a. simulation id,
-        configuration id) to stop. It acts as pause,
-        can use start to resume.
+        :param server_id: physics server id (a.k.a.
+        simulation id, configuration id) to stop.
+        :param exit_status: an integer indicating the status 
+        of task completion, 0 for success, 1 for fail, and 
+        -1 for error exit.
         :return: None
         """
         world, display, ctrl_handler = self._physics_servers[server_id]
 
         ctrl_handler.stop()
         world.clean_up()
-        display.close()
+        display.close(exit_status)
 
         loginfo('Safe exit.', FONT.control)
 
@@ -347,7 +370,59 @@ class Controller(object):
         :return: None
         """
         # TODO
-        self._thread_pool[server_id] = None
+        self._process_pool[server_id].terminate()
+        self._process_pool[server_id] = None
+
+    def _record_interrupt(self, world, time_stamp):
+
+        time_stamp = approximate(time_stamp, 5)
+
+        for name, _ in world.target:
+            entity = world.body[name]
+
+            if entity.type == 'body':
+
+                entity_log = self._data_log.get(
+                    name, {'pose': []})
+
+                pose = entity.pose
+                pose = (approximate(pose[0], 5).tolist(),
+                        approximate(pose[1], 5).tolist())
+                entity_log['pose'].append(
+                    (time_stamp, pose)
+                )
+
+                self._data_log[name] = entity_log
+
+            elif entity.type == 'arm':
+
+                arm_log = self._data_log.get(
+                    name, {'pose': [],
+                           'joint_position': [],
+                           'joint_velocity': [],
+                           'joint_torque': []})
+
+                tool_pose = entity.tool_pose
+                tool_pose = (approximate(tool_pose[0], 5).tolist(),
+                             approximate(tool_pose[1], 5).tolist())
+
+                arm_log['pose'].append(
+                    (time_stamp, tool_pose)
+                )
+                arm_log['joint_position'].append(
+                    (time_stamp,
+                     approximate(entity.joint_positions, 5).tolist())
+                )
+                arm_log['joint_velocity'].append(
+                    (time_stamp,
+                     approximate(entity.joint_velocities, 5).tolist())
+                )
+                arm_log['joint_torque'].append(
+                    (time_stamp,
+                     approximate(entity.joint_torques, 5).tolist())
+                )
+
+                self._data_log[name] = arm_log
 
     def _control_interrupt(self, world, display, signal, elapsed_time):
         """
@@ -359,7 +434,6 @@ class Controller(object):
         :param signal: the signal received from control handler
         :return: None
         """
-        
         # Only keep consistency for GUI usage
         elapsed_time = 1 if display.info['frame'] != 'gui' else elapsed_time * 50
         commands, instructions, view, update = \
@@ -430,62 +504,70 @@ class Controller(object):
 
                 elif method == 'reach':
 
-                    # Cartesian, quaternion
                     r_pos, r_orn = value
-                    i_pos, i_orn = self._states['tool'][tool.tid]
 
-                    # Orientation is always relative to the
-                    # world frame, that is, absolute
-                    r_mat = math_util.quat2mat(tool.orn)
+                    # Use relative pose control for devices
+                    if display.info['frame'] != 'vr':
 
-                    if r_pos is not None:
-                        # Scaling down the speed for robot arm
-                        if tool.tid[0] == 'm':
-                            r_pos /= 7.5
+                        # Cartesian, quaternion
+                        i_pos, i_orn = self._states['tool'][tool.tid]
 
-                        # Increment to get absolute pos
-                        # Take account of rotation
-                        i_pos += r_mat.dot(r_pos * elapsed_time)
-                        tool.pinpoint(i_pos, tool.tool_orn)
+                        # Orientation is always relative to the
+                        # world frame, that is, absolute
+                        r_mat = math_util.quat2mat(tool.orn)
 
-                    if r_orn is not None:
-                        ###
-                        # Can try directly setting joint states here
-                        i_orn += r_orn * elapsed_time
-                        if tool.tid[0] == 'm':
-                            eef_joints = tool.active_joints[-2:]
-                            joint_spec = tool.joint_specs
+                        if r_pos is not None:
+                            # Scaling down the speed for robot arm
+                            if tool.tid[0] == 'm':
+                                r_pos /= 7.5
 
-                            # Perform the clipping here
-                            i_orn = math_util.clip_vec(
-                                math_util.vec((i_orn[1], i_orn[0])),
-                                math_util.vec(joint_spec['lower'])[eef_joints],
-                                math_util.vec(joint_spec['upper'])[eef_joints])
-                            i_orn = math_util.vec((i_orn[0], i_orn[1], 0))
+                            # Increment to get absolute pos
+                            # Take account of rotation
+                            i_pos += r_mat.dot(r_pos * elapsed_time)
+                            tool.reach(i_pos, None)
 
-                            # Update the tool's orientation
-                            self._states['tool'][tool.tid][1] = \
-                                math_util.vec((i_orn[1], i_orn[0], 0))
-                        else:
+                        if r_orn is not None:
+                            ###
+                            # Can try directly setting joint states here
+                            i_orn += r_orn * elapsed_time
+                            if tool.tid[0] == 'm':
+                                eef_joints = tool.active_joints[-2:]
+                                joint_spec = tool.joint_specs
 
-                            # Update the tool's orientation
-                            self._states['tool'][tool.tid][1] = \
-                                math_util.vec(i_orn)
+                                # Perform the clipping here
+                                i_orn = math_util.clip_vec(
+                                    math_util.vec((i_orn[1], i_orn[0])),
+                                    math_util.vec(joint_spec['lower'])[eef_joints],
+                                    math_util.vec(joint_spec['upper'])[eef_joints])
+                                i_orn = math_util.vec((i_orn[0], i_orn[1], 0))
 
-                        tool.pinpoint(tool.tool_pos, i_orn)
+                                # Update the tool's orientation
+                                self._states['tool'][tool.tid][1] = \
+                                    math_util.vec((i_orn[1], i_orn[0], 0))
+                            else:
+                                # Update the tool's orientation
+                                self._states['tool'][tool.tid][1] = \
+                                    math_util.vec(i_orn)
+                            tool.reach(None, i_orn)
 
-                        # Update the tool's position as orientation changes
-                        self._states['tool'][tool.tid][0] = world.get_states(
-                            ('tool', 'tool_pose'))[0][tool.tid][0]
+                            # Update the tool's position as orientation changes
+                            self._states['tool'][tool.tid][0] = world.get_states(
+                                ('tool', 'tool_pose'))[0][tool.tid][0]
 
-                    pos_diff = tool.tool_pos - i_pos
+                        pos_diff = tool.tool_pos - i_pos \
+                            if tool.tid[0] == 'g' else tool.eef_pose[0] - i_pos
 
-                    if math_util.rms(pos_diff) > tool.tolerance:
-                        loginfo('Tool position out of reach. Set back.',
-                                FONT.warning)
-                        state_pose = world.get_states(
-                            ('tool', 'tool_pose'))[0][tool.tid]
-                        self._states['tool'][tool.tid][0] = state_pose[0]
+                        if math_util.rms(pos_diff) > tool.tolerance:
+                            loginfo('Tool position out of reach. Set back.',
+                                    FONT.warning)
+                            state_pose = world.get_states(
+                                ('tool', 'tool_pose'))[0][tool.tid]
+                            self._states['tool'][tool.tid][0] = state_pose[0]
+                    else:
+                        # Special case: use absolute pose for VR
+                        threshold = 1.3
+                        if math_util.rms(tool.tool_pos - r_pos) < threshold:
+                            tool.reach(r_pos, r_orn)
 
                 elif method == 'grasp':
                     tool.grasp(value)
@@ -526,14 +608,3 @@ class Controller(object):
                 init_pose[0], 
                 # Use radians
                 math_util.quat2euler(init_pose[1])]
-
-    def _checker_interrupt(self, signal):
-        """
-        Checker interrupt, performs checking on current
-        world states and report status.
-        :return: (done, success) tuple, where 'done' is
-        boolean and 'success' is a scalar, either 0/1
-        binary, or float in [0,1] representing quality.
-        """
-        status = self._adapter.check_world_states()
-        return status

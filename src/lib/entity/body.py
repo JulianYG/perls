@@ -33,6 +33,9 @@ class Body(object):
         pos = pos or (0., 0., 0.)
         orn = orn or (0., 0., 0., 1.)
 
+        if len(orn) == 3:
+            orn = math_util.euler2quat(orn)
+
         # Store original info for reset
         self._init_state = (pos, orn, fixed)
         self._engine = engine
@@ -49,6 +52,14 @@ class Body(object):
 
     ###
     # Basic info
+    @property
+    def type(self):
+        """
+        Get the type of the body.
+        :return: string
+        """
+        return 'body'
+
     @property
     def pos(self):
         """
@@ -130,6 +141,7 @@ class Body(object):
 
     ###
     # Link related information
+    
     @property
     def kinematics(self):
         """
@@ -138,8 +150,8 @@ class Body(object):
         use 0 instead.
         :return: a dictionary of lists of
         {name, pos, orn, rel_pos, rel_orn, abs_frame_pos,
-        abs_frame_orn, abs_v, abs_omega}, 
-        where the keys are info names, and 
+        abs_frame_orn, abs_v, abs_omega},
+        where the keys are info names, and
         values are arranged in order of link indices.
         """
         info_dic = dict(
@@ -181,8 +193,8 @@ class Body(object):
     def dynamics(self):
         """
         Get dynamics info of entire body
-        :return: a dictionary of dictionaries of mass (kg), 
-        friction coefficient, etc., where the keys 
+        :return: a dictionary of dictionaries of mass (kg),
+        friction coefficient, etc., where the keys
         are the link indices.
         """
         info_dic = {}
@@ -191,69 +203,6 @@ class Body(object):
             info_dic[lid] = dict(mass=info[0],
                                  lateral_friction=info[1])
         return info_dic
-
-    ###
-    # Joint related information
-    @property
-    def joint_specs(self):
-        """
-        Get joints info of the body.
-        :return: a dictionary of lists of
-        {name, joint type, pos_idx, vel_idx, damping,
-        friction, lower, upper, max_force, max_vel},
-        where the keys are info names, and
-        values are arranged in link indices order.
-        """
-        info_dict = dict(
-            index=[],
-            name=[],
-            jtype=[],
-            active=[],
-            pos_idx=[],
-            vel_idx=[],
-            damping=[],
-            friction=[],
-            lower=[],
-            upper=[],
-            max_force=[],
-            max_vel=[]
-        )
-        for jid in self._joints:
-            info = self._engine.get_body_joint_info(self._uid, jid)
-            info_dict['index'].append(info[0])
-            info_dict['name'].append(info[1])
-            info_dict['jtype'].append(info[2])
-            info_dict['pos_idx'].append(info[3])
-            info_dict['vel_idx'].append(info[4])
-            info_dict['active'].append(info[5])
-            info_dict['damping'].append(info[6])
-            info_dict['friction'].append(info[7])
-            info_dict['lower'].append(info[8])
-            info_dict['upper'].append(info[9])
-            info_dict['max_force'].append(info[10])
-            info_dict['max_vel'].append(info[11])
-        return info_dict
-
-    @property
-    def joint_states(self):
-        """
-        Get joint states of the body
-        :return: a dictionary of dictionaries of
-        {joint_index: {pos, v, wrench (vec6), motor_torque}}
-        where motor_torque is the applied motor torque
-        during last simulation step.
-        Note that force and motor_torque are only
-        available for non real time simulation.
-        """
-        info_dict = dict(pos=list(), v=list(), wrench=list(),
-                         motor_torque=list())
-        for jid in self._joints:
-            info = self._engine.get_body_joint_state(self._uid, jid)
-            info_dict['pos'].append(info[0])
-            info_dict['v'].append(info[1])
-            info_dict['wrench'].append(math_util.vec(info[2])),
-            info_dict['motor_torque'].append(info[3])
-        return info_dict
 
     ###
     # Relation info with other bodies in space
@@ -345,12 +294,13 @@ class Body(object):
         self._name = string
 
     @fix.setter
-    def fix(self, (pos, orn)):
+    def fix(self, pose):
         """
         Fix the entity to given absolute pose
         :param pos: position vec3 float cartesian to fix at
         :return: None
         """
+        pos, orn = pose
         pos = self.pos if pos is None else pos
         orn = self.orn if orn is None else orn
         self.attach_children = (
@@ -427,31 +377,13 @@ class Body(object):
             logerr('Cannot set angular velocity for fixed body',
                    FONT.model)
 
-    # Base level control functionality
-    @joint_states.setter
-    def joint_states(self, (jid, value, ctype, kwargs)):
-        """
-        Taken joint index(es), value(s), as well as control type
-        (ctype) among position, velocity, and torque,
-        set the control. The jid and value can be lists
-        of the same length. kwargs is a dictionary
-        :return: None
-        """
-        max_forces = tuple(self.joint_specs['max_force'][j] for j in jid)
-        if kwargs:
-            if 'forces' not in kwargs:
-                kwargs['forces'] = max_forces
-        else:
-            kwargs = dict(forces=max_forces)
-        self._engine.set_body_joint_state(self._uid, jid, value, ctype, kwargs)
-
     @dynamics.setter
     def dynamics(self, info):
         """
         Set dynamics of body based on given info
-        :param info: a dictionary of dictionary that may or 
+        :param info: a dictionary of dictionary that may or
         may not contain following keys:
-        {link_index: 
+        {link_index:
             {mass, lateral_friction, spinning_friction, rolling_friction,
             restitution (0-1)},
             ...
@@ -462,16 +394,17 @@ class Body(object):
             self._engine.set_body_dynamics(self._uid, link_id, d_info)
 
     @attach_children.setter
-    def attach_children(
-            self, (lid, child_uid, child_lid, jtype, jaxis,
-                   parent_pos, child_pos, parent_orn, child_orn)):
+    def attach_children(self, attach_info):
         """
         Attach a child body B on this parent body A
-        Required input:
+        :param attach_info:
         an info list:
         [j_0 A, j_0 B, type, jAxis, jPivotA, jPivotB, jOrnA, jOrnB]
         :return: None
         """
+        lid, child_uid, child_lid, jtype, jaxis, \
+        parent_pos, child_pos, parent_orn, child_orn = attach_info
+
         # TODO: add if/else for changing constraint
         if parent_orn is None:
             parent_orn = [0., 0., 0., 1.]
@@ -508,20 +441,22 @@ class Body(object):
                 del self._children[child]
 
     @visual_shape.setter
-    def visual_shape(self, (path, name, qid, sid, rgba, spec)):
+    def visual_shape(self, visual_info):
         """
         Reset visual shape data to change the texture of a shape. 
         Currently only affects the software renderer (getCameraImage), 
         does not show up on OpenGL window
-        :param path: the path of texture file (png, jpg, etc)
-        :param name: a string of name to associate with the texture,
-        suggested to be something recognizable, like 'sky', 'rainbow'.
-        :param qid: joint index
-        :param sid: shape index ()
-        :param rgba: vec4 in range [0, 1]. No transparent alpha yet
-        :param spec: RGB 0-100 vec3
+        :param visual_info: a tuple of 
+        path: the path of texture file (png, jpg, etc);
+        name: a string of name to associate with the texture,
+        suggested to be something recognizable, like 'sky', 'rainbow';
+        qid: joint index;
+        sid: shape index ();
+        rgba: vec4 in range [0, 1]. No transparent alpha yet;
+        spec: RGB 0-100 vec3;
         :return: None
         """
+        path, name, qid, sid, rgba, spec = visual_info
         texture_id = self._engine.set_body_visual_shape(
             self._uid, path, qid, sid, rgba, spec)
 
@@ -534,23 +469,23 @@ class Body(object):
         pass
         
     @mark.setter
-    def mark(self, (text, font_size, color, lid, time)):
+    def mark(self, marker_info):
         """
         Add marker text to this body.
         ### Note: 
         Use None for lid for base link!
-        :param text: text string to display
-        :param font_size: float scalar of text size.
-        By default is 2.5
-        :param color: RGB color, vec3 float in [0,1]. 
-        By default is red
-        :param time: float time to display, 0 for permanent.
-        By default is 10 seconds
-        :param lid: link id to display on this body
+        :param marker_info: a tuple of 
+        text string to display, float scalar of text size.
+        By default is 2.5, 
+        RGB color, vec3 float in [0,1]. 
+        By default is red,
+        float time to display, 0 for permanent.
+        By default is 10 seconds,
+        link id to display on this body
         :return: None
         """
         # Need a few tricks to hack link index for base
-
+        text, font_size, color, lid, time = marker_info
         mid = self._engine.add_body_text_marker(
             text, self.kinematics['pos'][lid or 0],
             font_size, color, self.uid, lid or -1, time
@@ -744,6 +679,14 @@ class Tool(Body):
         return NotImplemented
 
     @abc.abstractproperty
+    def close_grip(self):
+        """
+        State of current tool, whether grasping
+        :return: a boolean indicating gripper status
+        """
+        return NotImplemented
+
+    @abc.abstractproperty
     def pose(self):
         """
         Get the base frame pose of the tool
@@ -795,6 +738,96 @@ class Tool(Body):
         """
         return NotImplemented
 
+    ###
+    # Joint related information
+    @property
+    def joint_specs(self):
+        """
+        Get joints info of the body.
+        :return: a dictionary of lists of
+        {name, joint type, pos_idx, vel_idx, damping,
+        friction, lower, upper, max_force, max_vel},
+        where the keys are info names, and
+        values are arranged in link indices order.
+        """
+        info_dict = dict(
+            index=[],
+            name=[],
+            jtype=[],
+            active=[],
+            pos_idx=[],
+            vel_idx=[],
+            damping=[],
+            friction=[],
+            lower=[],
+            upper=[],
+            max_force=[],
+            max_vel=[]
+        )
+        for jid in self._joints:
+            info = self._engine.get_body_joint_info(self._uid, jid)
+            info_dict['index'].append(info[0])
+            info_dict['name'].append(info[1])
+            info_dict['jtype'].append(info[2])
+            info_dict['pos_idx'].append(info[3])
+            info_dict['vel_idx'].append(info[4])
+            info_dict['active'].append(info[5])
+            info_dict['damping'].append(info[6])
+            info_dict['friction'].append(info[7])
+            info_dict['lower'].append(info[8])
+            info_dict['upper'].append(info[9])
+            info_dict['max_force'].append(info[10])
+            info_dict['max_vel'].append(info[11])
+        return info_dict
+
+    @property
+    def joint_positions(self):
+        """
+        Get the joint positions of the body/tool.
+        :return: a list of joint positions in radian, which
+        is ordered by indices from small to large.
+        Typically the order goes from base to end effector.
+        """
+        return [self._engine.get_body_joint_state(
+            self._uid, jid)[0] for jid in self._joints]
+
+    @property
+    def joint_velocities(self):
+        """
+        Get the joint velocities of the body/tool.
+        :return: a list of joint velocities in radian/s, which
+        is ordered by indices from small to large.
+        Typically the order goes from base to end effector.
+        """
+        return [self._engine.get_body_joint_state(
+            self._uid, jid)[1] for jid in self._joints]
+
+    @property
+    def joint_torques(self):
+        """
+        Get the joint torques of the body/tool. This is
+        the torque applied by the actuators during last
+        simulation step.
+        :return: a list of joint torques in radian/s, which
+        is ordered by indices from small to large.
+        Typically the order goes from base to end effector.
+        """
+        return [self._engine.get_body_joint_state(
+            self._uid, jid)[3] for jid in self._joints]
+
+    @property
+    def joint_wrenches(self):
+        """
+        Get the joint wrenches of the body/tool. This is
+        a 6 dimensional float vector in the form of
+        [Fx, Fy, Fz, Mx, My, Mz].
+        :return: a list of joint wrenches, which
+        is ordered by indices from small to large.
+        Typically the order goes from base to end effector.
+        """
+        return [self._engine.get_body_joint_state(
+            self._uid, jid)[2] for jid in self._joints]
+
     @Body.name.setter
     def name(self, string):
         """
@@ -833,6 +866,84 @@ class Tool(Body):
         :return: None
         """
         raise NotImplemented
+
+    # Base level control functionality
+
+    @joint_positions.setter
+    def joint_positions(self, value):
+        """
+        Set joint positions according to given values list. Note
+        that the length of the list must match that of the
+        joint indices, and if one can skip certain joints by
+        setting those values to None.
+        :param value: A list of length DOF,
+        or a tuple where the first element is the joint positions list,
+        and the second element is the keyword arguments dictionary.
+        :return: None
+        """
+        assert(len(value) == len(self._joints),
+               'Input number of position values must match the number of joints')
+        if isinstance(value, tuple) and len(value) == 2:
+            vals, kwargs = value
+        else:
+            vals, kwargs = value, {}
+
+        jids = [j for j, val in enumerate(vals) if val is not None]
+        value = [v for v in vals if v is not None]
+
+        if 'forces' not in kwargs:
+            kwargs['forces'] = tuple(self.joint_specs['max_force'][j] for j in jids)
+
+        self._engine.set_body_joint_state(
+            self._uid, jids, value, 'position', kwargs)
+
+    @joint_velocities.setter
+    def joint_velocities(self, value):
+        """
+        Set joint velocities according to given values list. Note
+        that the length of the list must match that of the
+        joint indices, and if one can skip certain joints by
+        setting those values to None.
+        :param value: A list of length DOF,
+        or a tuple where the first element is the joint velocities list,
+        and the second element is the keyword arguments dictionary.
+        :return: None
+        """
+        assert (len(value) == len(self._joints),
+                'Input number of position values must match the number of joints')
+        if isinstance(value, tuple) and len(value) == 2:
+            vals, kwargs = value
+        else:
+            vals, kwargs = value, {}
+
+        jids = [j for j, val in enumerate(vals) if val is not None]
+        value = [v for v in vals if v is not None]
+
+        if 'forces' not in kwargs:
+            kwargs['forces'] = tuple(self.joint_specs['max_force'][j] for j in jids)
+
+        self._engine.set_body_joint_state(
+            self._uid, jids, value, 'velocity', kwargs)
+
+    @joint_torques.setter
+    def joint_torques(self, value):
+        """
+        Set joint torques according to given values list. Note
+        that the length of the list must match that of the
+        joint indices, and if one can skip certain joints by
+        setting those values to None.
+        :param value: A list of length DOF,
+        or a tuple where the first element is the joint torques list,
+        and the second element is the keyword arguments dictionary.
+        :return: None
+        """
+        assert (len(value) == len(self._joints),
+                'Input number of torque values must match the number of joints')
+        torques = value[0] if isinstance(value, tuple) else value
+        kwargs = value[1] if isinstance(value, tuple) else {}
+        jids = [j for j, val in enumerate(torques) if val is not None]
+        value = [v for v in value if v is not None]
+        self._engine.set_body_joint_state(self._uid, jids, value, 'torque', kwargs)
 
     ###
     #  Helper functions

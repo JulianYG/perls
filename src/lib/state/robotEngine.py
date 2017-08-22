@@ -2,9 +2,13 @@
 
 from .stateEngine import RealStateEngine
 
-# import rospy
-# import rosparam
-# import intera_interface as iif
+import sys, os 
+sys.path.append(os.path.abspath(os.path.join(__file__, '../../pyrobots')))
+
+import rospy
+import moveit_commander
+
+# from sawyer import SawyerArm
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
@@ -14,23 +18,16 @@ __version__ = '0.1'
 
 class InteraEngine(RealStateEngine):
 
-    def __init__(self, e_id, max_run_time):
+    def __init__(self, e_id, max_run_time, plan=True):
 
         super(InteraEngine, self).__init__(e_id, max_run_time)
 
-        self._head = iif.Cuff()
+        self._uids = dict()
 
-        self._lights = iif.Lights()
-
-        self._limb = iif.Limb('right')
-
-        self._navigator = iif.Navigator()
-
-        self._gripper = iif.Gripper('right')
-
-        self._robot_enable = iif.RobotEnable(True)
-
-        self._params = iif.RobotParams()
+        moveit_commander.roscpp_initialize(sys.argv)
+        self._robot = SawyerArm(plan)
+        # self._virtual_scene = moveit_commander.PlanningSceneInterface()
+        # self._group = moveit_commander.MoveGroupCommander("right_arm")
 
     @property
     def version(self):
@@ -63,7 +60,7 @@ class InteraEngine(RealStateEngine):
         :return: integer of body unique id, body link indices,
         body joint indices
         """
-        pass
+        self._uids[0] = self._robot
 
     def get_body_scene_position(self, uid):
         """

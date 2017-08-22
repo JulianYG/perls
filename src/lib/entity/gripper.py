@@ -26,6 +26,22 @@ class PrismaticGripper(Tool):
         self.reset()
 
     @property
+    def type(self):
+        """
+        Get the type of the body.
+        :return: string
+        """
+        return 'gripper'
+
+    @property
+    def close_grip(self):
+        """
+        Status of gripper, whether it's closed
+        :return: boolean
+        """
+        return self._close_grip
+
+    @property
     def tid(self):
         """
         A tool id specifically assigned to this tool.
@@ -106,6 +122,7 @@ class PrismaticGripper(Tool):
                    FONT.model)
             return
         pos = self.position_transform(pos, self.tool_orn)[0]
+
         # Note here it only cares about the position,
         # thus not solving using constraints
         self.track(pos, self.tool_orn, self._max_force)

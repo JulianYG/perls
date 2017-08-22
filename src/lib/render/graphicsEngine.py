@@ -2,12 +2,16 @@
 
 import os
 import os.path as osp
+from ..utils.io_util import pjoin
 import pybullet as p
 
 import numpy as np
 import math
 
-from ..utils import math_util, time_util, plot_util
+from ..utils import (io_util,
+                     math_util, 
+                     time_util, 
+                     plot_util)
 from ..utils.io_util import FONT, loginfo, parse_log
 
 from .renderEngine import GraphicsEngine
@@ -43,7 +47,7 @@ class BulletRenderEngine(GraphicsEngine):
 
     def __init__(self, disp_info,
                  job='run', video=False,
-                 log_dir=''):
+                 log_dir='', task=''):
         """
 
         :param disp_info:
@@ -59,22 +63,47 @@ class BulletRenderEngine(GraphicsEngine):
         self._disp_name, self._frame, self._disp_args = \
             disp_info
 
+        # Default settings for rendering
+        self._render_param = dict(
+            frame_width=224, frame_height=224,
+            view_mat=p.computeViewMatrixFromYawPitchRoll(
+                (0, 0, 0), 5, 50, -35, 0, 2),
+            projection_mat=p.computeProjectionMatrixFOV(60, 1, 0.02, 100),
+            up=(0, 0, 1),
+            forward=(-0.6275, 0.5265, -0.5736),
+            yaw=50, pitch=-35, focal_len=5,
+            focus=(0, 0, 0)
+        )
         self._job = job
 
         self._record_video = video
-        self._record_name = 'perls_record'
+        self._record_name = task
+        self._replay_delay = 1e-4
 
         self._logging_id = list()
         self._server_id = -1
 
         # Initialize logging paths
+
         log_dir = log_dir or \
-                  osp.abspath(osp.join(osp.dirname(__file__), '../../log'))
+                  osp.abspath(pjoin(osp.dirname(__file__), '../../log'))
         self._log_path = dict(
-            device=osp.join(log_dir, 'device'),
-            trajectory=osp.join(log_dir, 'trajectory'),
-            video=osp.join(log_dir, 'video')
+            root=log_dir,
+            device=pjoin(log_dir, 'device'),
+            trajectory=pjoin(log_dir, 'trajectory'),
+            success_rl=pjoin(log_dir, 'learning',
+                             self._record_name, 'success'),
+            fail_rl=pjoin(log_dir, 'learning',
+                          self._record_name, 'fail'),
+            success_trajectory=pjoin(log_dir, 'trajectory',
+                                     self._record_name, 'success'),
+            fail_trajectory=pjoin(log_dir, 'trajectory',
+                                  self._record_name, 'fail'),
+            video=pjoin(log_dir, 'video')
         )
+
+        self._base_file_name = self._record_name
+
         # If not exist, create the paths
         for path in self._log_path.values():
             if not osp.exists(path):
@@ -100,7 +129,7 @@ class BulletRenderEngine(GraphicsEngine):
             name='Bullet Graphics Engine: {}'.
                  format(self._disp_name),
             job=self._job,
-            record_name=self._record_name,
+            record_name=self._base_file_name,
             log_info=self._log_path,
             camera_info=self.camera
         )
@@ -112,7 +141,8 @@ class BulletRenderEngine(GraphicsEngine):
 
     @property
     def camera(self):
-        if self._FRAME_TYPES[self._frame] == 1:
+        if self._FRAME_TYPES[self._frame] == 1 or \
+           self._FRAME_TYPES[self._frame] == 3:
             info = p.getDebugVisualizerCamera(self._server_id)
             return dict(
                 frame_width=info[0], frame_height=info[1],
@@ -124,8 +154,10 @@ class BulletRenderEngine(GraphicsEngine):
                 focus=math_util.vec(info[11]),
             )
         else:
-            loginfo('Camera not available under frame {}'.format(self._frame), FONT.ignore)
-            return {}
+            loginfo('Camera not available under frame {}, '
+                    'use default values instead'.format(self._frame),
+                    FONT.ignore)
+            return self._render_param
 
     @property
     def record_name(self):
@@ -146,17 +178,32 @@ class BulletRenderEngine(GraphicsEngine):
                 params['focus'],
                 self._server_id
             )
-        elif self._frame == 'vr':
-            cam_pos, cam_orn = params
-            p.setVRCameraState(
-                rootPosition=cam_pos,
-                rootOrientation=cam_orn,
-                physicsClientId=self._server_id
-            )
         else:
-            loginfo('Cannot set camera under frame type <{}>.'.
-                    format(self._frame),
-                    FONT.warning)
+            if 'dim' in params:
+                self._render_param['frame_width'] = params['dim'][0]
+                self._render_param['frame_height'] = params['dim'][1]
+
+            for name, val in params.items():
+                if name != 'dim':
+                    self._render_param[name] = val
+
+            # Update view matrix again
+            self._render_param['view_mat'] = \
+                p.computeViewMatrixFromYawPitchRoll(
+                    params['focus'], params['flen'],
+                    params['yaw'], params['pitch'], 0, 2)
+
+        # elif self._frame == 'vr':
+        #     cam_pos, cam_orn = params
+        #     p.setVRCameraState(
+        #         rootPosition=cam_pos,
+        #         rootOrientation=cam_orn,
+        #         physicsClientId=self._server_id
+        #     )
+        # else:
+        #     loginfo('Cannot set camera under frame type <{}>.'.
+        #             format(self._frame),
+        #             FONT.warning)
 
     @record_name.setter
     def record_name(self, name):
@@ -171,6 +218,7 @@ class BulletRenderEngine(GraphicsEngine):
     ###
     #  Helper functions
     def get_camera_pose(self, up=(0.,1.,0.), otype='quat'):
+
         view_matrix = self.camera['view_mat'].T
 
         # If up axis is y
@@ -218,7 +266,12 @@ class BulletRenderEngine(GraphicsEngine):
         # Convert to bullet constant
         self._disp_args[0] = self._FRAME_TYPES[self._frame]
         # The core step: connect to bullet physics server
-        self._server_id = p.connect(*self._disp_args)
+        if self._job == 'replay':
+            self._server_id = p.connect(p.GUI)
+        elif self._frame != 'vr':
+            self._server_id = p.connect(*self._disp_args)
+        else:
+            self._server_id = p.connect(self._disp_args[0])
         p.setInternalSimFlags(0, self._server_id)
         p.resetSimulation(self._server_id)
 
@@ -228,7 +281,7 @@ class BulletRenderEngine(GraphicsEngine):
     ###
     # General display related methods
 
-    def configure_display(self, config, camera_args):
+    def configure_display(self, config, camera_args, replay_args):
         # All about cameras
 
         for name, switch in config.items():
@@ -236,8 +289,9 @@ class BulletRenderEngine(GraphicsEngine):
                 self._DISP_CONF[name],
                 switch, physicsClientId=self._server_id)
 
-            # Setup camera
-            self.camera = camera_args
+        # Setup camera
+        self.camera = camera_args
+        self._replay_delay = replay_args['delay']
 
     def disable_hotkeys(self):
         p.configureDebugVisualizer(9, 0, self._server_id)
@@ -264,7 +318,6 @@ class BulletRenderEngine(GraphicsEngine):
 
         elif itype == 'segment':
             return np.reshape(seg_img, (height, width)).astype(np.float32)
-
         else:
             loginfo('Unrecognized image type', FONT.ignore)
 
@@ -274,38 +327,29 @@ class BulletRenderEngine(GraphicsEngine):
                 'Must provide record file name!'
             time_stamp = time_util.get_full_time_stamp()
 
-            # Record only objects that are tracked
-            if target_uids:
-                self._logging_id.append(
-                    p.startStateLogging(
-                        p.STATE_LOGGING_GENERIC_ROBOT,
-                        osp.join(self._log_path['trajectory'],
-                                 '{}_{}.bin'.format(
-                                     self._record_name, time_stamp)),
-                        objectUniqueIds=target_uids,
-                        physicsClientId=self._server_id
-                    )
+            self._base_file_name = '{}.bin'.format(time_stamp)
+
+            abs_file_name = pjoin(
+                self._log_path['trajectory'],
+                self._base_file_name)
+
+            # Record every object for visual replay purpose
+            self._logging_id.append(
+                p.startStateLogging(
+                    p.STATE_LOGGING_GENERIC_ROBOT,
+                    abs_file_name,
+                    physicsClientId=self._server_id
                 )
-            else:
-                # Record every object
-                self._logging_id.append(
-                    p.startStateLogging(
-                        p.STATE_LOGGING_GENERIC_ROBOT,
-                        osp.join(self._log_path['trajectory'],
-                                 '{}_{}.bin'.format(
-                                     self._record_name, time_stamp)),
-                        physicsClientId=self._server_id
-                    )
-                )
+            )
 
             # Record mp4 video if indicated
             if self._record_video:
                 self._logging_id.append(
                     p.startStateLogging(
                         p.STATE_LOGGING_VIDEO_MP4,
-                        osp.join(self._log_path['video'],
-                                 '{}_{}.mp4'.format(
-                                     self._record_name, time_stamp)),
+                        pjoin(self._log_path['video'],
+                              self._record_name,
+                              '{}.mp4'.format(time_stamp)),
                         physicsClientId=self._server_id
                     )
                 )
@@ -315,9 +359,7 @@ class BulletRenderEngine(GraphicsEngine):
                 self._logging_id.append(
                     p.startStateLogging(
                         p.STATE_LOGGING_VR_CONTROLLERS,
-                        osp.join(self._log_path['device'],
-                                 '{}_{}.bin'.format(
-                                     self._record_name, time_stamp)),
+                        abs_file_name,
                         deviceTypeFilter=p.VR_DEVICE_HMD,
                         physicsClientId = self._server_id
                     )
@@ -326,10 +368,10 @@ class BulletRenderEngine(GraphicsEngine):
 
         elif self._job == 'replay':
 
-            objects = osp.join(self._log_path['trajectory'],
-                               '{}.bin'.format(self._record_name))
-            device = osp.join(self._log_path['device'],
-                              '{}.bin'.format(self._record_name))
+            objects = pjoin(self._log_path['trajectory'],
+                            '{}.bin'.format(self._record_name))
+            device = pjoin(self._log_path['device'],
+                           '{}.bin'.format(self._record_name))
 
             # Can change verbosity later
             obj_log = parse_log(objects, verbose=False)
@@ -350,15 +392,44 @@ class BulletRenderEngine(GraphicsEngine):
                     if qid > -1:
                         p.resetJointState(obj, i, record[qid - 7 + 17])
 
-                # TODO: think about changing delay
-                time_util.pause(1e-4)
+                time_util.pause(self._replay_delay)
 
+            loginfo('Finished replay {}'.format(self._record_name),
+                    FONT.control)
             # TODO: figure out using HMD log to revive FPS
             return 1
         return 0
 
-    def stop(self):
+    def stop(self, exit_code):
 
         # Stop state logging if any
         for lid in self._logging_id:
             p.stopStateLogging(lid, self._server_id)
+
+        if self._job == 'record':
+
+            # Just ignore the case of error
+            if exit_code < 0:
+                loginfo('Record file not classified.', FONT.ignore)
+
+            # Save for success cases
+            elif exit_code == 0:
+                io_util.fmove(
+                    pjoin(
+                        self._log_path['trajectory'],
+                        self._base_file_name), 
+                    pjoin(
+                        self._log_path['success_trajectory'],
+                        self._base_file_name)
+                )
+
+            # Save for failure cases
+            elif exit_code > 0:
+                io_util.fmove(
+                    pjoin(
+                        self._log_path['trajectory'],
+                        self._base_file_name), 
+                    pjoin(
+                        self._log_path['fail_trajectory'],
+                        self._base_file_name)
+                )

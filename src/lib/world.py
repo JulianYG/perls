@@ -66,7 +66,7 @@ class World(object):
         TODO: user activities, body time stamps}
         """
         return dict(
-            name=self.name_str,
+            task='_'.join(list(self.name_str)),
             tools=[t.name for t in self._tools.values()],
             tracking_bodies=[b[1] for b in self._target_bodies],
             assets=self._bodies.keys(),
@@ -150,7 +150,7 @@ class World(object):
         # TODO: depend on tool type
         body = Body(self._engine, file_path, pos, orn, fixed)
         if record:
-            self._target_bodies.append((body.uid, body.name))
+            self._target_bodies.append((body.name, body.uid))
         self._bodies[body.name] = body
 
     def load_xml(self, file_name):
@@ -160,11 +160,12 @@ class World(object):
         :return: None
         """
         parse_tree = io_util.parse_env(file_name)
-        self.name_str = parse_tree.env['title']
+        self.name_str = (parse_tree.env['title'], parse_tree.scene_title)
 
         # Load task completion checker
-        self._checker = taskHandler.Checker(self._engine.ps_id, 
-                                            self.name_str)
+        self._checker = taskHandler.Checker(
+            self._engine.ps_id, self.name_str[1])
+
         for gripper in parse_tree.gripper:
             gripper_body = self.GRIPPER_TYPE[gripper['type']](
                 gripper['id'],
@@ -184,7 +185,7 @@ class World(object):
             self._bodies[gripper_body.name] = gripper_body
 
             # Target bodies are listed as a bunch of (uid, name) tuples
-            self._target_bodies.append((gripper_body.uid, gripper_body.name))
+            self._target_bodies.append((gripper_body.name, gripper_body.uid))
 
         for i in range(len(parse_tree.arm)):
             arm_spec = parse_tree.arm[i]
@@ -198,7 +199,7 @@ class World(object):
 
             # Note here not appending gripper into tools since
             # we can only operate it through the arm
-            self._target_bodies.append((gripper_body.uid, gripper_body.name))
+            self._target_bodies.append((gripper_body.name, gripper_body.uid))
             self._bodies[gripper_body.name] = gripper_body
 
             arm_body = self.ARM_TYPE[arm_spec['type']](
@@ -212,7 +213,7 @@ class World(object):
             arm_body.name = arm_spec['name']
             self._tools[arm_body.tid] = arm_body
             self._bodies[arm_body.name] = arm_body
-            self._target_bodies.append((arm_body.uid, arm_body.name))
+            self._target_bodies.append((arm_body.name, arm_body.uid))
 
         for asset in parse_tree.scene:
             asset_body = Body(self._engine,
@@ -224,7 +225,7 @@ class World(object):
 
             self._bodies[asset_body.name] = asset_body
             if asset['record']:
-                self._target_bodies.append((asset_body.uid, asset_body.name))
+                self._target_bodies.append((asset_body.name, asset_body.uid))
 
         # TODO: Think if there's other stuff to conf
         # Add gravity after everything is loaded
@@ -251,11 +252,11 @@ class World(object):
         t_id = '%s%d' % (key, _id)
         if not key or t_id not in self._tools:
             # print('Selected tool %s does not exist. Using default instead.' % t_id)
-            tool = self._tools[self._tools.keys()[0]]
+            tool = self._tools[list(self._tools.keys())[0]]
         else:
             tool = self._tools[t_id]
         # Mark the current using tool
-        tool.mark = ('controlling', 2.5, (1.,0,0), None, .2)
+        tool.mark = ('controlling', 2.5, (1., 0, 0), None, .2)
         return tool
 
     def get_states(self, *args):
@@ -305,6 +306,15 @@ class World(object):
         :return: None
         """
         self._engine.status = stat
+
+    def check_states(self):
+        """
+        Check the current world state, see if 
+        the task is completed.
+        :return: tuple boolean <done, success> indicating whether 
+        task is done, and whether it is successful.
+        """
+        return self._checker.check(self._bodies)
 
     def update(self, elp=0):
         """

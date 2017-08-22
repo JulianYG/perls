@@ -69,8 +69,7 @@ def approximate(val, n_digits):
     :param n_digits: number of digits to keep
     :return: approximated numbers
     """
-    return np.array([float('%.{}g'.format(n_digits) % v) for v in val],
-                    dtype=np.float32)
+    return np.around(val, decimals=n_digits)
 
 
 def cross(x, y, axis=None):

@@ -1,15 +1,10 @@
 import pybullet as p
-# import time
-# import math
-# from datetime import datetime
-# import thread
-
 from lib.control import Controller as sc
 
 s = sc('config.xml')
 # s.start_all()
-s.start()
 
+s.start()
 
 ######
 # from lib.state.physicsEngine import BulletPhysicsEngine as bpe

@@ -1,0 +1,6 @@
+<launch>
+
+ <node pkg="tf" type="static_transform_publisher" name="kinect2_transform_ir" args="0.6901 0.105893 0.9102  1 1 0 0 /base /kinect2_ir_optical_frame 100"/>
+ <node pkg="tf" type="static_transform_publisher" name="kinect2_transform_rgb" args="0.6901 0.105893 0.9102 1 1 0 0 /base /kinect2_rgb_optical_frame 100"/>
+
+</launch>
