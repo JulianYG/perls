@@ -945,6 +945,15 @@ class Tool(Body):
         value = [v for v in value if v is not None]
         self._engine.set_body_joint_state(self._uid, jids, value, 'torque', kwargs)
 
+    def torque_mode(self):
+        """
+        Prepare the tool for torque mode control,
+        by setting all forces for joint motors to zero,
+        as required by bullet
+        :return: None
+        """
+        self._engine.disable_body_joint_motors(self._uid, self._joints)
+
     ###
     #  Helper functions
 

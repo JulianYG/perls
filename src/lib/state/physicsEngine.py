@@ -338,10 +338,6 @@ class BulletPhysicsEngine(FakeStateEngine):
 
                 # Need to disable joint motors first
                 p.setJointMotorControlArray(uid, jointIndices=jids,
-                                            controlMode=p.VELOCITY_CONTROL,
-                                            forces=[0] * len(jids))
-
-                p.setJointMotorControlArray(uid, jointIndices=jids,
                                             controlMode=p.TORQUE_CONTROL,
                                             physicsClientId=self._physics_server_id,
                                             forces=vals, **kwargs)
@@ -352,12 +348,12 @@ class BulletPhysicsEngine(FakeStateEngine):
 
     def enable_body_joint_motors(self, uid, jids, forces):
         p.setJointMotorControlArray(uid, jids, controlMode=p.VELOCITY_CONTROL,
-                                    force=forces,
+                                    forces=forces,
                                     physicsClientId=self._physics_server_id)
 
     def disable_body_joint_motors(self, uid, jids):
         p.setJointMotorControlArray(uid, jids, controlMode=p.VELOCITY_CONTROL,
-                                    force=len(jids) * [0],
+                                    forces=len(jids) * [0.],
                                     physicsClientId=self._physics_server_id)
 
     def get_body_dynamics(self, uid, lid):

@@ -61,13 +61,13 @@ class PushCube(PerlsEnv):
                 flen=3,
                 yaw=50,
                 pitch=-35,
-                # focus=(0, -0.5, 0)
+                focus=(0, 0, 0)
             )
         )
 
         # Enable torque control by disable the motors first
         # As required by bullet
-        self._robot.joint_torques = [0] * 7
+        self._robot.torque_mode()
 
         # move robot to initial position
         # TODO: orientation offset
