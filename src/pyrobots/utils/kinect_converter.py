@@ -75,7 +75,7 @@ class KinectConverter:
 
     def convert_inverse(self, x, y, z):
         """
-        Convert gripper coordinates tp pixel values
+        Convert boundign box in XYZ space to crop of depth image
         :param x: x
         :param y: y
         :param z: z
@@ -84,3 +84,15 @@ class KinectConverter:
         u = x/z * self._intrinsics_RGB[0, 0] +  self._intrinsics_RGB[0, 2]
         v = y/z * self._intrinsics_RGB[1, 1] +  self._intrinsics_RGB[1, 2]
         return u,v
+
+    def crop_by_bb(self, location, size, depth):
+        """
+        Convert boundign box in XYZ space to crop of depth image
+        :param location: x,y,z of upper right back corder of boundign box
+        :param size: width,length,height size of bounding box
+        :param depth: depth image
+        :return: crop - the cropped depth image
+        """
+        u1,v1 = convert_inverse(location[0], location[1], location[2])
+        u2,v2 = convert_inverse(location[0]+depth[0], location[1]+depth[1], location[2]+depth[2])
+        return depth[v1:v2,u1:u2]
