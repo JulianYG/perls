@@ -78,8 +78,6 @@ class PushCube(PerlsEnv):
         #         # math_util.euler2quat([-math_util.pi, -math_util.pi / 2., 0.]),
         #     ftype='rel',max_iter=500)
 
-        # self._robot.joint_states = (range(7), [0] * 7, 'position', None)
-
         return self.state
 
     def _step(self, action):
@@ -90,7 +88,6 @@ class PushCube(PerlsEnv):
 
         self._robot.joint_torques = action
         # rate / step size = 0.01 / 0.001 = 10 (account for 100 Hz sampling of demonstrations)
-        for _ in range(10):
-            self._world.update()
+        self._world.update()
 
         return self.state, self.reward, self.done, {'state': self.state}

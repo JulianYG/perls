@@ -112,7 +112,7 @@ class View:
         (pos: vec3 cartesian, orn: vec4 quat)
         :return: None
         """
-        if camera_info and self._frame != 'gui':
+        if camera_info:
             self._engine.camera = camera_info
 
     def load_config(self, description):

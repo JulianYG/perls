@@ -335,7 +335,8 @@ class Arm(Tool):
 
         # need to wait until reached desired states, just as in real case
         # for _ in range(max_iter):
-        #     self._engine.step(0)
+        #     if math_util.rms():
+        #         self._engine.step(0)
         
     ###
     #  High level functionality

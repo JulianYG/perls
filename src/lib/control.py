@@ -302,12 +302,13 @@ class Controller(object):
                 self._update_time_stamp = time_util.get_abs_time()
 
                 # Perform control interruption first
+                signal = ctrl_handler.signal
+
                 self._control_interrupt(
-                    world, display, 
-                    ctrl_handler.signal, time_since_last_update)
+                    world, display, signal,
+                    time_since_last_update)
 
-                if display.record:
-
+                if display.record and signal['record']:
                     self._record_interrupt(world, elt)
 
                 # Update model

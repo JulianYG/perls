@@ -91,6 +91,7 @@ class KeyboardEventHandler(ControlHandler):
         self._signal['cmd'] = list()
         ins = list()
         self._signal['camera'] = list()
+        self._signal['record'] = True
 
         events = event_listener.listen_to_bullet_keyboard(self._id)
         time.sleep(1. / self._rate)
@@ -157,6 +158,8 @@ class ViveEventHandler(ControlHandler):
 
         # Initialize positions
         self._controllers = dict()
+
+        self._signal['record'] = False
         
         c_id = event_listener.listen_to_bullet_vive(self._id)
 
@@ -179,6 +182,7 @@ class ViveEventHandler(ControlHandler):
 
             engage_flag = event_listener.KEY_STATUS[button[32]]
             reset_flag = event_listener.KEY_STATUS[button[1]]
+
             scroll_flag = event_listener.KEY_STATUS[button[2]]
 
             # Always use the gripper slider
@@ -192,6 +196,9 @@ class ViveEventHandler(ControlHandler):
             if engage_flag == 'holding':
                 a_orn = math_util.quat2euler(orn)
                 ins.append(('reach', (pos, a_orn[[1, 0, 2]])))
+
+            if scroll_flag == 'pressing':
+                self._signal['record'] = True
 
         self._signal['instruction'] = ins
 
@@ -231,6 +238,7 @@ class AppEventHandler(ControlHandler):
         self._signal['update'] = 0
         ins = list()
         self._signal['camera'] = list()
+        self._signal['record'] = True
 
         events = event_listener.listen_to_redis(
             self._comm.channels[self._channel_name])
