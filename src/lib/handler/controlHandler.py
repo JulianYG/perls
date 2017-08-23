@@ -197,7 +197,7 @@ class ViveEventHandler(ControlHandler):
                 a_orn = math_util.quat2euler(orn)
                 ins.append(('reach', (pos, a_orn[[1, 0, 2]])))
 
-            if scroll_flag == 'pressing':
+            if scroll_flag == 'releasing':
                 self._signal['record'] = True
 
         self._signal['instruction'] = ins

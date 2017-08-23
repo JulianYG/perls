@@ -1,6 +1,7 @@
 #!/usr/bin/env/ python
 
 import numpy as np
+import platform
 import os.path as osp
 
 import pybullet as p
@@ -119,9 +120,10 @@ class BulletPhysicsEngine(FakeStateEngine):
 
     def load_asset(self, file_path, pos, orn, fixed):
         uid = -1
-        file_path = pjoin(osp.dirname(__file__),
-                          '../../../data',
-                          file_path)
+        if platform.system() != 'Windows':
+            file_path = pjoin(osp.dirname(__file__),
+                              '../../../data',
+                              file_path)
         try:
             if osp.basename(file_path).split('.')[1] == 'urdf':
                 uid = p.loadURDF(
