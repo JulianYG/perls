@@ -59,9 +59,9 @@ class PushCube(PerlsEnv):
             dict(
                 dim=(256, 256),
                 flen=3,
-                yaw=30,
-                pitch=20,
-                focus=(0.5, 0.5, 0)
+                yaw=50,
+                pitch=-35,
+                # focus=(0, -0.5, 0)
             )
         )
 
