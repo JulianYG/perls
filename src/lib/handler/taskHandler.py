@@ -14,6 +14,14 @@ class Checker(InterruptHandler):
         super(Checker, self).__init__(ps_id, 100)
         self._name = env_name
 
+    @property
+    def name(self):
+        return 'TaskCompletionChecker'
+
+    @property
+    def signal(self):
+        return NotImplemented
+
     def check(self, body_dict):
 
         if self._name == 'push':
@@ -21,7 +29,7 @@ class Checker(InterruptHandler):
             cube = body_dict['cube_0']
             table = body_dict['table_0']
 
-            if cube.pos[2] >= 0.68:
+            if cube.pos[2] >= 0.69:
                 # If the cube jumps too high
                 return True, False
 
@@ -30,10 +38,9 @@ class Checker(InterruptHandler):
                 done = True
                 success = False
 
-
                 # Only allow pushing towards one side, 
                 # falling into one specific region
-                if table.pos[1] -.275 <= cube.pos[1] <= table.pos[1] + .275 and \
+                if table.pos[1] - .275 <= cube.pos[1] <= table.pos[1] + .275 and \
                    table.pos[0] + .25 <= cube.pos[0] <= table.pos[0] + .65:
                     success = True
 
@@ -41,3 +48,5 @@ class Checker(InterruptHandler):
 
         return False, False
 
+    def stop(self):
+        return

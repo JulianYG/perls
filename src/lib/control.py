@@ -383,44 +383,54 @@ class Controller(object):
             if entity.type == 'body':
 
                 entity_log = self._data_log.get(
-                    name, {'pose': []})
+                    name, dict(pose=list(), time=list()))
 
                 pose = entity.pose
                 pose = (approximate(pose[0], 5).tolist(),
                         approximate(pose[1], 5).tolist())
-                entity_log['pose'].append(
-                    (time_stamp, pose)
-                )
+                entity_log['pose'].append(pose)
+                entity_log['time'].append(time_stamp)
 
                 self._data_log[name] = entity_log
 
             elif entity.type == 'arm':
 
                 arm_log = self._data_log.get(
-                    name, {'pose': [],
-                           'joint_position': [],
-                           'joint_velocity': [],
-                           'joint_torque': []})
+                    name, dict(time=list(),
+                               pose=list(),
+                               joint_position=list(),
+                               joint_velocity=list(),
+                               joint_torque=list(),
+                               eef_pose=list(),
+                               eef_v=list(),
+                               # eef_force=list()
+                               ))
 
                 tool_pose = entity.tool_pose
                 tool_pose = (approximate(tool_pose[0], 5).tolist(),
                              approximate(tool_pose[1], 5).tolist())
+                arm_log['time'].append(time_stamp)
+                arm_log['pose'].append(tool_pose)
 
-                arm_log['pose'].append(
-                    (time_stamp, tool_pose)
-                )
                 arm_log['joint_position'].append(
-                    (time_stamp,
-                     approximate(entity.joint_positions, 5).tolist())
+                    approximate(entity.joint_positions, 5).tolist()
                 )
                 arm_log['joint_velocity'].append(
-                    (time_stamp,
-                     approximate(entity.joint_velocities, 5).tolist())
+                    approximate(entity.joint_velocities, 5).tolist()
                 )
                 arm_log['joint_torque'].append(
-                    (time_stamp,
-                     approximate(entity.joint_torques, 5).tolist())
+                    approximate(entity.joint_torques, 5).tolist()
                 )
+
+                eef_pose = entity.tool_pose
+                arm_log['eef_pose'].append(
+                    (approximate(eef_pose[0], 5).tolist(),
+                     approximate(eef_pose[1], 5).tolist())
+                )
+
+                arm_log['eef_v'].append(approximate(entity.v, 5))
+
+                # arm_log['eef_force'].append(entity.)
 
                 self._data_log[name] = arm_log
 
