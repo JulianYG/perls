@@ -335,14 +335,16 @@ class BulletPhysicsEngine(FakeStateEngine):
                                             physicsClientId=self._physics_server_id,
                                             **kwargs)
             elif ctype == 'torque':
-                force = math_util.vec(vals)
 
-                # Use some small values instead of disabling the motors
-                force[force == 0] = 1e-6
+                # Need to disable joint motors first
+                p.setJointMotorControlArray(uid, jointIndices=jids,
+                                            controlMode=p.VELOCITY_CONTROL,
+                                            forces=[0] * len(jids))
+
                 p.setJointMotorControlArray(uid, jointIndices=jids,
                                             controlMode=p.TORQUE_CONTROL,
                                             physicsClientId=self._physics_server_id,
-                                            forces=force, **kwargs)
+                                            forces=vals, **kwargs)
         except AssertionError or p.error:
             self.status = BulletPhysicsEngine._STATUS[-1]
             if p.error:

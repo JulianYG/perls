@@ -23,7 +23,7 @@ class PushCube(PerlsEnv):
         self._cube = self._world.body['cube_0']
         self._robot = self._world.tool['m0']
         self._table = self._world.body['table_0']
-        self._z_pos = self._cube.pos[2]
+        # self._z_pos = self._cube.pos[2]
 
     @property
     def state(self):
@@ -36,7 +36,7 @@ class PushCube(PerlsEnv):
     def done(self):
 
         # done if cube falls off table
-        if self._cube.pos[2] < self._z_pos:
+        if self._cube.pos[2] < 0.6:
             return True
         return False
 
@@ -64,6 +64,10 @@ class PushCube(PerlsEnv):
                 # focus=(0, -0.5, 0)
             )
         )
+
+        # Enable torque control by disable the motors first
+        # As required by bullet
+        self._robot.joint_torques = [0] * 7
 
         # move robot to initial position
         # TODO: orientation offset
