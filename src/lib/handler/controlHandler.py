@@ -94,7 +94,7 @@ class KeyboardEventHandler(ControlHandler):
         self._signal['record'] = True
 
         events = event_listener.listen_to_bullet_keyboard(self._id)
-        time.sleep(1. / self._rate)
+        # time.sleep(1. / self._rate)
 
         # Construct dictionary {label: (key, status)}
         keys = {event_listener.KEY_LABEL.get(int(long_key), None):
@@ -244,7 +244,7 @@ class AppEventHandler(ControlHandler):
 
         events = event_listener.listen_to_redis(
             self._comm.channels[self._channel_name])
-        time.sleep(1. / self._rate)
+        # time.sleep(1. / self._rate)
 
         for event_dic in events:
             # TODO: key and id

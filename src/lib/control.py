@@ -1,6 +1,7 @@
 import multiprocessing
 from multiprocessing import Process, Event
-
+import sched, time
+import threading
 from .state import physicsEngine#, robotEngine
 from .adapter import Adapter
 from .render import graphicsEngine, camera
@@ -22,31 +23,6 @@ __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
 __license__ = 'private'
 __version__ = '0.1'
-
-
-class _Timer(Process):
-
-    def __init__(self, interval, function, args=[]):
-
-        super(_Timer, self).__init__()
-        self._intv = interval 
-        self._func = function 
-        self._args = args
-
-        self._finished = Event()
-
-    def cancel(self):
-
-        self._finished.set()
-
-    def run(self):
-
-        self._finished.wait(self._intv)
-
-        if not self._finished.is_set():
-            self._func(self._args)
-
-        self._finished.set()
 
 
 class Controller(object):
@@ -230,12 +206,12 @@ class Controller(object):
         )
 
         # TODO
-        if conf.build == 'debug':
-            world = debugger.ModelDebugger(world)
-            display = debugger.ViewDebugger(display)
-        elif conf.build == 'test':
-            world = tester.ModelTester(world)
-            display = tester.ViewTester(display)
+        # if conf.build == 'debug':
+        #     world = debugger.ModelDebugger(world)
+        #     display = debugger.ViewDebugger(display)
+        # elif conf.build == 'test':
+        #     world = tester.ModelTester(world)
+        #     display = tester.ViewTester(display)
 
         # Give record name for physics physics_engine
         if conf.job == 'record':
@@ -340,8 +316,10 @@ class Controller(object):
                 if display.record and signal['record']:
                     if not prev_signal_record:
                         loginfo("RECORDING STARTED", FONT.control)
-                        self._recorder = _Timer(0.01, self._record_interrupt, world)
-                        self._recorder.run()
+
+                        self._recorder = time_util.TimedRecorder(
+                            0.01, self._record_interrupt, world)
+                        self._recorder.start()
 
                 prev_signal_record = signal['record']
 
@@ -414,74 +392,62 @@ class Controller(object):
 
     def _record_interrupt(self, world):
 
-        # time_stamp = approximate(time_stamp, 5)
+        for name, _ in world.target:
+            entity = world.body[name]
+            print(world.body['cube_0'].pose)
 
-        import time
+            if entity.type == 'body':
 
-        while 1:
-            old_time = time.time()
+                entity_log = self._data_log.get(
+                    name, dict(pose=list(), time=list()))
 
-            # do stuff here...
-            for name, _ in world.target:
-                entity = world.body[name]
+                pose = entity.pose
+                pose = (approximate(pose[0], 5).tolist(),
+                        approximate(pose[1], 5).tolist())
+                entity_log['pose'].append(pose)
+                # entity_log['time'].append(time_stamp)
 
-                if entity.type == 'body':
+                # self._data_log[name] = entity_log
 
-                    entity_log = self._data_log.get(
-                        name, dict(pose=list(), time=list()))
+            elif entity.type == 'arm':
 
-                    pose = entity.pose
-                    pose = (approximate(pose[0], 5).tolist(),
-                            approximate(pose[1], 5).tolist())
-                    entity_log['pose'].append(pose)
-                    # entity_log['time'].append(time_stamp)
+                arm_log = self._data_log.get(
+                    name, dict(time=list(),
+                               pose=list(),
+                               joint_position=list(),
+                               joint_velocity=list(),
+                               joint_torque=list(),
+                               eef_pose=list(),
+                               eef_v=list(),
+                               # eef_force=list()
+                               ))
 
-                    # self._data_log[name] = entity_log
+                tool_pose = entity.tool_pose
+                tool_pose = (approximate(tool_pose[0], 5).tolist(),
+                             approximate(tool_pose[1], 5).tolist())
+                # arm_log['time'].append(time_stamp)
+                arm_log['pose'].append(tool_pose)
 
-                elif entity.type == 'arm':
+                arm_log['joint_position'].append(
+                    approximate(entity.joint_positions, 5).tolist()
+                )
+                arm_log['joint_velocity'].append(
+                    approximate(entity.joint_velocities, 5).tolist()
+                )
+                arm_log['joint_torque'].append(
+                    approximate(entity.joint_torques, 5).tolist()
+                )
 
-                    arm_log = self._data_log.get(
-                        name, dict(time=list(),
-                                   pose=list(),
-                                   joint_position=list(),
-                                   joint_velocity=list(),
-                                   joint_torque=list(),
-                                   eef_pose=list(),
-                                   eef_v=list(),
-                                   # eef_force=list()
-                                   ))
+                eef_pose = entity.tool_pose
+                arm_log['eef_pose'].append(
+                    (approximate(eef_pose[0], 5).tolist(),
+                     approximate(eef_pose[1], 5).tolist())
+                )
+                arm_log['eef_v'].append(approximate(entity.v, 5))
 
-                    tool_pose = entity.tool_pose
-                    tool_pose = (approximate(tool_pose[0], 5).tolist(),
-                                 approximate(tool_pose[1], 5).tolist())
-                    # arm_log['time'].append(time_stamp)
-                    arm_log['pose'].append(tool_pose)
+                # arm_log['eef_force'].append(entity.)
 
-                    arm_log['joint_position'].append(
-                        approximate(entity.joint_positions, 5).tolist()
-                    )
-                    arm_log['joint_velocity'].append(
-                        approximate(entity.joint_velocities, 5).tolist()
-                    )
-                    arm_log['joint_torque'].append(
-                        approximate(entity.joint_torques, 5).tolist()
-                    )
-
-                    eef_pose = entity.tool_pose
-                    arm_log['eef_pose'].append(
-                        (approximate(eef_pose[0], 5).tolist(),
-                         approximate(eef_pose[1], 5).tolist())
-                    )
-
-                    arm_log['eef_v'].append(approximate(entity.v, 5))
-
-                    # arm_log['eef_force'].append(entity.)
-
-                    self._data_log[name] = arm_log
-
-            interval = time.time() - old_time
-            if (0.01 > interval):
-                time.sleep(0.01 - interval)
+                self._data_log[name] = arm_log
 
     def _control_interrupt(self, world, display, signal, elapsed_time):
         """
