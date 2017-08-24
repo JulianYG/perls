@@ -584,10 +584,14 @@ class Controller(object):
                                 ('tool', 'tool_pose'))[0][tool.tid]
                             self._states['tool'][tool.tid][0] = state_pose[0]
                     else:
-                        # Special case: use absolute pose for VR
+                        # Special case: use absolute position for VR
                         threshold = 1.3
+                        end_orn_pos = math_util.vec(tool.joint_positions) \
+                            [tool.active_joints[-2:]]
+                        i_orn = math_util.vec((end_orn_pos[1], end_orn_pos[0], 0)) \
+                                + r_orn * elapsed_time
                         if math_util.rms(tool.tool_pos - r_pos) < threshold:
-                            tool.reach(r_pos, r_orn)
+                            tool.reach(r_pos, i_orn + r_orn * elapsed_time)
 
                 elif method == 'grasp':
                     tool.grasp(value)

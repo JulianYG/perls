@@ -182,7 +182,6 @@ class ViveEventHandler(ControlHandler):
 
             engage_flag = event_listener.KEY_STATUS[button[32]]
             reset_flag = event_listener.KEY_STATUS[button[1]]
-
             scroll_flag = event_listener.KEY_STATUS[button[2]]
 
             # Always use the gripper slider
@@ -193,6 +192,9 @@ class ViveEventHandler(ControlHandler):
                 ins.append(('rst', 1))
 
             # Engage button
+            # if engage_flag == 'pressing':
+            #     self.
+
             if engage_flag == 'holding':
                 a_orn = math_util.quat2euler(orn)
                 ins.append(('reach', (pos, a_orn[[1, 0, 2]])))
