@@ -154,7 +154,6 @@ class Arm(Tool):
         # Set the joints if within range
         if joint_spec['lower'][eef_joints[0]] <= orn[0] \
                 <= joint_spec['upper'][eef_joints[0]]:
-
             jpos = [None] * self._dof
             jpos[eef_joints[0]] = orn[0]
             self.joint_positions = (
@@ -164,6 +163,7 @@ class Arm(Tool):
 
         if joint_spec['lower'][eef_joints[1]] <= orn[1] \
                 <= joint_spec['upper'][eef_joints[1]]:
+
             jpos = [None] * self._dof
             jpos[eef_joints[1]] = orn[1]
             self.joint_positions = (

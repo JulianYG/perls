@@ -540,7 +540,12 @@ class Controller(object):
                         if r_orn is not None:
                             ###
                             # Can try directly setting joint states here
-                            i_orn += r_orn * elapsed_time
+                            end_orn_pos = math_util.vec(tool.joint_positions)\
+                                [tool.active_joints[-2:]]
+
+                            i_orn = math_util.vec((end_orn_pos[1], end_orn_pos[0], 0))\
+                                    + r_orn * elapsed_time
+
                             if tool.tid[0] == 'm':
                                 eef_joints = tool.active_joints[-2:]
                                 joint_spec = tool.joint_specs
@@ -600,11 +605,11 @@ class Controller(object):
         :param display: the view side of system
         :return: None
         """
-        camera_pos, camerq_orn = display.get_camera_pose(otype='deg')
+        camera_pos, camera_orn = display.get_camera_pose(otype='deg')
         self._states['camera']['focus'] = camera_pos
         # self._states['camera']['flen'] = 1e-3
-        self._states['camera']['pitch'] = camerq_orn[0]
-        self._states['camera']['yaw'] = camerq_orn[1]
+        self._states['camera']['pitch'] = camera_orn[0]
+        self._states['camera']['yaw'] = camera_orn[1]
 
     def _control_update(self, world):
         """
@@ -615,7 +620,12 @@ class Controller(object):
         init_states = world.get_states(('tool', 'tool_pose'))[0]
         # First control states
         for tid, init_pose in init_states.items():
+            # if tid[0] == 'g':
             self._states['tool'][tid] = [
-                init_pose[0], 
+                init_pose[0],
                 # Use radians
                 math_util.quat2euler(init_pose[1])]
+            # else:
+            #     # For arms, use joint positions for tool orn;
+            #     # The real orientation is end effector pose
+            #     self._states['tool'][tid] = init_pose
