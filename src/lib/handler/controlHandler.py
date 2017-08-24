@@ -176,7 +176,7 @@ class ViveEventHandler(ControlHandler):
 
         events = event_listener.listen_to_bullet_vive(
             self._id, 'controller')
-        time.sleep(1. / self._rate)
+        # time.sleep(1. / self._rate)
 
         for c_id, pos, orn, slide, _, _, button, _ in events:
 
