@@ -295,7 +295,7 @@ class InteraEngine(RealStateEngine):
         """
         pass
 
-    def step(self, elapsed_time):
+    def step(self, elapsed_time, step_size):
         """
         Simulate for one step
         :param elapsed_time: integer elapsed time
@@ -433,14 +433,6 @@ class InteraEngine(RealStateEngine):
         Cannot remove given body from environment in real world
         """
         return NotImplemented
-
-    def set_step_size(self, size):
-        """
-        Cannot set simulation step time interval
-        :param size: float
-        :return: None
-        """
-        pass
 
 
 class ROSEngine(RealStateEngine):

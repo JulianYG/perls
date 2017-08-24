@@ -347,12 +347,12 @@ class World(object):
         """
         return self._checker.check(self._bodies)
 
-    def update(self, elp=0):
+    def update(self, elp=0, step_size=None):
         """
         Update the states of the world.
         :return: None
         """
-        return self._engine.step(elp)
+        return self._engine.step(elp, step_size)
 
     def clean_up(self):
         """
