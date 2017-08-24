@@ -434,6 +434,14 @@ class InteraEngine(RealStateEngine):
         """
         return NotImplemented
 
+    def set_step_size(self, size):
+        """
+        Cannot set simulation step time interval
+        :param size: float
+        :return: None
+        """
+        pass
+
 
 class ROSEngine(RealStateEngine):
 

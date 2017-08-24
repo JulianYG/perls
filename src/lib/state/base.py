@@ -597,6 +597,17 @@ class StateEngine(object):
         return NotImplemented
 
     @abc.abstractmethod
+    def set_step_size(self, size):
+        """
+        Set the time interval size for each
+        simulation step in non-real time, in
+        unit of seconds
+        :param size: float seconds
+        :return: None
+        """
+        return NotImplemented
+
+    @abc.abstractmethod
     def step(self, elapsed_time):
         """
         Simulate for one step
