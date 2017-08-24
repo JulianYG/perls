@@ -294,8 +294,8 @@ class Controller(object):
 
         # Finally start control loop (Core)
         try:
+            prev_signal_record = False
             while not time_up and not done:
-
                 elt = time_util.get_elapsed_time(self._init_time_stamp)
 
                 time_since_last_update = time_util.get_elapsed_time(self._update_time_stamp)
@@ -309,7 +309,11 @@ class Controller(object):
                     time_since_last_update)
 
                 if display.record and signal['record']:
+                    if not prev_signal_record:
+                        loginfo("RECORDING STARTED", FONT.control)
                     self._record_interrupt(world, elt)
+
+                prev_signal_record = signal['record']
 
                 # Update model
                 time_up = world.update(elt)
