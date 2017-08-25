@@ -1,10 +1,17 @@
 from __future__ import print_function 
-import pybullet as p
+#import pybullet as p
 #from sim_.simulation.utils.io import parse_log as plog
 from perls.src.lib.utils.io_util import parse_log as plog
+from perls.src.lib.utils.math_util import get_relative_pose, get_absolute_pose
+from glob import glob
 import numpy as np
 import matplotlib.pyplot as plt
 from IPython import embed
+
+# hard-coded robot base pose
+robot_position = [-0.6756339993327856, 0.010968999937176704, 1.1236299961805343]
+robot_orn = [0.0, 0.0, 0.0, 1.0]
+robot_pose = (robot_position, robot_orn)
 
 
 class Postprocess(object):
@@ -40,7 +47,7 @@ class Postprocess(object):
         for i, name in enumerate(self.col_names):
             self.col_names_dict[name] = i
 
-    def parse_log(self, f_name, output_file, verbose=True, objects=None, cols=None):
+    def parse_log(self, fname, output_file, verbose=True, objects=None, cols=None):
         """
         
         This function parses a log saved by PyBullet, but it filters the
@@ -60,7 +67,7 @@ class Postprocess(object):
 
         """
 
-        log = np.array(plog(f_name, verbose=verbose))
+        log = np.array(plog(fname, verbose=verbose))
 
         col_inds = sorted(self.col_names_dict.values())
         if cols is not None:
@@ -90,35 +97,76 @@ class Postprocess(object):
         return np.array([x for x in filtered if x is not None])
 
 
+    def parse_demonstration(self, fname):
+        """
+        Parse a bullet bin file into states and actions.
+        """
+        robot_log = self.parse_log(fname, None, verbose=False, objects=["titan_0"], 
+                                   cols=['stepCount', 'timeStamp', 'qNum', 
+                                         'q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6',
+                                         'v0', 'v1', 'v2', 'v3', 'v4', 'v5', 'v6',
+                                         'u0', 'u1', 'u2', 'u3', 'u4', 'u5', 'u6'])
+
+        cube_log = pp.parse_log(fname, None, verbose=False, objects=["titan_0"], 
+                                cols=['stepCount', 'timeStamp', 'qNum', 'posX', 'posY', 'posZ', 'oriX', 'oriY', 'oriZ', 'oriW'])
+
+
+        # Time differences. 
+        # time_diffs = robot_log[1:, 1] - robot_log[:-1, 1]
+
+        # plt.figure()
+        # plt.plot(time_diffs)
+        # plt.show()
+
+        #embed()
+
+        num_elems = robot_log.shape[0]
+        states = []
+        actions = []
+
+        num_filtered = 0
+        prev_joint_pos = robot_log[0, 3:10]
+
+        for i in range(1, num_elems):
+            timestamp_elem = robot_log[i, 1]
+            joint_pos_elem = robot_log[i, 3:10]
+
+            # TODO: think about more natural filtering mechanism here?
+
+            # filter on joint positions being similar (user didn't move)
+            if np.all(np.absolute(np.array(joint_pos_elem) - np.array(prev_joint_pos)) < 1e-4):
+                prev_joint_pos = joint_pos_elem
+                num_filtered += 1
+                continue
+
+            joint_vel_elem = robot_log[i, 10:17]
+            joint_torq_elem = robot_log[i, 17:24]
+            cube_pose_elem = (cube_log[i, 3:6], cube_log[i, 6:10])
+            #cube_pose_pos_elem, cube_pose_orn_elem = cube_pose_elem
+
+            # convert from world frame to robot frame
+            cube_pose_pos_elem, cube_pose_orn_elem = get_relative_pose(cube_pose_elem, robot_pose)
+
+
+            state = np.concatenate([joint_pos_elem, joint_vel_elem, cube_pose_pos_elem, cube_pose_orn_elem])
+            action = np.array(joint_torq_elem)
+            states.append(state)
+            actions.append(action)
+
+            # remember last joint position for filtering
+            prev_joint_pos = joint_pos_elem
+
+        print("Number filtered: {} out of {}.".format(num_filtered, num_elems))
+        return np.array(states), np.array(actions)
+
 
 if __name__ == "__main__":
 
-    f_name = "test.bin"
+    fname = "test.bin"
     pp = Postprocess()
-    # log1 = pp.parse_log(f_name, None, verbose=False)
-    # log2 = pp.parse_log(f_name, None, verbose=False, objects=["titan_0"])
-    # log3 = pp.parse_log(f_name, None, verbose=False, objects=["cube"])
-    # log4 = pp.parse_log(f_name, None, verbose=False, objects=["titan_0", "cube_0"], 
-    #                             cols=['q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6'])
-
-    robot_log = pp.parse_log(f_name, None, verbose=False, objects=["titan_0"], 
-                             cols=['stepCount', 'timeStamp', 'qNum', 'q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6'])
-
-    cube_log = pp.parse_log(f_name, None, verbose=False, objects=["titan_0"], 
-                            cols=['stepCount', 'timeStamp', 'qNum', 'posX', 'posY', 'posZ', 'oriX', 'oriY', 'oriZ', 'oriW'])
+    pp.parse_demonstration(fname)
 
 
-    time_diffs = robot_log[1:, 1] - robot_log[:-1, 1]
-
-    # plt.figure()
-    # plt.plot(time_diffs)
-    # plt.show()
-
-
-    # print(log1[4])
-    # print(log2[0])
-    # print(log3[0])
-    # embed()
 
 
 
