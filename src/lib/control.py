@@ -292,6 +292,8 @@ class Controller(object):
         self._view_update(display)
         self._update_time_stamp = time_util.get_abs_time()
 
+        # Start control in another 
+
         # Finally start control loop (Core)
         try:
             while not time_up and not done:
@@ -507,20 +509,11 @@ class Controller(object):
                         threshold = 1.3
                         end_orn_pos = math_util.vec(tool.joint_positions) \
                             [tool.active_joints[-2:]]
+
                         if math_util.rms(tool.tool_pos - r_pos) < threshold:
-
-                            if r_orn is not None:
-
-                                print(r_orn)
-                                a_orn = math_util.vec((end_orn_pos[1], end_orn_pos[0], 0)) \
-                                        + r_orn[[1, 0, 2]] * elapsed_time
-                                
-
-
-                                tool.reach(r_pos, a_orn)
-
-                            else:
-                                tool.reach(r_pos, None)
+                            a_orn = math_util.vec((end_orn_pos[1], end_orn_pos[0], 0)) \
+                                    + r_orn * elapsed_time
+                            tool.reach(r_pos, a_orn[[1, 0, 2]])
 
                 elif method == 'grasp':
                     tool.grasp(value)

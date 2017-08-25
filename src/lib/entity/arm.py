@@ -167,7 +167,7 @@ class Arm(Tool):
             jpos = [None] * self._dof
             jpos[eef_joints[1]] = orn[1]
             self.joint_positions = (
-                jpos, dict(positionGains=(.5,),
+                jpos, dict(positionGains=(.05,),
                            velocityGains=(1.,))
             )
 

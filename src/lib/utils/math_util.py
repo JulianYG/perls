@@ -1,5 +1,6 @@
 import pybullet as p
 import numpy as np
+from numpy import ma
 import math
 
 """
@@ -52,7 +53,6 @@ def fmod(val, mod):
 Vector Calculation / Processing
 """
 
-
 def rms(vector):
     """
     Get the root mean square of the vector
@@ -62,13 +62,16 @@ def rms(vector):
     return np.sqrt(np.sum(vector ** 2))
 
 
-def sign(vector):
+def sign(vector, threshold=None):
     """
     Returns element-wise indication of the sign
     of a vector
     :param vector: input vector
     :return: sign of each element in the vector
     """
+    if threshold:
+        mask = ma.masked_inside(vector, -abs(threshold), abs(threshold))
+        vector = mask.filled(0)
     return np.sign(vector)
 
 

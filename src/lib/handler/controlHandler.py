@@ -198,12 +198,11 @@ class ViveEventHandler(ControlHandler):
                 self._orn_state = math_util.quat2euler(orn)
 
             if engage_flag == 'holding':
-                # a_orn = math_util.quat2euler(orn)
-                # ins.append(('reach', (pos, a_orn[[1, 0, 2]])))
+
                 r_orn = math_util.sign(
                     math_util.quat2euler(orn)
-                    - self._orn_state) * 0.001
-                ins.append(('reach', (pos, r_orn[[1, 0, 2]] * self._sens)))
+                    - self._orn_state, 1e-2) * 0.001
+                ins.append(('reach', (pos, r_orn * self._sens)))
 
             if scroll_flag == 'releasing':
                 self._signal['record'] = True
