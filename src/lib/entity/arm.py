@@ -167,7 +167,7 @@ class Arm(Tool):
             jpos = [None] * self._dof
             jpos[eef_joints[1]] = orn[1]
             self.joint_positions = (
-                jpos, dict(positionGains=(.05,),
+                jpos, dict(positionGains=(.5,),
                            velocityGains=(1.,))
             )
 
@@ -335,8 +335,8 @@ class Arm(Tool):
 
         # need to wait until reached desired states, just as in real case
         # for _ in range(max_iter):
-        #     if math_util.rms():
-        #         self._engine.step(0)
+        #     # if math_util.rms():
+        #     self._engine.step(0, None)
         
     ###
     #  High level functionality

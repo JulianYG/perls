@@ -160,6 +160,8 @@ class ViveEventHandler(ControlHandler):
         self._controllers = dict()
 
         self._signal['record'] = False
+
+        self._orn_state = math_util.zero_vec(3)
         
         c_id = event_listener.listen_to_bullet_vive(self._id)
 
@@ -192,12 +194,14 @@ class ViveEventHandler(ControlHandler):
                 ins.append(('rst', 1))
 
             # Engage button
-            # if engage_flag == 'pressing':
-            #     self.
+            if engage_flag == 'pressing':
+                self._orn_state = math_util.quat2euler(orn)
 
             if engage_flag == 'holding':
-                a_orn = math_util.quat2euler(orn)
-                ins.append(('reach', (pos, a_orn[[1, 0, 2]])))
+                # a_orn = math_util.quat2euler(orn)
+                # ins.append(('reach', (pos, a_orn[[1, 0, 2]])))
+                r_orn = math_util.quat2euler(orn) - self._orn_state
+                ins.append(('reach', (pos, r_orn / 20.)))
 
             if scroll_flag == 'releasing':
                 self._signal['record'] = True
