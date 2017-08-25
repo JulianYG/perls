@@ -96,7 +96,7 @@ if __name__ == "__main__":
     #demons = glob("*.bin")
     demons = glob("eef.bin")
     fname = demons[0]
-    print(fname)
+
     states, actions = getDemonstration(fname)
     env = gym.make('push-gui-v0')
     env.reset()

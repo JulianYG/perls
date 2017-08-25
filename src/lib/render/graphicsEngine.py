@@ -383,6 +383,7 @@ class BulletRenderEngine(GraphicsEngine):
             # TODO: set camera angle for GUI/HMD
             loginfo('Start replaying file {}'.
                     format(self._record_name), FONT.control)
+
             for record in obj_log:
                 # time_stamp = float(record[1])
 
@@ -394,7 +395,6 @@ class BulletRenderEngine(GraphicsEngine):
                 for i in range(n_joints):
                     joint_info = p.getJointInfo(obj, i)
                     qid = joint_info[3]
-
                     if qid > -1:
                         p.resetJointState(obj, i, record[qid - 7 + 17])
 
