@@ -68,6 +68,9 @@ def getDemonstration(fname):
         states.append(state)
         actions.append(action)
 
+        # remember last joint position for filtering
+        prev_joint_pos = joint_pos_elem
+
     print("Number filtered: {} out of {}.".format(num_filtered, num_elems))
     return np.array(states), np.array(actions)
 
