@@ -62,6 +62,16 @@ def rms(vector):
     return np.sqrt(np.sum(vector ** 2))
 
 
+def sign(vector):
+    """
+    Returns element-wise indication of the sign
+    of a vector
+    :param vector: input vector
+    :return: sign of each element in the vector
+    """
+    return np.sign(vector)
+
+
 def approximate(val, n_digits):
     """
     Approximate numbers by given digits.
