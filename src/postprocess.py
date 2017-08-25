@@ -3,6 +3,7 @@ import pybullet as p
 #from sim_.simulation.utils.io import parse_log as plog
 from perls.src.lib.utils.io_util import parse_log as plog
 import numpy as np
+import matplotlib.pyplot as plt
 from IPython import embed
 
 
@@ -85,7 +86,7 @@ class Postprocess(object):
             else:
                 return None
         filtered = map(filter_row, log)
-        return [x for x in filtered if x is not None]
+        return np.array([x for x in filtered if x is not None])
 
 
 
@@ -105,7 +106,13 @@ if __name__ == "__main__":
     cube_log = pp.parse_log(f_name, None, verbose=False, objects=["titan_0"], 
                             cols=['stepCount', 'timeStamp', 'qNum', 'posX', 'posY', 'posZ', 'oriX', 'oriY', 'oriZ', 'oriW'])
 
-    embed()
+
+    time_diffs = robot_log[1:, 1] - robot_log[:-1, 1]
+
+    # plt.figure()
+    # plt.plot(time_diffs)
+    # plt.show()
+
 
     # print(log1[4])
     # print(log2[0])
