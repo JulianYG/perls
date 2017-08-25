@@ -1,21 +1,29 @@
+from __future__ import print_function 
 import pybullet as p
-from sim_.simulation.utils.io import parse_log as plog
+#from sim_.simulation.utils.io import parse_log as plog
+from perls.src.lib.utils.io_util import parse_log as plog
 import numpy as np
-# from IPython import embed
+import matplotlib.pyplot as plt
+from IPython import embed
 
 
 class Postprocess(object):
     def __init__(self, objects_fname="sim_/log/trajectory/body_info.txt"):
 
         # get mapping between entity ids and entity names
-        self.object_map = {}
-        objects_fptr = open(objects_fname, "r")
-        lines = objects_fptr.readlines()
-        objects_fptr.close()
-        for line in lines:
-            obj_id, obj_name = line.strip().split(",")
-            self.object_map[int(obj_id)] = obj_name
+        # self.object_map = {}
+        # objects_fptr = open(objects_fname, "r")
+        # lines = objects_fptr.readlines()
+        # objects_fptr.close()
+        # for line in lines:
+        #     obj_id, obj_name = line.strip().split(",")
+        #     self.object_map[int(obj_id)] = obj_name
 
+        # self.object_ids = [int(x) for x in self.object_map.keys()]
+        # self.object_names = self.object_map.values()
+
+        # hardcoded mapping between entity ids and entity ames
+        self.object_map = {4 : "cube_0", 1 : "titan_0"}
         self.object_ids = [int(x) for x in self.object_map.keys()]
         self.object_names = self.object_map.values()
 
@@ -78,22 +86,37 @@ class Postprocess(object):
             else:
                 return None
         filtered = map(filter_row, log)
-        return [x for x in filtered if x is not None]
+        return np.array([x for x in filtered if x is not None])
 
 
 
 if __name__ == "__main__":
 
-    f_name = "sim_/log/trajectory/keyboard_sawyer_hanoi.bin"
+    f_name = "test.bin"
     pp = Postprocess()
-    log1 = pp.parse_log(f_name, None, verbose=False)
-    log2 = pp.parse_log(f_name, None, verbose=False, objects=["sawyer", "gripper"])
-    log3 = pp.parse_log(f_name, None, verbose=False, objects=["sawyer", "gripper"], 
-                                cols=['q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6'])
+    # log1 = pp.parse_log(f_name, None, verbose=False)
+    # log2 = pp.parse_log(f_name, None, verbose=False, objects=["titan_0"])
+    # log3 = pp.parse_log(f_name, None, verbose=False, objects=["cube"])
+    # log4 = pp.parse_log(f_name, None, verbose=False, objects=["titan_0", "cube_0"], 
+    #                             cols=['q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6'])
 
-    print(log1[4])
-    print(log2[0])
-    print(log3[0])
+    robot_log = pp.parse_log(f_name, None, verbose=False, objects=["titan_0"], 
+                             cols=['stepCount', 'timeStamp', 'qNum', 'q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6'])
+
+    cube_log = pp.parse_log(f_name, None, verbose=False, objects=["titan_0"], 
+                            cols=['stepCount', 'timeStamp', 'qNum', 'posX', 'posY', 'posZ', 'oriX', 'oriY', 'oriZ', 'oriW'])
+
+
+    time_diffs = robot_log[1:, 1] - robot_log[:-1, 1]
+
+    # plt.figure()
+    # plt.plot(time_diffs)
+    # plt.show()
+
+
+    # print(log1[4])
+    # print(log2[0])
+    # print(log3[0])
     # embed()
 
 
