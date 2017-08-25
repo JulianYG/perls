@@ -105,7 +105,8 @@ def write_log(log, dest):
 
     with open(dest, 'wb') as f:
         # Python 2 & 3 compatible
-        pickle.dump(log, f, protocol=2)
+        # Convert to dict first in case it is manager dict
+        pickle.dump(dict(log), f, protocol=2)
 
 
 def parse_log(file, verbose=True):

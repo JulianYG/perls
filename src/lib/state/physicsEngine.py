@@ -128,7 +128,10 @@ class BulletPhysicsEngine(FakeStateEngine):
             if osp.basename(file_path).split('.')[1] == 'urdf':
                 uid = p.loadURDF(
                     file_path, basePosition=pos, baseOrientation=orn,
-                    useFixedBase=fixed, physicsClientId=self._physics_server_id
+                    useFixedBase=fixed,
+                    flags=p.URDF_USE_SELF_COLLISION_EXCLUDE_PARENT + \
+                          p.URDF_USE_INERTIA_FROM_FILE,
+                    physicsClientId=self._physics_server_id
                 )
             elif osp.basename(file_path).split('.')[1] == 'sdf':
                 uid = p.loadSDF(file_path, physicsClientId=self._physics_server_id)[0]

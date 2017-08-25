@@ -267,6 +267,8 @@ class BulletRenderEngine(GraphicsEngine):
     def _build(self):
         # Convert to bullet constant
         self._disp_args[0] = self._FRAME_TYPES[self._frame]
+
+        print(self._disp_args)
         # The core step: connect to bullet physics server
         if self._job == 'replay':
             self._server_id = p.connect(p.GUI)
@@ -383,6 +385,7 @@ class BulletRenderEngine(GraphicsEngine):
                     format(self._record_name), FONT.control)
             for record in obj_log:
                 # time_stamp = float(record[1])
+
                 obj = record[2]
                 pos = record[3: 6]
                 orn = record[6: 10]
