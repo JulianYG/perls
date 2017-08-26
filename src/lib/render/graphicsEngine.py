@@ -268,7 +268,6 @@ class BulletRenderEngine(GraphicsEngine):
         # Convert to bullet constant
         self._disp_args[0] = self._FRAME_TYPES[self._frame]
 
-        print(self._disp_args)
         # The core step: connect to bullet physics server
         if self._job == 'replay':
             self._server_id = p.connect(p.GUI)

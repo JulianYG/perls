@@ -1,8 +1,7 @@
-from .base import InterruptHandler
 from ..utils import event_listener, math_util
 
 
-class InteractiveHandler(InterruptHandler):
+class InteractiveHandler(object):
 
     def __init__(self, ps_id, ):
 
@@ -21,7 +20,7 @@ class InteractiveHandler(InterruptHandler):
         return
 
 
-class AssetHandler(InterruptHandler):
+class AssetHandler(object):
 
     def __init__(self, ps_id, rate=100):
         super(AssetHandler, self).__init__(ps_id, rate)

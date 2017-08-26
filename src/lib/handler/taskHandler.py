@@ -1,4 +1,3 @@
-from .base import InterruptHandler
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
@@ -6,21 +5,16 @@ __license__ = 'private'
 __version__ = '0.1'
 
 
-class Checker(InterruptHandler):
+class Checker(object):
     """
     Check if given task is finished
     """
-    def __init__(self, ps_id, env_name):
-        super(Checker, self).__init__(ps_id, 100)
+    def __init__(self, env_name):
         self._name = env_name
 
     @property
     def name(self):
         return 'TaskCompletionChecker'
-
-    @property
-    def signal(self):
-        return NotImplemented
 
     def check(self, body_dict):
 

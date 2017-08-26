@@ -141,7 +141,8 @@ class Controller(object):
                 'Error loading configuration: invalid id.'
 
             # load configs
-            world, disp, ctrl_hdlr = self.load_config(conf)
+            queue = multiprocessing.Queue()
+            world, disp, ctrl_hdlr = self.load_config(conf, queue)
             if num_configs > 1 and (not conf.async):
                 logerr('Currently only support multiple instances '
                        'of non-GUI frame and asynchronous simulation. '
@@ -155,10 +156,10 @@ class Controller(object):
                         'Build type: {}'.format(i, conf.build),
                         FONT.control)
                 world.notify_engine('pending')
-            self._physics_servers[conf.id] = (world, disp, ctrl_hdlr)
+            self._physics_servers[conf.id] = (world, disp, ctrl_hdlr, queue)
 
     @staticmethod
-    def load_config(conf):
+    def load_config(conf, queue):
         """
         Helper method to load configurations. Not recommended with
         outside calls unless perform manual check, since it may
@@ -197,7 +198,7 @@ class Controller(object):
 
         # Set up control event interruption handlers
         ctrl_handler = Controller._CTRL_HANDLERS[conf.control_type](
-            pe.ps_id, conf.sensitivity, conf.rate
+            pe.ps_id, queue, conf.sensitivity, conf.rate,
         )
 
         # TODO
@@ -257,7 +258,7 @@ class Controller(object):
         :return: None
         """
         # Get all handlers
-        world, display, ctrl_handler = self._physics_servers[server_id]
+        world, display, ctrl_handler, queue = self._physics_servers[server_id]
 
         # Preparing variables
         time_up, done, success = False, False, False
@@ -292,7 +293,8 @@ class Controller(object):
         self._view_update(display)
         self._update_time_stamp = time_util.get_abs_time()
 
-        # Start control in another 
+        # Start control in another process
+        ctrl_handler.run()
 
         # Finally start control loop (Core)
         try:
@@ -303,11 +305,12 @@ class Controller(object):
                 self._update_time_stamp = time_util.get_abs_time()
 
                 # Perform control interruption first
-                signal = ctrl_handler.signal
+                if not queue.empty():
+                    signal = queue.pull_nowait()
 
-                self._control_interrupt(
-                    world, display, signal,
-                    time_since_last_update)
+                    self._control_interrupt(
+                        world, display, signal,
+                        time_since_last_update)
 
                 # Update model
                 time_up = world.update(elt)
@@ -341,7 +344,7 @@ class Controller(object):
         -1 for error exit.
         :return: None
         """
-        world, display, ctrl_handler = self._physics_servers[server_id]
+        world, display, ctrl_handler, _ = self._physics_servers[server_id]
         ctrl_handler.stop()
         world.clean_up()
         display.close(exit_status)

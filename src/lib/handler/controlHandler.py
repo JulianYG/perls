@@ -1,9 +1,9 @@
 # !/usr/env/bin python
 
-import time
 import abc
+import openvr
 
-from .base import InterruptHandler
+from .base import ControlHandler
 from ..utils import math_util
 from ..utils import event_listener
 from ..utils import network
@@ -25,44 +25,21 @@ _EVENT_LABEL = {
 }
 
 
-class ControlHandler(InterruptHandler):
-    """
-    Base class for control interrupt handling
-    """
-    def __init__(self, ps_id, sensitivity=1, rate=100):
-        super(ControlHandler, self).__init__(ps_id, rate)
-        self._sens = sensitivity
-
-    @property
-    def name(self):
-        return 'ControlHandler'
-
-    @property
-    def signal(self):
-        return self._signal
-
-    @abc.abstractmethod
-    def stop(self):
-        return NotImplemented
-
-
 class CmdEventHandler(ControlHandler):
     """
     For algorithmic learning usage, such as
     passing commands into gym environment.
     """
-    def __init__(self, ps_id, sensitivity=1, rate=0):
+    def __init__(self, ps_id, queue, sensitivity=1, rate=0, qsize=200):
         super(CmdEventHandler, self).__init__(
-            ps_id, sensitivity, rate)
+            ps_id, queue, sensitivity, rate, qsize)
 
     @property
     def name(self):
         return 'CmdControl'
 
-    # TODO
-    def signal(self):
-
-        # Probably listen to redis?
+    def interrupt(self):
+        # TODO
         pass
 
     def stop(self):
@@ -73,28 +50,31 @@ class KeyboardEventHandler(ControlHandler):
     """
     Handler for keyboard events/signal
     """
-    def __init__(self, ps_id, sensitivity=1, rate=100):
-        super(KeyboardEventHandler, self).__init__(ps_id, sensitivity, rate)
+    def __init__(self, ps_id, queue, sensitivity=1, rate=100, qsize=200):
+        super(KeyboardEventHandler, self).__init__(ps_id, queue, sensitivity, rate, qsize)
 
     @property
     def name(self):
         return 'KeyboardControl'
 
-    @property
-    def signal(self):
-        """
-        Get the signal read from interruption.
-        Note keyboard event only gives high level
-        instructions reach and grasp.
-        :return: List of signals
-        """
-        self._signal['cmd'] = list()
+    def interrupt(self, queue):
+
+        signal = dict()
+
+    # @property
+    # def signal(self):
+    #     """
+    #     Get the signal read from interruption.
+    #     Note keyboard event only gives high level
+    #     instructions reach and grasp.
+    #     :return: List of signals
+    #     """
+        signal['cmd'] = list()
         ins = list()
-        self._signal['camera'] = list()
-        self._signal['record'] = True
+        signal['camera'] = list()
+        signal['record'] = True
 
         events = event_listener.listen_to_bullet_keyboard(self._id)
-        # time.sleep(1. / self._rate)
 
         # Construct dictionary {label: (key, status)}
         keys = {event_listener.KEY_LABEL.get(int(long_key), None):
@@ -109,7 +89,7 @@ class KeyboardEventHandler(ControlHandler):
                 # View control is 100 times more sensitive than robot control
                 raw_delta = event_listener.HOT_KEY[keys['pos'][0]] * self._sens
                 delta = math_util.vec((raw_delta[1], -raw_delta[0], raw_delta[2]))
-                self._signal['camera'].append(('pos', delta))
+                signal['camera'].append(('pos', delta))
 
             if 'orn' in keys and keys['orn'][1] == 'holding':
 
@@ -117,18 +97,18 @@ class KeyboardEventHandler(ControlHandler):
                 raw_delta = event_listener.HOT_KEY[keys['orn'][0]]
                 delta = math_util.vec((raw_delta[1], -raw_delta[0])) * self._sens * 20
 
-                self._signal['camera'].append(('orn', delta))
+                signal['camera'].append(('orn', delta))
         else:
             # Handle environment settings
             for label, (key, status) in keys.items():
                 # Using multiple if's to allow simultaneous key pressing
                 if key in range(48, 58) and status == 'releasing':
                     # 'id' key_type
-                    self._signal['tid'] = int(key) - 48
+                    signal['tid'] = int(key) - 48
                 if label == 'tool' and status == 'releasing':
-                    self._signal['tid'] += event_listener.HOT_KEY[key]
+                    signal['tid'] += event_listener.HOT_KEY[key]
                 if label == 'key' and status == 'releasing':
-                    self._signal[label] = event_listener.HOT_KEY[key]
+                    signal[label] = event_listener.HOT_KEY[key]
                 if label == 'rst' and status == 'pressing':
                     ins.append((label, 1))
                 if label == 'grasp' and status == 'releasing':
@@ -140,12 +120,15 @@ class KeyboardEventHandler(ControlHandler):
                     # Don't touch position, only orientation (rad)
                     ins.append(('reach', (None, orn)))
 
-        self._signal['update'] = 1 if 'tbd' in keys and keys['tbd'][1] == 'holding' else 0
-        self._signal['instruction'] = ins
-        return self._signal
+        signal['update'] = 1 if 'tbd' in keys and keys['tbd'][1] == 'holding' else 0
+        signal['instruction'] = ins
+        # return signal
 
-    def stop(self):
-        return
+        if queue.full():
+            # Force poll, then set back in
+            queue.get_nowait()
+        
+        queue.put_nowait(signal)
 
 
 # TODO at some point
@@ -153,34 +136,34 @@ class ViveEventHandler(ControlHandler):
     """
     Handles VR controller events/signal
     """
-    def __init__(self, ps_id, sensitivity=1, rate=100):
-        super(ViveEventHandler, self).__init__(ps_id, sensitivity, rate)
+    def __init__(self, ps_id, queue, sensitivity=1, rate=100, qsize=200):
+        super(ViveEventHandler, self).__init__(ps_id, queue, sensitivity, rate, qsize)
 
         # Initialize positions
         self._controllers = dict()
-
-        self._signal['record'] = False
-
+        self._vr_system = openvr.init(openvr.VRApplication_Background)
+        self._vr_compositor = openvr.IVRCompositor()
         self._orn_state = math_util.zero_vec(3)
-        
-        c_id = event_listener.listen_to_bullet_vive(self._id)
+            
+        # c_id = event_listener.listen_to_bullet_vive(self._id)
 
     @property
     def name(self):
         return 'VRControl'
 
-    @property
-    def signal(self):
-        self._signal['cmd'] = list()
-        self._signal['camera'] = list()
-        self._signal['update'] = 0
+    def interrupt(self, queue):
+
+        signal = dict()
+        signal['cmd'] = list()
+        signal['camera'] = list()
+        signal['update'] = 0
         ins = list()
 
         events = event_listener.listen_to_bullet_vive(
-            self._id, 'controller')
-        # time.sleep(1. / self._rate)
-
+            self._vr_system, self._vr_compositor, 'controller')
+        print(events)
         for c_id, pos, orn, slide, _, _, button, _ in events:
+
 
             engage_flag = event_listener.KEY_STATUS[button[32]]
             reset_flag = event_listener.KEY_STATUS[button[1]]
@@ -205,11 +188,15 @@ class ViveEventHandler(ControlHandler):
                 ins.append(('reach', (pos, r_orn * self._sens)))
 
             if scroll_flag == 'releasing':
-                self._signal['record'] = True
+                signal['record'] = True
 
-        self._signal['instruction'] = ins
+        signal['instruction'] = ins
 
-        return self._signal
+        if queue.full():
+            # Force poll, then set back in
+            queue.get_nowait()
+
+        queue.put_nowait(signal)
 
     def _register(self):
         """
@@ -220,8 +207,8 @@ class ViveEventHandler(ControlHandler):
         pass
 
     def stop(self):
-        # TODO
-        pass
+        openvr.shutdown()
+        super(ViveEventHandler, self).stop()
 
 
 class AppEventHandler(ControlHandler):
@@ -229,8 +216,9 @@ class AppEventHandler(ControlHandler):
     Handler for keyboard events/signal
     """
 
-    def __init__(self, ps_id, sensitivity=1, rate=100, channel_name='ios_channel'):
-        super(AppEventHandler, self).__init__(ps_id, sensitivity, rate)
+    def __init__(self, ps_id, queue, sensitivity=1, 
+                 rate=100, qsize=200, channel_name='ios_channel'):
+        super(AppEventHandler, self).__init__(ps_id, queue, sensitivity, rate, qsize)
         self._comm = network.RedisComm('localhost', port=6379, db=0)
         self._channel_name = channel_name
         self._comm.connect_to_channel(channel_name)
@@ -239,13 +227,14 @@ class AppEventHandler(ControlHandler):
     def name(self):
         return 'PhoneControl'
 
-    @property
-    def signal(self):
-        self._signal['cmd'] = list()
-        self._signal['update'] = 0
+    def interrupt(self, queue):
+
+        signal = {}
+        signal['cmd'] = list()
+        signal['update'] = 0
         ins = list()
-        self._signal['camera'] = list()
-        self._signal['record'] = True
+        signal['camera'] = list()
+        signal['record'] = True
 
         events = event_listener.listen_to_redis(
             self._comm.channels[self._channel_name])
@@ -263,12 +252,18 @@ class AppEventHandler(ControlHandler):
                 ins.append(('reach', (pos_delta, None)))
                 ins.append(('reach', (None, orn_delta)))
             else:
-                self._signal['camera'].append(('pos', pos_delta * self._sens))
+                signal['camera'].append(('pos', pos_delta * self._sens))
                 orn = math_util.vec((orn_delta[1], -orn_delta[2], 0)) * self._sens * 20
-                self._signal['camera'].append(('orn', orn))
+                signal['camera'].append(('orn', orn))
 
-        self._signal['instruction'] = ins
-        return self._signal
+        signal['instruction'] = ins
+
+        if queue.full():
+            # Force poll, then set back in
+            queue.get_nowait()
+
+        queue.put_nowait(signal)
 
     def stop(self):
         self._comm.disconnect()
+        super(AppEventHandler, self).stop()

@@ -1,10 +1,14 @@
 import pybullet as p
 from lib.control import Controller as sc
 
-s = sc('config.xml')
+
+# Prevent recursively spawning subprocesses
+if __name__ == '__main__':
+
+	s = sc('config.xml')
 # s.start_all()
 
-s.start()
+	s.start()
 
 ######
 # from lib.state.physicsEngine import BulletPhysicsEngine as bpe
