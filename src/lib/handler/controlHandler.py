@@ -1,7 +1,6 @@
 # !/usr/env/bin python
 
 import abc
-import openvr
 
 from .base import ControlHandler
 from ..utils import math_util
@@ -141,11 +140,13 @@ class ViveEventHandler(ControlHandler):
 
         # Initialize positions
         self._controllers = dict()
-        self._vr_system = openvr.init(openvr.VRApplication_Background)
-        self._vr_compositor = openvr.IVRCompositor()
+
         self._orn_state = math_util.zero_vec(3)
-            
+
+        self._listener = event_listener.ViveListener()
         # c_id = event_listener.listen_to_bullet_vive(self._id)
+
+        self._devices = self._listener.get_registered_device()
 
     @property
     def name(self):
@@ -159,9 +160,17 @@ class ViveEventHandler(ControlHandler):
         signal['update'] = 0
         ins = list()
 
-        events = event_listener.listen_to_bullet_vive(
-            self._vr_system, self._vr_compositor, 'controller')
-        print(events)
+        if self._devices['controller']:
+            events = self._listener.get_controller_state(self._devices['controller'][0])
+            pose = self._listener.get_device_pose(self._devices['controller'][0])
+            if not events or not pose:
+                self._devices = self._listener.get_registered_device()
+            else:
+
+                slide = events['trigger']
+
+                reset_flag = event_listener.KEY_STATUS[events['menu']]
+
         for c_id, pos, orn, slide, _, _, button, _ in events:
 
 
@@ -173,7 +182,7 @@ class ViveEventHandler(ControlHandler):
             ins.append(('grasp', 1))
 
             # Reset button
-            if reset_flag == 'pressing':
+            if reset_flag == 'releasing':
                 ins.append(('rst', 1))
 
             # Engage button

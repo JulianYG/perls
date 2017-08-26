@@ -86,7 +86,7 @@ class PushCube(PerlsEnv):
         # TODO: make sure to go through IK here, since it's not perfect
         # TODO: then read robot state, and get the stuff we care about again. 
 
-        self._robot.joint_positions = action
+        self._robot.joint_velocities = action
         # rate / step size = 0.01 / 0.001 = 10 (account for 100 Hz sampling of demonstrations)
         self._world.update()
 

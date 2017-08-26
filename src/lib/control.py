@@ -306,7 +306,7 @@ class Controller(object):
 
                 # Perform control interruption first
                 if not queue.empty():
-                    signal = queue.pull_nowait()
+                    signal = queue.get_nowait()
 
                     self._control_interrupt(
                         world, display, signal,
