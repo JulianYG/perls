@@ -1,15 +1,16 @@
 import time
-from multiprocessing import Process, Event
+from threading import Thread, Event
 
 
-class Timer(Process):
+class Timer(Thread):
 
-    def __init__(self, interval, func, *args):
+    def __init__(self, interval, func, max_iter, *args):
 
         super(Timer, self).__init__()
         self._interval = interval
         self._func = func
         self._args = args
+        self._max_iter = max_iter
         self._done = Event()
         self.daemon = True
 
@@ -18,12 +19,22 @@ class Timer(Process):
         self._done.set()
 
     def run(self):
-        while 1 and not self._done.is_set():
-            old_time = time.time()
-            self._func(*self._args)
-            interval = time.time() - old_time
-            if self._interval > interval:
-                time.sleep(self._interval - interval)
+        if self._max_iter:
+            for _ in range(self._max_iter):
+                if self._done.is_set():
+                    break
+                old_time = time.time()
+                self._func(*self._args)
+                interval = time.time() - old_time
+                if self._interval > interval:
+                    time.sleep(self._interval - interval)
+        else:
+            while 1 and not self._done.is_set():
+                old_time = time.time()
+                self._func(*self._args)
+                interval = time.time() - old_time
+                if self._interval > interval:
+                    time.sleep(self._interval - interval)
 
 
 def pause(t):

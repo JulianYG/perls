@@ -10,7 +10,7 @@ class ControlHandler(object):
     def __init__(self, ps_id, queue, sensitivity, rate, qsize):
         self._id = ps_id
         self._sens = sensitivity
-        self._handler = Timer(1. / rate, self.interrupt, queue)
+        self._handler = Timer(1. / rate, self.interrupt, None, queue)
 
     @property
     def name(self):

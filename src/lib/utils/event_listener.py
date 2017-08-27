@@ -1,6 +1,6 @@
 import ast
 from platform import system
-from ctypes import sizeof, c_void_p
+from ctypes import sizeof, c_void_p, c_uint64
 
 if sizeof(c_void_p) != 8 or system() != 'Darwin':
     import openvr
@@ -10,6 +10,7 @@ from pybullet import (getKeyboardEvents,
                       getMouseEvents)
 from .math_util import vec, mat4, mat2pose
 from .io_util import loginfo, logerr, FONT
+from .time_util import Timer
 
 _X_POS_VEC = vec((.001, .0, .0))
 _X_NEG_VEC = vec((-.001, .0, .0))
@@ -19,11 +20,6 @@ _Y_NEG_VEC = vec((.0, -.001, .0))
 
 _Z_POS_VEC = vec((.0, .0, .001))
 _Z_NEG_VEC = vec((.0, .0, -.001))
-
-DEVICE_TYPE = dict(controller=2,
-                   hmd=1,
-                   generic=3,
-                   monitor=4)
 
 VR_STATUS = dict(
     application=0,  # openvr.VRApplication_Other,
@@ -44,7 +40,8 @@ KEY_STATUS = {0: 'idle',
               4: 'releasing',
               5: 'error',
               6: 'pre-pressed',
-              7: 'invalid'
+              7: 'invalid',
+              8: 'touched'
               }
 
 KEY_LABEL = {65284: 'rst', # F5 for reset
@@ -112,13 +109,24 @@ def listen_to_bullet_mouse(ps_id=0):
     return getMouseEvents(physicsClientId=ps_id)
 
 
-class ViveListener(object):
+class HTCVive(object):
+
+    DEVICE_TYPE = {1: 'hmd',
+               2: 'controller',
+               3: 'generic',
+               4: 'monitor'}
+
+    BUTTON_TYPE = {
+        0: 'system',
+        1: 'menu',
+        2: 'grip',
+        3: 'pad'
+    }
 
     def __init__(self, v_type='background'):
 
         self._vr_system = openvr.init(VR_STATUS[v_type])
         self._vr_compositor = openvr.IVRCompositor()
-
         self._devices = self.get_registered_device()
 
     def get_registered_device(self):
@@ -128,9 +136,25 @@ class ViveListener(object):
         for i in range(openvr.k_unMaxTrackedDeviceCount):
             d_type = self._vr_system.getTrackedDeviceClass(i)
             if d_type > 0:
-                devices[DEVICE_TYPE[d_type]].append(i)
+                devices[self.DEVICE_TYPE[d_type]].append(i)
 
         return devices
+
+    def vibrate(self, c_id, duration=50):  # miliseconds
+
+        if c_id not in self._devices['controller']:
+            logerr('Given id {} does not correspond to controller.'.format(c_id),
+                    FONT.warning)
+            return
+
+        vibrator = Timer(0.005, self._pulse, duration, c_id, duration)
+        vibrator.start()
+        vibrator.join()
+        del vibrator
+
+    def _pulse(self, c_id, duration):
+
+        self._vr_system.triggerHapticPulse(c_id, 0, 1000)
 
     def get_controller_state(self, c_id):
 
@@ -148,12 +172,27 @@ class ViveListener(object):
         # Get VR Events
         event_struct = openvr.VREvent_t()
         # Get controller states
-        valid, x = self._vr_system.getControllerState(
+        valid, state = self._vr_system.getControllerState(
             c_id, sizeof(openvr.VRControllerState_t))
 
         if valid:
-            events['pad_point'] = (x.rAxis[0].x, x.rAxis[0].y)  # in range [-1, 1]
-            events['trigger'] = x.rAxis[1].x  # in range [0, 1], 0 is unpressed, 1 is pressed
+            events['pad_point'] = (state.rAxis[0].x, state.rAxis[0].y)  # in range [-1, 1]
+            events['trigger'] = state.rAxis[1].x  # in range [0, 1], 0 is unpressed, 1 is pressed
+
+            pressMask = openvr.c_uint64(state.ulButtonPressed).value
+            touchMask = openvr.c_uint64(state.ulButtonTouched).value
+
+            if pressMask == 4:
+                events['grip'] = 3
+
+            elif pressMask == 2:
+                events['menu'] = 3
+
+            elif pressMask == 4294967296:
+                events['pad'] = 3
+
+            if touchMask == 4294967296:
+                events['pad'] = 8
 
         if self._vr_system.pollNextEvent(event_struct):
             info = event_struct.data
@@ -190,23 +229,29 @@ class ViveListener(object):
             0,
             openvr.k_unMaxTrackedDeviceCount)
 
+        # self._vr_compositor.waitGetPoses(
+        #         poses, openvr.k_unMaxTrackedDeviceCount, None, 0)
+
         device_pose = poses[c_id]
 
-        if device_pose.bDeviceIsConnected:
+        if device_pose.bDeviceIsConnected and device_pose.bPoseIsValid:
 
-            pose = poses[5]
-            self._vr_compositor.waitGetPoses(
-                poses, openvr.k_unMaxTrackedDeviceCount, None, 0)
-
+            
             pos, orn = mat2pose(
                 mat4([
-                    list(pose.mDeviceToAbsoluteTracking[0]),
-                    list(pose.mDeviceToAbsoluteTracking[1]),
-                    list(pose.mDeviceToAbsoluteTracking[2]),
+                    list(device_pose.mDeviceToAbsoluteTracking[0]),
+                    list(device_pose.mDeviceToAbsoluteTracking[1]),
+                    list(device_pose.mDeviceToAbsoluteTracking[2]),
                     [0, 0, 0, 1]
                 ])
             )
             return tuple(pos[[0, 2, 1]]), tuple(orn)
+
+    def close(self):
+
+        openvr.shutdown()
+        del self._vr_system
+        del self._vr_compositor
 
 
 def listen_to_redis(queue):

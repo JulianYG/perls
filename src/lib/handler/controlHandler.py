@@ -140,12 +140,8 @@ class ViveEventHandler(ControlHandler):
 
         # Initialize positions
         self._controllers = dict()
-
         self._orn_state = math_util.zero_vec(3)
-
-        self._listener = event_listener.ViveListener()
-        # c_id = event_listener.listen_to_bullet_vive(self._id)
-
+        self._listener = event_listener.HTCVive()
         self._devices = self._listener.get_registered_device()
 
     @property
@@ -157,6 +153,8 @@ class ViveEventHandler(ControlHandler):
         signal = dict()
         signal['cmd'] = list()
         signal['camera'] = list()
+        signal['tid'] = 0
+        signal['key'] = 'm'
         signal['update'] = 0
         ins = list()
 
@@ -170,34 +168,38 @@ class ViveEventHandler(ControlHandler):
                 slide = events['trigger']
 
                 reset_flag = event_listener.KEY_STATUS[events['menu']]
+                engage_flag = event_listener.KEY_STATUS[events['pad']]
 
-        for c_id, pos, orn, slide, _, _, button, _ in events:
+                pos, orn = pose
 
+        # self._listener.vibrate(3)
 
-            engage_flag = event_listener.KEY_STATUS[button[32]]
-            reset_flag = event_listener.KEY_STATUS[button[1]]
-            scroll_flag = event_listener.KEY_STATUS[button[2]]
+        # print(self._listener.get_device_pose(3))
 
-            # Always use the gripper slider
-            ins.append(('grasp', 1))
+        # for c_id, pos, orn, slide, _, _, button, _ in events:
 
-            # Reset button
-            if reset_flag == 'releasing':
-                ins.append(('rst', 1))
+                # engage_flag = event_listener.KEY_STATUS[button[32]]
+                # reset_flag = event_listener.KEY_STATUS[button[1]]
+                # scroll_flag = event_listener.KEY_STATUS[button[2]]
 
-            # Engage button
-            if engage_flag == 'pressing':
-                self._orn_state = math_util.quat2euler(orn)
+                # Always use the gripper slider
+                ins.append(('grasp', 1))
+                print(engage_flag)
+                # Reset button
+                if reset_flag == 'releasing':
+                    ins.append(('rst', 1))
 
-            if engage_flag == 'holding':
+                # Engage button
+                if engage_flag == 'pressing':
+                    self._orn_state = math_util.quat2euler(orn)
 
-                r_orn = math_util.sign(
-                    math_util.quat2euler(orn)
-                    - self._orn_state, 1e-2) * 0.001
-                ins.append(('reach', (pos, r_orn * self._sens)))
+                if engage_flag == 'holding':
 
-            if scroll_flag == 'releasing':
-                signal['record'] = True
+                    r_orn = math_util.sign(
+                        math_util.quat2euler(orn)
+                        - self._orn_state, 1e-2) * 0.001
+                    ins.append(('reach', (pos, r_orn * self._sens)))
+
 
         signal['instruction'] = ins
 
@@ -215,8 +217,10 @@ class ViveEventHandler(ControlHandler):
         # TODO register devices dynamically
         pass
 
+
+
     def stop(self):
-        openvr.shutdown()
+        self._listener.close()
         super(ViveEventHandler, self).stop()
 
 
