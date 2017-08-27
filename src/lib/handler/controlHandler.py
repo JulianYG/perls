@@ -184,16 +184,16 @@ class ViveEventHandler(ControlHandler):
 
                 # Always use the gripper slider
                 ins.append(('grasp', 1))
-                print(engage_flag)
+
                 # Reset button
                 if reset_flag == 'releasing':
                     ins.append(('rst', 1))
 
                 # Engage button
-                if engage_flag == 'pressing':
+                if engage_flag == 'triggered':
                     self._orn_state = math_util.quat2euler(orn)
 
-                if engage_flag == 'holding':
+                if engage_flag == 'pressing':
 
                     r_orn = math_util.sign(
                         math_util.quat2euler(orn)

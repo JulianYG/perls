@@ -191,7 +191,7 @@ class HTCVive(object):
             elif pressMask == 4294967296:
                 events['pad'] = 3
 
-            if touchMask == 4294967296:
+            if touchMask == 4294967296 and pressMask != 4294967296:
                 events['pad'] = 8
 
         if self._vr_system.pollNextEvent(event_struct):
