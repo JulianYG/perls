@@ -1,16 +1,16 @@
-import ast
-from platform import system
-from ctypes import sizeof, c_void_p, c_uint64
-
-if sizeof(c_void_p) != 8 or system() != 'Darwin':
-    import openvr
-
-from pybullet import (getKeyboardEvents,
-                      getVREvents,
-                      getMouseEvents)
 from .math_util import vec, mat4, mat2pose
 from .io_util import loginfo, logerr, FONT
 from .time_util import Timer
+
+from pybullet import (getKeyboardEvents,
+                      getMouseEvents)
+
+import ast
+from platform import system
+from ctypes import sizeof, c_void_p, c_ulonglong
+
+if sizeof(c_void_p) != 8 or system() != 'Darwin':
+    import openvr
 
 _X_POS_VEC = vec((.001, .0, .0))
 _X_NEG_VEC = vec((-.001, .0, .0))
@@ -102,7 +102,7 @@ HOT_KEY = {65284: None,  # F5
 
 
 def listen_to_bullet_keyboard(ps_id=0):
-    return {101: 3}#getKeyboardEvents(physicsClientId=ps_id)
+    return {101: 3}  # getKeyboardEvents(physicsClientId=ps_id)
 
 
 def listen_to_bullet_mouse(ps_id=0):
@@ -179,43 +179,36 @@ class HTCVive(object):
             events['pad_point'] = (state.rAxis[0].x, state.rAxis[0].y)  # in range [-1, 1]
             events['trigger'] = state.rAxis[1].x  # in range [0, 1], 0 is unpressed, 1 is pressed
 
-            pressMask = openvr.c_uint64(state.ulButtonPressed).value
-            touchMask = openvr.c_uint64(state.ulButtonTouched).value
+            press_mask = c_ulonglong(state.ulButtonPressed).value
+            touch_mask = c_ulonglong(state.ulButtonTouched).value
 
-            if pressMask == 4:
+            if press_mask == 4:
                 events['grip'] = 3
-
-            elif pressMask == 2:
+            elif press_mask == 2:
                 events['menu'] = 3
-
-            elif pressMask == 4294967296:
+            elif press_mask == 4294967296:
                 events['pad'] = 3
 
-            if touchMask == 4294967296 and pressMask != 4294967296:
+            # Only overwrite by touch when not pressing
+            if touch_mask == 4294967296 and press_mask != 4294967296:
                 events['pad'] = 8
 
         if self._vr_system.pollNextEvent(event_struct):
             info = event_struct.data
-            buttonID = info.controller.button  # identifies button
+            button_id = info.controller.button  # identifies button
 
             if event_struct.trackedDeviceIndex == c_id:
-
-                if buttonID == openvr.k_EButton_ApplicationMenu:
-
+                if button_id == openvr.k_EButton_ApplicationMenu:
                     if event_struct.eventType == openvr.VREvent_ButtonPress:
                         events['menu'] = 2
                     elif event_struct.eventType == openvr.VREvent_ButtonUnpress:
                         events['menu'] = 4
-
-                elif buttonID == openvr.k_EButton_Grip:
-
+                elif button_id == openvr.k_EButton_Grip:
                     if event_struct.eventType == openvr.VREvent_ButtonPress:
                         events['grip'] = 2
                     elif event_struct.eventType == openvr.VREvent_ButtonUnpress:
                         events['grip'] = 4
-
-                elif buttonID == openvr.k_EButton_SteamVR_Touchpad:
-
+                elif button_id == openvr.k_EButton_SteamVR_Touchpad:
                     if event_struct.eventType == openvr.VREvent_ButtonPress:
                         events['pad'] = 2
                     elif event_struct.eventType == openvr.VREvent_ButtonUnpress:
@@ -229,14 +222,10 @@ class HTCVive(object):
             0,
             openvr.k_unMaxTrackedDeviceCount)
 
-        # self._vr_compositor.waitGetPoses(
-        #         poses, openvr.k_unMaxTrackedDeviceCount, None, 0)
-
         device_pose = poses[c_id]
 
         if device_pose.bDeviceIsConnected and device_pose.bPoseIsValid:
 
-            
             pos, orn = mat2pose(
                 mat4([
                     list(device_pose.mDeviceToAbsoluteTracking[0]),
@@ -245,13 +234,13 @@ class HTCVive(object):
                     [0, 0, 0, 1]
                 ])
             )
-            return tuple(pos[[0, 2, 1]]), tuple(orn)
+            return tuple(pos[[2, 0, 1]]), tuple(orn)
 
     def close(self):
 
         openvr.shutdown()
-        del self._vr_system
-        del self._vr_compositor
+        self._vr_system = None
+        self._vr_compositor = None
 
 
 def listen_to_redis(queue):
@@ -271,4 +260,3 @@ def listen_to_redis(queue):
         signal_dic = ast.literal_eval(item)
         events.append(signal_dic)
     return events
-
