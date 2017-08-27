@@ -31,9 +31,7 @@ class Checker(object):
             initial_gripper_pos = \
                 (cube_pos[0] - 0.025, cube_pos[1], cube_pos[2] + 0.02)
 
-            for _ in range(200):
-                robot.tool_pos = initial_gripper_pos
-                world.update()
+            robot.tool_pos = initial_gripper_pos
 
     def check(self, body_dict):
 

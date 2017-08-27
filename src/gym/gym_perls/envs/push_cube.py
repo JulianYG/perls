@@ -69,12 +69,9 @@ class PushCube(PerlsEnv):
         # Enable torque control by disable the motors first
         # As required by bullet
         # self._robot.torque_mode()
-        for _ in range(200):
-            self._robot.tool_pos = \
+        self._robot.tool_pos = \
                 (cube_pos[0] - 0.025, cube_pos[1], cube_pos[2] + 0.02)
-            self._world.update()
 
-        print(self._robot.tool_pos)
         # move robot to initial position
         # TODO: orientation offset
         # offset = self._robot.pinpoint(

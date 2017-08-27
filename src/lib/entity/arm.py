@@ -132,7 +132,13 @@ class Arm(Tool):
         :return: None
         """
         target_pos, _ = self.position_transform(pos, self.tool_orn)
-        self._move_to(target_pos, None, False, True)
+        self._move_to(target_pos, None,
+                      precise=False,
+                      fast=True,
+                      iterative=True,
+                      max_iter=200,
+                      threshold=1e-2,
+                      ctype='position')
 
     @tool_orn.setter
     def tool_orn(self, orn):
@@ -217,21 +223,26 @@ class Arm(Tool):
         frame = math_util.pose2mat((pos, orn)).dot(transform)
         return math_util.mat2pose(frame)
 
-    def _move_to(self, pos, orn, precise, fast,
-                 max_iter=200, ctype='position'):
+    def _move_to(self, pos, orn, precise,
+                 fast,  # Equivalent to !Null_Space
+                 iterative, max_iter, threshold, ctype):
         """
         Given pose, call IK to move
         :param pos: vec3 float cartesian
         :param orn: vec4 float quaternion
         :param precise: boolean indicating whether
         using precise IK for motion planning. If
-        true, reaches millimeter level accuracy. However
+        both precise and iterative are true,
+        max_iter param will be used as timeout, and
+        iterate until error is below threshold. However
         this may not be necessary for real time control,
         in order to achieve better performance in time
         and smoothness.
         ***This is a trade-off between smoothness and
          accuracy***
         :param fast: refer to <pinpoint::fast>
+        :param iterative: Boolean indicating if this
+        arm uses iterative solver
         :param max_iter: refer to <pinpoint::max_iter>
         :param ctype: the control type. Specify among
         <'position', 'velocity', 'torque'> to perform certain
@@ -239,23 +250,9 @@ class Arm(Tool):
         :return: None
         """
         # Convert to pose in robot base frame
-        orn = self.kinematics['abs_frame_orn'][self._end_idx] if orn is None else orn
+        orn = self.kinematics['abs_frame_orn'][self._end_idx]\
+            if orn is None else orn
         specs = self.joint_specs
-
-        # if precise:
-        #     if fast or self.collision_checking:
-        #         # Set the joint values in openrave model
-        #         self._openrave_robot.SetDOFValues(
-        #             math_util.vec(self.joint_states['pos'])[self.active_joints],
-        #             self._model_dof)
-        #
-        #     pos, orn = math_util.get_relative_pose((pos, orn), self.pose)
-        #
-        #     ik_solution = OpenRaveEngine.accurate_ik(
-        #         self._ik_model, pos, orn,
-        #         math_util.vec(self.joint_states['pos'])[self.active_joints],
-        #         closest=not fast)
-        # else:
         damps = math_util.clip_vec(specs['damping'], .1, 1.)
         lower_limits = math_util.vec(specs['lower'])
         upper_limits = math_util.vec(specs['upper'])
@@ -263,80 +260,58 @@ class Arm(Tool):
 
         if ctype == 'position':
 
-            if fast:
-                ik_solution = self._engine.solve_ik(
-                    self._uid, self._end_idx, pos, damps, orn=orn)
+            def _position_control_helper():
+
+                """
+                Given pose, solve for accurate joint positions and
+                move there with BulletIK. Helper for iterative
+                """
+                if fast:
+                    ik_solution = self._engine.solve_ik(
+                        self._uid, self._end_idx, pos, damps, orn=orn)
+                else:
+                    # Solve using null space
+                    ik_solution = self._engine.solve_ik_null_space(
+                        self._uid, self._end_idx,
+                        pos, orn=orn,
+                        lower=lower_limits,
+                        upper=upper_limits,
+                        ranges=ranges,
+                        rest=self._rest_pose,
+                        damping=damps)
+
+                # TODO: collision checking?
+
+                self.joint_positions = (
+                    ik_solution,
+                    dict(positionGains=(.05,) * self._dof,
+                         velocityGains=(1.,) * self._dof)
+                )
+
+            # Iteratively move to desired position
+            if iterative:
+                if precise:
+                    steps = 0
+                    # Iterate until error below threshold
+                    while math_util.rms(self.tool_pos - pos) > threshold:
+                        _position_control_helper()
+                        # Timeout
+                        if steps > max_iter:
+                            break
+                        steps += 1
+                    max_iter = steps
+                else:
+                    for _ in range(max_iter):
+                        _position_control_helper()
+                        self._engine.hold(1)
             else:
-                # Solve using null space
-                ik_solution = self._engine.solve_ik_null_space(
-                    self._uid, self._end_idx,
-                    pos, orn=orn,
-                    lower=lower_limits,
-                    upper=upper_limits,
-                    ranges=ranges,
-                    rest=self._rest_pose,
-                    damping=damps)
-
-            # TODO :
-            # if self.collision_checking:
-
-            #     request = {
-            #       "basic_info" : {
-            #         "n_steps" : 10,
-            #         "manip" : "rightarm", # see below for valid values
-            #         "start_fixed" : True # i.e., DOF values at first timestep are fixed based on current robot state
-            #       },
-            #       "costs" : [
-            #       {
-            #         "type" : "joint_vel", # joint-space velocity cost
-            #         "params": {"coeffs" : [1]} # a list of length one is automatically expanded to a list of length n_dofs
-            #         # also valid: [1.9, 2, 3, 4, 5, 5, 4, 3, 2, 1]
-            #       },
-            #       {
-            #         "type" : "collision",
-            #         "params" : {
-            #           "coeffs" : [20], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
-            #           "dist_pen" : [0.025] # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
-            #         },
-            #       }
-            #       ],
-            #       "constraints" : [
-            #       {
-            #         "type" : "joint", # joint-space target
-            #         "params" : {"vals" : ik_solution} # length of vals = # dofs of manip
-            #       }
-            #       ],
-            #       "init_info" : {
-            #           "type" : "straight_line", # straight line in joint space.
-            #           "endpoint" : ik_solution
-            #       }
-            #     }
-
-            self.joint_positions = (
-                ik_solution,
-                dict(positionGains=(.05,) * self._dof,
-                     velocityGains=(1.,) * self._dof)
-            )
-        # TODO
+                _position_control_helper()
+                max_iter = 1
 
         # elif ctype == 'torque':
+        # TODO: torque Operational Space Control
 
-        # s = json.dumps(request) # convert dictionary into json-formatted string
-        # prob = trajoptpy.ConstructProblem(s, env) # create object that stores optimization problem
-        # t_start = time.time()
-        # result = trajoptpy.OptimizeProblem(prob) # do optimization
-        # t_elapsed = time.time() - t_start
-        # print result
-        # print "optimization took %.3f seconds"%t_elapsed
-
-        # from trajoptpy.check_traj import traj_is_safe
-        # prob.SetRobotActiveDOFs() # set robot DOFs to DOFs in optimization problem
-        # assert traj_is_safe(result.GetTraj(), robot) # Check that trajectory is collision free
-
-        # need to wait until reached desired states, just as in real case
-        # for _ in range(max_iter):
-        #     # if math_util.rms():
-        #     self._engine.step(0, None)
+        return max_iter
         
     ###
     #  High level functionality
@@ -364,8 +339,13 @@ class Arm(Tool):
              self._rest_pose,
              dict(reset=True))
 
-    def pinpoint(self, pos, orn, ftype='abs',
-                 fast=False, max_iter=200):
+    def pinpoint(self, pos, orn,
+                 ftype='abs',
+                 iterative=True,
+                 fast=False,
+                 max_iter=200,
+                 threshold=1e-2,
+                 ctype='position'):
         """
         Accurately reach to the given pose.
         Note this operation sets position and orientation
@@ -374,34 +354,25 @@ class Arm(Tool):
         :param pos: vec3 float cartesian
         :param orn: vec4 float quaternion
         :param ftype: refer to <reach~ftype>
-        :param fast: boolean indicating whether use fast
-        solution. Fast requires less computation
+        :param fast: boolean indicating whether use null space
+        solution. If set true, Fast requires less computation
         time, but may result in big arm movements. If set
         to false, the solutions are weighted to find the
-        closest neighbor of current joint states.
+        closest neighbor of current joint states, and are
+        closer to the rest pose of the arm.
         ***This is a trade-off between smoothness and
         speed***
+        :param iterative: refer to <_move_to::iterative>
         :param max_iter: maximum iterations in either real 
         time or non-real time simulation for the arm to
         reach the desired position.
-        :return: rms delta between target and actual pose
+        :param threshold: error threshold
+        :param ctype: control type
+        :return: number of iterations used for pinpoint
         """
-        if ftype == 'abs':
-            orig_pos, orig_orn = pos, orn
-
-        elif ftype == 'rel':
-            orig_pos, orig_orn = math_util.get_absolute_pose(
-                (pos, orn), self.pose)
-        else:
-            loginfo('Cannot recognize frame type, assuming absolute',
-                    FONT.ignore)
-            orig_pos, orig_orn = pos, orn
-        
         target_pos, target_orn = super(Arm, self).pinpoint(pos, orn, ftype)
-        self._move_to(target_pos, target_orn, True, fast, max_iter)
-
-        # TODO: orn diff flip
-        return math_util.pose_diff(self.tool_pose, (orig_pos, orig_orn))
+        return self._move_to(target_pos, target_orn, True, fast, iterative,
+                             max_iter, threshold, ctype)
 
     def grasp(self, slide=-1):
         """
