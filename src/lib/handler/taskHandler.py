@@ -16,6 +16,25 @@ class Checker(object):
     def name(self):
         return 'TaskCompletionChecker'
 
+    def custom_setup(self, world):
+
+        """
+        Customize world for some fine tunings that
+        cannot be specified in env xml file
+        :param world: the world object to be setup
+        :return: None
+        """
+        if self._name == 'push':
+            cube_pos = world.body['cube_0'].pos
+            robot = world.body['titan_0']
+
+            initial_gripper_pos = \
+                (cube_pos[0] - 0.025, cube_pos[1], cube_pos[2] + 0.02)
+
+            for _ in range(200):
+                robot.tool_pos = initial_gripper_pos
+                world.update()
+
     def check(self, body_dict):
 
         if self._name == 'push':

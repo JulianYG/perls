@@ -326,6 +326,9 @@ class World(object):
         """
         status = self._engine.start_engine(frame)
         self._engine.hold(200)
+
+        # Finetune the initial environment setup
+        self._checker.custom_setup(self)
         return status
 
     def notify_engine(self, stat):
