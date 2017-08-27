@@ -166,18 +166,19 @@ if __name__ == "__main__":
     pp = Postprocess()
     actions = pp.parse_demonstration(fname)[1]
 
-    import perls
+    import perls, gym
+    import fk
 
-    import gym
-
-    env = gym.make('push-gui-v0')
+    env = gym.make('push-v0')
     env.reset()
     # import pybullet as p
     # p.setGravity(0, 0, 0)
     for a in actions:
+
+        print(fk.fk(a))
         _, _, done, _ = env.step(a)
         print(a)
-        print(done)
+        # print(done)
 
 
 

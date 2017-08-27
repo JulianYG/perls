@@ -34,7 +34,7 @@ class PerlsEnv(gym.Env):
         the configuration file, default is 'gym-disp.xml'
         """
         conf = io_util.parse_config(conf_path)[0]
-        self._world, self._display, _ = Controller.load_config(conf)
+        self._world, self._display, _ = Controller.load_config(conf, None)
         self._status = self._display.run(None)
         self._world.boot(self._display.info['frame'])
 

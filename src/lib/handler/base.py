@@ -31,8 +31,8 @@ class NullHandler(ControlHandler):
     """
     Singleton placeholder
     """
-    def __init__(self, a=None, b=None, c=None):
-        super(NullHandler, self).__init__(0, 0.)
+    def __init__(self, a=None, b=None, c=None, d=None):
+        super(NullHandler, self).__init__(0, None, 0, 1, 0)
 
     def update_states(self, state):
         return
