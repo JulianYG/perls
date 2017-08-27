@@ -7,6 +7,13 @@
 			</gripper>
 			<pos>-0.2 -0.7 0.9</pos>
 		</robot>
+		<!-- <robot name="titan" type="kuka" null_space="True">
+			<gripper name="for_king_kong" type="wsg">
+				<asset path="gripper/wsg50_one_motor_gripper_new_free_base.sdf"/>
+			</gripper>
+			<pos>-0.2 -0.7 0.9</pos>
+			<orn>0 0 0 -1</orn>
+		</robot> -->
 	</tool>
 	<scene name="push">
 		<body name="plane" fixed="True">

@@ -157,7 +157,7 @@ class ViveEventHandler(ControlHandler):
         signal['key'] = 'm'
         signal['update'] = 0
         ins = list()
-
+        # import pybullet as p
         if self._devices['controller']:
             events = self._listener.get_controller_state(self._devices['controller'][0])
             pose = self._listener.get_device_pose(self._devices['controller'][0])
@@ -171,7 +171,7 @@ class ViveEventHandler(ControlHandler):
                 engage_flag = event_listener.KEY_STATUS[events['pad']]
 
                 pos, orn = pose
-
+                # p.loadURDF('cube_small.urdf', pos, orn, useFixedBase=True)
         # self._listener.vibrate(3)
 
         # print(self._listener.get_device_pose(3))

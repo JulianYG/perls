@@ -217,6 +217,9 @@ class HTCVive(object):
 
     def get_device_pose(self, c_id):
 
+
+
+
         poses = self._vr_system.getDeviceToAbsoluteTrackingPose(
             openvr.TrackingUniverseStanding,
             0,
@@ -234,7 +237,9 @@ class HTCVive(object):
                     [0, 0, 0, 1]
                 ])
             )
-            return tuple(pos[[2, 0, 1]]), tuple(orn)
+            calibrated_pos = tuple((pos[0] + 0.88, -pos[2]- 0.7, pos[1]- 0.45))
+
+            return calibrated_pos, tuple(orn)
 
     def close(self):
 
