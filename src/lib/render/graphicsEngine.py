@@ -357,16 +357,19 @@ class BulletRenderEngine(GraphicsEngine):
                     )
                 )
 
-            if self._frame == 'vr':
-                # Record the egocentric camera pose
-                self._logging_id.append(
-                    p.startStateLogging(
-                        p.STATE_LOGGING_VR_CONTROLLERS,
-                        abs_file_name,
-                        deviceTypeFilter=p.VR_DEVICE_HMD,
-                        physicsClientId = self._server_id
-                    )
-                )
+            # TODO: may record under ViveListener
+            # # Cannot record VR Device pose since running 
+            # # independent openvr
+            # if self._frame == 'vr':
+            #     # Record the egocentric camera pose
+            #     self._logging_id.append(
+            #         p.startStateLogging(
+            #             p.STATE_LOGGING_VR_CONTROLLERS,
+            #             abs_file_name,
+            #             deviceTypeFilter=p.VR_DEVICE_HMD,
+            #             physicsClientId = self._server_id
+            #         )
+            #     )
             return 2
 
         elif self._job == 'replay':
@@ -389,6 +392,8 @@ class BulletRenderEngine(GraphicsEngine):
                 obj = record[2]
                 pos = record[3: 6]
                 orn = record[6: 10]
+
+                print(record)
                 p.resetBasePositionAndOrientation(obj, pos, orn)
                 n_joints = p.getNumJoints(obj)
                 for i in range(n_joints):

@@ -6,7 +6,7 @@
 		<build type="Debug">
 			<graphics name="first person human demo" engine="bullet" type="vr" key="0"/>
 			<physics engine="bullet" version="20170601"/>
-			<job name="record" video="False" log_path="" replay_path="fail/2017-08-25-00-08-22"/>
+			<job name="record" video="False" log_path="" replay_path="success/2017-08-27-21-07-49"/>
 			<property async="False" step_size="0.0041666" max_run_time="100000"/>
 		</build>
 		<control type="vive" sensitivity="20" rate="10"/>

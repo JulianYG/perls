@@ -217,9 +217,6 @@ class HTCVive(object):
 
     def get_device_pose(self, c_id):
 
-
-
-
         poses = self._vr_system.getDeviceToAbsoluteTrackingPose(
             openvr.TrackingUniverseStanding,
             0,

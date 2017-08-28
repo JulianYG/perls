@@ -158,6 +158,7 @@ class ViveEventHandler(ControlHandler):
         signal['update'] = 0
         ins = list()
         # import pybullet as p
+
         if self._devices['controller']:
             events = self._listener.get_controller_state(self._devices['controller'][0])
             pose = self._listener.get_device_pose(self._devices['controller'][0])
@@ -169,20 +170,11 @@ class ViveEventHandler(ControlHandler):
 
                 reset_flag = event_listener.KEY_STATUS[events['menu']]
                 engage_flag = event_listener.KEY_STATUS[events['pad']]
-
                 pos, orn = pose
                 # p.loadURDF('cube_small.urdf', pos, orn, useFixedBase=True)
-        # self._listener.vibrate(3)
+                # self._listener.vibrate(3)
 
-        # print(self._listener.get_device_pose(3))
-
-        # for c_id, pos, orn, slide, _, _, button, _ in events:
-
-                # engage_flag = event_listener.KEY_STATUS[button[32]]
-                # reset_flag = event_listener.KEY_STATUS[button[1]]
-                # scroll_flag = event_listener.KEY_STATUS[button[2]]
-
-                # Always use the gripper slider
+                # Always use the gripper slider for push task
                 ins.append(('grasp', 1))
 
                 # Reset button
@@ -199,7 +191,6 @@ class ViveEventHandler(ControlHandler):
                         math_util.quat2euler(orn)
                         - self._orn_state, 1e-2) * 0.001
                     ins.append(('reach', (pos, r_orn * self._sens)))
-
 
         signal['instruction'] = ins
 
