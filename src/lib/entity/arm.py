@@ -48,7 +48,10 @@ class Arm(Tool):
         Check if the gripper of arm is closed
         :return: boolean
         """
-        return self._gripper.close_grip
+        if self._gripper:
+            return self._gripper.close_grip
+        else:
+            return True
 
     @abc.abstractproperty
     def active_joints(self):
@@ -84,7 +87,10 @@ class Arm(Tool):
         Get the position of the tool. This is semantic
         :return: vec3 float in Cartesian
         """
-        return self._gripper.tool_pos
+        if self._gripper:
+            return self._gripper.tool_pos
+        else:
+            return self.kinematics['pos'][self._end_idx]
 
     @property
     def tool_orn(self):
@@ -111,7 +117,10 @@ class Arm(Tool):
         For robot arms, get the end effector linear velocityGainsy
         :return: vec3 float cartesian
         """
-        return self._gripper.v
+        if self._gripper:
+            return self._gripper.v
+        else:
+            return self.kinematics['abs_v'][self._end_idx]
 
     @Tool.omega.getter
     def omega(self):
@@ -119,7 +128,10 @@ class Arm(Tool):
         Get the end effector angular velocity
         :return: vec3 radian
         """
-        return self._gripper.omega
+        if self._gripper:
+            return self._gripper.omega
+        else:
+            return self.kinematics['abs_omega'][self._end_idx]
 
     @tool_pos.setter
     def tool_pos(self, pos_iter):
@@ -134,7 +146,10 @@ class Arm(Tool):
         :return: None
         """
         pos, use_iter = pos_iter
-        target_pos, _ = self.position_transform(pos, self.tool_orn)
+        if self._gripper:
+            target_pos, _ = self.position_transform(pos, self.tool_orn)
+        else:
+            target_pos = pos
         self._move_to(target_pos, None,
                       precise=False,
                       fast=True,
@@ -383,4 +398,5 @@ class Arm(Tool):
         :param slide: if given, perform slider grasp
         :return: None
         """
-        self._gripper.grasp(slide)
+        if self._gripper:
+            self._gripper.grasp(slide)

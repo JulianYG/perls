@@ -195,16 +195,21 @@ class World(object):
             arm_spec = parse_tree.arm[i]
             assert i == arm_spec['id']
             gripper_spec = arm_spec['gripper']
-            gripper_body = self.GRIPPER_TYPE[gripper_spec['type']](
-                math_util.rand_bigint(),
-                self._engine,
-                path=gripper_spec['path'])
-            gripper_body.name = gripper_spec['name']
 
-            # Note here not appending gripper into tools since
-            # we can only operate it through the arm
-            self._target_bodies.append((gripper_body.name, gripper_body.uid))
-            self._bodies[gripper_body.name] = gripper_body
+            # Only parse if gripper is there
+            if gripper_spec:
+                gripper_body = self.GRIPPER_TYPE[gripper_spec['type']](
+                    math_util.rand_bigint(),
+                    self._engine,
+                    path=gripper_spec['path'])
+                gripper_body.name = gripper_spec['name']
+
+                # Note here not appending gripper into tools since
+                # we can only operate it through the arm
+                self._target_bodies.append((gripper_body.name, gripper_body.uid))
+                self._bodies[gripper_body.name] = gripper_body
+            else:
+                gripper_body = None
 
             arm_body = self.ARM_TYPE[arm_spec['type']](
                 arm_spec['id'],

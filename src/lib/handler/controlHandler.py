@@ -190,7 +190,7 @@ class ViveEventHandler(ControlHandler):
                     r_orn = math_util.sign(
                         math_util.quat2euler(orn)
                         - self._orn_state, 1e-2) * 0.001
-                    ins.append(('reach', (pos, r_orn * self._sens)))
+                    ins.append(('reach', (math_util.vec(pos), r_orn * self._sens)))
 
         signal['instruction'] = ins
 

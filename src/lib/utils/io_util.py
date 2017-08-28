@@ -197,6 +197,7 @@ def parse_gripper_elem(gripper_elem):
     :return: a list of dictionaries
     """
     gripper = []
+
     for i in range(len(gripper_elem)):
         elem = gripper_elem[i]
         asset = elem.find('asset')
@@ -252,7 +253,11 @@ def parse_arm_elem(arm_elem):
 
         pos, orn = elem.find('pos'), elem.find('orn')
         # Arm must have at least one gripper.
+
         gripper_elem = elem.find('gripper')
+        gripper = parse_gripper_elem([gripper_elem])[0]\
+            if gripper_elem is not None else []
+
         tid = int(asset.attrib.get('id', i))
 
         arm.append(
@@ -268,7 +273,7 @@ def parse_arm_elem(arm_elem):
                 type=elem.attrib['type'],
                 name='{}_{}'.format(elem.attrib['name'], tid),
                 collision_checking=str2bool(elem.attrib.get('collision_checking', 'False')),
-                gripper=parse_gripper_elem([gripper_elem])[0]
+                gripper=gripper,
             )
         )
     return arm
