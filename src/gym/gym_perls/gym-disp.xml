@@ -7,7 +7,7 @@
 			<job name="run" video="False" log_path="" filename=""/>
 			<property async="True" step_size="0.0041666" max_run_time="900000"/>
 		</build>
-		<control type="off" sensitivity="20" rate="100"/>
+		<control type="off" sensitivity="20" rate="10"/>
 		<env>push.xml</env>
 		<disp>exp.xml</disp>
 	</config>

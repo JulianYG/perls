@@ -111,7 +111,7 @@ class PrismaticGripper(Tool):
         self._max_force = f
 
     @tool_pos.setter
-    def tool_pos(self, pos):
+    def tool_pos(self, pos_iter):
         """
         Set the gripper to given position. Use left finger as reference.
         :param pos: vec3 float in cartesian space
@@ -121,7 +121,7 @@ class PrismaticGripper(Tool):
             logerr('Cannot move attached gripper.',
                    FONT.model)
             return
-        pos = self.position_transform(pos, self.tool_orn)[0]
+        pos = self.position_transform(pos_iter[0], self.tool_orn)[0]
 
         # Note here it only cares about the position,
         # thus not solving using constraints

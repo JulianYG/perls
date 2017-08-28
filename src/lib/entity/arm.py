@@ -122,20 +122,23 @@ class Arm(Tool):
         return self._gripper.omega
 
     @tool_pos.setter
-    def tool_pos(self, pos):
+    def tool_pos(self, pos_iter):
         """
         Set the tool to given pose.
-        :param pos: vec3 float in cartesian space,
+        :param pos_iter: 
+        tuple of (pos, use_iter) 
+        (vec3 float in cartesian space, boolean use iteration)
         referring to the position between the gripper fingers.
         Note it only controls the position of the gripper,
         and does not keep the orientation.
         :return: None
         """
+        pos, use_iter = pos_iter
         target_pos, _ = self.position_transform(pos, self.tool_orn)
         self._move_to(target_pos, None,
                       precise=False,
                       fast=True,
-                      iterative=True,
+                      iterative=use_iter,
                       max_iter=200,
                       threshold=1e-2,
                       ctype='position')
@@ -148,7 +151,7 @@ class Arm(Tool):
         position. Due to the limitation of common
         robot arms, it preserves [roll, pitch] but
         abandons [yaw].
-        :param orn: vec4 float in quaternion form,
+        :param orn: vec4 float in quaternion form;
         or vec3 float in euler radian
         :return: None
         """

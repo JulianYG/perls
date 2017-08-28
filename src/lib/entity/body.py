@@ -841,10 +841,15 @@ class Tool(Body):
     #  Low level control functionality
 
     @tool_pos.setter
-    def tool_pos(self, pos):
+    def tool_pos(self, pos_iter):
         """
         Set the tool to given position
-        :param pos: vec3 float in cartesian space
+        :param pos_iter: 
+        tuple of (pos, use_iter) 
+        (vec3 float in cartesian space, boolean use iteration)
+        referring to the position between the gripper fingers.
+        Note it only controls the position of the gripper,
+        and does not keep the orientation.
         :return: None
         """
         raise NotImplemented
@@ -1014,7 +1019,7 @@ class Tool(Body):
             forn = None if orn is None else forn
 
         if fpos is not None:
-            self.tool_pos = fpos
+            self.tool_pos = (fpos, False)
 
         if forn is not None:
             self.tool_orn = forn

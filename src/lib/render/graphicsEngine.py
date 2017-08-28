@@ -393,7 +393,7 @@ class BulletRenderEngine(GraphicsEngine):
                 pos = record[3: 6]
                 orn = record[6: 10]
 
-                print(record)
+                # print(record)
                 p.resetBasePositionAndOrientation(obj, pos, orn)
                 n_joints = p.getNumJoints(obj)
                 for i in range(n_joints):

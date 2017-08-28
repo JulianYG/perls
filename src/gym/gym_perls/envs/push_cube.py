@@ -70,7 +70,7 @@ class PushCube(PerlsEnv):
         # As required by bullet
         # self._robot.torque_mode()
         self._robot.tool_pos = \
-                (cube_pos[0] - 0.025, cube_pos[1], cube_pos[2] + 0.02)
+                ((cube_pos[0] - 0.025, cube_pos[1], cube_pos[2] + 0.02), True)
 
         # move robot to initial position
         # TODO: orientation offset
