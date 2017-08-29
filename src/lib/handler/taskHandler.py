@@ -27,10 +27,9 @@ class Checker(object):
         if self._name == 'push_sawyer' or self._name == 'push_kuka':
             cube_pos = world.body['cube_0'].pos
             robot = world.body['titan_0']
-
+            # Move the gripper towards the cube initially
             initial_gripper_pos = \
                 (cube_pos[0] - 0.05, cube_pos[1], cube_pos[2] + 0.025)
-
             robot.tool_pos = (initial_gripper_pos, True)
 
     def check(self, body_dict):

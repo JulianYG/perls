@@ -78,8 +78,8 @@ class Arm(Tool):
         :return: (pos, orn) tuple of the end effector
         """
         kinematics = self.kinematics
-        return kinematics['pos'][self._end_idx], \
-            kinematics['orn'][self._end_idx]
+        return kinematics['abs_frame_pos'][self._end_idx], \
+            kinematics['abs_frame_orn'][self._end_idx]
 
     @property
     def tool_pos(self):
@@ -109,7 +109,8 @@ class Arm(Tool):
         rotation. 
         :return: float scalar distance
         """
-        return math_util.rms(self.tool_pos - self.kinematics['pos'][self._end_idx])
+        return math_util.rms(self.tool_pos -
+                             self.kinematics['pos'][self._end_idx])
 
     @Tool.v.getter
     def v(self):
@@ -187,7 +188,6 @@ class Arm(Tool):
 
         if joint_spec['lower'][eef_joints[1]] <= orn[1] \
                 <= joint_spec['upper'][eef_joints[1]]:
-
             jpos = [None] * self._dof
             jpos[eef_joints[1]] = orn[1]
             self.joint_positions = (
@@ -227,9 +227,9 @@ class Arm(Tool):
         """
         kinematics = self.kinematics
 
-        end_effector_pos, end_effector_orn = \
-            kinematics['abs_frame_pos'][self._end_idx], \
-            kinematics['abs_frame_orn'][self._end_idx]
+        end_effector_pos, end_effector_orn = self.eef_pose
+            # kinematics['abs_frame_pos'][self._end_idx], \
+            # kinematics['abs_frame_orn'][self._end_idx]
 
         # Repeat same procedure for gripper base link
         # and arm end effector link

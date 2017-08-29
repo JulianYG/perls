@@ -3,6 +3,7 @@
 import abc
 
 import gym
+import gym.spaces as spaces
 from gym.utils import seeding
 
 import sys, os
@@ -22,6 +23,8 @@ class PerlsEnv(gym.Env):
     Construct an gym environment
     """
 
+    Space = spaces
+
     metadata = {
         'render.modes': ['human', 'rgb', 'depth', 'segment'],
         'video.frames_per_second': 50
@@ -39,18 +42,43 @@ class PerlsEnv(gym.Env):
         self._world.boot(self._display.info['frame'])
 
     @abc.abstractproperty
-    def state(self):
+    def action_space(self):
+        """
+        Get the space of actions in the environment
+        :return: Space object
+        """
+        return NotImplemented
 
+    @property
+    def observation_space(self):
+        """
+        Get the space of observations in the environment
+        :return: Space object
+        """
+        return NotImplemented
+
+    @abc.abstractproperty
+    def state(self):
+        """
+        Get the current state of the environment
+        :return: state as defined in state space
+        """
         return NotImplemented
 
     @abc.abstractproperty
     def done(self):
-
+        """
+        Whether the program is finished or not
+        :return: Boolean value
+        """
         return NotImplemented
 
     @abc.abstractproperty
     def reward(self):
-
+        """
+        Get the reward defined by algorithm
+        :return: Some form of reward value, usually float
+        """
         return NotImplemented
 
     def _seed(self, seed=None):
@@ -93,7 +121,7 @@ class PerlsEnv(gym.Env):
         :return: Empty list of states. The state
         """
         self._world.reset()
-        for _ in range(2000):
+        for _ in range(500):
             self._world.update()
 
     @abc.abstractmethod

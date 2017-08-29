@@ -23,7 +23,13 @@ class PushCube(PerlsEnv):
         self._cube = self._world.body['cube_0']
         self._robot = self._world.tool['m0']
         self._table = self._world.body['table_0']
-        # self._z_pos = self._cube.pos[2]
+
+    @property
+    def action_space(self):
+        return PerlsEnv.Space.Box(
+            low=-self._robot.joint_specs['max_vel'],
+            high=self._robot.joint_specs['max_vel']
+        )
 
     @property
     def state(self):
@@ -89,7 +95,12 @@ class PushCube(PerlsEnv):
         # TODO: make sure to go through IK here, since it's not perfect
         # TODO: then read robot state, and get the stuff we care about again. 
 
-        self._robot.joint_velocities = action
+        # Use velocity control
+        # self._robot.joint_velocities = action
+
+        # Use end effector delta pose
+        self._robot.tool_pos += math_util.vec(action)
+
         # rate / step size = 0.01 / 0.001 = 10 (account for 100 Hz sampling of demonstrations)
         self._world.update()
 

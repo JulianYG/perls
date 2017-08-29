@@ -4,14 +4,14 @@
 	<!-- The following is for collecting demonstrations. -->
 	<config name="push" id="0" clone="20">
 		<build type="Debug">
-			<graphics name="first person human demo" engine="bullet" type="vr" key="0"/>
+			<graphics name="first person human demo" engine="bullet" type="gui" key="0"/>
 			<physics engine="bullet" version="20170601"/>
-			<job name="record" video="False" log_path="" replay_path="success/2017-08-27-21-51-01"/>
+			<job name="run" video="False" log_path="" replay_path="success/2017-08-27-21-51-01"/>
 			<property async="False" step_size="0.0041666" max_run_time="100000"/>
 		</build>
-		<control type="vive" sensitivity="20" rate="10"/>
-		<env>push_kuka.xml</env>
-		<!-- <env>push_sawyer.xml</env> -->
+		<control type="phone" sensitivity="20" rate="10"/>
+		<!--<env>push_kuka.xml</env>-->
+		 <env>push_sawyer.xml</env>
 		<disp>disp.xml</disp>
 	</config>
 
