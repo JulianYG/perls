@@ -206,11 +206,7 @@ class Arm(Tool):
         :param orn: vec4 float quaternion world frame
         :return: transformed pose (pos, orn) in world frame
         """
-        kinematics = self.kinematics
-
         end_effector_pos, end_effector_orn = self.eef_pose
-            # kinematics['abs_frame_pos'][self._end_idx], \
-            # kinematics['abs_frame_orn'][self._end_idx]
 
         # Repeat same procedure for gripper base link
         # and arm end effector link

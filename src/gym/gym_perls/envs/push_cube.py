@@ -88,6 +88,7 @@ class PushCube(PerlsEnv):
         #     (0,1,0,0),
         #         # math_util.euler2quat([-math_util.pi, -math_util.pi / 2., 0.]),
         #     ftype='rel',max_iter=500)
+
         return self.state
 
     def _step(self, action):
@@ -99,10 +100,9 @@ class PushCube(PerlsEnv):
         # Use velocity control
         # self._robot.joint_velocities = action
 
-        # Use end effector delta pose
-        self._robot.tool_pos += math_util.vec(action)
+        # Use end effector delta pose with iterations
+        self._robot.tool_pos = (self._robot.tool_pos + math_util.vec(action), True)
 
         # rate / step size = 0.01 / 0.001 = 10 (account for 100 Hz sampling of demonstrations)
         self._world.update()
-
         return self.state, self.reward, self.done, {'state': self.state}

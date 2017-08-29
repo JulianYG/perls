@@ -98,7 +98,7 @@ class PerlsEnv(gym.Env):
         self._world.clean_up()
         self._display.close(0)
 
-    def _render(self, mode='human', close=True):
+    def _render(self, mode='rgb', close=False):
         """
         Generate rendered data based on given mode.
         :param mode: string of mode, as specified in metadata
