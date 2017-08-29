@@ -22,8 +22,8 @@ class PushCubePose(PushCube):
     def action_space(self):
         # No large movements
         return PerlsEnv.Space.Box(
-            -math_util.vec(0.01, 0.01, 0.01),
-            math_util.vec(0.01, 0.01, 0.01)
+            low=-math_util.vec(0.01, 0.01, 0.01),
+            high=math_util.vec(0.01, 0.01, 0.01)
         )
 
     @property
