@@ -82,7 +82,7 @@ class Postprocess(object):
         log = np.array(plog(fname, verbose=verbose))
 
         ### Important: Toss the first 2500 rows.
-        log = log[3000:]
+        log = log[2500:]
 
         col_inds = sorted(self.col_names_dict.values())
         if cols is not None:

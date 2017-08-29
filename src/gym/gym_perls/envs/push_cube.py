@@ -25,13 +25,6 @@ class PushCube(PerlsEnv):
         self._table = self._world.body['table_0']
 
     @property
-    def action_space(self):
-        return PerlsEnv.Space.Box(
-            low=-self._robot.joint_specs['max_vel'],
-            high=self._robot.joint_specs['max_vel']
-        )
-
-    @property
     def state(self):
         # arm_state = self._robot.joint_positions + self._robot.joint_velocities
         eef_pos, _ = math_util.get_relative_pose(
@@ -79,30 +72,6 @@ class PushCube(PerlsEnv):
 
         self._robot.tool_pos = \
                 ((cube_pos[0] - 0.05, cube_pos[1], cube_pos[2] + 0.025), 600)
-
-        # move robot to initial position
-        # TODO: orientation offset
-        # offset = self._robot.pinpoint(
-        #     (0.65, 0.16, 0.24),
-        #     # (-0.29, 0.189, 0.829),
-        #     (0,1,0,0),
-        #         # math_util.euler2quat([-math_util.pi, -math_util.pi / 2., 0.]),
-        #     ftype='rel',max_iter=500)
+        self._robot.grasp()
 
         return self.state
-
-    def _step(self, action):
-
-        # TODO: action should be delta Robot end effector 2D pose, so do bounds clipping and apply action
-        # TODO: make sure to go through IK here, since it's not perfect
-        # TODO: then read robot state, and get the stuff we care about again. 
-
-        # Use velocity control
-        # self._robot.joint_velocities = action
-
-        # Use end effector delta pose with iterations
-        self._robot.tool_pos = (self._robot.tool_pos + math_util.vec(action), True)
-
-        # rate / step size = 0.01 / 0.001 = 10 (account for 100 Hz sampling of demonstrations)
-        self._world.update()
-        return self.state, self.reward, self.done, {'state': self.state}

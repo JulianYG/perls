@@ -205,6 +205,23 @@ class Arm(Tool):
                            velocityGains=(1.,))
             )
 
+    def set_eef_pose(self, pos, orn, iters=500):
+        """
+        Directly move the end effector to desired pose.
+        Note that it matches the reference frame pose.
+        :param pos: position cartesian vec float 3
+        :param orn: orientation quaternion vec float 4
+        :param iters: number of iterations to reach for 
+        the end effector pose 
+        """
+        self._move_to(pos, None,
+                      precise=False,
+                      fast=True,
+                      iterative=True,
+                      max_iter=iters,
+                      threshold=1e-2,
+                      ctype='position')
+
     ###
     # Helper functions
     def position_transform(self, pos, orn):
