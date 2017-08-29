@@ -23,20 +23,20 @@ class PushCube(PerlsEnv):
         self._cube = self._world.body['cube_0']
         self._robot = self._world.tool['m0']
         self._table = self._world.body['table_0']
-        self._z_pos = self._cube.pos[2]
 
     @property
     def state(self):
-        arm_state = self._robot.joint_positions + self._robot.joint_velocities
-        cube_pose = self._cube.get_pose(self._robot.uid, 0)
-        cube_state = list(cube_pose[0]) + list(cube_pose[1])
-        return arm_state + cube_state
+        # arm_state = self._robot.joint_positions + self._robot.joint_velocities
+        eef_pos, _ = math_util.get_relative_pose(
+            self._robot.eef_pose, self._robot.pose)
+        cube_pos, cube_orn = self._cube.get_pose(self._robot.uid, 0)
+        return math_util.concat(eef_pos, cube_pos, cube_orn)
 
     @property
     def done(self):
 
         # done if cube falls off table
-        if self._cube.pos[2] < self._z_pos:
+        if self._cube.pos[2] < 0.6:
             return True
         return False
 
@@ -50,7 +50,7 @@ class PushCube(PerlsEnv):
         # TODO: put negative reward for other side of table too?
 
         # square difference in x distance
-        return -((self._cube.pos[0] - 0.68) ** 2)
+        return - ((self._cube.pos[0] - 0.68) ** 2)
 
     def _reset(self):
 
@@ -59,34 +59,19 @@ class PushCube(PerlsEnv):
             dict(
                 dim=(256, 256),
                 flen=3,
-                yaw=30,
-                pitch=20,
-                focus=(0.5, 0.5, 0)
+                yaw=50,
+                pitch=-35,
+                focus=(0, 0, 0)
             )
         )
 
-        # move robot to initial position
-        # TODO: orientation offset
-        # offset = self._robot.pinpoint(
-        #     (0.65, 0.16, 0.24),
-        #     # (-0.29, 0.189, 0.829),
-        #     (0,1,0,0),
-        #         # math_util.euler2quat([-math_util.pi, -math_util.pi / 2., 0.]),
-        #     ftype='rel',max_iter=500)
+        cube_pos = self._cube.pos
+        # Enable torque control by disable the motors first
+        # As required by bullet
+        # self._robot.torque_mode()
 
-        # self._robot.joint_states = (range(7), [0] * 7, 'position', None)
+        self._robot.tool_pos = \
+                ((cube_pos[0] - 0.05, cube_pos[1], cube_pos[2] + 0.025), 600)
+        self._robot.grasp()
 
         return self.state
-
-    def _step(self, action):
-
-        # TODO: action should be delta Robot end effector 2D pose, so do bounds clipping and apply action
-        # TODO: make sure to go through IK here, since it's not perfect
-        # TODO: then read robot state, and get the stuff we care about again. 
-
-        self._robot.joint_torques = action
-        # rate / step size = 0.01 / 0.001 = 10 (account for 100 Hz sampling of demonstrations)
-        for _ in range(10):
-            self._world.update()
-
-        return self.state, self.reward, self.done, {'state': self.state}

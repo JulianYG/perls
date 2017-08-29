@@ -295,7 +295,7 @@ class InteraEngine(RealStateEngine):
         """
         pass
 
-    def step(self, elapsed_time):
+    def step(self, elapsed_time, step_size):
         """
         Simulate for one step
         :param elapsed_time: integer elapsed time

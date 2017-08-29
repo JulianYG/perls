@@ -66,9 +66,11 @@ class BulletRenderEngine(GraphicsEngine):
         # Default settings for rendering
         self._render_param = dict(
             frame_width=224, frame_height=224,
-            view_mat=p.computeViewMatrixFromYawPitchRoll(
-                (0, 0, 0), 5, 50, -35, 0, 2),
-            projection_mat=p.computeProjectionMatrixFOV(60, 1, 0.02, 100),
+            view_mat=math_util.mat4(
+                p.computeViewMatrixFromYawPitchRoll(
+                    (0, 0, 0), 5, 50, -35, 0, 2)).T,
+            projection_mat=math_util.mat4(
+                p.computeProjectionMatrixFOV(60, 1, 0.02, 100)).T,
             up=(0, 0, 1),
             forward=(-0.6275, 0.5265, -0.5736),
             yaw=50, pitch=-35, focal_len=5,
@@ -189,9 +191,9 @@ class BulletRenderEngine(GraphicsEngine):
 
             # Update view matrix again
             self._render_param['view_mat'] = \
-                p.computeViewMatrixFromYawPitchRoll(
+                math_util.mat4(p.computeViewMatrixFromYawPitchRoll(
                     params['focus'], params['flen'],
-                    params['yaw'], params['pitch'], 0, 2)
+                    params['yaw'], params['pitch'], 0, 2)).T
 
         # elif self._frame == 'vr':
         #     cam_pos, cam_orn = params
@@ -265,6 +267,7 @@ class BulletRenderEngine(GraphicsEngine):
     def _build(self):
         # Convert to bullet constant
         self._disp_args[0] = self._FRAME_TYPES[self._frame]
+
         # The core step: connect to bullet physics server
         if self._job == 'replay':
             self._server_id = p.connect(p.GUI)
@@ -354,16 +357,19 @@ class BulletRenderEngine(GraphicsEngine):
                     )
                 )
 
-            if self._frame == 'vr':
-                # Record the egocentric camera pose
-                self._logging_id.append(
-                    p.startStateLogging(
-                        p.STATE_LOGGING_VR_CONTROLLERS,
-                        abs_file_name,
-                        deviceTypeFilter=p.VR_DEVICE_HMD,
-                        physicsClientId = self._server_id
-                    )
-                )
+            # TODO: may record under ViveListener
+            # # Cannot record VR Device pose since running 
+            # # independent openvr
+            # if self._frame == 'vr':
+            #     # Record the egocentric camera pose
+            #     self._logging_id.append(
+            #         p.startStateLogging(
+            #             p.STATE_LOGGING_VR_CONTROLLERS,
+            #             abs_file_name,
+            #             deviceTypeFilter=p.VR_DEVICE_HMD,
+            #             physicsClientId = self._server_id
+            #         )
+            #     )
             return 2
 
         elif self._job == 'replay':
@@ -379,11 +385,15 @@ class BulletRenderEngine(GraphicsEngine):
             # TODO: set camera angle for GUI/HMD
             loginfo('Start replaying file {}'.
                     format(self._record_name), FONT.control)
+
             for record in obj_log:
                 # time_stamp = float(record[1])
+
                 obj = record[2]
                 pos = record[3: 6]
                 orn = record[6: 10]
+
+                # print(record)
                 p.resetBasePositionAndOrientation(obj, pos, orn)
                 n_joints = p.getNumJoints(obj)
                 for i in range(n_joints):

@@ -511,12 +511,12 @@ class Body(object):
         pose w.r.t given object uid.
         :return: (pos, orn) tuple
         """
-        if uid:
+        if uid is not None:
             frame_pos = self._engine.get_body_scene_position(uid)
             frame_orn = self._engine.get_body_scene_orientation(uid)
-            if lid:
+            if lid is not None:
                 frame_pos, frame_orn = \
-                    self._engine.get_body_link_state(uid, lid)[:2]
+                    self._engine.get_body_link_state(uid, lid)[4: 6]
 
             return self._engine.get_body_relative_pose(
                 self._uid, frame_pos, frame_orn)
@@ -841,10 +841,15 @@ class Tool(Body):
     #  Low level control functionality
 
     @tool_pos.setter
-    def tool_pos(self, pos):
+    def tool_pos(self, pos_iter):
         """
         Set the tool to given position
-        :param pos: vec3 float in cartesian space
+        :param pos_iter: 
+        tuple of (pos, use_iter) 
+        (vec3 float in cartesian space, boolean use iteration)
+        referring to the position between the gripper fingers.
+        Note it only controls the position of the gripper,
+        and does not keep the orientation.
         :return: None
         """
         raise NotImplemented
@@ -945,6 +950,15 @@ class Tool(Body):
         value = [v for v in value if v is not None]
         self._engine.set_body_joint_state(self._uid, jids, value, 'torque', kwargs)
 
+    def torque_mode(self):
+        """
+        Prepare the tool for torque mode control,
+        by setting all forces for joint motors to zero,
+        as required by bullet
+        :return: None
+        """
+        self._engine.disable_body_joint_motors(self._uid, self._joints)
+
     ###
     #  Helper functions
 
@@ -1005,7 +1019,7 @@ class Tool(Body):
             forn = None if orn is None else forn
 
         if fpos is not None:
-            self.tool_pos = fpos
+            self.tool_pos = (fpos, None)
 
         if forn is not None:
             self.tool_orn = forn

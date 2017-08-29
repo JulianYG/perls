@@ -163,8 +163,7 @@ class World(object):
         self.name_str = (parse_tree.env['title'], parse_tree.scene_title)
 
         # Load task completion checker
-        self._checker = taskHandler.Checker(
-            self._engine.ps_id, self.name_str[1])
+        self._checker = taskHandler.Checker(self.name_str[1])
 
         for gripper in parse_tree.gripper:
             gripper_body = self.GRIPPER_TYPE[gripper['type']](
@@ -180,6 +179,11 @@ class World(object):
                 gripper_body.traction = self._traction
                 gripper_body.hang()
 
+            if gripper['attach']:
+                children = self._load_asset(gripper['attach'])
+                gripper_body.attach_children = \
+                    ()
+
             # Tools are labeled by tool_id's
             self._tools[gripper_body.tid] = gripper_body
             self._bodies[gripper_body.name] = gripper_body
@@ -191,16 +195,21 @@ class World(object):
             arm_spec = parse_tree.arm[i]
             assert i == arm_spec['id']
             gripper_spec = arm_spec['gripper']
-            gripper_body = self.GRIPPER_TYPE[gripper_spec['type']](
-                math_util.rand_bigint(),
-                self._engine,
-                path=gripper_spec['path'])
-            gripper_body.name = gripper_spec['name']
 
-            # Note here not appending gripper into tools since
-            # we can only operate it through the arm
-            self._target_bodies.append((gripper_body.name, gripper_body.uid))
-            self._bodies[gripper_body.name] = gripper_body
+            # Only parse if gripper is there
+            if gripper_spec:
+                gripper_body = self.GRIPPER_TYPE[gripper_spec['type']](
+                    math_util.rand_bigint(),
+                    self._engine,
+                    path=gripper_spec['path'])
+                gripper_body.name = gripper_spec['name']
+
+                # Note here not appending gripper into tools since
+                # we can only operate it through the arm
+                self._target_bodies.append((gripper_body.name, gripper_body.uid))
+                self._bodies[gripper_body.name] = gripper_body
+            else:
+                gripper_body = None
 
             arm_body = self.ARM_TYPE[arm_spec['type']](
                 arm_spec['id'],
@@ -216,21 +225,47 @@ class World(object):
             self._target_bodies.append((arm_body.name, arm_body.uid))
 
         for asset in parse_tree.scene:
-            asset_body = Body(self._engine,
-                              asset['path'],
-                              pos=asset['pos'],
-                              orn=asset['orn'],
-                              fixed=asset['fixed'])
-            asset_body.name = asset['name']
+            bodies = self._load_asset(asset)
 
-            self._bodies[asset_body.name] = asset_body
-            if asset['record']:
-                self._target_bodies.append((asset_body.name, asset_body.uid))
+            for i in range(len(bodies) - 1):
+
+                bodies[i]
 
         # TODO: Think if there's other stuff to conf
         # Add gravity after everything is loaded
         self._gravity = parse_tree.env['gravity']
         self._engine.configure_environment(self._gravity)
+
+    def _load_asset(self, asset):
+        """
+        A helper function to load body from xml element
+        :param asset: the element tree object to be loaded
+        :return: A list of object uids in parent->children order
+        """
+        def _load_attachment():
+
+            pass
+        def _load_helper(p_elem, body_lst):
+
+            asset_body = Body(self._engine,
+                              p_elem['path'],
+                              pos=p_elem['pos'],
+                              orn=p_elem['orn'],
+                              fixed=p_elem['fixed'])
+            asset_body.name = p_elem['name']
+            self._bodies[asset_body.name] = asset_body
+            if p_elem['record']:
+                self._target_bodies.append((asset_body.name, asset_body.uid))
+
+            body_lst.append(asset_body)
+
+            # Recursively add attached body
+            if p_elem['attach']:
+                _load_helper(p_elem['attach'], body_lst)
+
+        bodies = []
+        _load_helper(asset, bodies)
+        return bodies
 
     def get_tool(self, _id, key=None):
         """
@@ -296,6 +331,9 @@ class World(object):
         """
         status = self._engine.start_engine(frame)
         self._engine.hold(200)
+
+        # Finetune the initial environment setup
+        self._checker.custom_setup(self)
         return status
 
     def notify_engine(self, stat):
@@ -316,12 +354,12 @@ class World(object):
         """
         return self._checker.check(self._bodies)
 
-    def update(self, elp=0):
+    def update(self, elp=0, step_size=None):
         """
         Update the states of the world.
         :return: None
         """
-        return self._engine.step(elp)
+        return self._engine.step(elp, step_size)
 
     def clean_up(self):
         """

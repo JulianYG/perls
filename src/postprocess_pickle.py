@@ -7,7 +7,7 @@ from IPython import embed
 # import sys
 # sys.path.append('/Users/ajaymandlekar/Desktop/Dropbox/Stanford/ccr/code/perls/src')
 
-from lib.utils.math_util import get_relative_pose, get_absolute_pose
+from perls.src.lib.utils.math_util import get_relative_pose, get_absolute_pose
 
 
 robot_position = [-0.6756339993327856, 0.010968999937176704, 1.1236299961805343]
@@ -26,6 +26,7 @@ def getDemonstration(fname):
     data = readFile(fname)
 
     arm_data = data['titan_0']
+    timestamps = arm_data['time']
     joint_pos = arm_data['joint_position']
     joint_vel = arm_data['joint_velocity']
     joint_torq = arm_data['joint_torque']
@@ -39,10 +40,11 @@ def getDemonstration(fname):
     actions = []
 
     num_filtered = 0
-    _, prev_joint_pos = joint_pos[0]
+    prev_joint_pos = joint_pos[0]
 
     for i in range(1, num_elems):
-        timestamp, joint_pos_elem = joint_pos[i]
+        timestamp_elem = timestamps[i]
+        joint_pos_elem = joint_pos[i]
 
         # TODO: think about more natural filtering mechanism here?
 
@@ -52,9 +54,9 @@ def getDemonstration(fname):
             num_filtered += 1
             continue
 
-        _, joint_vel_elem = joint_vel[i]
-        _, joint_torq_elem = joint_torq[i]
-        _, cube_pose_elem = cube_pose[i]
+        joint_vel_elem = joint_vel[i]
+        joint_torq_elem = joint_torq[i]
+        cube_pose_elem = cube_pose[i]
         #cube_pose_pos_elem, cube_pose_orn_elem = cube_pose_elem
 
         # convert from world frame to robot frame
@@ -65,6 +67,9 @@ def getDemonstration(fname):
         action = np.array(joint_torq_elem)
         states.append(state)
         actions.append(action)
+
+        # remember last joint position for filtering
+        prev_joint_pos = joint_pos_elem
 
     print("Number filtered: {} out of {}.".format(num_filtered, num_elems))
     return np.array(states), np.array(actions)

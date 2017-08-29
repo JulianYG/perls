@@ -1,5 +1,6 @@
 import pybullet as p
 import numpy as np
+from numpy import ma
 import math
 
 """
@@ -53,6 +54,15 @@ Vector Calculation / Processing
 """
 
 
+def concat(*vector):
+    """
+    Concatenate given vectors
+    :param vector: Input vectors to concatenate
+    :return: the concatenated vector
+    """
+    return np.concatenate(vector)
+
+
 def rms(vector):
     """
     Get the root mean square of the vector
@@ -60,6 +70,19 @@ def rms(vector):
     :return: float number
     """
     return np.sqrt(np.sum(vector ** 2))
+
+
+def sign(vector, threshold=None):
+    """
+    Returns element-wise indication of the sign
+    of a vector
+    :param vector: input vector
+    :return: sign of each element in the vector
+    """
+    if threshold:
+        mask = ma.masked_inside(vector, -abs(threshold), abs(threshold))
+        vector = mask.filled(0)
+    return np.sign(vector)
 
 
 def approximate(val, n_digits):

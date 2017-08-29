@@ -105,7 +105,8 @@ def write_log(log, dest):
 
     with open(dest, 'wb') as f:
         # Python 2 & 3 compatible
-        pickle.dump(log, f, protocol=2)
+        # Convert to dict first in case it is manager dict
+        pickle.dump(dict(log), f, protocol=2)
 
 
 def parse_log(file, verbose=True):
@@ -162,6 +163,7 @@ def parse_env(file_path):
     """
     xml = ElementTree.parse(file_path)
     root = xml.getroot()
+
     # General environment info
     title = root.attrib['name']
     gravity = float(root.attrib.get('gravity', 1.))
@@ -195,12 +197,18 @@ def parse_gripper_elem(gripper_elem):
     :return: a list of dictionaries
     """
     gripper = []
+
     for i in range(len(gripper_elem)):
         elem = gripper_elem[i]
         asset = elem.find('asset')
         if asset is None:
             asset = _singleton_elem
         pos, orn = elem.find('pos'), elem.find('orn')
+
+        attach = elem.find('attach')
+        if attach is None:
+            attach = _singleton_elem
+
         # Grippers are not fixed by default,
         # but you can change them by calling gripper.fix=(orn,pos)
         tid = int(asset.attrib.get('id', i))
@@ -216,6 +224,8 @@ def parse_gripper_elem(gripper_elem):
                      f in orn.text.split(' ')] if orn is not None else None,
                 # But must specify type for gripper
                 type=elem.attrib['type'],
+                attach=parse_attach_elem(attach),
+
                 # ID refers to controll id
                 name='{}_{}'.format(elem.attrib['name'], tid),
                 fixed=str2bool(elem.attrib.get('fixed', 'False')),
@@ -237,11 +247,17 @@ def parse_arm_elem(arm_elem):
     for i in range(len(arm_elem)):
         elem = arm_elem[i]
         asset = elem.find('asset')
+
         if asset is None:
             asset = _singleton_elem
+
         pos, orn = elem.find('pos'), elem.find('orn')
         # Arm must have at least one gripper.
+
         gripper_elem = elem.find('gripper')
+        gripper = parse_gripper_elem([gripper_elem])[0]\
+            if gripper_elem is not None else []
+
         tid = int(asset.attrib.get('id', i))
 
         arm.append(
@@ -257,7 +273,7 @@ def parse_arm_elem(arm_elem):
                 type=elem.attrib['type'],
                 name='{}_{}'.format(elem.attrib['name'], tid),
                 collision_checking=str2bool(elem.attrib.get('collision_checking', 'False')),
-                gripper=parse_gripper_elem([gripper_elem])[0]
+                gripper=gripper,
             )
         )
     return arm
@@ -269,10 +285,16 @@ def parse_body_elem(body_elem):
     for i in range(len(body_elem)):
         elem = body_elem[i]
         asset = elem.find('asset')
+
+        attach = elem.find('attach')
+        if attach is None:
+            attach = _singleton_elem
+
         pos, orn = elem.find('pos'), elem.find('orn')
         env.append(
             dict(
                 path=asset.attrib['path'],
+                attach=parse_attach_elem(attach),
                 record=str2bool(elem.attrib.get('record', 'False')),
                 pos=[float(f) for   # Allow default pos
                      f in pos.text.split(' ')] if
@@ -287,6 +309,30 @@ def parse_body_elem(body_elem):
             )
         )
     return env
+
+
+def parse_attach_elem(attach_elem):
+
+    attachment = []
+
+    for elem in attach_elem:
+        asset = elem.find('asset')
+        attach = elem.find('attach')
+
+        if attach is None:
+            attach = _singleton_elem
+
+        attachment.append(
+            dict(
+                attach=parse_attach_elem(attach),
+                parent_link=elem.attrib['p_link'],
+                child_link=elem.attrib['c_link'],
+                path=asset.attrib['path'],
+                name='{}_{}'.format(elem.attrib['name'],
+                                    asset.attrib.get('id', 0))
+            )
+        )
+    return attachment
 
 
 def parse_disp(file_path):

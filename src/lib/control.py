@@ -13,7 +13,6 @@ from .utils import io_util, time_util, math_util
 from .utils.io_util import (FONT,
                             loginfo,
                             logerr)
-from .utils.math_util import approximate
 from .view import View
 from .world import World
 
@@ -89,7 +88,8 @@ class Controller(object):
                  # operations/modifications on the world
                  camera=dict(flen=1e-3),  # The camera parameters
                  )
-        self._data_log = {}
+
+        # Recording data in specific format needed
         self._init_time_stamp = None
 
         # For coonsistency across different clock speeds
@@ -141,7 +141,8 @@ class Controller(object):
                 'Error loading configuration: invalid id.'
 
             # load configs
-            world, disp, ctrl_hdlr = self.load_config(conf)
+            queue = multiprocessing.Queue()
+            world, disp, ctrl_hdlr = self.load_config(conf, queue)
             if num_configs > 1 and (not conf.async):
                 logerr('Currently only support multiple instances '
                        'of non-GUI frame and asynchronous simulation. '
@@ -155,10 +156,10 @@ class Controller(object):
                         'Build type: {}'.format(i, conf.build),
                         FONT.control)
                 world.notify_engine('pending')
-            self._physics_servers[conf.id] = (world, disp, ctrl_hdlr)
+            self._physics_servers[conf.id] = (world, disp, ctrl_hdlr, queue)
 
     @staticmethod
-    def load_config(conf):
+    def load_config(conf, queue):
         """
         Helper method to load configurations. Not recommended with
         outside calls unless perform manual check, since it may
@@ -197,7 +198,7 @@ class Controller(object):
 
         # Set up control event interruption handlers
         ctrl_handler = Controller._CTRL_HANDLERS[conf.control_type](
-            pe.ps_id, conf.sensitivity, conf.rate
+            pe.ps_id, queue, conf.sensitivity, conf.rate,
         )
 
         # TODO
@@ -257,7 +258,7 @@ class Controller(object):
         :return: None
         """
         # Get all handlers
-        world, display, ctrl_handler = self._physics_servers[server_id]
+        world, display, ctrl_handler, queue = self._physics_servers[server_id]
 
         # Preparing variables
         time_up, done, success = False, False, False
@@ -292,23 +293,24 @@ class Controller(object):
         self._view_update(display)
         self._update_time_stamp = time_util.get_abs_time()
 
+        # Start control in another process
+        ctrl_handler.run()
+
         # Finally start control loop (Core)
         try:
             while not time_up and not done:
-
                 elt = time_util.get_elapsed_time(self._init_time_stamp)
 
                 time_since_last_update = time_util.get_elapsed_time(self._update_time_stamp)
                 self._update_time_stamp = time_util.get_abs_time()
 
                 # Perform control interruption first
-                self._control_interrupt(
-                    world, display, 
-                    ctrl_handler.signal, time_since_last_update)
+                if not queue.empty():
+                    signal = queue.get_nowait()
 
-                if display.record:
-
-                    self._record_interrupt(world, elt)
+                    self._control_interrupt(
+                        world, display, signal,
+                        time_since_last_update)
 
                 # Update model
                 time_up = world.update(elt)
@@ -322,20 +324,10 @@ class Controller(object):
                 loginfo('Task success! Exiting simulation...',
                         FONT.disp)
                 self.stop(server_id, 0)
-                io_util.write_log(
-                    self._data_log,
-                    io_util.pjoin(
-                        display.info['engine']['log_info']['success_rl'],
-                        display.info['engine']['record_name']))
             else:
                 loginfo('Task failed! Exiting simulation...',
                         FONT.disp)
                 self.stop(server_id, 1)
-                io_util.write_log(
-                    self._data_log,
-                    io_util.pjoin(
-                        display.info['engine']['log_info']['fail_rl'],
-                        display.info['engine']['record_name']))
             
         except KeyboardInterrupt:
             loginfo('User exits the program by ctrl+c.',
@@ -352,12 +344,10 @@ class Controller(object):
         -1 for error exit.
         :return: None
         """
-        world, display, ctrl_handler = self._physics_servers[server_id]
-
+        world, display, ctrl_handler, _ = self._physics_servers[server_id]
         ctrl_handler.stop()
         world.clean_up()
         display.close(exit_status)
-
         loginfo('Safe exit.', FONT.control)
 
     def kill(self, server_id=0):
@@ -372,57 +362,6 @@ class Controller(object):
         # TODO
         self._process_pool[server_id].terminate()
         self._process_pool[server_id] = None
-
-    def _record_interrupt(self, world, time_stamp):
-
-        time_stamp = approximate(time_stamp, 5)
-
-        for name, _ in world.target:
-            entity = world.body[name]
-
-            if entity.type == 'body':
-
-                entity_log = self._data_log.get(
-                    name, {'pose': []})
-
-                pose = entity.pose
-                pose = (approximate(pose[0], 5).tolist(),
-                        approximate(pose[1], 5).tolist())
-                entity_log['pose'].append(
-                    (time_stamp, pose)
-                )
-
-                self._data_log[name] = entity_log
-
-            elif entity.type == 'arm':
-
-                arm_log = self._data_log.get(
-                    name, {'pose': [],
-                           'joint_position': [],
-                           'joint_velocity': [],
-                           'joint_torque': []})
-
-                tool_pose = entity.tool_pose
-                tool_pose = (approximate(tool_pose[0], 5).tolist(),
-                             approximate(tool_pose[1], 5).tolist())
-
-                arm_log['pose'].append(
-                    (time_stamp, tool_pose)
-                )
-                arm_log['joint_position'].append(
-                    (time_stamp,
-                     approximate(entity.joint_positions, 5).tolist())
-                )
-                arm_log['joint_velocity'].append(
-                    (time_stamp,
-                     approximate(entity.joint_velocities, 5).tolist())
-                )
-                arm_log['joint_torque'].append(
-                    (time_stamp,
-                     approximate(entity.joint_torques, 5).tolist())
-                )
-
-                self._data_log[name] = arm_log
 
     def _control_interrupt(self, world, display, signal, elapsed_time):
         """
@@ -529,7 +468,12 @@ class Controller(object):
                         if r_orn is not None:
                             ###
                             # Can try directly setting joint states here
-                            i_orn += r_orn * elapsed_time
+                            end_orn_pos = math_util.vec(tool.joint_positions)\
+                                [tool.active_joints[-2:]]
+
+                            i_orn = math_util.vec((end_orn_pos[1], end_orn_pos[0], 0))\
+                                    + r_orn * elapsed_time
+
                             if tool.tid[0] == 'm':
                                 eef_joints = tool.active_joints[-2:]
                                 joint_spec = tool.joint_specs
@@ -564,10 +508,15 @@ class Controller(object):
                                 ('tool', 'tool_pose'))[0][tool.tid]
                             self._states['tool'][tool.tid][0] = state_pose[0]
                     else:
-                        # Special case: use absolute pose for VR
+                        # Special case: use absolute position for VR
                         threshold = 1.3
+                        end_orn_pos = math_util.vec(tool.joint_positions) \
+                            [tool.active_joints[-2:]]
+
                         if math_util.rms(tool.tool_pos - r_pos) < threshold:
-                            tool.reach(r_pos, r_orn)
+                            a_orn = math_util.vec((end_orn_pos[1], end_orn_pos[0], 0)) \
+                                    + r_orn * elapsed_time
+                            tool.reach(r_pos, a_orn[[1, 0, 2]])
 
                 elif method == 'grasp':
                     tool.grasp(value)
@@ -589,11 +538,11 @@ class Controller(object):
         :param display: the view side of system
         :return: None
         """
-        camera_pos, camerq_orn = display.get_camera_pose(otype='deg')
+        camera_pos, camera_orn = display.get_camera_pose(otype='deg')
         self._states['camera']['focus'] = camera_pos
         # self._states['camera']['flen'] = 1e-3
-        self._states['camera']['pitch'] = camerq_orn[0]
-        self._states['camera']['yaw'] = camerq_orn[1]
+        self._states['camera']['pitch'] = camera_orn[0]
+        self._states['camera']['yaw'] = camera_orn[1]
 
     def _control_update(self, world):
         """
@@ -604,7 +553,12 @@ class Controller(object):
         init_states = world.get_states(('tool', 'tool_pose'))[0]
         # First control states
         for tid, init_pose in init_states.items():
+            # if tid[0] == 'g':
             self._states['tool'][tid] = [
-                init_pose[0], 
+                init_pose[0],
                 # Use radians
                 math_util.quat2euler(init_pose[1])]
+            # else:
+            #     # For arms, use joint positions for tool orn;
+            #     # The real orientation is end effector pose
+            #     self._states['tool'][tid] = init_pose

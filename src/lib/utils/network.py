@@ -1,6 +1,9 @@
 import redis
 import sys
-from queue import Queue
+try:
+    from queue import Queue
+except ImportError:
+    from Queue import Queue
 
 
 class RedisComm(object):

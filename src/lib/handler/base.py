@@ -1,34 +1,38 @@
 import abc
 
+from ..utils.time_util import Timer
 
-class InterruptHandler(object):
 
-    def __init__(self, ps_id, rate):
-
-        self._rate = rate
+class ControlHandler(object):
+    """
+    Base class for control interrupt handling
+    """
+    def __init__(self, ps_id, queue, sensitivity, rate, qsize):
         self._id = ps_id
-        self._signal = dict(
-            tid=0, key=None, cmd=list(), instruction=list())
+        self._sens = sensitivity
+        self._handler = Timer(1. / rate, self.interrupt, None, queue)
 
     @property
     def name(self):
-        return 'InterruptHandler'
+        return 'ControlHandler'
 
-    @property
-    def signal(self):
-        return self._signal
+    def run(self):
+        self._handler.start()
 
     @abc.abstractmethod
+    def interrupt(self, queue):
+        return NotImplemented
+
     def stop(self):
-        raise NotImplementedError('<stop> is not implemented for InterruptHandler')
+        self._handler.cancel()
 
 
-class NullHandler(InterruptHandler):
+class NullHandler(ControlHandler):
     """
     Singleton placeholder
     """
-    def __init__(self, a=None, b=None, c=None):
-        super(NullHandler, self).__init__(0, 0.)
+    def __init__(self, a=None, b=None, c=None, d=None):
+        super(NullHandler, self).__init__(0, None, 0, 1, 0)
 
     def update_states(self, state):
         return

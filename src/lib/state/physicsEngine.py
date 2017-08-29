@@ -1,6 +1,7 @@
 #!/usr/bin/env/ python
 
 import numpy as np
+import platform
 import os.path as osp
 
 import pybullet as p
@@ -103,9 +104,9 @@ class BulletPhysicsEngine(FakeStateEngine):
         :return: 0 if success, -1 if failure
         """
         if not self._async:
-            if frame == 'gui':
+            if frame != 'gui':
                 self.status = self._STATUS[-1]
-                err_msg = 'CMD mode only supports async simulation.'
+                err_msg = 'Non GUI mode only supports async simulation.'
                 self._error_message.append(err_msg)
                 logerr(err_msg, FONT.control)
                 return -1
@@ -119,14 +120,17 @@ class BulletPhysicsEngine(FakeStateEngine):
 
     def load_asset(self, file_path, pos, orn, fixed):
         uid = -1
-        file_path = pjoin(osp.dirname(__file__),
-                          '../../../data',
-                          file_path)
+        if platform.system() != 'Windows':
+            file_path = pjoin(osp.dirname(__file__),
+                              '../../../data',
+                              file_path)
         try:
             if osp.basename(file_path).split('.')[1] == 'urdf':
                 uid = p.loadURDF(
                     file_path, basePosition=pos, baseOrientation=orn,
-                    useFixedBase=fixed, physicsClientId=self._physics_server_id
+                    useFixedBase=fixed,
+                    flags=p.URDF_USE_SELF_COLLISION_EXCLUDE_PARENT,
+                    physicsClientId=self._physics_server_id
                 )
             elif osp.basename(file_path).split('.')[1] == 'sdf':
                 uid = p.loadSDF(file_path, physicsClientId=self._physics_server_id)[0]
@@ -335,14 +339,12 @@ class BulletPhysicsEngine(FakeStateEngine):
                                             physicsClientId=self._physics_server_id,
                                             **kwargs)
             elif ctype == 'torque':
-                force = math_util.vec(vals)
 
-                # Use some small values instead of disabling the motors
-                force[force == 0] = 1e-6
+                # Need to disable joint motors first
                 p.setJointMotorControlArray(uid, jointIndices=jids,
                                             controlMode=p.TORQUE_CONTROL,
                                             physicsClientId=self._physics_server_id,
-                                            forces=force, **kwargs)
+                                            forces=vals, **kwargs)
         except AssertionError or p.error:
             self.status = BulletPhysicsEngine._STATUS[-1]
             if p.error:
@@ -350,12 +352,12 @@ class BulletPhysicsEngine(FakeStateEngine):
 
     def enable_body_joint_motors(self, uid, jids, forces):
         p.setJointMotorControlArray(uid, jids, controlMode=p.VELOCITY_CONTROL,
-                                    force=forces,
+                                    forces=forces,
                                     physicsClientId=self._physics_server_id)
 
     def disable_body_joint_motors(self, uid, jids):
         p.setJointMotorControlArray(uid, jids, controlMode=p.VELOCITY_CONTROL,
-                                    force=len(jids) * [0],
+                                    forces=len(jids) * [0.],
                                     physicsClientId=self._physics_server_id)
 
     def get_body_dynamics(self, uid, lid):
@@ -609,13 +611,19 @@ class BulletPhysicsEngine(FakeStateEngine):
         for _ in range(max_steps):
             p.stepSimulation(self._physics_server_id)
 
-    def step(self, elapsed_time):
+    def step(self, elapsed_time, step_size):
         if self.status == 'running':
             if self._async:
                 if self._step_count < self._max_run_time \
                         or self._max_run_time == 0:
+
                     # Update model (world) states
-                    p.stepSimulation(self._physics_server_id)
+                    if step_size:
+                        p.setTimeStep(step_size)
+                        p.stepSimulation(self._physics_server_id)
+                    else:
+                        p.setTimeStep(self._step_size)
+                        p.stepSimulation(self._physics_server_id)
                     self._step_count += 1
                     return False
             else:

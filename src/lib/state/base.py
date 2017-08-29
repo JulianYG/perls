@@ -597,12 +597,14 @@ class StateEngine(object):
         return NotImplemented
 
     @abc.abstractmethod
-    def step(self, elapsed_time):
+    def step(self, elapsed_time, step_size):
         """
         Simulate for one step
         :param elapsed_time: integer elapsed time
         since controller started running, used for
         time out in real time simulation
+        :param step_size: dynamically change
+        step size during run time
         :return: None
         """
         return NotImplemented
