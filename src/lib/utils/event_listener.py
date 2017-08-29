@@ -147,12 +147,12 @@ class HTCVive(object):
                     FONT.warning)
             return
 
-        vibrator = Timer(0.005, self._pulse, duration, c_id, duration)
+        vibrator = Timer(0.005, self._pulse, duration, c_id)
         vibrator.start()
         vibrator.join()
         del vibrator
 
-    def _pulse(self, c_id, duration):
+    def _pulse(self, c_id):
 
         self._vr_system.triggerHapticPulse(c_id, 0, 1000)
 

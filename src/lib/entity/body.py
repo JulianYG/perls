@@ -516,7 +516,7 @@ class Body(object):
             frame_orn = self._engine.get_body_scene_orientation(uid)
             if lid:
                 frame_pos, frame_orn = \
-                    self._engine.get_body_link_state(uid, lid)[:2]
+                    self._engine.get_body_link_state(uid, lid)[4: 6]
 
             return self._engine.get_body_relative_pose(
                 self._uid, frame_pos, frame_orn)

@@ -33,7 +33,11 @@ class PushCube(PerlsEnv):
 
     @property
     def state(self):
-        arm_state = self._robot.joint_positions + self._robot.joint_velocities
+        # arm_state = self._robot.joint_positions + self._robot.joint_velocities
+
+        arm_state = list(math_util.get_relative_pose(
+            self._robot.eef_pose, self._robot.pose))
+
         cube_pose = self._cube.get_pose(self._robot.uid, 0)
         cube_state = list(cube_pose[0]) + list(cube_pose[1])
         return arm_state + cube_state

@@ -195,25 +195,6 @@ class Arm(Tool):
                            velocityGains=(1.,))
             )
 
-    def get_pose(self, uid=None, lid=None):
-        """
-        Get the current base pose of the tool. This is
-        especially useful for end effector pose relative
-        to
-        :return: (pos, orn) tuple
-        """
-        if uid:
-            frame_pos = self._engine.get_body_scene_position(uid)
-            frame_orn = self._engine.get_body_scene_orientation(uid)
-            if lid:
-                frame_pos, frame_orn = \
-                    self._engine.get_body_link_state(uid, lid)[:2]
-
-            return self._engine.get_body_relative_pose(
-                self._uid, frame_pos, frame_orn)
-        else:
-            return self.pose
-
     ###
     # Helper functions
     def position_transform(self, pos, orn):
