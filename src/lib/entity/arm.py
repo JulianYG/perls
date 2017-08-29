@@ -151,13 +151,23 @@ class Arm(Tool):
             target_pos, _ = self.position_transform(pos, self.tool_orn)
         else:
             target_pos = pos
-        self._move_to(target_pos, None,
-                      precise=False,
-                      fast=True,
-                      iterative=use_iter,
-                      max_iter=200,
-                      threshold=1e-2,
-                      ctype='position')
+
+        if use_iter is not None:
+            self._move_to(target_pos, None,
+                          precise=False,
+                          fast=True,
+                          iterative=True,
+                          max_iter=use_iter,
+                          threshold=1e-2,
+                          ctype='position')
+        else:
+            self._move_to(target_pos, None,
+                          precise=False,
+                          fast=True,
+                          iterative=False,
+                          max_iter=0,
+                          threshold=1e-2,
+                          ctype='position')
 
     @tool_orn.setter
     def tool_orn(self, orn):

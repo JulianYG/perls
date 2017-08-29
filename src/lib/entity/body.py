@@ -1019,7 +1019,7 @@ class Tool(Body):
             forn = None if orn is None else forn
 
         if fpos is not None:
-            self.tool_pos = (fpos, False)
+            self.tool_pos = (fpos, None)
 
         if forn is not None:
             self.tool_orn = forn

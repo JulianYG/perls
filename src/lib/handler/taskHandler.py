@@ -30,7 +30,8 @@ class Checker(object):
             # Move the gripper towards the cube initially
             initial_gripper_pos = \
                 (cube_pos[0] - 0.05, cube_pos[1], cube_pos[2] + 0.025)
-            robot.tool_pos = (initial_gripper_pos, True)
+
+            robot.tool_pos = (initial_gripper_pos, 200)
 
     def check(self, body_dict):
 
