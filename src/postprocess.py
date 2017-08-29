@@ -12,11 +12,22 @@ import gym
 class Postprocess(object):
     def __init__(self, robot_base_pose, objects_fname="sim_/log/trajectory/body_info.txt"):
 
+        # this one is for computing relative poses
         self.robot_base_pose = robot_base_pose
-        p.connect(p.GUI)
+
+        # this one is for loading the robot for FK
+        robot_base_pose = (np.array([-0.15, -0.2, 0.9]), np.array([0, 0, 0, 1]))
+
+        ### TODO: why should these be different... FUCK bullet
+
+        p.connect(p.DIRECT)
         p.setRealTimeSimulation(0)
         self.robot_file = p.loadURDF("/Users/ajaymandlekar/Desktop/Dropbox/Stanford/ccr/bullet3/data/sawyer_robot/sawyer_description/urdf/sawyer_arm.urdf",
-                          self.robot_base_pose[0], self.robot_base_pose[1], useFixedBase=True)
+                          robot_base_pose[0], robot_base_pose[1], useFixedBase=True)
+        p.resetBasePositionAndOrientation(self.robot_file, robot_base_pose[0], robot_base_pose[1])
+
+        ### TODO: why does the base pose change here and why is the above line necessary???
+        # self.robot_base_pose = (p.getLinkState(self.robot_file, 0)[4], p.getLinkState(self.robot_file, 0)[5])
 
         # get mapping between entity ids and entity names
         # self.object_map = {}
@@ -70,8 +81,8 @@ class Postprocess(object):
 
         log = np.array(plog(fname, verbose=verbose))
 
-        ### Important: Toss the first 2400 rows.
-        log = log[2500:]
+        ### Important: Toss the first 2500 rows.
+        log = log[3000:]
 
         col_inds = sorted(self.col_names_dict.values())
         if cols is not None:
@@ -106,6 +117,7 @@ class Postprocess(object):
         """
         WARNING: returns eef pose in world frame
         """
+
         for i in range(7):
             p.resetJointState(self.robot_file, i, joint_pos[i])
 
@@ -161,11 +173,16 @@ class Postprocess(object):
         prev_joint_pos = robot_log[0, 3:10]
         prev_cube_pose = (cube_log[0, 3:6], cube_log[0, 6:10])
         prev_cube_pose_pos, prev_cube_pose_orn = get_relative_pose(prev_cube_pose, self.robot_base_pose)
-        prev_eef_pose_pos, prev_eef_pose_orn = get_relative_pose(self.fk(prev_joint_pos), self.robot_base_pose)
+        prev_eef_pose = self.fk(prev_joint_pos)
+        prev_eef_pose_pos, prev_eef_pose_orn = get_relative_pose(prev_eef_pose, self.robot_base_pose)
         print("Initial joint angles: {}".format(prev_joint_pos))
+        print("Initial eef pose in world frame: {}".format(prev_eef_pose))
+        print("Initial eef pose in robot frame: {}".format((prev_eef_pose_pos, prev_eef_pose_orn)))
         print("Initial eef position: {}".format(prev_eef_pose_pos))
         cube_initial_z = prev_cube_pose_pos[-1]
         print("Initial cube z-location: {}".format(cube_initial_z))
+
+        print("Using robot pose: {}".format(self.robot_base_pose))
 
 
         for i in range(1, num_elems):
@@ -176,17 +193,28 @@ class Postprocess(object):
             cube_pose_elem = (cube_log[i, 3:6], cube_log[i, 6:10])
 
             # convert from world frame to robot frame
-            cube_pose_pos_elem, cube_pose_orn_elem = get_relative_pose(cube_pose_elem, robot_base_pose)
-            eef_pose_pos_elem, eef_pose_orn_elem = get_relative_pose(self.fk(joint_pos_elem), robot_base_pose)
+            cube_pose_pos_elem, cube_pose_orn_elem = get_relative_pose(cube_pose_elem, self.robot_base_pose)
+            eef_pose_pos_elem, eef_pose_orn_elem = get_relative_pose(self.fk(joint_pos_elem), self.robot_base_pose)
 
-            # filter on joint positions being similar (user didn't move)
-            if np.all(np.absolute(np.array(joint_pos_elem) - np.array(prev_joint_pos)) < 1e-5) \
-               or (prev_cube_pose_pos[-1] < cube_initial_z - 0.01):
+            # filter on eef positions being similar (user didn't move) and cube falling
+            if (i != 1) and (np.all(np.absolute(np.array(eef_pose_pos_elem) - np.array(prev_eef_pose_pos)) < 1e-5) \
+                             or (prev_cube_pose_pos[-1] < cube_initial_z - 0.01)):
                 prev_joint_pos = joint_pos_elem
                 prev_eef_pose_pos, prev_eef_pose_orn = eef_pose_pos_elem, eef_pose_orn_elem
                 prev_cube_pose_pos, prev_cube_pose_orn = cube_pose_pos_elem, cube_pose_orn_elem
                 num_filtered += 1
-                continue
+                continue   
+
+            # filter on joint positions being similar (user didn't move) and cube falling
+            # note that we always take the first element
+            # if (i != 1) and (np.all(np.absolute(np.array(joint_pos_elem) - np.array(prev_joint_pos)) < 1e-5) \
+            #                  or (prev_cube_pose_pos[-1] < cube_initial_z - 0.01)):
+            #     print(joint_pos_elem)
+            #     prev_joint_pos = joint_pos_elem
+            #     prev_eef_pose_pos, prev_eef_pose_orn = eef_pose_pos_elem, eef_pose_orn_elem
+            #     prev_cube_pose_pos, prev_cube_pose_orn = cube_pose_pos_elem, cube_pose_orn_elem
+            #     num_filtered += 1
+            #     continue
 
             ### State and Action definition here ###
             #state = np.concatenate([joint_pos_elem, joint_vel_elem, cube_pose_pos_elem, cube_pose_orn_elem])
@@ -228,7 +256,7 @@ if __name__ == "__main__":
     # robot_orn = env._robot.orn
     # robot_pose = (robot_position, robot_orn)
     robot_base_pose = env._robot.pose
-    print(robot_base_pose)
+    # robot_base_pose = (np.array([-0.15, -0.2, 0.9]), np.array([0, 0, 0, 1]))
     env.close()
     plt.close("all") # dirty haxxx
 
@@ -246,18 +274,17 @@ if __name__ == "__main__":
     all_states = list()
     all_actions = list()
 
-    joint_angles = np.array([-0.406434179930325, -0.5088564232765723, -0.01815209772386096, 2.1507001664115046, -0.22093926951517517, -0.07271383292633793, 3.122028481588129])
-    tmp = pp.fk(joint_angles)
-    print(tmp)
-    tmp = (np.array([ 0.252, -0.208,  0.84 ]), np.array([0., 1., 0., 0.]))
-    print(tmp)
+    ### Test FK here.
+    # joint_angles = np.array([-0.406434179930325, -0.5088564232765723, -0.01815209772386096, 2.1507001664115046, -0.22093926951517517, -0.07271383292633793, 3.122028481588129])
+    # tmp = pp.fk(joint_angles)
+    # print("EEF pose after FK: {}".format(tmp))
+    # tmp = (np.array([ 0.252, -0.208,  0.84 ]), np.array([0., 1., 0., 0.]))
+    # print("EEF pose hardcoded: {}".format(tmp))
 
-    ### TODO: fix FK....
 
-    print(get_relative_pose((tmp[0], tmp[1]), (robot_base_pose[0], np.array([ 0.   ,  0.   , -0.202,  0.979]))))
-    print("LOOOOK HERE")
 
     for fname in glob("success/*.bin"):
+    #for fname in glob("2017-08-29-11-48-34.bin"):
     #for fname in glob("success/2017-08-27-22-08-35.bin"):
         states, actions = pp.parse_demonstration(fname)
         all_states.append(states)
