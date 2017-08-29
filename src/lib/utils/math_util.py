@@ -53,6 +53,16 @@ def fmod(val, mod):
 Vector Calculation / Processing
 """
 
+
+def concat(*vector):
+    """
+    Concatenate given vectors
+    :param vector: Input vectors to concatenate
+    :return: the concatenated vector
+    """
+    return np.concatenate(vector)
+
+
 def rms(vector):
     """
     Get the root mean square of the vector

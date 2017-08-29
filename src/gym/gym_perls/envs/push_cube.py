@@ -34,13 +34,11 @@ class PushCube(PerlsEnv):
     @property
     def state(self):
         # arm_state = self._robot.joint_positions + self._robot.joint_velocities
+        eef_pos, _ = math_util.get_relative_pose(
+            self._robot.eef_pose, self._robot.pose)
+        cube_pos, cube_orn = self._cube.get_pose(self._robot.uid, 0)
 
-        arm_state = list(math_util.get_relative_pose(
-            self._robot.eef_pose, self._robot.pose))
-
-        cube_pose = self._cube.get_pose(self._robot.uid, 0)
-        cube_state = list(cube_pose[0]) + list(cube_pose[1])
-        return arm_state + cube_state
+        return math_util.concat(eef_pos, cube_pos, cube_orn)
 
     @property
     def done(self):
@@ -90,7 +88,6 @@ class PushCube(PerlsEnv):
         #     (0,1,0,0),
         #         # math_util.euler2quat([-math_util.pi, -math_util.pi / 2., 0.]),
         #     ftype='rel',max_iter=500)
-
         return self.state
 
     def _step(self, action):

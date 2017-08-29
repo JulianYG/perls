@@ -511,10 +511,10 @@ class Body(object):
         pose w.r.t given object uid.
         :return: (pos, orn) tuple
         """
-        if uid:
+        if uid is not None:
             frame_pos = self._engine.get_body_scene_position(uid)
             frame_orn = self._engine.get_body_scene_orientation(uid)
-            if lid:
+            if lid is not None:
                 frame_pos, frame_orn = \
                     self._engine.get_body_link_state(uid, lid)[4: 6]
 
