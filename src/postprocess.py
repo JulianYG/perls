@@ -1,21 +1,22 @@
 from __future__ import print_function
-# import pybullet as p
-# from sim_.simulation.utils.io import parse_log as plog
+import pybullet as p
 from perls.src.lib.utils.io_util import parse_log as plog
 from perls.src.lib.utils.math_util import get_relative_pose, get_absolute_pose
 from glob import glob
 import numpy as np
 import matplotlib.pyplot as plt
 from IPython import embed
-
-# hard-coded robot base pose
-robot_position = [-0.6756339993327856, 0.010968999937176704, 1.1236299961805343]
-robot_orn = [0.0, 0.0, 0.0, 1.0]
-robot_pose = (robot_position, robot_orn)
+import gym
 
 
 class Postprocess(object):
-    def __init__(self, objects_fname="sim_/log/trajectory/body_info.txt"):
+    def __init__(self, robot_base_pose, objects_fname="sim_/log/trajectory/body_info.txt"):
+
+        self.robot_base_pose = robot_base_pose
+        p.connect(p.GUI)
+        p.setRealTimeSimulation(0)
+        self.robot_file = p.loadURDF("/Users/ajaymandlekar/Desktop/Dropbox/Stanford/ccr/bullet3/data/sawyer_robot/sawyer_description/urdf/sawyer_arm.urdf",
+                          self.robot_base_pose[0], self.robot_base_pose[1], useFixedBase=True)
 
         # get mapping between entity ids and entity names
         # self.object_map = {}
@@ -29,7 +30,7 @@ class Postprocess(object):
         # self.object_ids = [int(x) for x in self.object_map.keys()]
         # self.object_names = self.object_map.values()
 
-        # hardcoded mapping between entity ids and entity ames
+        # hardcoded mapping between entity ids and entity names
         self.object_map = {4: "cube_0", 1: "titan_0"}
         self.object_ids = [int(x) for x in self.object_map.keys()]
         self.object_names = self.object_map.values()
@@ -69,6 +70,9 @@ class Postprocess(object):
 
         log = np.array(plog(fname, verbose=verbose))
 
+        ### Important: Toss the first 2400 rows.
+        log = log[2500:]
+
         col_inds = sorted(self.col_names_dict.values())
         if cols is not None:
             # make sure desired columns are valid
@@ -98,6 +102,16 @@ class Postprocess(object):
         filtered = map(filter_row, log)
         return np.array([x for x in filtered if x is not None])
 
+    def fk(self, joint_pos):
+        """
+        WARNING: returns eef pose in world frame
+        """
+        for i in range(7):
+            p.resetJointState(self.robot_file, i, joint_pos[i])
+
+        x = p.getLinkState(self.robot_file, 6)
+        return x[4], x[5]
+
     def parse_demonstration(self, fname):
         """
         Parse a bullet bin file into states and actions.
@@ -108,77 +122,152 @@ class Postprocess(object):
                                          'v0', 'v1', 'v2', 'v3', 'v4', 'v5', 'v6',
                                          'u0', 'u1', 'u2', 'u3', 'u4', 'u5', 'u6'])
 
-        cube_log = pp.parse_log(fname, None, verbose=False, objects=["titan_0"],
+        cube_log = pp.parse_log(fname, None, verbose=False, objects=["cube_0"],
                                 cols=['stepCount', 'timeStamp', 'qNum', 'posX', 'posY', 'posZ', 'oriX', 'oriY', 'oriZ',
                                       'oriW'])
 
         # Time differences.
-        # time_diffs = robot_log[1:, 1] - robot_log[:-1, 1]
+        time_diffs = robot_log[1:, 1] - robot_log[:-1, 1]
+
+        # print("Time diff: {}".format(time_diffs[0]))
+
+
+        # First subsample one of every 24 points to get control roughly at 10 Hz
+        num_elems = min(robot_log.shape[0], cube_log.shape[0])
+        filt_robot_log = []
+        filt_cube_log = []
+        for i in range(num_elems):
+            if i % 24 == 0:
+            #if i % 1 == 0:
+                filt_robot_log.append(robot_log[i])
+                filt_cube_log.append(cube_log[i])
+
+        robot_log = np.array(filt_robot_log)
+        cube_log = np.array(filt_cube_log)
+        print("Number of elems before subsampling: {}".format(num_elems))
+        print("Number of elems after subsampling: {}".format(robot_log.shape[0]))
+
+        num_elems = robot_log.shape[0]
+        num_elems1 = cube_log.shape[0]
+        assert(num_elems == num_elems1)
+
+        ### TODO: add in orientation too...
+
+        states = []
+        actions = []
+        timestamps = []
+
+        num_filtered = 0
+        prev_joint_pos = robot_log[0, 3:10]
+        prev_cube_pose = (cube_log[0, 3:6], cube_log[0, 6:10])
+        prev_cube_pose_pos, prev_cube_pose_orn = get_relative_pose(prev_cube_pose, self.robot_base_pose)
+        prev_eef_pose_pos, prev_eef_pose_orn = get_relative_pose(self.fk(prev_joint_pos), self.robot_base_pose)
+        print("Initial joint angles: {}".format(prev_joint_pos))
+        print("Initial eef position: {}".format(prev_eef_pose_pos))
+        cube_initial_z = prev_cube_pose_pos[-1]
+        print("Initial cube z-location: {}".format(cube_initial_z))
+
+
+        for i in range(1, num_elems):
+            timestamp_elem = robot_log[i, 1]
+            joint_pos_elem = robot_log[i, 3:10]
+            joint_vel_elem = robot_log[i, 10:17]
+            joint_torq_elem = robot_log[i, 17:24]
+            cube_pose_elem = (cube_log[i, 3:6], cube_log[i, 6:10])
+
+            # convert from world frame to robot frame
+            cube_pose_pos_elem, cube_pose_orn_elem = get_relative_pose(cube_pose_elem, robot_base_pose)
+            eef_pose_pos_elem, eef_pose_orn_elem = get_relative_pose(self.fk(joint_pos_elem), robot_base_pose)
+
+            # filter on joint positions being similar (user didn't move)
+            if np.all(np.absolute(np.array(joint_pos_elem) - np.array(prev_joint_pos)) < 1e-5) \
+               or (prev_cube_pose_pos[-1] < cube_initial_z - 0.01):
+                prev_joint_pos = joint_pos_elem
+                prev_eef_pose_pos, prev_eef_pose_orn = eef_pose_pos_elem, eef_pose_orn_elem
+                prev_cube_pose_pos, prev_cube_pose_orn = cube_pose_pos_elem, cube_pose_orn_elem
+                num_filtered += 1
+                continue
+
+            ### State and Action definition here ###
+            #state = np.concatenate([joint_pos_elem, joint_vel_elem, cube_pose_pos_elem, cube_pose_orn_elem])
+            #action = np.array(joint_pos_elem)
+
+            # NOTE: we add the previous eef orientation here, and previous cube orientation
+            state = np.concatenate([prev_eef_pose_pos, prev_cube_pose_pos, prev_cube_pose_orn])
+            action = np.array(eef_pose_pos_elem) - np.array(prev_eef_pose_pos)
+
+
+            states.append(state)
+            actions.append(action)
+            timestamps.append(timestamp_elem)
+
+            # remember last positions for filtering and relative stuff
+            prev_joint_pos = joint_pos_elem
+            prev_eef_pose_pos, prev_eef_pose_orn = eef_pose_pos_elem, eef_pose_orn_elem
+            prev_cube_pose_pos, prev_cube_pose_orn = cube_pose_pos_elem, cube_pose_orn_elem
+
+        print("Number filtered: {} out of {}.".format(num_filtered, num_elems))
+        print("Last cube z-position: {}".format(states[-1][5]))
+        
+        # timestamps = np.array(timestamps)
+        # time_diffs = timestamps[1:] - timestamps[:-1]
 
         # plt.figure()
         # plt.plot(time_diffs)
         # plt.show()
 
-        # embed()
-
-        num_elems = robot_log.shape[0]
-        states = []
-        actions = []
-
-        num_filtered = 0
-        prev_joint_pos = robot_log[0, 3:10]
-
-        for i in range(1, num_elems):
-            timestamp_elem = robot_log[i, 1]
-            joint_pos_elem = robot_log[i, 3:10]
-
-            # TODO: think about more natural filtering mechanism here?
-
-            # filter on joint positions being similar (user didn't move)
-            if np.all(np.absolute(np.array(joint_pos_elem) - np.array(prev_joint_pos)) < 1e-4):
-                prev_joint_pos = joint_pos_elem
-                num_filtered += 1
-                continue
-
-            joint_vel_elem = robot_log[i, 10:17]
-            joint_torq_elem = robot_log[i, 17:24]
-            cube_pose_elem = (cube_log[i, 3:6], cube_log[i, 6:10])
-            # cube_pose_pos_elem, cube_pose_orn_elem = cube_pose_elem
-
-            # convert from world frame to robot frame
-            cube_pose_pos_elem, cube_pose_orn_elem = get_relative_pose(cube_pose_elem, robot_pose)
-
-            state = np.concatenate([joint_pos_elem, joint_vel_elem, cube_pose_pos_elem, cube_pose_orn_elem])
-            action = np.array(joint_pos_elem)
-            states.append(state)
-            actions.append(action)
-
-            # remember last joint position for filtering
-            prev_joint_pos = joint_pos_elem
-
-        print("Number filtered: {} out of {}.".format(num_filtered, num_elems))
         return np.array(states), np.array(actions)
 
 
 if __name__ == "__main__":
 
-    fname = "2017-08-25-00-35-41.bin"
-    pp = Postprocess()
-    actions = pp.parse_demonstration(fname)[1]
-
-    import perls, gym
-    import fk
-
     env = gym.make('push-v0')
     env.reset()
-    # import pybullet as p
-    # p.setGravity(0, 0, 0)
-    for a in actions:
 
-        print(fk.fk(a))
-        _, _, done, _ = env.step(a)
-        print(a)
-        # print(done)
+    # robot_position = env._robot.pos
+    # robot_orn = env._robot.orn
+    # robot_pose = (robot_position, robot_orn)
+    robot_base_pose = env._robot.pose
+    print(robot_base_pose)
+    env.close()
+    plt.close("all") # dirty haxxx
+
+    # hard-coded robot base pose
+    # robot_position = [-0.2, -0.7, 0.9]
+    # robot_orn = [0.0, 0.0, 0.0, 1.0]
+    # robot_pose = (robot_position, robot_orn)
+
+    #fname = "success/2017-08-27-22-08-35.bin"
+    #fname = "success/2017-08-27-22-11-11.bin"
+    #fname = "success/2017-08-27-22-12-14.bin"
+
+    pp = Postprocess(robot_base_pose)
+
+    all_states = list()
+    all_actions = list()
+
+    joint_angles = np.array([-0.406434179930325, -0.5088564232765723, -0.01815209772386096, 2.1507001664115046, -0.22093926951517517, -0.07271383292633793, 3.122028481588129])
+    tmp = pp.fk(joint_angles)
+    print(tmp)
+    tmp = (np.array([ 0.252, -0.208,  0.84 ]), np.array([0., 1., 0., 0.]))
+    print(tmp)
+
+    ### TODO: fix FK....
+
+    print(get_relative_pose((tmp[0], tmp[1]), (robot_base_pose[0], np.array([ 0.   ,  0.   , -0.202,  0.979]))))
+    print("LOOOOK HERE")
+
+    for fname in glob("success/*.bin"):
+    #for fname in glob("success/2017-08-27-22-08-35.bin"):
+        states, actions = pp.parse_demonstration(fname)
+        all_states.append(states)
+        all_actions.append(actions)
+    all_states = np.concatenate(all_states, axis=0)
+    all_actions = np.concatenate(all_actions, axis=0)
+    print(all_states.shape)
+    print(all_actions.shape)
+    np.savez("demo.npz", states=all_states, actions=all_actions)
+
 
 
 
