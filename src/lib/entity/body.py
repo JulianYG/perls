@@ -40,7 +40,7 @@ class Body(object):
         self._init_state = (pos, orn, fixed)
         self._engine = engine
         self._model_path = path
-        self._text_markers = dict()
+        self._markers = dict()
         self._fixed = fixed
 
         self._children = dict() # No children constraints initially
@@ -282,7 +282,7 @@ class Body(object):
         :return: dictionary of dictionaries of info:
         [{id: {text_string, font_size, color, life_time}}, {}, ...]
         """
-        return self._text_markers
+        return self._markers
 
     @name.setter
     def name(self, string):
@@ -474,8 +474,9 @@ class Body(object):
         Add marker text to this body.
         ### Note: 
         Use None for lid for base link!
-        :param marker_info: a tuple of 
-        text string to display, float scalar of text size.
+        :param marker_info: a tuple of
+        mark type,
+        mark to display, float scalar of mark size.
         By default is 2.5, 
         RGB color, vec3 float in [0,1]. 
         By default is red,
@@ -485,13 +486,15 @@ class Body(object):
         :return: None
         """
         # Need a few tricks to hack link index for base
-        text, font_size, color, lid, time = marker_info
-        mid = self._engine.add_body_text_marker(
-            text, self.kinematics['pos'][lid or 0],
-            font_size, color, self.uid, lid or -1, time
-        )
-        self._text_markers[mid] = dict(
-            text=text, size=font_size, color=color, time=time)
+        mtype, text, font_size, color, lid, time = marker_info
+        if mtype == 'text':
+            mid = self._engine.add_body_text_marker(
+                text, self.kinematics['pos'][lid or 0],
+                font_size, color, self.uid, None, time
+            )
+            self._markers[mid] = dict(
+                text=text, size=font_size, color=color, time=time)
+
 
     @mark.deleter
     def mark(self):
@@ -499,9 +502,9 @@ class Body(object):
         Delete all markers on this body
         :return: None
         """
-        for mid in self._text_markers.keys():
+        for mid in self._markers.keys():
             self._engine.remove_body_text_marker(mid)
-        self._text_markers = dict()
+        self._markers = dict()
 
     def get_pose(self, uid=None, lid=None):
         """

@@ -27,15 +27,15 @@ class CmdEventHandler(ControlHandler):
     For algorithmic learning usage, such as
     passing commands into gym environment.
     """
-    def __init__(self, ps_id, queue, sensitivity=1, rate=0, qsize=200):
+    def __init__(self, ps_id, queue, sensitivity=1, rate=100):
         super(CmdEventHandler, self).__init__(
-            ps_id, queue, sensitivity, rate, qsize)
+            ps_id, queue, sensitivity, rate)
 
     @property
     def name(self):
         return 'CmdControl'
 
-    def interrupt(self):
+    def interrupt(self, queue):
         # TODO
         pass
 
@@ -47,8 +47,8 @@ class KeyboardEventHandler(ControlHandler):
     """
     Handler for keyboard events/signal
     """
-    def __init__(self, ps_id, queue, sensitivity=1, rate=100, qsize=200):
-        super(KeyboardEventHandler, self).__init__(ps_id, queue, sensitivity, rate, qsize)
+    def __init__(self, ps_id, queue, sensitivity=1, rate=100):
+        super(KeyboardEventHandler, self).__init__(ps_id, queue, sensitivity, rate)
 
     @property
     def name(self):
@@ -133,8 +133,8 @@ class ViveEventHandler(ControlHandler):
     """
     Handles VR controller events/signal
     """
-    def __init__(self, ps_id, queue, sensitivity=1, rate=100, qsize=200):
-        super(ViveEventHandler, self).__init__(ps_id, queue, sensitivity, rate, qsize)
+    def __init__(self, ps_id, queue, sensitivity=1, rate=100):
+        super(ViveEventHandler, self).__init__(ps_id, queue, sensitivity, rate)
 
         # Initialize positions
         self._controllers = dict()
@@ -206,8 +206,6 @@ class ViveEventHandler(ControlHandler):
         # TODO register devices dynamically
         pass
 
-
-
     def stop(self):
         self._listener.close()
         super(ViveEventHandler, self).stop()
@@ -219,8 +217,8 @@ class AppEventHandler(ControlHandler):
     """
 
     def __init__(self, ps_id, queue, sensitivity=1, 
-                 rate=100, qsize=200, channel_name='ios_channel'):
-        super(AppEventHandler, self).__init__(ps_id, queue, sensitivity, rate, qsize)
+                 rate=100, channel_name='ios_channel'):
+        super(AppEventHandler, self).__init__(ps_id, queue, sensitivity, rate)
         self._comm = network.RedisComm('localhost', port=6379, db=0)
         self._channel_name = channel_name
         self._comm.connect_to_channel(channel_name)

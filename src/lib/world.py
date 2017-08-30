@@ -136,6 +136,7 @@ class World(object):
         for body in self._bodies.values():
             body.reset()
             del body.mark
+        self._checker.initialize(self)
         self._engine.hold()
 
     def load_body(self, file_path, pos, orn,
@@ -230,7 +231,6 @@ class World(object):
             bodies = self._load_asset(asset)
 
             for i in range(len(bodies) - 1):
-
                 bodies[i]
 
         # TODO: Think if there's other stuff to conf
@@ -245,8 +245,8 @@ class World(object):
         :return: A list of object uids in parent->children order
         """
         def _load_attachment():
-
             pass
+
         def _load_helper(p_elem, body_lst):
 
             asset_body = Body(self._engine,
@@ -293,7 +293,7 @@ class World(object):
         else:
             tool = self._tools[t_id]
         # Mark the current using tool
-        tool.mark = ('controlling', 2.5, (1., 0, 0), None, .2)
+        tool.mark = ('text', 'controlling', 2.5, (1., 0, 0), None, .2)
         return tool
 
     def get_states(self, *args):
@@ -354,7 +354,7 @@ class World(object):
         :return: tuple boolean <done, success> indicating whether 
         task is done, and whether it is successful.
         """
-        return self._checker.check(self._bodies)
+        return self._checker.check(self)
 
     def evaluate(self):
         """

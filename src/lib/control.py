@@ -373,7 +373,7 @@ class Controller(object):
         self.stop(server_id, -1)
 
         # Clean up world
-        self._physics_servers[server_id][0].clean_up()
+        self._physics_servers[server_id][1].clean_up()
 
         # TODO
         if self._process_pool:

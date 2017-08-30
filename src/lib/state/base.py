@@ -442,6 +442,24 @@ class StateEngine(object):
         return NotImplemented
 
     @abc.abstractmethod
+    def add_body_line_marker(self, posA, posB, color, width,
+                             time, uid, lid):
+        """
+        Mark line on given body
+        :param posA: vec3 float cartesian world frame position of
+        one end of line segment
+        :param posB:vec3 float cartesian world frame position of
+        the other end of line segment
+        :param color: vec3 float RGB in [0,1]
+        :param width: float width of line
+        :param time: float life time of line in seconds
+        :param uid: integer body unique id
+        :param lid: integer link index of body
+        :return: integer line mark id
+        """
+        return NotImplemented
+
+    @abc.abstractmethod
     def add_body_text_marker(self, text, pos, font_size, color,
                              uid, lid, time):
         """
@@ -454,7 +472,7 @@ class StateEngine(object):
         :param uid: integer body unique id
         :param lid: integer link index of body
         :param time: float of text life time, 0 for permanent text
-        :return: integer mark id
+        :return: integer text mark id
         """
         return NotImplemented
 

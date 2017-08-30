@@ -19,30 +19,33 @@ class PushCubePose(PushCube):
         super(PushCubePose, self).__init__(conf_path)
 
     @property
-    def action_space(self):
-        # No large movements
-        return PushCube.Space.Box(
-            low=-math_util.vec(0.01, 0.01, 0.01),
-            high=math_util.vec(0.01, 0.01, 0.01)
+    def observation_space(self):
+        return PushCube.Space.box(
+            low=math_util.concat(
+                self._robot.pos - math_util.vec((1.5, 1.5, 1.5)),
+                self._table.pos - math_util.vec((.275, .275, .065)),
+                (-1, -1, -1, -1)
+            ),
+            high=math_util.concat(
+                self._robot.pos + math_util.vec((1.5, 1.5, 1.5)),
+                self._table.pos + math_util.vec((.275, .275, .065)),
+                (1, 1, 1, 1)
+            )
         )
 
     @property
-    def state(self):
-        # arm_state = self._robot.joint_positions + self._robot.joint_velocities
-        eef_pos, _ = math_util.get_relative_pose(
-            self._robot.eef_pose, self._robot.pose)
-        cube_pos, cube_orn = self._cube.get_pose(self._robot.uid, 0)
-        return math_util.concat(eef_pos, cube_pos, cube_orn)
+    def action_space(self):
 
-    def _step(self, action):
+        # No large movements
+        return PushCube.Space.Box(
+            low=-math_util.vec((0.01, 0.01, 0.01)),
+            high=math_util.vec((0.01, 0.01, 0.01))
+        )
 
-        # TODO: action should be delta Robot end effector 2D pose, so do bounds clipping and apply action
-        # TODO: make sure to go through IK here, since it's not perfect
-        # TODO: then read robot state, and get the stuff we care about again. 
+    def _step_helper(self, action):
 
         # Use end effector delta pose with iterations
         self._robot.set_eef_pose(
-            self._robot.eef_pose[0] + math_util.vec(action), 
-            None, 100)
-
-        return self.state, self.reward, self.done, {'state': self.state}
+            self._robot.eef_pose[0] + math_util.vec(action),
+            None, iters=-1
+        )

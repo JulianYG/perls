@@ -1,5 +1,7 @@
 # !/usr/bin/env python
 
+import abc
+
 from .perls_env import PerlsEnv
 from lib.utils import math_util
 
@@ -25,6 +27,14 @@ class PushCube(PerlsEnv):
         self._table = self._world.body['table_0']
 
     @property
+    def observation_space(self):
+        """
+        Get observation (state) ranges in the environment
+        :return: Space object
+        """
+        return NotImplemented
+
+    @property
     def action_space(self):
         """
         Get the space of actions in the environment
@@ -40,32 +50,6 @@ class PushCube(PerlsEnv):
         cube_pos, cube_orn = self._cube.get_pose(self._robot.uid, 0)
         return math_util.concat(eef_pos, cube_pos, cube_orn)
 
-    def _reset(self):
-
-        super(PushCube, self)._reset()
-        self._display.set_render_view(
-            dict(
-                dim=(256, 256),
-                flen=3,
-                yaw=50,
-                pitch=-35,
-                focus=(0, 0, 0)
-            )
-        )
-
-        cube_pos = self._cube.pos
-
-        # Enable torque control by disable the motors first
-        # As required by bullet
-        # self._robot.torque_mode()
-
-        self._robot.grasp()
-
-        # Use the steps to finish other simulation steps as well
-        self._robot.tool_pos = \
-                ((cube_pos[0] - 0.05, cube_pos[1], cube_pos[2] + 0.025), 600)
-
-        return self.state
-
-    def _step(self, action):
-        raise NotImplementedError
+    @abc.abstractmethod
+    def _step_helper(self, action):
+        return NotImplemented

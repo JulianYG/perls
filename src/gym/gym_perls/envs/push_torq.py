@@ -4,7 +4,7 @@ from .push_cube import PushCube
 from lib.utils import math_util
 
 
-class PushCubeVel(PushCube):
+class PushCubeTorque(PushCube):
     """
     Pushing cube across the table
     """
@@ -16,7 +16,7 @@ class PushCubeVel(PushCube):
 
     def __init__(self, conf_path):
 
-        super(PushCubeVel, self).__init__(conf_path)
+        super(PushCubeTorque, self).__init__(conf_path)
 
     @property
     def observation_space(self):
@@ -38,8 +38,8 @@ class PushCubeVel(PushCube):
     @property
     def action_space(self):
         return PushCube.Space.Box(
-            low=-math_util.vec(self._robot.joint_specs['max_vel']),
-            high=math_util.vec(self._robot.joint_specs['max_vel'])
+            low=-math_util.vec(self._robot.joint_specs['max_force']),
+            high=math_util.vec(self._robot.joint_specs['max_force'])
         )
 
     @property
@@ -49,6 +49,17 @@ class PushCubeVel(PushCube):
                                 self._robot.joint_velocities,
                                 cube_pos, cube_orn)
 
-    def _step_helper(self, action):
+    def _reset(self):
+
+        super(PushCubeTorque, self)._reset()
+        self._robot.torque_mode()
+
+    def __step_helper(self, action):
+
         # Use velocity control
-        self._robot.joint_velocities = action
+        self._robot.joint_torques = action
+
+        # Step size x in bullet, align with 0.1 real world control
+        for _ in range(int(0.1 / 0.0041666)):
+            self._world.update()
+        return self.state, self.reward, self.done, {'state': self.state}

@@ -37,9 +37,16 @@ class PerlsEnv(gym.Env):
         the configuration file, default is 'gym-disp.xml'
         """
         conf = io_util.parse_config(conf_path)[0]
-        _, self._world, self._display, _ = Controller.load_config(conf, None)
+        self._align_iters = 1
+
+        _, self._world, self._display, control = Controller.load_config(conf, None)
         self._status = self._display.run(None)
         self._world.boot(self._display.info['frame'])
+
+        if not self._world.info['engine']['real_time']:
+            step_size = self._world.info['engine']['step_size']
+            control_rate = control.freq
+            self._align_iters = int(control_rate / step_size)
 
     @abc.abstractproperty
     def action_space(self):
@@ -49,7 +56,7 @@ class PerlsEnv(gym.Env):
         """
         return NotImplemented
 
-    @property
+    @abc.abstractproperty
     def observation_space(self):
         """
         Get the space of observations in the environment
@@ -109,17 +116,43 @@ class PerlsEnv(gym.Env):
     def _reset(self):
         """
         Reset the world environment.
-        :return: Empty list of states. The state
+        :return: The state defined by users constrained by
+        state space.
         """
         self._world.reset()
-        for _ in range(500):
-            self._world.update()
+        self._display.set_render_view(
+            dict(
+                dim=(256, 256),
+                flen=3,
+                yaw=50,
+                pitch=-35,
+                focus=(0, 0, 0)
+            )
+        )
+        return self.state
 
-    @abc.abstractmethod
     def _step(self, action):
         """
-        Make one step move in the environment.
+        Make one step move in the simulation,
+        but aligned with real time elapsed.
         :param action: Action as defined in action space
         :return: Observations, Rewards, isDone, Info tuple
+        """
+        # Perform extra steps in simulation to align
+        # with real time
+
+        for _ in range(self._align_iters):
+            self._step_helper(action)
+            self._world.update()
+
+        return self.state, self.reward, self.done, {'state': self.state}
+
+    def _step_helper(self, action):
+        """
+        The actual stepping function that needs to be implemented
+        by children classes. This is necessary so that base class
+        can align the simulation time with real gym control time.
+        :param action: actions to be executed during step
+        :return: None
         """
         return NotImplemented

@@ -7,10 +7,15 @@ class ControlHandler(object):
     """
     Base class for control interrupt handling
     """
-    def __init__(self, ps_id, queue, sensitivity, rate, qsize):
+    def __init__(self, ps_id, queue, sensitivity, rate):
         self._id = ps_id
         self._sens = sensitivity
+        self._rate = rate
         self._handler = Timer(1. / rate, self.interrupt, None, queue)
+
+    @property
+    def freq(self):
+        return 1. / self._rate
 
     @property
     def name(self):
@@ -31,11 +36,11 @@ class NullHandler(ControlHandler):
     """
     Singleton placeholder
     """
-    def __init__(self, a=None, b=None, c=None, d=None):
-        super(NullHandler, self).__init__(0, None, 0, 1, 0)
+    def __init__(self, ps_id, queue, sensitivity, rate):
+        super(NullHandler, self).__init__(0, None, 0, rate)
 
-    def update_states(self, state):
-        return
+    def interrupt(self, queue):
+        return NotImplemented
 
     def stop(self):
-        return
+        pass

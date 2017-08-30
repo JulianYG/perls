@@ -433,16 +433,46 @@ class BulletPhysicsEngine(FakeStateEngine):
             )
         return neighbor_dic
 
+    def add_body_line_marker(self, posA, posB, color, width,
+                             time, uid, lid):
+        if uid is not None:
+            lid = lid or -1
+            mid = p.addUserDebugLine(
+                posA, posB, lineColorRGB=color,
+                lineWidth=width,
+                lifeTime=time,
+                parentObjectUniqueId=uid,
+                parentLinkIndex=lid,
+                physicsClientId=self._physics_server_id
+            )
+        else:
+            mid = p.addUserDebugLine(
+                posA, posB, lineColorRGB=color,
+                lineWidth=width,
+                lifeTime=time,
+                physicsClientId=self._physics_server_id
+            )
+        return mid
+
     def add_body_text_marker(self, text, pos, font_size, color,
                              uid, lid, time):
-        mid = p.addUserDebugText(
-            text, pos, textColorRGB=tuple(color),
-            textSize=float(font_size),
-            lifeTime=time,
-            # Not using textOrientation for now
-            parentObjectUniqueId=uid,
-            parentLinkIndex=lid,
-            physicsClientId=self._physics_server_id)
+        if uid is not None:
+            lid = lid or -1
+            mid = p.addUserDebugText(
+                text, pos, textColorRGB=tuple(color),
+                textSize=float(font_size),
+                lifeTime=time,
+
+                # Not using textOrientation for now
+                parentObjectUniqueId=uid,
+                parentLinkIndex=lid,
+                physicsClientId=self._physics_server_id)
+        else:
+            mid = p.addUserDebugText(
+                text, pos, textColorRGB=tuple(color),
+                textSize=float(font_size),
+                lifeTime=time,
+                physicsClientId=self._physics_server_id)
         return mid
 
     def remove_body_text_marker(self, marker_id):
