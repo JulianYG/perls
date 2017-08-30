@@ -78,6 +78,9 @@ class ModelDebugger(object):
     def check_states(self):
         return self._world.check_states()
 
+    def evaluate(self):
+        return self._world.evaluate()
+
     def get_states(self, *args):
         return self._world.get_states(*args)
 

@@ -25,32 +25,20 @@ class PushCube(PerlsEnv):
         self._table = self._world.body['table_0']
 
     @property
+    def action_space(self):
+        """
+        Get the space of actions in the environment
+        :return: Space object
+        """
+        return NotImplemented
+
+    @property
     def state(self):
         # arm_state = self._robot.joint_positions + self._robot.joint_velocities
         eef_pos, _ = math_util.get_relative_pose(
             self._robot.eef_pose, self._robot.pose)
         cube_pos, cube_orn = self._cube.get_pose(self._robot.uid, 0)
         return math_util.concat(eef_pos, cube_pos, cube_orn)
-
-    @property
-    def done(self):
-
-        # done if cube falls off table
-        if self._cube.pos[2] < 0.6:
-            return True
-        return False
-
-    @property
-    def reward(self):
-
-        # if cube goes out of bounds, give negative reward
-        if (self._cube.pos[1] <= -0.58) or (self._cube.pos[1] >= -0.018):
-            return -100
-
-        # TODO: put negative reward for other side of table too?
-
-        # square difference in x distance
-        return - ((self._cube.pos[0] - 0.68) ** 2)
 
     def _reset(self):
 
@@ -66,12 +54,18 @@ class PushCube(PerlsEnv):
         )
 
         cube_pos = self._cube.pos
+
         # Enable torque control by disable the motors first
         # As required by bullet
         # self._robot.torque_mode()
 
-        self._robot.tool_pos = \
-                ((cube_pos[0] - 0.05, cube_pos[1], cube_pos[2] + 0.025), 600)
         self._robot.grasp()
 
+        # Use the steps to finish other simulation steps as well
+        self._robot.tool_pos = \
+                ((cube_pos[0] - 0.05, cube_pos[1], cube_pos[2] + 0.025), 600)
+
         return self.state
+
+    def _step(self, action):
+        raise NotImplementedError

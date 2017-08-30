@@ -335,7 +335,7 @@ class World(object):
         self._engine.hold(200)
 
         # Fine tune the initial environment setup
-        self._checker.custom_setup(self)
+        self._checker.initialize(self)
         return status
 
     def notify_engine(self, stat):
@@ -355,6 +355,13 @@ class World(object):
         task is done, and whether it is successful.
         """
         return self._checker.check(self._bodies)
+
+    def evaluate(self):
+        """
+        Evaluate the agents performance and generates a score
+        :return: User defined score for agent
+        """
+        return self._checker.score(self)
 
     def update(self, elp=0, step_size=None):
         """

@@ -1,10 +1,11 @@
+# !/usr/bin/env python
+
+from ..utils import math_util
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
 __license__ = 'private'
 __version__ = '0.1'
-
-from ..utils import math_util
 
 
 class Checker(object):
@@ -14,13 +15,13 @@ class Checker(object):
     def __init__(self, env_name):
         self._name = env_name
 
-        self._check_states = dict()
+        self._states = dict()
 
     @property
     def name(self):
         return 'TaskCompletionChecker'
 
-    def custom_setup(self, world):
+    def initialize(self, world):
 
         """
         Customize world for some fine tunings that
@@ -31,7 +32,7 @@ class Checker(object):
         if self._name == 'push_sawyer' or self._name == 'push_kuka':
 
             table = world.body['table_0']
-            table.mark = {}
+            # table.mark = {}
 
             cube_pos = world.body['cube_0'].pos
             robot = world.body['titan_0']
@@ -41,6 +42,16 @@ class Checker(object):
                 (cube_pos[0] - 0.05, cube_pos[1], cube_pos[2] + 0.025)
 
             robot.tool_pos = (initial_gripper_pos, 200)
+
+    def score(self, world):
+        """
+        Score the current performance of the agent. Generates
+        the reward
+        :param world: current environment status object
+        :return: User defined format of reward
+        """
+        # TODO
+        pass
 
     def check(self, body_dict):
 

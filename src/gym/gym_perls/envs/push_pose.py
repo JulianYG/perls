@@ -46,4 +46,3 @@ class PushCubePose(PushCube):
             None, 100)
 
         return self.state, self.reward, self.done, {'state': self.state}
-

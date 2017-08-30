@@ -65,21 +65,21 @@ class PerlsEnv(gym.Env):
         """
         return NotImplemented
 
-    @abc.abstractproperty
+    @property
     def done(self):
         """
         Whether the program is finished or not
         :return: Boolean value
         """
-        return NotImplemented
+        return self._world.check_states()[0]
 
-    @abc.abstractproperty
+    @property
     def reward(self):
         """
         Get the reward defined by algorithm
         :return: Some form of reward value, usually float
         """
-        return NotImplemented
+        return self._world.evaluate()
 
     def _close(self):
         """
