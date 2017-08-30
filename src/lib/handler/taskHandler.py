@@ -4,6 +4,8 @@ __email__ = 'julianyg@stanford.edu'
 __license__ = 'private'
 __version__ = '0.1'
 
+from ..utils import math_util
+
 
 class Checker(object):
     """
@@ -25,6 +27,10 @@ class Checker(object):
         :return: None
         """
         if self._name == 'push_sawyer' or self._name == 'push_kuka':
+
+            cube = world.body['cube_0']
+            # cube.pos += math_util.rand_vec(3, -1, 1)
+            print(math_util.rand_vec(None, -1, 1))
             cube_pos = world.body['cube_0'].pos
             robot = world.body['titan_0']
             # Move the gripper towards the cube initially

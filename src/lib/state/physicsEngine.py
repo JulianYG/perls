@@ -582,8 +582,14 @@ class BulletPhysicsEngine(FakeStateEngine):
 
     def start_engine(self, frame):
 
-        if self.status == 'pending' or \
-           self.status == 'off' and self._type_check(frame) == 0:
+        if self.status == 'killed' or self.status == 'error'\
+           or self._type_check(frame) != 0:
+            logerr('Cannot start physics physics_engine %d '
+                   'in error state. Errors:' % self.engine_id, FONT.disp)
+            for err_msg in self._error_message:
+                logerr(err_msg, FONT.model)
+            return -1
+        else:
             if self._async:
                 p.setRealTimeSimulation(0, physicsClientId=self._physics_server_id)
                 p.setTimeStep(
@@ -600,12 +606,6 @@ class BulletPhysicsEngine(FakeStateEngine):
             loginfo('Starting simulation server {}, status: {}'.
                     format(self.engine_id, self.status), FONT.warning)
             return 0
-        else:
-            logerr('Cannot start physics physics_engine %d '
-                   'in error state. Errors:' % self.engine_id, FONT.disp)
-            for err_msg in self._error_message:
-                logerr(err_msg, FONT.model)
-            return -1
 
     def hold(self, max_steps=30):
         for _ in range(max_steps):
@@ -636,6 +636,5 @@ class BulletPhysicsEngine(FakeStateEngine):
         # Shutdown simulation
         p.resetSimulation(self._physics_server_id)
         p.disconnect(self._physics_server_id)
-
         self.status = 'finished'
         loginfo('Physics physics_engine stopped.', FONT.warning)

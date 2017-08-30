@@ -20,7 +20,7 @@ class PushCubeVel(PushCube):
 
     @property
     def action_space(self):
-        return PerlsEnv.Space.Box(
+        return PushCube.Space.Box(
             low=-self._robot.joint_specs['max_vel'],
             high=self._robot.joint_specs['max_vel']
         )
@@ -37,7 +37,7 @@ class PushCubeVel(PushCube):
 
         # Use velocity control
         self._robot.joint_velocities = action
-        for _ in range(100):
-            self._world.update()
+        # for _ in range(100):
+        #     self._world.update()
         return self.state, self.reward, self.done, {'state': self.state}
 

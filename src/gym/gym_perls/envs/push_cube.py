@@ -64,7 +64,7 @@ class PushCube(PerlsEnv):
                 focus=(0, 0, 0)
             )
         )
-
+        print(math_util.rand_vec(None, -1, 1))
         cube_pos = self._cube.pos
         # Enable torque control by disable the motors first
         # As required by bullet

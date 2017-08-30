@@ -332,7 +332,7 @@ class World(object):
         status = self._engine.start_engine(frame)
         self._engine.hold(200)
 
-        # Finetune the initial environment setup
+        # Fine tune the initial environment setup
         self._checker.custom_setup(self)
         return status
 
@@ -372,3 +372,5 @@ class World(object):
         # Flush error messages
         for err_msg in self._engine.error:
             logerr(err_msg, FONT.model)
+
+        self._engine.stop()

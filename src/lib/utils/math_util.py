@@ -7,6 +7,7 @@ import math
 Note: for all quaternions, uses [x,y,z,w]
 """
 
+np.random.seed(42)
 pi = np.pi
 EPS = np.finfo(float).eps * 4.
 
@@ -93,6 +94,22 @@ def approximate(val, n_digits):
     :return: approximated numbers
     """
     return np.around(val, decimals=n_digits)
+
+
+def rand_vec(dim, low=0, high=1, rtype='uniform'):
+    """
+    Get a random vector of given size
+    :param dim: dimensiton of the vector
+    :param low: lowest random value
+    :param high: highest random value
+    :param rtype: type of random distributions,
+    'gaussian', (low, high becomes mean, std)
+    'uniform'
+    """
+    if rtype == 'uniform':
+        return np.random.uniform(low=low, high=high, size=dim)
+    else:
+        return np.random.normal(low, high, size=dim)
 
 
 def cross(x, y, axis=None):

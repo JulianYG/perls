@@ -413,8 +413,10 @@ class BulletRenderEngine(GraphicsEngine):
     def stop(self, exit_code):
 
         # Stop state logging if any
-        for lid in self._logging_id:
-            p.stopStateLogging(lid, self._server_id)
+        if self._logging_id:
+            for lid in self._logging_id:
+                p.stopStateLogging(lid, self._server_id)
+            loginfo('Stop recording.', FONT.control)
 
         if self._job == 'record':
 

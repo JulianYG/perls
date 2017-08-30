@@ -61,7 +61,7 @@ class ModelDebugger(object):
         self._world.reset()
 
     def update(self, elt=0, step_size=None):
-        self._world.update(elt, step_size)
+        return self._world.update(elt, step_size)
 
     def load_body(self, file_path, pos, orn,
                   fixed=False, record=False):

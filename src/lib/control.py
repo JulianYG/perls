@@ -1,4 +1,5 @@
 import multiprocessing
+import sys
 
 from .state import physicsEngine#, robotEngine
 from .adapter import Adapter
@@ -88,6 +89,7 @@ class Controller(object):
                  # operations/modifications on the world
                  camera=dict(flen=1e-3),  # The camera parameters
                  )
+        self._num_of_runs = 1
 
         # Recording data in specific format needed
         self._init_time_stamp = None
@@ -142,7 +144,7 @@ class Controller(object):
 
             # load configs
             queue = multiprocessing.Queue()
-            world, disp, ctrl_hdlr = self.load_config(conf, queue)
+            nruns, world, disp, ctrl_hdlr = self.load_config(conf, queue)
             if num_configs > 1 and (not conf.async):
                 logerr('Currently only support multiple instances '
                        'of non-GUI frame and asynchronous simulation. '
@@ -156,7 +158,7 @@ class Controller(object):
                         'Build type: {}'.format(i, conf.build),
                         FONT.control)
                 world.notify_engine('pending')
-            self._physics_servers[conf.id] = (world, disp, ctrl_hdlr, queue)
+            self._physics_servers[conf.id] = (nruns, world, disp, ctrl_hdlr, queue)
 
     @staticmethod
     def load_config(conf, queue):
@@ -229,7 +231,7 @@ class Controller(object):
             # Disable keyboard shortcuts for keyboard control
             display.disable_hotkeys()
 
-        return world, display, ctrl_handler
+        return conf.num_of_runs, world, display, ctrl_handler
 
     def start_all(self):
         """
@@ -258,110 +260,128 @@ class Controller(object):
         :return: None
         """
         # Get all handlers
-        world, display, ctrl_handler, queue = self._physics_servers[server_id]
-
-        # Preparing variables
-        time_up, done, success = False, False, False
-        self._init_time_stamp = time_util.get_abs_time()
-
-        track_targets = world.get_states(('env', 'target'))[0]
-
-        # Pass in targets uids
-        status = display.run([t[0] for t in track_targets])
-
-        if status == -1:
-            logerr('Error loading simulation', FONT.control)
-            self.stop(server_id, -1)
-            return
-        elif status == 1:
-            self.stop(server_id, 0)
-            loginfo('Replay finished. Exiting...', FONT.control)
-            return
-        elif status == 2:
-            loginfo('Start recording.', FONT.control)
-        else:
-            loginfo('Display configs loaded. Starting simulation...',
-                    FONT.control)
-
-        # Kickstart the model, perform frame type check
-        world.boot(display.info['frame'])
-
-        # Update initial states:
-        self._control_update(world)
-
-        # Next display states
-        self._view_update(display)
-        self._update_time_stamp = time_util.get_abs_time()
+        nruns, world, display, ctrl_handler, queue = self._physics_servers[server_id]
 
         # Start control in another process
         ctrl_handler.run()
 
-        # Finally start control loop (Core)
-        try:
-            while not time_up and not done:
-                elt = time_util.get_elapsed_time(self._init_time_stamp)
+        # Run for given number of runs (used for # trajectories collection)
+        for r in range(nruns):
 
-                time_since_last_update = time_util.get_elapsed_time(self._update_time_stamp)
-                self._update_time_stamp = time_util.get_abs_time()
+            # Preparing variables
+            time_up, done, success = False, False, False
+            self._init_time_stamp = time_util.get_abs_time()
 
-                # Perform control interruption first
-                if not queue.empty():
-                    signal = queue.get_nowait()
+            track_targets = world.get_states(('env', 'target'))[0]
 
-                    self._control_interrupt(
-                        world, display, signal,
-                        time_since_last_update)
+            # Pass in targets uids
+            status = display.run([t[0] for t in track_targets])
 
-                # Update model
-                time_up = world.update(elt)
-
-                # Lastly check task completion, communicate
-                # with the model
-                # TODO
-                done, success = world.check_states()
-
-            if success:
-                loginfo('Task success! Exiting simulation...',
-                        FONT.disp)
+            if status == -1:
+                logerr('Error loading simulation', FONT.control)
+                self.stop(server_id, -1)
+                return
+            elif status == 1:
                 self.stop(server_id, 0)
+                loginfo('Replay finished. Exiting...', FONT.control)
+                return
+            elif status == 2:
+                loginfo('Start recording.', FONT.control)
             else:
-                loginfo('Task failed! Exiting simulation...',
-                        FONT.disp)
-                self.stop(server_id, 1)
-            
-        except KeyboardInterrupt:
-            loginfo('User exits the program by ctrl+c.',
-                    FONT.warning)
-            self.stop(server_id, -1)
+                loginfo('Display configs loaded. Starting simulation...',
+                        FONT.control)
 
-    def stop(self, server_id, exit_status):
+            # Kickstart the model, perform frame type check
+            world.boot(display.info['frame'])
+
+            # Update initial states:
+            self._control_update(world)
+
+            # Next display states
+            self._view_update(display)
+            self._update_time_stamp = time_util.get_abs_time()
+
+            # Finally start control loop (Core)
+            try:
+                while not time_up and not done:
+                    elt = time_util.get_elapsed_time(self._init_time_stamp)
+
+                    time_since_last_update = time_util.get_elapsed_time(self._update_time_stamp)
+                    self._update_time_stamp = time_util.get_abs_time()
+
+                    # Perform control interruption first
+                    if not queue.empty():
+                        signal = queue.get_nowait()
+
+                        self._control_interrupt(
+                            world, display, signal,
+                            time_since_last_update)
+
+                    # Update model
+                    time_up = world.update(elt)
+
+                    # Lastly check task completion, communicate
+                    # with the model
+                    # TODO
+                    done, success = world.check_states()
+
+                if success:
+                    self.stop(server_id, 0)
+                    loginfo('Task success! Exiting run {}...'.format(r),
+                            FONT.disp)
+                else:
+                    self.stop(server_id, 1)
+                    loginfo('Task failed! Exiting run {}...'.format(r),
+                            FONT.disp)
+
+            except KeyboardInterrupt:
+                self.stop(server_id, -1)
+                loginfo('User cancelled run {} by ctrl+c.'.format(r),
+                        FONT.warning)
+                quit_run = io_util.prompt(
+                    'Do you wish to skip other runs and quit the program?'
+                )
+                if quit_run:
+                    self.exit()
+                else:
+                    pass
+
+    def stop(self, server_id, stop_status):
         """
         Hang the simulation.
         :param server_id: physics server id (a.k.a.
         simulation id, configuration id) to stop.
-        :param exit_status: an integer indicating the status 
+        :param stop_status: an integer indicating the status 
         of task completion, 0 for success, 1 for fail, and 
-        -1 for error exit.
+        -1 for error stop.
         :return: None
         """
-        world, display, ctrl_handler, _ = self._physics_servers[server_id]
+        _, world, display, ctrl_handler, _ = self._physics_servers[server_id]
         ctrl_handler.stop()
-        world.clean_up()
-        display.close(exit_status)
-        loginfo('Safe exit.', FONT.control)
+        display.close(stop_status)
+        world.reset()
 
-    def kill(self, server_id=0):
+    def exit(self, server_id=0):
         """
-        Kill the simulation, whatsoever the current status is. The
+        Kill the simulation and exit, whatever the current status is. The
         difference from <stop> is that this method erases
         the given simulation from the program.
         :param server_id: physics server id (a.k.a. simulation id,
-        configuration id)) to kill.
+        configuration id)) to exit.
         :return: None
         """
+        self.stop(server_id, -1)
+
+        # Clean up world
+        self._physics_servers[server_id][0].clean_up()
+
         # TODO
-        self._process_pool[server_id].terminate()
-        self._process_pool[server_id] = None
+        if self._process_pool:
+            self._process_pool[server_id].terminate()
+            self._process_pool[server_id] = None
+
+        loginfo('Safe exit.', FONT.control)
+        sys.exit(0)
 
     def _control_interrupt(self, world, display, signal, elapsed_time):
         """
