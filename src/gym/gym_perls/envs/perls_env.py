@@ -81,15 +81,6 @@ class PerlsEnv(gym.Env):
         """
         return NotImplemented
 
-    def _seed(self, seed=None):
-        """
-        Set the random seed for environment
-        :param seed: integer seed number
-        :return: generated seeds
-        """
-        self.np_random, seed = seeding.np_random(seed)
-        return [seed]
-
     def _close(self):
         """
         Shutdown the environment

@@ -132,8 +132,10 @@ class World(object):
         """
         for tool in self._tools.values():
             tool.reset()
+            del tool.mark
         for body in self._bodies.values():
             body.reset()
+            del body.mark
         self._engine.hold()
 
     def load_body(self, file_path, pos, orn,

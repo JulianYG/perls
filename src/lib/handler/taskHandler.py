@@ -14,6 +14,8 @@ class Checker(object):
     def __init__(self, env_name):
         self._name = env_name
 
+        self._check_states = dict()
+
     @property
     def name(self):
         return 'TaskCompletionChecker'
@@ -28,12 +30,13 @@ class Checker(object):
         """
         if self._name == 'push_sawyer' or self._name == 'push_kuka':
 
-            cube = world.body['cube_0']
-            # cube.pos += math_util.rand_vec(3, -1, 1)
-            print(math_util.rand_vec(None, -1, 1))
+            table = world.body['table_0']
+            table.mark = {}
+
             cube_pos = world.body['cube_0'].pos
             robot = world.body['titan_0']
-            # Move the gripper towards the cube initially
+
+            # Initializes the gripper next to the cube
             initial_gripper_pos = \
                 (cube_pos[0] - 0.05, cube_pos[1], cube_pos[2] + 0.025)
 
@@ -46,22 +49,14 @@ class Checker(object):
             cube = body_dict['cube_0']
             table = body_dict['table_0']
 
-            if cube.pos[2] >= 0.69:
-                # If the cube jumps too high
+            if cube.pos[2] >= 0.69 or cube.pos[2] <= 0.6:
+                # If the cube bumps or falls
                 return True, False
 
-            # Consider the case when the cube is down on the ground
-            if cube.pos[2] <= 0.06:
-                done = True
-                success = False
+            # Check if cube is within the boundary
+            if 1:
 
-                # Only allow pushing towards one side, 
-                # falling into one specific region
-                if table.pos[1] - .275 <= cube.pos[1] <= table.pos[1] + .275 and \
-                   table.pos[0] + .25 <= cube.pos[0] <= table.pos[0] + .65:
-                    success = True
-
-                return done, success
+                return True, True
 
         elif self._name == 'push_kuka':
 

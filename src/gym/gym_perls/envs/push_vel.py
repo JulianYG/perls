@@ -21,23 +21,25 @@ class PushCubeVel(PushCube):
     @property
     def action_space(self):
         return PushCube.Space.Box(
-            low=-self._robot.joint_specs['max_vel'],
-            high=self._robot.joint_specs['max_vel']
+            low=-math_util.vec(self._robot.joint_specs['max_vel']),
+            high=math_util.vec(self._robot.joint_specs['max_vel'])
         )
 
     @property
     def state(self):
-        # arm_state = self._robot.joint_positions + self._robot.joint_velocities
-        eef_pos, _ = math_util.get_relative_pose(
-            self._robot.eef_pose, self._robot.pose)
+
         cube_pos, cube_orn = self._cube.get_pose(self._robot.uid, 0)
-        return math_util.concat(eef_pos, cube_pos, cube_orn)
+        return math_util.concat(self._robot.joint_positions,
+                                self._robot.joint_velocities,
+                                cube_pos, cube_orn)
 
     def _step(self, action):
 
         # Use velocity control
         self._robot.joint_velocities = action
-        # for _ in range(100):
-        #     self._world.update()
+
+        # Step size 0.001 in bullet, align with 0.1 real world control
+        for _ in range(100):
+            self._world.update()
         return self.state, self.reward, self.done, {'state': self.state}
 
