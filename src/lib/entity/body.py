@@ -944,7 +944,6 @@ class Tool(Body):
         and the second element is the keyword arguments dictionary.
         :return: None
         """
-        assert len(value) == len(self._joints), 'Input number of position values must match the number of joints'
         if isinstance(value, tuple) and len(value) == 2:
             vals, kwargs = value
         else:
@@ -952,7 +951,8 @@ class Tool(Body):
 
         jids = [j for j, val in enumerate(vals) if val is not None]
         value = [v for v in vals if v is not None]
-
+        assert len(jids) == len(value), \
+            'Input number of position values must match the number of joints'
         if 'forces' not in kwargs:
             kwargs['forces'] = tuple(self.joint_specs['max_force'][j] for j in jids)
 
@@ -971,7 +971,6 @@ class Tool(Body):
         and the second element is the keyword arguments dictionary.
         :return: None
         """
-        assert len(value) == len(self._joints), 'Input number of position values must match the number of joints'
         if isinstance(value, tuple) and len(value) == 2:
             vals, kwargs = value
         else:
@@ -979,7 +978,8 @@ class Tool(Body):
 
         jids = [j for j, val in enumerate(vals) if val is not None]
         value = [v for v in vals if v is not None]
-
+        assert len(value) == len(jids), \
+            'Input number of position values must match the number of joints'
         if 'forces' not in kwargs:
             kwargs['forces'] = tuple(self.joint_specs['max_force'][j] for j in jids)
 
@@ -998,11 +998,12 @@ class Tool(Body):
         and the second element is the keyword arguments dictionary.
         :return: None
         """
-        assert len(value) == len(self._joints), 'Input number of torque values must match the number of joints'
         torques = value[0] if isinstance(value, tuple) else value
         kwargs = value[1] if isinstance(value, tuple) else {}
         jids = [j for j, val in enumerate(torques) if val is not None]
         value = [v for v in value if v is not None]
+        assert len(value) == len(jids), \
+            'Input number of torque values must match the number of joints'
         self._engine.set_body_joint_state(self._uid, jids, value, 'torque', kwargs)
 
     def torque_mode(self):
