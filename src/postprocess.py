@@ -134,9 +134,9 @@ class Postprocess(object):
                                          'v0', 'v1', 'v2', 'v3', 'v4', 'v5', 'v6',
                                          'u0', 'u1', 'u2', 'u3', 'u4', 'u5', 'u6'])
 
-        cube_log = pp.parse_log(fname, None, verbose=False, objects=["cube_0"],
-                                cols=['stepCount', 'timeStamp', 'qNum', 'posX', 'posY', 'posZ', 'oriX', 'oriY', 'oriZ',
-                                      'oriW'])
+        cube_log = self.parse_log(fname, None, verbose=False, objects=["cube_0"],
+                                  cols=['stepCount', 'timeStamp', 'qNum', 'posX', 'posY', 'posZ', 'oriX', 'oriY', 'oriZ',
+                                        'oriW'])
 
         # Time differences.
         time_diffs = robot_log[1:, 1] - robot_log[:-1, 1]
@@ -217,12 +217,14 @@ class Postprocess(object):
             #     continue
 
             ### State and Action definition here ###
-            #state = np.concatenate([joint_pos_elem, joint_vel_elem, cube_pose_pos_elem, cube_pose_orn_elem])
-            #action = np.array(joint_pos_elem)
+
+            # NOTE: we add the joint angles in state, joint vels in action
+            state = np.concatenate([joint_pos_elem, cube_pose_pos_elem, cube_pose_orn_elem])
+            action = np.array(joint_vel_elem)
 
             # NOTE: we add the previous eef orientation here, and previous cube orientation
-            state = np.concatenate([prev_eef_pose_pos, prev_cube_pose_pos, prev_cube_pose_orn])
-            action = np.array(eef_pose_pos_elem) - np.array(prev_eef_pose_pos)
+            # state = np.concatenate([prev_eef_pose_pos, prev_cube_pose_pos, prev_cube_pose_orn])
+            # action = np.array(eef_pose_pos_elem) - np.array(prev_eef_pose_pos)
 
 
             states.append(state)
@@ -249,7 +251,7 @@ class Postprocess(object):
 
 if __name__ == "__main__":
 
-    env = gym.make('push-v0')
+    env = gym.make('push-vel-v0')
     env.reset()
 
     # robot_position = env._robot.pos
@@ -293,7 +295,7 @@ if __name__ == "__main__":
     all_actions = np.concatenate(all_actions, axis=0)
     print(all_states.shape)
     print(all_actions.shape)
-    np.savez("demo.npz", states=all_states, actions=all_actions)
+    np.savez("demo_joint_vel.npz", states=all_states, actions=all_actions)
 
 
 
