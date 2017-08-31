@@ -50,9 +50,9 @@ class Postprocess(object):
         self.col_names = [u'stepCount', u'timeStamp', u'objectId', u'posX', u'posY', u'posZ',
                           u'oriX', u'oriY', u'oriZ', u'oriW', u'velX', u'velY', u'velZ',
                           u'omegaX', u'omegaY', u'omegaZ', u'qNum',
-                          u'q0', u'q1', u'q2', u'q3', u'q4', u'q5', u'q6', u'q7', u'q8', u'q9', u'q10', u'q11',
-                          u'v0', u'v1', u'v2', u'v3', u'v4', u'v5', u'v6', u'v7', u'v8', u'v9', u'v10', u'v11',
-                          u'u0', u'u1', u'u2', u'u3', u'u4', u'u5', u'u6', u'u7', u'u8', u'u9', u'u10', u'u11']
+                          u'q0', u'q1', u'q2', u'q3', u'q4', u'q5', u'q6',
+                          u'v0', u'v1', u'v2', u'v3', u'v4', u'v5', u'v6',
+                          u'u0', u'u1', u'u2', u'u3', u'u4', u'u5', u'u6']
 
         # dictionary to map column name to index
         self.col_names_dict = {}

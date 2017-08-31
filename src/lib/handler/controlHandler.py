@@ -57,15 +57,6 @@ class KeyboardEventHandler(ControlHandler):
     def interrupt(self, queue):
 
         signal = dict()
-
-    # @property
-    # def signal(self):
-    #     """
-    #     Get the signal read from interruption.
-    #     Note keyboard event only gives high level
-    #     instructions reach and grasp.
-    #     :return: List of signals
-    #     """
         signal['cmd'] = list()
         ins = list()
         signal['camera'] = list()
@@ -128,7 +119,6 @@ class KeyboardEventHandler(ControlHandler):
         queue.put_nowait(signal)
 
 
-# TODO at some point
 class ViveEventHandler(ControlHandler):
     """
     Handles VR controller events/signal
@@ -155,7 +145,6 @@ class ViveEventHandler(ControlHandler):
         signal['key'] = 'm'
         signal['update'] = 0
         ins = list()
-        # import pybullet as p
 
         if self._devices['controller']:
             events = self._listener.get_controller_state(self._devices['controller'][0])
@@ -169,7 +158,6 @@ class ViveEventHandler(ControlHandler):
                 reset_flag = event_listener.KEY_STATUS[events['menu']]
                 engage_flag = event_listener.KEY_STATUS[events['pad']]
                 pos, orn = pose
-                # p.loadURDF('cube_small.urdf', pos, orn, useFixedBase=True)
                 # self._listener.vibrate(3)
 
                 # Always use the gripper slider for push task
@@ -238,7 +226,6 @@ class AppEventHandler(ControlHandler):
 
         events = event_listener.listen_to_redis(
             self._comm.channels[self._channel_name])
-        # time.sleep(1. / self._rate)
 
         for event_dic in events:
             # TODO: key and id

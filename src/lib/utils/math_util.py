@@ -27,6 +27,7 @@ _AXES2TUPLE = {
 
 _TUPLE2AXES = dict((v, k) for k, v in _AXES2TUPLE.items())
 
+
 """
 Scalar Calculation / Processing
 """
@@ -178,10 +179,8 @@ def pos_diff(pos1, pos2, axis=0, weights=None):
     """
     pos1 = np.array(pos1, dtype=np.float32)
     pos2 = np.array(pos2, dtype=np.float32)
-    if weights is None:
-        delta = np.sum((pos1 - pos2) ** 2, axis=axis)
-    else:
-        delta = np.sum(((pos1 - pos2) * weights) ** 2, axis=axis)
+    weights = weights or 1
+    delta = np.sum(((pos1 - pos2) * weights) ** 2, axis=axis)
     return np.sqrt(delta)
 
 

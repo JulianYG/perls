@@ -16,6 +16,7 @@ data
 .*
 */*.bin
 src/bullet_/log/*
+src/config.xml
 scripts/monitor
 monitor
 */monitor

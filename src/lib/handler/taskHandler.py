@@ -79,10 +79,15 @@ class Checker(object):
         :param world: current environment status object
         :return: User defined format of reward
         """
-        # TODO
         if self._name == 'push_sawyer' or 'push_kuka':
+            robot = world.body['titan_0']
+            goal = self._states['goal']
+            cube = world.body['cube_0']
 
-            return 0
+            cost_grip = math_util.pos_diff(robot.tool_pos, cube.pos)
+            cost_goal = math_util.pos_diff(cube.pos, self._states['goal'])
+
+            return -(cost_grip * .8 + cost_goal * .2)
 
     def check(self, world):
 
@@ -93,8 +98,9 @@ class Checker(object):
             cube = body_dict['cube_0']
             table = body_dict['table_0']
 
+            # print(self.score(world))
             # If cost too high, mark fail and done
-            if -self.score(world) > 200:
+            if -self.score(world) > .5:
                 return True, False
 
             if cube.pos[2] >= 0.68 or cube.pos[2] <= 0.6:
