@@ -30,22 +30,20 @@ class Timer(Thread):
             for _ in range(self._max_iter):
                 if self._done.is_set():
                     break
-                if self._pause:
-                    print('hahaha')
-                    pass
-                else:
+                if not self._pause:
                     old_time = time.time()
                     self._func(*self._args)
                     interval = time.time() - old_time
                     if self._interval > interval:
                         time.sleep(self._interval - interval)
         else:
-            while 1 and not self._done.is_set():
-                old_time = time.time()
-                self._func(*self._args)
-                interval = time.time() - old_time
-                if self._interval > interval:
-                    time.sleep(self._interval - interval)
+            while not self._done.is_set():
+                if not self._pause:
+                    old_time = time.time()
+                    self._func(*self._args)
+                    interval = time.time() - old_time
+                    if self._interval > interval:
+                        time.sleep(self._interval - interval)
 
 
 def pause(t):

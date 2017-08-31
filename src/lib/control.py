@@ -326,10 +326,10 @@ class Controller(object):
                     # Update model
                     time_up = world.update(elt)
 
-                    # Lastly check task completion, communicate
-                    # with the model
-                    # TODO
+                    # Check agent performance & task completion
                     done, success = world.check_states()
+
+                    # TODO: Communicate with the model
 
                 ctrl_handler.pause()
                 if success:
@@ -341,7 +341,7 @@ class Controller(object):
                     loginfo('Task failed! Exiting run {}...'.format(r),
                             FONT.disp)
 
-                # Clear the queue
+                # Clear the control queue
                 while not queue.empty():
                     queue.get_nowait()
 
@@ -353,10 +353,10 @@ class Controller(object):
                     'Do you wish to skip other runs and quit the program?'
                 )
                 if quit_run:
+                    # Exit the program
                     self.exit(ctrl_handler, server_id)
                 else:
                     pass
-        self.exit(ctrl_handler, server_id)
 
     def stop(self, server_id, stop_status):
         """
