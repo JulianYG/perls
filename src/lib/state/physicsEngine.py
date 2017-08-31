@@ -70,6 +70,7 @@ class BulletPhysicsEngine(FakeStateEngine):
         # connect to. Default is 0
         self._physics_server_id = identifier
 
+        self._viz = False
         self._sensor_enabled = False
 
     @property
@@ -85,7 +86,9 @@ class BulletPhysicsEngine(FakeStateEngine):
             real_time=not self._async,
             id=self.engine_id
             if self._status == 'running' else {},
-            max_run_time=self._max_run_time)
+            max_run_time=self._max_run_time,
+            visual=self._viz
+        )
         if self._async:
             info_dic['step_size'] = self._step_size
         return info_dic
@@ -403,11 +406,12 @@ class BulletPhysicsEngine(FakeStateEngine):
         contact_dic = []
         for contact in contacts:
             contact_dic.append(
-                dict(uid=contact[2],
-                     lid=contact[4],
-                     posA=contact[5],   # Vec3
-                     posB=contact[6],   # Vec3
-                     normalB2A=contact[7],  # Vec3
+                dict(uid_other=contact[2],
+                     lid_self=contact[3],
+                     lid_other=contact[4],
+                     pos_self=contact[5],   # Vec3
+                     pos_other=contact[6],   # Vec3
+                     normalvec2self=contact[7],  # Vec3
                      distance=contact[8],   # Scalar
                      force=contact[9]) # Scalar
             )
@@ -613,6 +617,9 @@ class BulletPhysicsEngine(FakeStateEngine):
                 physicsClientId=self._physics_server_id)
 
     def start_engine(self, frame):
+
+        if frame == 'gui' or frame == 'vr':
+            self._viz = True
 
         if self.status == 'killed' or self.status == 'error'\
            or self._type_check(frame) != 0:

@@ -39,9 +39,13 @@ class Checker(object):
                 (table.pos[0] + 0.25, table.pos[1] + 0.25, 0.642),
                 'uniform')
 
-            table.mark = ('box2d', 15, [1, 0, 0], None, 0,
-                          {'center': box_center,
-                           'size': 0.1,})
+            self._states['goal'] = box_center
+
+            # Only add lines for GUI or demos
+            if world.info['engine']['visual']:
+                table.mark = ('box2d', 15, [1, 0, 0], None, 0,
+                              {'center': box_center,
+                               'size': 0.1,})
 
             cube_pos = world.body['cube_0'].pos
             robot = world.body['titan_0']
@@ -59,6 +63,10 @@ class Checker(object):
             loginfo('Initial gripper finger position: {}'.
                     format(robot.tool_pos),
                     FONT.model)
+
+            table.mark = ('box2d', 15, [0,1,0], None, 0,
+            {'center': (0.27499999962747035, -0.22500000771632067, 0.6400000229477882),
+             'size': 0.2})
 
     def score(self, world):
         """
@@ -85,13 +93,15 @@ class Checker(object):
             if -self.score(world) > 200:
                 return True, False
 
-            if cube.pos[2] >= 0.69 or cube.pos[2] <= 0.6:
+            if cube.pos[2] >= 0.68 or cube.pos[2] <= 0.6:
                 # If the cube bumps or falls
                 return True, False
 
             # Check if cube is within the boundary
-            if 0:
+            goal = self._states['goal']
 
+            if goal[0] - .05 < cube.pos[0] < goal[0] + .05\
+               and goal[1] - .05 < cube.pose[1] < goal[1] + .05:
                 return True, True
 
         return False, False
