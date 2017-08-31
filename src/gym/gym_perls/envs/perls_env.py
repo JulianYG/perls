@@ -123,7 +123,7 @@ class PerlsEnv(gym.Env):
         self._display.set_render_view(
             dict(
                 dim=(256, 256),
-                flen=3,
+                flen=4,
                 yaw=50,
                 pitch=-35,
                 focus=(0, 0, 0)
@@ -140,13 +140,13 @@ class PerlsEnv(gym.Env):
         """
         # Perform extra steps in simulation to align
         # with real time
-
         for _ in range(self._align_iters):
             self._step_helper(action)
             self._world.update()
 
         return self.state, self.reward, self.done, {'state': self.state}
 
+    @abc.abstractmethod
     def _step_helper(self, action):
         """
         The actual stepping function that needs to be implemented

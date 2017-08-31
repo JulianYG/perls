@@ -52,6 +52,5 @@ class PushCube(PerlsEnv):
         #return math_util.concat(eef_pos, cube_pos, cube_orn, goal_pos)
         return math_util.concat(eef_pos, cube_pos, cube_orn)
 
-    @abc.abstractmethod
     def _step_helper(self, action):
         return NotImplemented
