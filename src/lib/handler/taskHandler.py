@@ -64,10 +64,6 @@ class Checker(object):
                     format(robot.tool_pos),
                     FONT.model)
 
-            table.mark = ('box2d', 15, [0,1,0], None, 0,
-            {'center': (0.27499999962747035, -0.22500000771632067, 0.6400000229477882),
-             'size': 0.2})
-
     def score(self, world):
         """
         Score the current performance of the agent. Generates

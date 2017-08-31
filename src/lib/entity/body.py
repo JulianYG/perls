@@ -493,7 +493,7 @@ class Body(object):
         if mtype == 'text':
             mid = self._engine.add_body_text_marker(
                 kwargs['text'], self.kinematics['pos'][lid or 0],
-                width, color, self.uid, time
+                width, color, time, self.uid,
             )
             self._markers[mid] = dict(
                 text=kwargs['text'], size=width,

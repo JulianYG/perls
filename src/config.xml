@@ -5,7 +5,7 @@
 	<config name="push" id="0" clone="20">
 		<build type="Debug">
 			<graphics name="first person human demo" engine="bullet" type="vr" key="0"/>
-			<physics engine="bullet" version="20170601"/>
+			<physics engine="bullet" version="20170801"/>
 			<job name="record" video="False" log_path="" replay_path="success/2017-08-29-11-48-34"/>
 			<property async="False" step_size="0.004166" max_run_time="60"/>
 		</build>

@@ -107,9 +107,9 @@ class BulletPhysicsEngine(FakeStateEngine):
         :return: 0 if success, -1 if failure
         """
         if not self._async:
-            if frame != 'gui':
+            if frame != 'gui' and frame != 'vr':
                 self.status = self._STATUS[-1]
-                err_msg = 'Non GUI mode only supports async simulation.'
+                err_msg = 'Non GUI/VR mode only supports async simulation.'
                 self._error_message.append(err_msg)
                 logerr(err_msg, FONT.control)
                 return -1

@@ -539,7 +539,7 @@ class Controller(object):
                         if math_util.rms(tool.tool_pos - r_pos) < threshold:
                             a_orn = math_util.vec((end_orn_pos[1], end_orn_pos[0], 0)) \
                                     + r_orn * elapsed_time
-                            tool.reach(r_pos, a_orn[[1, 0, 2]])
+                            tool.reach(r_pos, None)#a_orn[[1, 0, 2]])
 
                 elif method == 'grasp':
                     tool.grasp(value)
