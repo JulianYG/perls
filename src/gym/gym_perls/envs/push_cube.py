@@ -48,8 +48,9 @@ class PushCube(PerlsEnv):
         eef_pos, _ = math_util.get_relative_pose(
             self._robot.eef_pose, self._robot.pose)
         cube_pos, cube_orn = self._cube.get_pose(self._robot.uid, 0)
-        goal_pos = self._world.get_task_state()['goal']
-        return math_util.concat(eef_pos, cube_pos, cube_orn, goal_pos)
+        #goal_pos = self._world.get_task_state()['goal']
+        #return math_util.concat(eef_pos, cube_pos, cube_orn, goal_pos)
+        return math_util.concat(eef_pos, cube_pos, cube_orn)
 
     @abc.abstractmethod
     def _step_helper(self, action):

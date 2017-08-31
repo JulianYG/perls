@@ -944,8 +944,7 @@ class Tool(Body):
         and the second element is the keyword arguments dictionary.
         :return: None
         """
-        assert(len(value) == len(self._joints),
-               'Input number of position values must match the number of joints')
+        assert len(value) == len(self._joints), 'Input number of position values must match the number of joints'
         if isinstance(value, tuple) and len(value) == 2:
             vals, kwargs = value
         else:
@@ -972,8 +971,7 @@ class Tool(Body):
         and the second element is the keyword arguments dictionary.
         :return: None
         """
-        assert (len(value) == len(self._joints),
-                'Input number of position values must match the number of joints')
+        assert len(value) == len(self._joints), 'Input number of position values must match the number of joints'
         if isinstance(value, tuple) and len(value) == 2:
             vals, kwargs = value
         else:
@@ -1000,8 +998,7 @@ class Tool(Body):
         and the second element is the keyword arguments dictionary.
         :return: None
         """
-        assert (len(value) == len(self._joints),
-                'Input number of torque values must match the number of joints')
+        assert len(value) == len(self._joints), 'Input number of torque values must match the number of joints'
         torques = value[0] if isinstance(value, tuple) else value
         kwargs = value[1] if isinstance(value, tuple) else {}
         jids = [j for j, val in enumerate(torques) if val is not None]
