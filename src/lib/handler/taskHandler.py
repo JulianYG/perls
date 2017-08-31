@@ -33,7 +33,15 @@ class Checker(object):
         if self._name == 'push_sawyer' or self._name == 'push_kuka':
 
             table = world.body['table_0']
-            # table.mark = {}
+
+            box_center = math_util.rand_vec(
+                3, (table.pos[0] + 0.1, table.pos[1] - 0.25, 0.641),
+                (table.pos[0] + 0.25, table.pos[1] + 0.25, 0.642),
+                'uniform')
+
+            table.mark = ('box2d', 15, [1, 0, 0], None, 0,
+                          {'center': box_center,
+                           'size': 0.1,})
 
             cube_pos = world.body['cube_0'].pos
             robot = world.body['titan_0']

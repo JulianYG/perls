@@ -291,8 +291,12 @@ class Controller(object):
                 loginfo('Display configs loaded. Starting simulation...',
                         FONT.control)
 
+            # TODO: May be able to move outside loop if display is booted
             # Kickstart the model, perform frame type check
             world.boot(display.info['frame'])
+
+            # Reset the world
+            world.reset()
 
             # Update initial states:
             self._control_update(world)
@@ -359,7 +363,6 @@ class Controller(object):
         _, world, display, ctrl_handler, _ = self._physics_servers[server_id]
         ctrl_handler.stop()
         display.close(stop_status)
-        world.reset()
 
     def exit(self, server_id=0):
         """

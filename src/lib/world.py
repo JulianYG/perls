@@ -136,6 +136,7 @@ class World(object):
         for body in self._bodies.values():
             body.reset()
             del body.mark
+        # Fine tune the initial environment setup
         self._checker.initialize(self)
         self._engine.hold()
 
@@ -293,7 +294,8 @@ class World(object):
         else:
             tool = self._tools[t_id]
         # Mark the current using tool
-        tool.mark = ('text', 'controlling', 2.5, (1., 0, 0), None, .2)
+        tool.mark = ('text', 2.5, (1., 0, 0), None,
+                     .2, {'text': 'controlling'})
         return tool
 
     def get_states(self, *args):
@@ -333,9 +335,6 @@ class World(object):
         """
         status = self._engine.start_engine(frame)
         self._engine.hold(200)
-
-        # Fine tune the initial environment setup
-        self._checker.initialize(self)
         return status
 
     def notify_engine(self, stat):

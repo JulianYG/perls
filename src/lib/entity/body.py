@@ -483,18 +483,73 @@ class Body(object):
         float time to display, 0 for permanent.
         By default is 10 seconds,
         link id to display on this body
+        Kwargs, a dictionary of information used
+        for shape marking.
         :return: None
         """
         # Need a few tricks to hack link index for base
-        mtype, text, font_size, color, lid, time = marker_info
+        mtype, width, color, lid, time, kwargs = marker_info
+
         if mtype == 'text':
             mid = self._engine.add_body_text_marker(
-                text, self.kinematics['pos'][lid or 0],
-                font_size, color, self.uid, None, time
+                kwargs['text'], self.kinematics['pos'][lid or 0],
+                width, color, self.uid, time
             )
             self._markers[mid] = dict(
-                text=text, size=font_size, color=color, time=time)
+                text=kwargs['text'], size=width,
+                color=color, time=time)
 
+        # Slightly complex
+        elif mtype == 'box2d':
+            center, length = kwargs['center'], kwargs['size'] / 2.
+            z = center[2]
+            bottom_left = (center[0] - length,
+                           center[1] - length,
+                           z)
+            top_left = (center[0] - length,
+                        center[1] + length,
+                        z)
+            top_right = (center[0] + length,
+                         center[1] + length,
+                         z)
+            bottom_right = (center[0] + length,
+                            center[1] - length,
+                            z)
+            a = self._engine.add_body_line_marker(
+                bottom_left, top_left, color, width,
+                time, None, lid
+            )
+            self._markers[a] = dict(
+                posA=bottom_left, posB=top_left,
+                size=width, color=color, time=time
+            )
+
+            b = self._engine.add_body_line_marker(
+                top_left, top_right, color, width,
+                time, None, lid
+            )
+            self._markers[b] = dict(
+                posA=top_left, posB=top_right,
+                size=width, color=color, time=time
+            )
+
+            c = self._engine.add_body_line_marker(
+                top_right, bottom_right, color, width,
+                time, None, lid
+            )
+            self._markers[c] = dict(
+                posA=top_right, posB=bottom_right,
+                size=width, color=color, time=time
+            )
+
+            d = self._engine.add_body_line_marker(
+                bottom_right, bottom_left, color, width,
+                time, None, lid
+            )
+            self._markers[d] = dict(
+                posA=bottom_right, posB=bottom_left,
+                size=width, color=color, time=time
+            )
 
     @mark.deleter
     def mark(self):

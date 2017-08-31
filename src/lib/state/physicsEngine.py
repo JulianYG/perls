@@ -434,9 +434,10 @@ class BulletPhysicsEngine(FakeStateEngine):
         return neighbor_dic
 
     def add_body_line_marker(self, posA, posB, color, width,
-                             time, uid, lid):
+                             time, uid, lid=None):
+
         if uid is not None:
-            lid = lid or -1
+            lid = lid or 0
             mid = p.addUserDebugLine(
                 posA, posB, lineColorRGB=color,
                 lineWidth=width,
@@ -452,12 +453,13 @@ class BulletPhysicsEngine(FakeStateEngine):
                 lifeTime=time,
                 physicsClientId=self._physics_server_id
             )
+
         return mid
 
     def add_body_text_marker(self, text, pos, font_size, color,
-                             uid, lid, time):
+                             time, uid, lid=None):
         if uid is not None:
-            lid = lid or -1
+            lid = lid or 0
             mid = p.addUserDebugText(
                 text, pos, textColorRGB=tuple(color),
                 textSize=float(font_size),
