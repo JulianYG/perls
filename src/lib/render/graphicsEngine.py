@@ -341,6 +341,10 @@ class BulletRenderEngine(GraphicsEngine):
                 p.startStateLogging(
                     p.STATE_LOGGING_GENERIC_ROBOT,
                     abs_file_name,
+                    
+                    # Most commonly for 7 Dof robots
+                    maxLogDof=7,
+                    logFlags=p.STATE_LOG_JOINT_MOTOR_TORQUES,
                     physicsClientId=self._server_id
                 )
             )

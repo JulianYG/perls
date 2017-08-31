@@ -68,7 +68,7 @@ class World(object):
         return dict(
             task='_'.join(list(self.name_str)),
             tools=[t.name for t in self._tools.values()],
-            tracking_bodies=[b[1] for b in self._target_bodies],
+            tracking_bodies=self._target_bodies,
             assets=self._bodies.keys(),
             engine=self._engine.info
         )
@@ -114,7 +114,7 @@ class World(object):
         Get the list of tracked bodies in the world, 
         that is, being recorded.
         :return: A list of target bodies, this is 
-        a subset of all bodies in the world (uid, name)
+        a subset of all bodies in the world (name, uid)
         """
         return self._target_bodies
 

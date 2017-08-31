@@ -96,8 +96,9 @@ class Checker(object):
             # Check if cube is within the boundary
             goal = self._states['goal']
 
-            if goal[0] - .05 < cube.pos[0] < goal[0] + .05\
-               and goal[1] - .05 < cube.pose[1] < goal[1] + .05:
+            cube_pos = cube.pos
+            if goal[0] - .05 < cube_pos[0] < goal[0] + .05 \
+               and goal[1] - .05 < cube_pos[1] < goal[1] + .05:
                 return True, True
 
         return False, False

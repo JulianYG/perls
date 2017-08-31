@@ -298,6 +298,8 @@ class Controller(object):
             # Reset the world
             world.reset()
 
+            ctrl_handler.resume()
+
             # Update initial states:
             self._control_update(world)
 
@@ -329,6 +331,7 @@ class Controller(object):
                     # TODO
                     done, success = world.check_states()
 
+                ctrl_handler.pause()
                 if success:
                     self.stop(server_id, 0)
                     loginfo('Task success! Exiting run {}...'.format(r),
@@ -338,6 +341,10 @@ class Controller(object):
                     loginfo('Task failed! Exiting run {}...'.format(r),
                             FONT.disp)
 
+                # Clear the queue
+                while not queue.empty():
+                    queue.get_nowait()
+
             except KeyboardInterrupt:
                 self.stop(server_id, -1)
                 loginfo('User cancelled run {} by ctrl+c.'.format(r),
@@ -346,9 +353,10 @@ class Controller(object):
                     'Do you wish to skip other runs and quit the program?'
                 )
                 if quit_run:
-                    self.exit()
+                    self.exit(ctrl_handler, server_id)
                 else:
                     pass
+        self.exit(ctrl_handler, server_id)
 
     def stop(self, server_id, stop_status):
         """
@@ -361,10 +369,9 @@ class Controller(object):
         :return: None
         """
         _, world, display, ctrl_handler, _ = self._physics_servers[server_id]
-        ctrl_handler.stop()
         display.close(stop_status)
 
-    def exit(self, server_id=0):
+    def exit(self, ctrl_handler, server_id=0):
         """
         Kill the simulation and exit, whatever the current status is. The
         difference from <stop> is that this method erases
@@ -373,6 +380,7 @@ class Controller(object):
         configuration id)) to exit.
         :return: None
         """
+        ctrl_handler.stop()
         self.stop(server_id, -1)
 
         # Clean up world

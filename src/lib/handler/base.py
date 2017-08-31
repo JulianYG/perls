@@ -28,6 +28,12 @@ class ControlHandler(object):
     def interrupt(self, queue):
         return NotImplemented
 
+    def pause(self):
+        self._handler.pause()
+
+    def resume(self):
+        self._handler.resume()
+
     def stop(self):
         self._handler.cancel()
 
@@ -36,7 +42,7 @@ class NullHandler(ControlHandler):
     """
     Singleton placeholder
     """
-    def __init__(self, ps_id, queue, sensitivity, rate):
+    def __init__(self, ps_id, sensitivity, rate):
         super(NullHandler, self).__init__(0, None, 0, rate)
 
     def interrupt(self, queue):
