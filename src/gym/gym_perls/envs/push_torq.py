@@ -24,13 +24,13 @@ class PushCubeTorque(PushCube):
             low=math_util.concat(
                 math_util.vec(self._robot.joint_specs['lower']),
                 -math_util.vec(self._robot.joint_specs['max_vel']),
-                self._table.pos - math_util.vec((.275, .275, .065)),
+                self._table.pos - math_util.vec((.275, .275, -.63)),
                 (-1, -1, -1, -1)
             ),
             high=math_util.concat(
                 math_util.vec(self._robot.joint_specs['upper']),
                 math_util.vec(self._robot.joint_specs['max_vel']),
-                self._table.pos + math_util.vec((.275, .275, .065)),
+                self._table.pos + math_util.vec((.275, .275, .69)),
                 (1, 1, 1, 1)
             )
         )

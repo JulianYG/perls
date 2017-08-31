@@ -24,13 +24,13 @@ class PushCubeVel(PushCube):
             low=math_util.concat(
                 math_util.vec(self._robot.joint_specs['lower']),
                 -math_util.vec(self._robot.joint_specs['max_vel']),
-                self._table.pos - math_util.vec((.275, .275, .065)),
+                self._table.pos - math_util.vec((.275, .275, -.63)),
                 (-1, -1, -1, -1)
             ),
             high=math_util.concat(
                 math_util.vec(self._robot.joint_specs['upper']),
                 math_util.vec(self._robot.joint_specs['max_vel']),
-                self._table.pos + math_util.vec((.275, .275, .065)),
+                self._table.pos + math_util.vec((.275, .275, .69)),
                 (1, 1, 1, 1)
             )
         )
@@ -51,11 +51,10 @@ class PushCubeVel(PushCube):
         #                         self._robot.joint_velocities,
         #                         cube_pos, cube_orn,
         #                         goal_pos)
+        print(self._table.pos)
         return math_util.concat(self._robot.joint_positions,
                                 self._robot.joint_velocities,
                                 cube_pos, cube_orn)
-
-
 
     def _step_helper(self, action):
         # Use velocity control
