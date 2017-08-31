@@ -45,9 +45,10 @@ class PushCubeTorque(PushCube):
     @property
     def state(self):
         cube_pos, cube_orn = self._cube.get_pose(self._robot.uid, 0)
+        goal_pos = self._world.get_task_state()['goal']
         return math_util.concat(self._robot.joint_positions,
                                 self._robot.joint_velocities,
-                                cube_pos, cube_orn)
+                                cube_pos, cube_orn, goal_pos)
 
     def _reset(self):
 

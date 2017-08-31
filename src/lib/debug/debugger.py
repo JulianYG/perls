@@ -81,8 +81,11 @@ class ModelDebugger(object):
     def evaluate(self):
         return self._world.evaluate()
 
-    def get_states(self, *args):
-        return self._world.get_states(*args)
+    def get_env_state(self, *args):
+        return self._world.get_env_state(*args)
+
+    def get_task_state(self, *args):
+        return self._world.get_task_state(*args)
 
     def boot(self, frame):
         return self._world.boot(frame)

@@ -298,7 +298,7 @@ class World(object):
                      .2, {'text': 'controlling'})
         return tool
 
-    def get_states(self, *args):
+    def get_env_state(self, *args):
         """
         Get world states by attribute name
         :param args: list of string tuples indicating what
@@ -325,6 +325,14 @@ class World(object):
             state_list.append(info)
 
         return state_list
+
+    def get_task_state(self):
+        """
+        Get task states. Typically to get the task goal, or 
+        other task relevant info.
+        :return: states dictionary of task checker.
+        """
+        return self._checker.state
 
     def boot(self, frame):
         """

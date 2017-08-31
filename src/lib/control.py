@@ -272,7 +272,7 @@ class Controller(object):
             time_up, done, success = False, False, False
             self._init_time_stamp = time_util.get_abs_time()
 
-            track_targets = world.get_states(('env', 'target'))[0]
+            track_targets = world.get_env_state(('env', 'target'))[0]
 
             # Pass in targets uids
             status = display.run([t[0] for t in track_targets])
@@ -526,7 +526,7 @@ class Controller(object):
                             tool.reach(None, i_orn)
 
                             # Update the tool's position as orientation changes
-                            self._states['tool'][tool.tid][0] = world.get_states(
+                            self._states['tool'][tool.tid][0] = world.get_env_state(
                                 ('tool', 'tool_pose'))[0][tool.tid][0]
 
                         pos_diff = tool.tool_pos - i_pos \
@@ -535,7 +535,7 @@ class Controller(object):
                         if math_util.rms(pos_diff) > tool.tolerance:
                             loginfo('Tool position out of reach. Set back.',
                                     FONT.warning)
-                            state_pose = world.get_states(
+                            state_pose = world.get_env_state(
                                 ('tool', 'tool_pose'))[0][tool.tid]
                             self._states['tool'][tool.tid][0] = state_pose[0]
                     else:
@@ -581,7 +581,7 @@ class Controller(object):
         :param world: The world model that provides tools
         :return: None
         """
-        init_states = world.get_states(('tool', 'tool_pose'))[0]
+        init_states = world.get_env_state(('tool', 'tool_pose'))[0]
         # First control states
         for tid, init_pose in init_states.items():
             # if tid[0] == 'g':
