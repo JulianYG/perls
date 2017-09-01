@@ -98,10 +98,15 @@ class Checker(object):
             cube = body_dict['cube_0']
             table = body_dict['table_0']
 
-            # print(self.score(world))
             # If cost too high, mark fail and done
-            if -self.score(world) > .5:
+            if -self.score(world) > .2:
                 return True, False
+
+            # If collided with table, fail
+            for points in body_dict['bax_0'].contact:
+                if points:
+                    if points[0]['uid_other'] == 3:
+                        return True, False
 
             if cube.pos[2] >= 0.68 or cube.pos[2] <= 0.6:
                 # If the cube bumps or falls

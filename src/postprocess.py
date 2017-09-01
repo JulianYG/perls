@@ -6,7 +6,7 @@ from glob import glob
 import numpy as np
 import matplotlib.pyplot as plt
 from IPython import embed
-import gym
+import gym_
 
 
 class Postprocess(object):

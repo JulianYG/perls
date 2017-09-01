@@ -271,7 +271,7 @@ if __name__ == "__main__":
     ### Change this to set files to read. ###
     #demons = glob("*.bin")
     #demons = glob("eef.bin")
-    demons = glob("success_fix_goal_fix_orn/*.bin")
+    demons = glob("demo_traj/*.bin")
 
     ### Change this index to view a different demonstration, or put in a loop to view all. ###
     fname = demons[0]

@@ -24,12 +24,12 @@ class PushCubePose(PushCube):
             low=math_util.concat(
                 self._robot.pos - math_util.vec((1.5, 1.5, 1.5)),
                 self._table.pos - math_util.vec((.275, .275, -.63)),
-                (-1, -1, -1, -1)
+                math_util.vec((-1, -1, -1, -1))
             ),
             high=math_util.concat(
                 self._robot.pos + math_util.vec((1.5, 1.5, 1.5)),
                 self._table.pos + math_util.vec((.275, .275, .69)),
-                (1, 1, 1, 1)
+                math_util.vec((1, 1, 1, 1))
             )
         )
 
