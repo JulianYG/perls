@@ -136,6 +136,8 @@ class World(object):
         for body in self._bodies.values():
             body.reset()
             del body.mark
+        self._engine.hold()
+        
         # Fine tune the initial environment setup
         self._checker.initialize(self)
         self._engine.hold()
