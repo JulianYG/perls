@@ -176,9 +176,9 @@ class Postprocess(object):
         prev_joint_pos = robot_log[0, 3:10]
         prev_joint_vel = robot_log[0, 10:17]
         prev_cube_pose = (cube_log[0, 3:6], cube_log[0, 6:10])
-        prev_cube_pose_pos, prev_cube_pose_orn = prev_cube_pose#get_relative_pose(prev_cube_pose, self.robot_base_pose)
+        prev_cube_pose_pos, prev_cube_pose_orn = get_relative_pose(prev_cube_pose, self.robot_base_pose)
         prev_eef_pose = self.fk(prev_joint_pos)
-        prev_eef_pose_pos, prev_eef_pose_orn = prev_eef_pose#get_relative_pose(prev_eef_pose, self.robot_base_pose)
+        prev_eef_pose_pos, prev_eef_pose_orn = get_relative_pose(prev_eef_pose, self.robot_base_pose)
         print("Initial joint angles: {}".format(prev_joint_pos))
         print("Initial eef pose in world frame: {}".format(prev_eef_pose))
         print("Initial eef pose in robot frame: {}".format((prev_eef_pose_pos, prev_eef_pose_orn)))
@@ -197,8 +197,8 @@ class Postprocess(object):
             cube_pose_elem = (cube_log[i, 3:6], cube_log[i, 6:10])
 
             # convert from world frame to robot frame
-            cube_pose_pos_elem, cube_pose_orn_elem = cube_pose_elem#get_relative_pose(cube_pose_elem, self.robot_base_pose)
-            eef_pose_pos_elem, eef_pose_orn_elem = self.fk(joint_pos_elem)#get_relative_pose(self.fk(joint_pos_elem), self.robot_base_pose)
+            cube_pose_pos_elem, cube_pose_orn_elem = get_relative_pose(cube_pose_elem, self.robot_base_pose)
+            eef_pose_pos_elem, eef_pose_orn_elem = get_relative_pose(self.fk(joint_pos_elem), self.robot_base_pose)
 
             # filter on eef positions being similar (user didn't move) and cube falling
             if (i != 1) and (np.all(np.absolute(np.array(eef_pose_pos_elem) - np.array(prev_eef_pose_pos)) < 1e-5) \
@@ -228,7 +228,6 @@ class Postprocess(object):
             #### Change actions
             # action = np.array(joint_vel_elem)
             action = np.array(eef_pose_pos_elem) - np.array(prev_eef_pose_pos)
-            # print(eef_pose_pos_elem, prev_eef_pose_pos, 'asdfasfd')
 
             # NOTE: we add the previous eef orientation here, and previous cube orientation
             # state = np.concatenate([prev_eef_pose_pos, prev_cube_pose_pos, prev_cube_pose_orn])
@@ -281,7 +280,7 @@ if __name__ == "__main__":
     demons = glob("demo_traj/*.bin")
 
     ### Change this index to view a different demonstration, or put in a loop to view all. ###
-    fname = demons[10]
+    fname = demons[0]
 
     states, actions = pp.parse_demonstration(fname)
     pp.close()

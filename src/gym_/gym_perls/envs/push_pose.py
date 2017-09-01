@@ -45,7 +45,24 @@ class PushCubePose(PushCube):
     def _step_helper(self, action):
 
         # Use end effector delta pose with iterations
+
+        ### Note: the action received is delta end effector 
+        # position in robot base frame, so need to apply a
+        # transfer from current world frame eef pose to robot 
+        # base frame, in order to add with delta,
+        # then transfer the sum back to abs world frame.
+
+        eef_bframe_pos, eef_bframe_orn = math_util.get_relative_pose(
+            self._robot.eef_pose, self._robot.pose
+        )
+
+        eef_bframe_pos += math_util.vec(action)
+        eef_wframe_pose = math_util.get_absolute_pose(
+            (eef_bframe_pos, eef_bframe_orn), 
+            self._robot.pose
+        )
+
         self._robot.set_eef_pose(
-            self._robot.eef_pose[0] + math_util.vec(action),
+            eef_wframe_pose[0],
             None, iters=-1
         )

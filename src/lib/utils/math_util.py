@@ -534,17 +534,19 @@ def transform(body_pose, transform_pose):
         tuple(transform_pose[0]), tuple(transform_pose[1]))
 
 
-def get_absolute_pose(body_pose, frame_pose):
+def get_absolute_pose(body_pose_in_frame, frame_pose):
     """
     Given world pose of a reference frame, and
     frame pose of an object in that frame, calculate
     the pose of the object in the world frame.
-    :param body_pose: pose (pos, orn) of body in the given frame
+    This is the inverse of <get_relative_pose>
+    :param body_pose_in_frame: pose (pos, orn) of 
+    body in the given frame
     :param frame_pose: frame (pos, orn) in absolute world frame
     :return: absolute pose of object (pos, orn)
     """
-    return transform(frame_pose, body_pose)
-
+    return transform(frame_pose, body_pose_in_frame)
+                     
 
 def get_relative_pose(body_pose, frame_pose):
     """
@@ -555,6 +557,4 @@ def get_relative_pose(body_pose, frame_pose):
     """
     # Invert transformation first
     transform_pose = p.invertTransform(frame_pose[0], frame_pose[1])
-    # T^-1 x P
-    mat = pose2mat(transform(transform_pose, body_pose))
-    return mat[:3, 3], mat2quat(mat[:3, :3])
+    return transform(transform_pose, body_pose)
