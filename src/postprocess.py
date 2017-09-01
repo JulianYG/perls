@@ -171,6 +171,7 @@ class Postprocess(object):
 
         num_filtered = 0
         prev_joint_pos = robot_log[0, 3:10]
+        prev_joint_vel = robot_log[0, 10:17]
         prev_cube_pose = (cube_log[0, 3:6], cube_log[0, 6:10])
         prev_cube_pose_pos, prev_cube_pose_orn = get_relative_pose(prev_cube_pose, self.robot_base_pose)
         prev_eef_pose = self.fk(prev_joint_pos)
@@ -218,8 +219,8 @@ class Postprocess(object):
 
             ### State and Action definition here ###
 
-            # NOTE: we add the joint angles in state, joint vels in action
-            state = np.concatenate([joint_pos_elem, cube_pose_pos_elem, cube_pose_orn_elem])
+            # NOTE: we add the joint angles in state, joint vels in action (one timestep difference)
+            state = np.concatenate([prev_joint_pos, prev_joint_vel, prev_cube_pose_pos, prev_cube_pose_orn])
             action = np.array(joint_vel_elem)
 
             # NOTE: we add the previous eef orientation here, and previous cube orientation
@@ -233,6 +234,7 @@ class Postprocess(object):
 
             # remember last positions for filtering and relative stuff
             prev_joint_pos = joint_pos_elem
+            prev_joint_vel = joint_vel_elem
             prev_eef_pose_pos, prev_eef_pose_orn = eef_pose_pos_elem, eef_pose_orn_elem
             prev_cube_pose_pos, prev_cube_pose_orn = cube_pose_pos_elem, cube_pose_orn_elem
 
@@ -285,7 +287,7 @@ if __name__ == "__main__":
 
 
 
-    for fname in glob("success/*.bin"):
+    for fname in glob("success_fix_goal_fix_orn/*.bin"):
     #for fname in glob("2017-08-29-11-48-34.bin"):
     #for fname in glob("success/2017-08-27-22-08-35.bin"):
         states, actions = pp.parse_demonstration(fname)
@@ -295,7 +297,7 @@ if __name__ == "__main__":
     all_actions = np.concatenate(all_actions, axis=0)
     print(all_states.shape)
     print(all_actions.shape)
-    np.savez("demo_joint_vel.npz", states=all_states, actions=all_actions)
+    np.savez("demo_fixed_goal_vel.npz", states=all_states, actions=all_actions)
 
 
 
