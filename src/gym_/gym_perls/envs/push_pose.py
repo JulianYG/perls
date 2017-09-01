@@ -38,8 +38,8 @@ class PushCubePose(PushCube):
 
         # No large movements
         return PushCube.Space.Box(
-            low=-math_util.vec((0.01, 0.01, 0.01)),
-            high=math_util.vec((0.01, 0.01, 0.01))
+            low=-math_util.vec((0.05, 0.05, 0.05)),
+            high=math_util.vec((0.05, 0.05, 0.05))
         )
 
     def _step_helper(self, action):

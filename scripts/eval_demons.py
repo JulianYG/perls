@@ -20,11 +20,11 @@ class Postprocess(object):
 
         ### TODO: why should these be different... FUCK bullet
 
-        p.connect(p.DIRECT)
+        self.r = p.connect(p.DIRECT)
         p.setRealTimeSimulation(0)
 
         ### Change this to your urdf file. ###
-        self.robot_file = p.loadURDF("/Users/ajaymandlekar/Desktop/Dropbox/Stanford/ccr/bullet3/data/sawyer_robot/sawyer_description/urdf/sawyer_arm.urdf",
+        self.robot_file = p.loadURDF("/Users/JulianYGao/bullet3/data/sawyer_robot/sawyer_description/urdf/sawyer_arm.urdf",
                           robot_base_pose[0], robot_base_pose[1], useFixedBase=True)
         p.resetBasePositionAndOrientation(self.robot_file, robot_base_pose[0], robot_base_pose[1])
 
@@ -153,7 +153,7 @@ class Postprocess(object):
         for i in range(num_elems):
             ### Select whether to subsample or not. ###
             if i % 24 == 0:
-            #if i % 1 == 0:
+            # if i % 1 == 0:
                 filt_robot_log.append(robot_log[i])
                 filt_cube_log.append(cube_log[i])
 
@@ -176,9 +176,9 @@ class Postprocess(object):
         prev_joint_pos = robot_log[0, 3:10]
         prev_joint_vel = robot_log[0, 10:17]
         prev_cube_pose = (cube_log[0, 3:6], cube_log[0, 6:10])
-        prev_cube_pose_pos, prev_cube_pose_orn = get_relative_pose(prev_cube_pose, self.robot_base_pose)
+        prev_cube_pose_pos, prev_cube_pose_orn = prev_cube_pose#get_relative_pose(prev_cube_pose, self.robot_base_pose)
         prev_eef_pose = self.fk(prev_joint_pos)
-        prev_eef_pose_pos, prev_eef_pose_orn = get_relative_pose(prev_eef_pose, self.robot_base_pose)
+        prev_eef_pose_pos, prev_eef_pose_orn = prev_eef_pose#get_relative_pose(prev_eef_pose, self.robot_base_pose)
         print("Initial joint angles: {}".format(prev_joint_pos))
         print("Initial eef pose in world frame: {}".format(prev_eef_pose))
         print("Initial eef pose in robot frame: {}".format((prev_eef_pose_pos, prev_eef_pose_orn)))
@@ -197,8 +197,8 @@ class Postprocess(object):
             cube_pose_elem = (cube_log[i, 3:6], cube_log[i, 6:10])
 
             # convert from world frame to robot frame
-            cube_pose_pos_elem, cube_pose_orn_elem = get_relative_pose(cube_pose_elem, self.robot_base_pose)
-            eef_pose_pos_elem, eef_pose_orn_elem = get_relative_pose(self.fk(joint_pos_elem), self.robot_base_pose)
+            cube_pose_pos_elem, cube_pose_orn_elem = cube_pose_elem#get_relative_pose(cube_pose_elem, self.robot_base_pose)
+            eef_pose_pos_elem, eef_pose_orn_elem = self.fk(joint_pos_elem)#get_relative_pose(self.fk(joint_pos_elem), self.robot_base_pose)
 
             # filter on eef positions being similar (user didn't move) and cube falling
             if (i != 1) and (np.all(np.absolute(np.array(eef_pose_pos_elem) - np.array(prev_eef_pose_pos)) < 1e-5) \
@@ -224,7 +224,11 @@ class Postprocess(object):
 
             # NOTE: we add the joint angles in state, joint vels in action (one timestep difference)
             state = np.concatenate([prev_joint_pos, prev_joint_vel, prev_cube_pose_pos, prev_cube_pose_orn])
-            action = np.array(joint_vel_elem)
+            
+            #### Change actions
+            # action = np.array(joint_vel_elem)
+            action = np.array(eef_pose_pos_elem) - np.array(prev_eef_pose_pos)
+            # print(eef_pose_pos_elem, prev_eef_pose_pos, 'asdfasfd')
 
             # NOTE: we add the previous eef orientation here, and previous cube orientation
             # state = np.concatenate([prev_eef_pose_pos, prev_cube_pose_pos, prev_cube_pose_orn])
@@ -253,6 +257,9 @@ class Postprocess(object):
 
         return np.array(states), np.array(actions)
 
+    def close(self):
+        p.disconnect(self.r)
+
 if __name__ == "__main__":
 
     env = gym.make('push-vel-v0')
@@ -267,16 +274,17 @@ if __name__ == "__main__":
     plt.close("all") # dirty haxxx
 
     pp = Postprocess(robot_base_pose)
-
+    
     ### Change this to set files to read. ###
     #demons = glob("*.bin")
     #demons = glob("eef.bin")
     demons = glob("demo_traj/*.bin")
 
     ### Change this index to view a different demonstration, or put in a loop to view all. ###
-    fname = demons[0]
+    fname = demons[10]
 
     states, actions = pp.parse_demonstration(fname)
+    pp.close()
     env = gym.make('push-pose-gui-v0')
     env.reset()
 
