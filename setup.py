@@ -73,7 +73,7 @@ setup(
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=['numpy', 'pybullet', 'redis', 
-        'gym', 'matplotlib', 'glob', 'lxml', 'openvr', 'pynput'],
+        'gym_', 'matplotlib', 'glob', 'lxml', 'openvr', 'pynput'],
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,

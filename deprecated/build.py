@@ -8,7 +8,7 @@ paths = ['../src/bullet_', '../src', '../src/bullet_/simulation',
 	'../src/comm', '../src/bullet_/simulation/utils',
 	'c:/users/vive/appdata/local/programs/python/python36-32/lib/site-packages', ]
 
-packages = ["pybullet", "os", "glob", "redis", "gym", "numpy", "matplotlib", "csv"]
+packages = ["pybullet", "os", "glob", "redis", "gym_", "numpy", "matplotlib", "csv"]
 options = {
     'build_exe': {
         'packages':packages,

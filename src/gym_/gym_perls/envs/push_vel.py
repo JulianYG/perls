@@ -51,7 +51,6 @@ class PushCubeVel(PushCube):
         #                         self._robot.joint_velocities,
         #                         cube_pos, cube_orn,
         #                         goal_pos)
-        print(self._table.pos)
         return math_util.concat(self._robot.joint_positions,
                                 self._robot.joint_velocities,
                                 cube_pos, cube_orn)

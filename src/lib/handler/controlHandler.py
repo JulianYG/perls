@@ -25,7 +25,7 @@ _EVENT_LABEL = {
 class CmdEventHandler(ControlHandler):
     """
     For algorithmic learning usage, such as
-    passing commands into gym environment.
+    passing commands into gym_ environment.
     """
     def __init__(self, ps_id, queue, sensitivity=1, rate=100):
         super(CmdEventHandler, self).__init__(

@@ -359,7 +359,7 @@ def parse_disp(file_path):
     options = dict((k, str2bool(v)) for (k, v) in option_attrib.items())
 
     camera_node = root.find('./view/camera')
-    camera_attrib = camera_node.attrib if camera_node else {}
+    camera_attrib = camera_node.attrib if camera_node is not None else {}
 
     camera_info = dict(egocentric=str2bool(camera_attrib.get('ego', 'False')),
                        pitch=float(camera_attrib.get('pitch', -35.)),

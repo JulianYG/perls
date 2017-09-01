@@ -20,7 +20,7 @@ __version__ = '0.1'
 
 class PerlsEnv(gym.Env):
     """
-    Construct an gym environment
+    Construct an gym_ environment
     """
 
     Space = spaces
@@ -34,7 +34,7 @@ class PerlsEnv(gym.Env):
         """
         Initialize the environment
         :param conf_path: the absolute path string to
-        the configuration file, default is 'gym-disp.xml'
+        the configuration file, default is 'gym_-disp.xml'
         """
         conf = io_util.parse_config(conf_path)[0]
         self._align_iters = 1
@@ -151,7 +151,7 @@ class PerlsEnv(gym.Env):
         """
         The actual stepping function that needs to be implemented
         by children classes. This is necessary so that base class
-        can align the simulation time with real gym control time.
+        can align the simulation time with real gym_ control time.
         :param action: actions to be executed during step
         :return: None
         """
