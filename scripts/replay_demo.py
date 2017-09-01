@@ -18,7 +18,7 @@ class Postprocess(object):
     def __init__(self, robot_base_pose, verbose=False):
 
         self.verbose = verbose
-        
+
         # this one is for computing relative poses
         self.robot_base_pose = robot_base_pose
 
@@ -55,7 +55,7 @@ class Postprocess(object):
         for i, name in enumerate(self.col_names):
             self.col_names_dict[name] = i
 
-    def parse_log(self, fname, output_file, verbose=True, objects=None, cols=None):
+    def parse_log(self, fname, output_file, objects=None, cols=None):
         """
         This function parses a log saved by PyBullet, but it filters the
         saved objects on the provided keys and the collected data on cols.
@@ -72,7 +72,7 @@ class Postprocess(object):
             log = parse_log("data.bin", "out.txt", objects=["sawyer", "gripper"],
                             cols=['q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6'])
         """
-        log = np.array(plog(fname, verbose=verbose))
+        log = np.array(plog(fname, verbose=self.verbose))
 
         ### Important: Toss the first 2500 rows.
         log = log[2500:]
@@ -99,7 +99,7 @@ class Postprocess(object):
 
         def filter_row(row):
             if row[ind] in filter_object_ids:
-                return row[col_inds]
+                return row[list(col_inds)]
             else:
                 return None
 
@@ -120,13 +120,13 @@ class Postprocess(object):
         """
         Parse a bullet bin file into states and actions.
         """
-        robot_log = self.parse_log(fname, None, verbose=False, objects=["titan_0"],
+        robot_log = self.parse_log(fname, None, objects=["titan_0"],
                                    cols=['stepCount', 'timeStamp', 'qNum',
                                          'q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6',
                                          'v0', 'v1', 'v2', 'v3', 'v4', 'v5', 'v6',
                                          'u0', 'u1', 'u2', 'u3', 'u4', 'u5', 'u6'])
 
-        cube_log = self.parse_log(fname, None, verbose=False, objects=["cube_0"],
+        cube_log = self.parse_log(fname, None, objects=["cube_0"],
                                   cols=['stepCount', 'timeStamp', 'qNum', 'posX', 'posY', 'posZ', 'oriX', 'oriY', 'oriZ',
                                         'oriW'])
 
@@ -142,8 +142,8 @@ class Postprocess(object):
         filt_cube_log = []
         for i in range(num_elems):
             ### Select whether to subsample or not. ###
-            if i % 24 == 0:
-            # if i % 1 == 0:
+            # if i % 24 == 0:
+            if i % 1 == 0:
                 filt_robot_log.append(robot_log[i])
                 filt_cube_log.append(cube_log[i])
 
