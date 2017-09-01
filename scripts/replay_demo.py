@@ -17,6 +17,8 @@ import gym
 class Postprocess(object):
     def __init__(self, robot_base_pose, verbose=False):
 
+        self.verbose = verbose
+        
         # this one is for computing relative poses
         self.robot_base_pose = robot_base_pose
 
