@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from IPython import embed
 import gym
+import time
 
 
 class Postprocess(object):
@@ -226,8 +227,8 @@ class Postprocess(object):
             state = np.concatenate([prev_joint_pos, prev_joint_vel, prev_cube_pose_pos, prev_cube_pose_orn])
             
             #### Change actions
-            # action = np.array(joint_vel_elem)
-            action = np.array(eef_pose_pos_elem) - np.array(prev_eef_pose_pos)
+            action = np.array(joint_vel_elem)
+            # action = np.array(eef_pose_pos_elem) - np.array(prev_eef_pose_pos)
 
             # NOTE: we add the previous eef orientation here, and previous cube orientation
             # state = np.concatenate([prev_eef_pose_pos, prev_cube_pose_pos, prev_cube_pose_orn])
@@ -275,23 +276,22 @@ if __name__ == "__main__":
     pp = Postprocess(robot_base_pose)
     
     ### Change this to set files to read. ###
-    #demons = glob("*.bin")
-    #demons = glob("eef.bin")
-    demons = glob("demo_traj/*.bin")
+    demons = glob("demo_rand/*.bin")
+
+    parsed_demons = []
+    for i in range(len(demons)):
+        parsed_demons.append((pp.parse_demonstration(demons[i])))
+    pp.close()
 
     ### Change this index to view a different demonstration, or put in a loop to view all. ###
-    fname = demons[0]
+    env = gym.make('push-vel-gui-v0')
+    for i in range(len(demons)):
 
-    states, actions = pp.parse_demonstration(fname)
-    pp.close()
-    env = gym.make('push-pose-gui-v0')
-    env.reset()
-
-    for a in actions:
-        #a = np.array([3.307, -30.288,  -4.121,  -2.636,   0.478,   0.177,  -0.004])
-        # a = 1 * np.ones(7)
-        _, _, done, _ = env.step(a)
-        print(a)
-        print(done)
-        # time.sleep(0.1)
+        fname = demons[i]
+        states, actions = parsed_demons[i]
+        env.reset()
+        for a in actions:
+            _, _, done, _ = env.step(a)
+            print(a)
+            print(done)
 
