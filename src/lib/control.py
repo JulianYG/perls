@@ -553,11 +553,11 @@ class Controller(object):
                             # Joint 5, joint 6
                             end_orn_pos = math_util.vec(tool.joint_positions) \
                                 [tool.active_joints[-2:]]
-                            
+
                             if math_util.rms(tool.tool_pos - r_pos) < threshold:
                                 a_orn = math_util.vec((end_orn_pos[0], end_orn_pos[1], 0)) \
                                         + r_orn * elapsed_time
-                                tool.reach(r_pos, a_orn)
+                                tool.reach(r_pos, None)#a_orn)
                         else:
                             i_orn = r_orn * elapsed_time + self._states['tool'][tool.tid][1]
                             tool.track(r_pos, i_orn, tool.traction)
