@@ -28,6 +28,10 @@ _AXES2TUPLE = {
 _TUPLE2AXES = dict((v, k) for k, v in _AXES2TUPLE.items())
 
 
+def seed(seed=42):
+    np.random.seed(seed)
+
+
 """
 Scalar Calculation / Processing
 """

@@ -15,7 +15,6 @@ class Checker(object):
     """
     def __init__(self, env_name):
         self._name = env_name
-
         self._states = dict()
 
     @property
