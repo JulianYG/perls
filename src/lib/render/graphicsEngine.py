@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os
+import os, sys
 import os.path as osp
 from ..utils.io_util import pjoin
 import pybullet as p
@@ -77,16 +77,17 @@ class BulletRenderEngine(GraphicsEngine):
             focus=(0, 0, 0)
         )
         self._job = job
+        self._record_files = []
 
         self._record_video = video
         self._record_name = task
         self._replay_delay = 1e-4
 
         self._logging_id = list()
+        self._replay_count = 0
         self._server_id = -1
 
         # Initialize logging paths
-
         log_dir = log_dir or \
                   osp.abspath(pjoin(osp.dirname(__file__), '../../log'))
         self._log_path = dict(
@@ -133,7 +134,8 @@ class BulletRenderEngine(GraphicsEngine):
             job=self._job,
             record_name=self._base_file_name,
             log_info=self._log_path,
-            camera_info=self.camera
+            camera_info=self.camera,
+            file_count=len(self._record_files),
         )
         return info_dic
 
@@ -162,7 +164,7 @@ class BulletRenderEngine(GraphicsEngine):
             return self._render_param
 
     @property
-    def record_name(self):
+    def record_dir(self):
         """
         Get the base name string of record file, either
         to save to or load from
@@ -207,15 +209,17 @@ class BulletRenderEngine(GraphicsEngine):
         #             format(self._frame),
         #             FONT.warning)
 
-    @record_name.setter
-    def record_name(self, name):
+    @record_dir.setter
+    def record_dir(self, name):
         """
 
         :param name:
         :return:
         """
         # If name is empty string, use default name still
-        self._record_name = name or self._record_name
+        self._record_files = io_util.flist(
+                pjoin(self._log_path['trajectory'], 
+                      name) + '/*bin')
 
     ###
     #  Helper functions
@@ -379,37 +383,44 @@ class BulletRenderEngine(GraphicsEngine):
         elif self._job == 'replay':
 
             objects = pjoin(self._log_path['trajectory'],
-                            '{}.bin'.format(self._record_name))
-            device = pjoin(self._log_path['device'],
-                           '{}.bin'.format(self._record_name))
+                            self._record_files[self._replay_count])
+            # device = pjoin(self._log_path['device'],
+            #                '{}.bin'.format(self._record_name))
+
+            file_name = osp.basename(objects)
 
             # Can change verbosity later
             obj_log = parse_log(objects, verbose=False)
 
             # TODO: set camera angle for GUI/HMD
             loginfo('Start replaying file {}'.
-                    format(self._record_name), FONT.control)
+                    format(file_name), FONT.control)
+            try:
+                for record in obj_log:
+                    # time_stamp = float(record[1])
 
-            for record in obj_log:
-                # time_stamp = float(record[1])
+                    obj = record[2]
+                    pos = record[3: 6]
+                    orn = record[6: 10]
 
-                obj = record[2]
-                pos = record[3: 6]
-                orn = record[6: 10]
+                    # print(record)
+                    p.resetBasePositionAndOrientation(obj, pos, orn)
+                    n_joints = p.getNumJoints(obj)
+                    for i in range(n_joints):
+                        joint_info = p.getJointInfo(obj, i)
+                        qid = joint_info[3]
+                        if qid > -1:
+                            p.resetJointState(obj, i, record[qid - 7 + 17])
 
-                # print(record)
-                p.resetBasePositionAndOrientation(obj, pos, orn)
-                n_joints = p.getNumJoints(obj)
-                for i in range(n_joints):
-                    joint_info = p.getJointInfo(obj, i)
-                    qid = joint_info[3]
-                    if qid > -1:
-                        p.resetJointState(obj, i, record[qid - 7 + 17])
+                    time_util.pause(self._replay_delay)
+            except KeyboardInterrupt:
+                loginfo('User quit replay during file {}'.format(file_name),
+                        FONT.control)
+                sys.exit(0)
 
-                time_util.pause(self._replay_delay)
-
-            loginfo('Finished replay {}'.format(self._record_name),
+            loginfo('Finished replay {}'.format(file_name),
                     FONT.control)
+            self._replay_count += 1
             # TODO: figure out using HMD log to revive FPS
             return 1
         return 0

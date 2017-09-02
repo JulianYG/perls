@@ -6,18 +6,20 @@ import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 from perls.src.lib.utils.io_util import parse_log as plog
-from perls.src.lib.utils.math_util import get_relative_pose, get_absolute_pose
+from perls.src.lib.utils.math_util import get_relative_pose, get_absolute_pose, rand_vec
 from glob import glob
 import numpy as np
 import matplotlib.pyplot as plt
 from IPython import embed
 import gym
-
+# rand_vec(1)
 
 class Postprocess(object):
-    def __init__(self, robot_base_pose, verbose=False):
+    def __init__(self, robot_base_pose, env='vel', verbose=False, real_time=False):
 
         self.verbose = verbose
+        self.env = env
+        self.real_time = real_time
 
         # this one is for computing relative poses
         self.robot_base_pose = robot_base_pose
@@ -73,7 +75,17 @@ class Postprocess(object):
                             cols=['q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6'])
         """
         ### Important: Toss the first 2500 rows (init).
-        log = np.array(plog(fname, verbose=self.verbose))[2500:, :]
+
+        log = np.array(plog(fname, verbose=self.verbose))[2700:, :]
+
+        # cut_off_idx = 0
+        # for row in log:
+        #     pos = np.array(self.fk(row[17: 24])[0])
+        #     if row[2] == 4 and np.sum((pos - np.array([0.37, 0.15, -0.079]))**2) < 0.5:
+        #         break
+        #     cut_off_idx += 1
+        # print('cutoff: ', cut_off_idx)
+        # log = log[cut_off_idx:, :]
 
         col_inds = sorted(self.col_names_dict.values())
         if cols is not None:
@@ -138,10 +150,10 @@ class Postprocess(object):
         num_elems = min(robot_log.shape[0], cube_log.shape[0])
         filt_robot_log = []
         filt_cube_log = []
+        denominator = 1 if self.real_time == 1 else 24
+
         for i in range(num_elems):
-            ### Select whether to subsample or not. ###
-            if i % 24 == 0:
-            # if i % 1 == 0:
+            if i % denominator == 0:
                 filt_robot_log.append(robot_log[i])
                 filt_cube_log.append(cube_log[i])
 
@@ -216,8 +228,10 @@ class Postprocess(object):
             state = np.concatenate([prev_joint_pos, prev_joint_vel, prev_cube_pose_pos, prev_cube_pose_orn])
             
             #### Change actions
-            action = np.array(joint_vel_elem)
-            # action = np.array(eef_pose_pos_elem) - np.array(prev_eef_pose_pos)
+            if self.env == 'vel':
+                action = np.array(joint_vel_elem)
+            elif self.env == 'pose':
+                action = np.array(eef_pose_pos_elem) - np.array(prev_eef_pose_pos)
 
             # NOTE: we add the previous eef orientation here, and previous cube orientation
             # state = np.concatenate([prev_eef_pose_pos, prev_cube_pose_pos, prev_cube_pose_orn])
@@ -254,15 +268,18 @@ if __name__ == "__main__":
     env = gym.make('push-vel-v0')
     env.reset()
 
-    # robot_position = env._robot.pos
-    # robot_orn = env._robot.orn
-    # robot_pose = (robot_position, robot_orn)
     robot_base_pose = env._robot.pose
 
     env.close()
     plt.close("all") # dirty haxxx
 
-    pp = Postprocess(robot_base_pose)
+    if len(sys.argv) > 1:
+        push_type = sys.argv[1]
+        verbose = sys.argv[2]
+    else:
+        push_type = 'vel'
+        verbose = False
+    pp = Postprocess(robot_base_pose, push_type, verbose)
     
     ### Change this to set files to read. ###
     demons = glob("../src/log/trajectory/push/success/*.bin")
@@ -273,7 +290,11 @@ if __name__ == "__main__":
     pp.close()
 
     ### Change this index to view a different demonstration, or put in a loop to view all. ###
-    env = gym.make('push-vel-gui-v0')
+    if push_type == 'vel':
+        env = gym.make('push-vel-gui-v0')
+    elif push_type == 'pose':
+        env = gym.make('push-pose-gui-v0')
+    
     for i in range(len(demons)):
 
         fname = demons[i]
@@ -282,5 +303,6 @@ if __name__ == "__main__":
 
         for a in actions:
             _, _, done, _ = env.step(a)
-            print(a)
-            print(done)
+            if verbose == 1 or verbose == True:
+                print(a)
+                print(done)
