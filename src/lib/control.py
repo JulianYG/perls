@@ -211,15 +211,20 @@ class Controller(object):
             world = tester.ModelTester(world)
             display = tester.ViewTester(display)
 
+        num_of_runs = conf.num_of_runs
+
         # Give record name for physics physics_engine
         if conf.job == 'record':
-            ge.record_name = \
+            ge.record_dir = \
                 conf.config_name or \
                 '{}_{}'.format(world.info['name'],
                                display.info['name'])
         elif conf.job == 'replay':
-            ge.record_name = '{}/{}'.format(
+            ge.record_dir = '{}/{}'.format(
                 conf.config_name, conf.replay_name)
+
+            # Cannot play more than number of files under directory
+            num_of_runs = min(num_of_runs, ge.info['file_count'])
 
         # connect to bullet graphics/display render server,
         # Build display first to load world faster
@@ -231,7 +236,7 @@ class Controller(object):
             # Disable keyboard shortcuts for keyboard control
             display.disable_hotkeys()
 
-        return conf.num_of_runs, world, display, ctrl_handler
+        return num_of_runs, world, display, ctrl_handler
 
     def start_all(self):
         """
@@ -284,7 +289,7 @@ class Controller(object):
             elif status == 1:
                 self.stop(server_id, 0)
                 loginfo('Replay finished. Exiting...', FONT.control)
-                return
+                continue
             elif status == 2:
                 loginfo('Start recording.', FONT.control)
             else:

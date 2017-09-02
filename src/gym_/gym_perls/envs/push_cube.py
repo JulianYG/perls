@@ -50,7 +50,6 @@ class PushCube(PerlsEnv):
         goal_pos = self._world.get_task_state()['goal']
 
         return math_util.concat(eef_pos, cube_pos, cube_orn, goal_pos)
-        # return math_util.concat(eef_pos, cube_pos, cube_orn)
 
     def _step_helper(self, action):
         return NotImplemented

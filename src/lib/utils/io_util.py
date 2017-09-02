@@ -3,6 +3,7 @@ import pickle
 import collections
 import numpy as np
 import os, sys
+import glob
 from xml.etree import ElementTree
 
 __author__ = 'Julian Gao'
@@ -105,6 +106,10 @@ def logerr(msg, etype):
     # msg = pprint.pformat(msg)
     sys.stderr.write('{}{}\n{}'.format(
         etype[1] + FONT.bold, msg, FONT.end))
+
+
+def flist(spec):
+    return glob.glob(spec)
 
 
 def write_log(log, dest):
@@ -370,8 +375,8 @@ def parse_disp(file_path):
 
     replay_node = root.find('./view/replay')
 
-    replay_attrib = replay_node.attrib if replay_node else {}
-    replay_info = dict(delay=float(replay_attrib.get('delay', 1e-4)))
+    replay_attrib = replay_node.attrib if replay_node is not None else {}
+    replay_info = dict(delay=float(replay_attrib.get('delay', 0)))
     return camera_info, replay_info, options
 
 
