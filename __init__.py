@@ -1,8 +1,8 @@
 
-from src.gym import gym_perls
-from src.lib.entity import body
+from .src.gym_ import gym_perls
+from .src.lib.entity import body
 
-from src.lib.utils import (math_util,
+from .src.lib.utils import (math_util,
                            io_util,
                            plot_util,
                            time_util,

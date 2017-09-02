@@ -7,6 +7,7 @@ import math
 Note: for all quaternions, uses [x,y,z,w]
 """
 
+np.random.seed(42)
 pi = np.pi
 EPS = np.finfo(float).eps * 4.
 
@@ -25,6 +26,7 @@ _AXES2TUPLE = {
     'rzxz': (2, 0, 1, 1), 'rxyz': (2, 1, 0, 1), 'rzyz': (2, 1, 1, 1)}
 
 _TUPLE2AXES = dict((v, k) for k, v in _AXES2TUPLE.items())
+
 
 """
 Scalar Calculation / Processing
@@ -54,13 +56,13 @@ Vector Calculation / Processing
 """
 
 
-def concat(*vector):
+def concat(*vectors):
     """
     Concatenate given vectors
     :param vector: Input vectors to concatenate
     :return: the concatenated vector
     """
-    return np.concatenate(vector)
+    return np.concatenate(tuple(vectors))
 
 
 def rms(vector):
@@ -85,6 +87,24 @@ def sign(vector, threshold=None):
     return np.sign(vector)
 
 
+def _filter(vec):
+    """
+    Helper function to do filter
+    """
+    abs_vec = np.absolute(vec)
+    max_vals = np.amax(abs_vec)
+    vec[np.where(abs_vec != max_vals)] = 0.
+
+
+def filter(vec, axis=None):
+    """
+    Given vector, keep only the maximum abs value 
+    in each dimension and mask all other values to 0.
+    """
+    axis = axis or len(vec.shape) - 1
+    np.apply_along_axis(_filter, axis, vec)
+
+
 def approximate(val, n_digits):
     """
     Approximate numbers by given digits.
@@ -93,6 +113,22 @@ def approximate(val, n_digits):
     :return: approximated numbers
     """
     return np.around(val, decimals=n_digits)
+
+
+def rand_vec(dim, low=0, high=1, rtype='uniform'):
+    """
+    Get a random vector of given size
+    :param dim: dimensiton of the vector
+    :param low: lowest random value
+    :param high: highest random value
+    :param rtype: type of random distributions,
+    'gaussian', (low, high becomes mean, std)
+    'uniform'
+    """
+    if rtype == 'uniform':
+        return np.random.uniform(low=low, high=high, size=dim)
+    else:
+        return np.random.normal(low, high, size=dim)
 
 
 def cross(x, y, axis=None):
@@ -161,10 +197,8 @@ def pos_diff(pos1, pos2, axis=0, weights=None):
     """
     pos1 = np.array(pos1, dtype=np.float32)
     pos2 = np.array(pos2, dtype=np.float32)
-    if weights is None:
-        delta = np.sum((pos1 - pos2) ** 2, axis=axis)
-    else:
-        delta = np.sum(((pos1 - pos2) * weights) ** 2, axis=axis)
+    weights = weights or 1
+    delta = np.sum(((pos1 - pos2) * weights) ** 2, axis=axis)
     return np.sqrt(delta)
 
 
@@ -518,17 +552,19 @@ def transform(body_pose, transform_pose):
         tuple(transform_pose[0]), tuple(transform_pose[1]))
 
 
-def get_absolute_pose(body_pose, frame_pose):
+def get_absolute_pose(body_pose_in_frame, frame_pose):
     """
     Given world pose of a reference frame, and
     frame pose of an object in that frame, calculate
     the pose of the object in the world frame.
-    :param body_pose: pose (pos, orn) of body in the given frame
+    This is the inverse of <get_relative_pose>
+    :param body_pose_in_frame: pose (pos, orn) of 
+    body in the given frame
     :param frame_pose: frame (pos, orn) in absolute world frame
     :return: absolute pose of object (pos, orn)
     """
-    return transform(frame_pose, body_pose)
-
+    return transform(frame_pose, body_pose_in_frame)
+                     
 
 def get_relative_pose(body_pose, frame_pose):
     """
@@ -539,6 +575,4 @@ def get_relative_pose(body_pose, frame_pose):
     """
     # Invert transformation first
     transform_pose = p.invertTransform(frame_pose[0], frame_pose[1])
-    # T^-1 x P
-    mat = pose2mat(transform(transform_pose, body_pose))
-    return mat[:3, 3], mat2quat(mat[:3, :3])
+    return transform(transform_pose, body_pose)

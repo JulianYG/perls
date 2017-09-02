@@ -283,7 +283,7 @@ class PerlsServer(object):
         difference from <stop> is that this method erases
         the given simulation from the program.
         :param server_id: physics server id (a.k.a. simulation id,
-        configuration id)) to kill.
+        configuration id)) to exit.
         :return: None
         """
         # TODO

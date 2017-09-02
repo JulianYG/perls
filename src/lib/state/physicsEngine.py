@@ -70,6 +70,7 @@ class BulletPhysicsEngine(FakeStateEngine):
         # connect to. Default is 0
         self._physics_server_id = identifier
 
+        self._viz = False
         self._sensor_enabled = False
 
     @property
@@ -85,7 +86,9 @@ class BulletPhysicsEngine(FakeStateEngine):
             real_time=not self._async,
             id=self.engine_id
             if self._status == 'running' else {},
-            max_run_time=self._max_run_time)
+            max_run_time=self._max_run_time,
+            visual=self._viz
+        )
         if self._async:
             info_dic['step_size'] = self._step_size
         return info_dic
@@ -104,9 +107,9 @@ class BulletPhysicsEngine(FakeStateEngine):
         :return: 0 if success, -1 if failure
         """
         if not self._async:
-            if frame != 'gui':
+            if frame != 'gui' and frame != 'vr':
                 self.status = self._STATUS[-1]
-                err_msg = 'Non GUI mode only supports async simulation.'
+                err_msg = 'Non GUI/VR mode only supports async simulation.'
                 self._error_message.append(err_msg)
                 logerr(err_msg, FONT.control)
                 return -1
@@ -403,11 +406,12 @@ class BulletPhysicsEngine(FakeStateEngine):
         contact_dic = []
         for contact in contacts:
             contact_dic.append(
-                dict(uid=contact[2],
-                     lid=contact[4],
-                     posA=contact[5],   # Vec3
-                     posB=contact[6],   # Vec3
-                     normalB2A=contact[7],  # Vec3
+                dict(uid_other=contact[2],
+                     lid_self=contact[3],
+                     lid_other=contact[4],
+                     pos_self=contact[5],   # Vec3
+                     pos_other=contact[6],   # Vec3
+                     normalvec2self=contact[7],  # Vec3
                      distance=contact[8],   # Scalar
                      force=contact[9]) # Scalar
             )
@@ -433,16 +437,48 @@ class BulletPhysicsEngine(FakeStateEngine):
             )
         return neighbor_dic
 
+    def add_body_line_marker(self, posA, posB, color, width,
+                             time, uid, lid=None):
+
+        if uid is not None:
+            lid = lid or 0
+            mid = p.addUserDebugLine(
+                posA, posB, lineColorRGB=color,
+                lineWidth=width,
+                lifeTime=time,
+                parentObjectUniqueId=uid,
+                parentLinkIndex=lid,
+                physicsClientId=self._physics_server_id
+            )
+        else:
+            mid = p.addUserDebugLine(
+                posA, posB, lineColorRGB=color,
+                lineWidth=width,
+                lifeTime=time,
+                physicsClientId=self._physics_server_id
+            )
+
+        return mid
+
     def add_body_text_marker(self, text, pos, font_size, color,
-                             uid, lid, time):
-        mid = p.addUserDebugText(
-            text, pos, textColorRGB=tuple(color),
-            textSize=float(font_size),
-            lifeTime=time,
-            # Not using textOrientation for now
-            parentObjectUniqueId=uid,
-            parentLinkIndex=lid,
-            physicsClientId=self._physics_server_id)
+                             time, uid, lid=None):
+        if uid is not None:
+            lid = lid or 0
+            mid = p.addUserDebugText(
+                text, pos, textColorRGB=tuple(color),
+                textSize=float(font_size),
+                lifeTime=time,
+
+                # Not using textOrientation for now
+                parentObjectUniqueId=uid,
+                parentLinkIndex=lid,
+                physicsClientId=self._physics_server_id)
+        else:
+            mid = p.addUserDebugText(
+                text, pos, textColorRGB=tuple(color),
+                textSize=float(font_size),
+                lifeTime=time,
+                physicsClientId=self._physics_server_id)
         return mid
 
     def remove_body_text_marker(self, marker_id):
@@ -582,8 +618,17 @@ class BulletPhysicsEngine(FakeStateEngine):
 
     def start_engine(self, frame):
 
-        if self.status == 'pending' or \
-           self.status == 'off' and self._type_check(frame) == 0:
+        if frame == 'gui' or frame == 'vr':
+            self._viz = True
+
+        if self.status == 'killed' or self.status == 'error'\
+           or self._type_check(frame) != 0:
+            logerr('Cannot start physics physics_engine %d '
+                   'in error state. Errors:' % self.engine_id, FONT.disp)
+            for err_msg in self._error_message:
+                logerr(err_msg, FONT.model)
+            return -1
+        else:
             if self._async:
                 p.setRealTimeSimulation(0, physicsClientId=self._physics_server_id)
                 p.setTimeStep(
@@ -600,12 +645,6 @@ class BulletPhysicsEngine(FakeStateEngine):
             loginfo('Starting simulation server {}, status: {}'.
                     format(self.engine_id, self.status), FONT.warning)
             return 0
-        else:
-            logerr('Cannot start physics physics_engine %d '
-                   'in error state. Errors:' % self.engine_id, FONT.disp)
-            for err_msg in self._error_message:
-                logerr(err_msg, FONT.model)
-            return -1
 
     def hold(self, max_steps=30):
         for _ in range(max_steps):
@@ -636,6 +675,5 @@ class BulletPhysicsEngine(FakeStateEngine):
         # Shutdown simulation
         p.resetSimulation(self._physics_server_id)
         p.disconnect(self._physics_server_id)
-
         self.status = 'finished'
         loginfo('Physics physics_engine stopped.', FONT.warning)

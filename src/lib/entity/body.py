@@ -40,7 +40,7 @@ class Body(object):
         self._init_state = (pos, orn, fixed)
         self._engine = engine
         self._model_path = path
-        self._text_markers = dict()
+        self._markers = dict()
         self._fixed = fixed
 
         self._children = dict() # No children constraints initially
@@ -282,7 +282,7 @@ class Body(object):
         :return: dictionary of dictionaries of info:
         [{id: {text_string, font_size, color, life_time}}, {}, ...]
         """
-        return self._text_markers
+        return self._markers
 
     @name.setter
     def name(self, string):
@@ -474,24 +474,82 @@ class Body(object):
         Add marker text to this body.
         ### Note: 
         Use None for lid for base link!
-        :param marker_info: a tuple of 
-        text string to display, float scalar of text size.
+        :param marker_info: a tuple of
+        mark type,
+        mark to display, float scalar of mark size.
         By default is 2.5, 
         RGB color, vec3 float in [0,1]. 
         By default is red,
         float time to display, 0 for permanent.
         By default is 10 seconds,
         link id to display on this body
+        Kwargs, a dictionary of information used
+        for shape marking.
         :return: None
         """
         # Need a few tricks to hack link index for base
-        text, font_size, color, lid, time = marker_info
-        mid = self._engine.add_body_text_marker(
-            text, self.kinematics['pos'][lid or 0],
-            font_size, color, self.uid, lid or -1, time
-        )
-        self._text_markers[mid] = dict(
-            text=text, size=font_size, color=color, time=time)
+        mtype, width, color, lid, time, kwargs = marker_info
+
+        if mtype == 'text':
+            mid = self._engine.add_body_text_marker(
+                kwargs['text'], self.kinematics['pos'][lid or 0],
+                width, color, time, self.uid,
+            )
+            self._markers[mid] = dict(
+                text=kwargs['text'], size=width,
+                color=color, time=time)
+
+        # Slightly complex
+        elif mtype == 'box2d':
+            center, length = kwargs['center'], kwargs['size'] / 2.
+            z = center[2]
+            bottom_left = (center[0] - length,
+                           center[1] - length,
+                           z)
+            top_left = (center[0] - length,
+                        center[1] + length,
+                        z)
+            top_right = (center[0] + length,
+                         center[1] + length,
+                         z)
+            bottom_right = (center[0] + length,
+                            center[1] - length,
+                            z)
+            a = self._engine.add_body_line_marker(
+                bottom_left, top_left, color, width,
+                time, None, lid
+            )
+            self._markers[a] = dict(
+                posA=bottom_left, posB=top_left,
+                size=width, color=color, time=time
+            )
+
+            b = self._engine.add_body_line_marker(
+                top_left, top_right, color, width,
+                time, None, lid
+            )
+            self._markers[b] = dict(
+                posA=top_left, posB=top_right,
+                size=width, color=color, time=time
+            )
+
+            c = self._engine.add_body_line_marker(
+                top_right, bottom_right, color, width,
+                time, None, lid
+            )
+            self._markers[c] = dict(
+                posA=top_right, posB=bottom_right,
+                size=width, color=color, time=time
+            )
+
+            d = self._engine.add_body_line_marker(
+                bottom_right, bottom_left, color, width,
+                time, None, lid
+            )
+            self._markers[d] = dict(
+                posA=bottom_right, posB=bottom_left,
+                size=width, color=color, time=time
+            )
 
     @mark.deleter
     def mark(self):
@@ -499,9 +557,9 @@ class Body(object):
         Delete all markers on this body
         :return: None
         """
-        for mid in self._text_markers.keys():
+        for mid in self._markers.keys():
             self._engine.remove_body_text_marker(mid)
-        self._text_markers = dict()
+        self._markers = dict()
 
     def get_pose(self, uid=None, lid=None):
         """
@@ -886,8 +944,6 @@ class Tool(Body):
         and the second element is the keyword arguments dictionary.
         :return: None
         """
-        assert(len(value) == len(self._joints),
-               'Input number of position values must match the number of joints')
         if isinstance(value, tuple) and len(value) == 2:
             vals, kwargs = value
         else:
@@ -895,7 +951,8 @@ class Tool(Body):
 
         jids = [j for j, val in enumerate(vals) if val is not None]
         value = [v for v in vals if v is not None]
-
+        assert len(jids) == len(value), \
+            'Input number of position values must match the number of joints'
         if 'forces' not in kwargs:
             kwargs['forces'] = tuple(self.joint_specs['max_force'][j] for j in jids)
 
@@ -914,8 +971,6 @@ class Tool(Body):
         and the second element is the keyword arguments dictionary.
         :return: None
         """
-        assert (len(value) == len(self._joints),
-                'Input number of position values must match the number of joints')
         if isinstance(value, tuple) and len(value) == 2:
             vals, kwargs = value
         else:
@@ -923,7 +978,8 @@ class Tool(Body):
 
         jids = [j for j, val in enumerate(vals) if val is not None]
         value = [v for v in vals if v is not None]
-
+        assert len(value) == len(jids), \
+            'Input number of position values must match the number of joints'
         if 'forces' not in kwargs:
             kwargs['forces'] = tuple(self.joint_specs['max_force'][j] for j in jids)
 
@@ -942,12 +998,12 @@ class Tool(Body):
         and the second element is the keyword arguments dictionary.
         :return: None
         """
-        assert (len(value) == len(self._joints),
-                'Input number of torque values must match the number of joints')
         torques = value[0] if isinstance(value, tuple) else value
         kwargs = value[1] if isinstance(value, tuple) else {}
         jids = [j for j, val in enumerate(torques) if val is not None]
         value = [v for v in value if v is not None]
+        assert len(value) == len(jids), \
+            'Input number of torque values must match the number of joints'
         self._engine.set_body_joint_state(self._uid, jids, value, 'torque', kwargs)
 
     def torque_mode(self):

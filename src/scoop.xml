@@ -4,11 +4,14 @@
 		<robot name="titan" type="sawyer" null_space="True">
 			<gripper name="bax" type="rethink">
 				<asset path="rethink_ee_description/urdf/electric_gripper/right_standard_narrow_round.urdf"/>
+				<attach name="spoon">
+					<asset path="jenga/jenga.urdf"/>
+				</attach>
 			</gripper>
-			<pos>-0.15 -0.2 0.9</pos>
+			<pos>-0.2 -0.7 0.9</pos>
 		</robot>
 	</tool>
-	<scene name="push_sawyer">
+	<scene name="push">
 		<body name="plane" fixed="True">
 			<asset path="plane_with_restitution.urdf"/>
 		</body>

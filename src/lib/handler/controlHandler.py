@@ -25,17 +25,17 @@ _EVENT_LABEL = {
 class CmdEventHandler(ControlHandler):
     """
     For algorithmic learning usage, such as
-    passing commands into gym environment.
+    passing commands into gym_ environment.
     """
-    def __init__(self, ps_id, queue, sensitivity=1, rate=0, qsize=200):
+    def __init__(self, ps_id, queue, sensitivity=1, rate=100):
         super(CmdEventHandler, self).__init__(
-            ps_id, queue, sensitivity, rate, qsize)
+            ps_id, queue, sensitivity, rate)
 
     @property
     def name(self):
         return 'CmdControl'
 
-    def interrupt(self):
+    def interrupt(self, queue):
         # TODO
         pass
 
@@ -47,8 +47,8 @@ class KeyboardEventHandler(ControlHandler):
     """
     Handler for keyboard events/signal
     """
-    def __init__(self, ps_id, queue, sensitivity=1, rate=100, qsize=200):
-        super(KeyboardEventHandler, self).__init__(ps_id, queue, sensitivity, rate, qsize)
+    def __init__(self, ps_id, queue, sensitivity=1, rate=100):
+        super(KeyboardEventHandler, self).__init__(ps_id, queue, sensitivity, rate)
 
     @property
     def name(self):
@@ -57,15 +57,6 @@ class KeyboardEventHandler(ControlHandler):
     def interrupt(self, queue):
 
         signal = dict()
-
-    # @property
-    # def signal(self):
-    #     """
-    #     Get the signal read from interruption.
-    #     Note keyboard event only gives high level
-    #     instructions reach and grasp.
-    #     :return: List of signals
-    #     """
         signal['cmd'] = list()
         ins = list()
         signal['camera'] = list()
@@ -128,13 +119,15 @@ class KeyboardEventHandler(ControlHandler):
         queue.put_nowait(signal)
 
 
-# TODO at some point
 class ViveEventHandler(ControlHandler):
     """
     Handles VR controller events/signal
     """
-    def __init__(self, ps_id, queue, sensitivity=1, rate=100, qsize=200):
-        super(ViveEventHandler, self).__init__(ps_id, queue, sensitivity, rate, qsize)
+    def __init__(self, ps_id, queue, sensitivity=1, rate=100):
+        """
+        Initialize vive event handler with given rate
+        """
+        super(ViveEventHandler, self).__init__(ps_id, queue, sensitivity, rate)
 
         # Initialize positions
         self._controllers = dict()
@@ -155,7 +148,6 @@ class ViveEventHandler(ControlHandler):
         signal['key'] = 'm'
         signal['update'] = 0
         ins = list()
-        # import pybullet as p
 
         if self._devices['controller']:
             events = self._listener.get_controller_state(self._devices['controller'][0])
@@ -165,11 +157,9 @@ class ViveEventHandler(ControlHandler):
             else:
 
                 slide = events['trigger']
-
                 reset_flag = event_listener.KEY_STATUS[events['menu']]
                 engage_flag = event_listener.KEY_STATUS[events['pad']]
                 pos, orn = pose
-                # p.loadURDF('cube_small.urdf', pos, orn, useFixedBase=True)
                 # self._listener.vibrate(3)
 
                 # Always use the gripper slider for push task
@@ -184,10 +174,10 @@ class ViveEventHandler(ControlHandler):
                     self._orn_state = math_util.quat2euler(orn)
 
                 if engage_flag == 'pressing':
-
-                    r_orn = math_util.sign(
-                        math_util.quat2euler(orn)
-                        - self._orn_state, 1e-2) * 0.001
+                    orn_delta = (math_util.quat2euler(orn) - self._orn_state)[[0, 2, 1]]
+                    math_util.filter(orn_delta)
+                    orn_delta[0] = - orn_delta[0]
+                    r_orn = orn_delta * 0.001
                     ins.append(('reach', (math_util.vec(pos), r_orn * self._sens)))
 
         signal['instruction'] = ins
@@ -206,8 +196,6 @@ class ViveEventHandler(ControlHandler):
         # TODO register devices dynamically
         pass
 
-
-
     def stop(self):
         self._listener.close()
         super(ViveEventHandler, self).stop()
@@ -219,8 +207,8 @@ class AppEventHandler(ControlHandler):
     """
 
     def __init__(self, ps_id, queue, sensitivity=1, 
-                 rate=100, qsize=200, channel_name='ios_channel'):
-        super(AppEventHandler, self).__init__(ps_id, queue, sensitivity, rate, qsize)
+                 rate=100, channel_name='ios_channel'):
+        super(AppEventHandler, self).__init__(ps_id, queue, sensitivity, rate)
         self._comm = network.RedisComm('localhost', port=6379, db=0)
         self._channel_name = channel_name
         self._comm.connect_to_channel(channel_name)
@@ -240,7 +228,6 @@ class AppEventHandler(ControlHandler):
 
         events = event_listener.listen_to_redis(
             self._comm.channels[self._channel_name])
-        # time.sleep(1. / self._rate)
 
         for event_dic in events:
             # TODO: key and id

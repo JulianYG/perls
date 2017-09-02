@@ -214,10 +214,10 @@ class Arm(Tool):
         :param iters: number of iterations to reach for 
         the end effector pose 
         """
-        self._move_to(pos, None,
+        self._move_to(pos, orn,
                       precise=False,
                       fast=True,
-                      iterative=True,
+                      iterative=iters > 0,
                       max_iter=iters,
                       threshold=1e-2,
                       ctype='position')

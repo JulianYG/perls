@@ -1,4 +1,5 @@
 import multiprocessing
+import sys
 
 from .state import physicsEngine#, robotEngine
 from .adapter import Adapter
@@ -88,6 +89,7 @@ class Controller(object):
                  # operations/modifications on the world
                  camera=dict(flen=1e-3),  # The camera parameters
                  )
+        self._num_of_runs = 1
 
         # Recording data in specific format needed
         self._init_time_stamp = None
@@ -142,7 +144,7 @@ class Controller(object):
 
             # load configs
             queue = multiprocessing.Queue()
-            world, disp, ctrl_hdlr = self.load_config(conf, queue)
+            nruns, world, disp, ctrl_hdlr = self.load_config(conf, queue)
             if num_configs > 1 and (not conf.async):
                 logerr('Currently only support multiple instances '
                        'of non-GUI frame and asynchronous simulation. '
@@ -156,7 +158,7 @@ class Controller(object):
                         'Build type: {}'.format(i, conf.build),
                         FONT.control)
                 world.notify_engine('pending')
-            self._physics_servers[conf.id] = (world, disp, ctrl_hdlr, queue)
+            self._physics_servers[conf.id] = (nruns, world, disp, ctrl_hdlr, queue)
 
     @staticmethod
     def load_config(conf, queue):
@@ -229,7 +231,7 @@ class Controller(object):
             # Disable keyboard shortcuts for keyboard control
             display.disable_hotkeys()
 
-        return world, display, ctrl_handler
+        return conf.num_of_runs, world, display, ctrl_handler
 
     def start_all(self):
         """
@@ -258,110 +260,140 @@ class Controller(object):
         :return: None
         """
         # Get all handlers
-        world, display, ctrl_handler, queue = self._physics_servers[server_id]
-
-        # Preparing variables
-        time_up, done, success = False, False, False
-        self._init_time_stamp = time_util.get_abs_time()
-
-        track_targets = world.get_states(('env', 'target'))[0]
-
-        # Pass in targets uids
-        status = display.run([t[0] for t in track_targets])
-
-        if status == -1:
-            logerr('Error loading simulation', FONT.control)
-            self.stop(server_id, -1)
-            return
-        elif status == 1:
-            self.stop(server_id, 0)
-            loginfo('Replay finished. Exiting...', FONT.control)
-            return
-        elif status == 2:
-            loginfo('Start recording.', FONT.control)
-        else:
-            loginfo('Display configs loaded. Starting simulation...',
-                    FONT.control)
-
-        # Kickstart the model, perform frame type check
-        world.boot(display.info['frame'])
-
-        # Update initial states:
-        self._control_update(world)
-
-        # Next display states
-        self._view_update(display)
-        self._update_time_stamp = time_util.get_abs_time()
+        nruns, world, display, ctrl_handler, queue = self._physics_servers[server_id]
 
         # Start control in another process
         ctrl_handler.run()
 
-        # Finally start control loop (Core)
-        try:
-            while not time_up and not done:
-                elt = time_util.get_elapsed_time(self._init_time_stamp)
+        # Run for given number of runs (used for # trajectories collection)
+        for r in range(nruns):
 
-                time_since_last_update = time_util.get_elapsed_time(self._update_time_stamp)
-                self._update_time_stamp = time_util.get_abs_time()
+            # Preparing variables
+            time_up, done, success = False, False, False
+            self._init_time_stamp = time_util.get_abs_time()
 
-                # Perform control interruption first
-                if not queue.empty():
-                    signal = queue.get_nowait()
+            track_targets = world.get_env_state(('env', 'target'))[0]
 
-                    self._control_interrupt(
-                        world, display, signal,
-                        time_since_last_update)
+            # Pass in targets uids
+            status = display.run([t[0] for t in track_targets])
 
-                # Update model
-                time_up = world.update(elt)
-
-                # Lastly check task completion, communicate
-                # with the model
-                # TODO
-                done, success = world.check_states()
-
-            if success:
-                loginfo('Task success! Exiting simulation...',
-                        FONT.disp)
+            if status == -1:
+                logerr('Error loading simulation', FONT.control)
+                self.stop(server_id, -1)
+                return
+            elif status == 1:
                 self.stop(server_id, 0)
+                loginfo('Replay finished. Exiting...', FONT.control)
+                return
+            elif status == 2:
+                loginfo('Start recording.', FONT.control)
             else:
-                loginfo('Task failed! Exiting simulation...',
-                        FONT.disp)
-                self.stop(server_id, 1)
-            
-        except KeyboardInterrupt:
-            loginfo('User exits the program by ctrl+c.',
-                    FONT.warning)
-            self.stop(server_id, -1)
+                loginfo('Display configs loaded. Starting simulation...',
+                        FONT.control)
 
-    def stop(self, server_id, exit_status):
+            # TODO: May be able to move outside loop if display is booted
+            # Kickstart the model, perform frame type check
+            world.boot(display.info['frame'])
+
+            # Reset the world
+            world.reset()
+
+            ctrl_handler.resume()
+
+            # Update initial states:
+            self._control_update(world)
+
+            # Next display states
+            self._view_update(display)
+            self._update_time_stamp = time_util.get_abs_time()
+
+            # Finally start control loop (Core)
+            try:
+                while not time_up and not done:
+                    elt = time_util.get_elapsed_time(self._init_time_stamp)
+
+                    time_since_last_update = time_util.get_elapsed_time(self._update_time_stamp)
+                    self._update_time_stamp = time_util.get_abs_time()
+
+                    # Perform control interruption first
+                    if not queue.empty():
+                        signal = queue.get_nowait()
+
+                        self._control_interrupt(
+                            world, display, signal,
+                            time_since_last_update)
+
+                    # Update model
+                    time_up = world.update(elt)
+
+                    # Check agent performance & task completion
+                    done, success = world.check_states()
+
+                    # TODO: GUI frame allow user to interact with the world
+                    # dynamically, and vividly
+
+                ctrl_handler.pause()
+                if success:
+                    self.stop(server_id, 0)
+                    loginfo('Task success! Exiting run {}...'.format(r),
+                            FONT.disp)
+                else:
+                    self.stop(server_id, 1)
+                    loginfo('Task failed! Exiting run {}...'.format(r),
+                            FONT.disp)
+
+                # Clear the control queue
+                while not queue.empty():
+                    queue.get_nowait()
+
+            except KeyboardInterrupt:
+                self.stop(server_id, -1)
+                loginfo('User cancelled run {} by ctrl+c.'.format(r),
+                        FONT.warning)
+                quit_run = io_util.prompt(
+                    'Do you wish to skip other runs and quit the program?'
+                )
+                if quit_run:
+                    # Exit the program
+                    self.exit(ctrl_handler, server_id)
+                else:
+                    pass
+
+    def stop(self, server_id, stop_status):
         """
         Hang the simulation.
         :param server_id: physics server id (a.k.a.
         simulation id, configuration id) to stop.
-        :param exit_status: an integer indicating the status 
+        :param stop_status: an integer indicating the status 
         of task completion, 0 for success, 1 for fail, and 
-        -1 for error exit.
+        -1 for error stop.
         :return: None
         """
-        world, display, ctrl_handler, _ = self._physics_servers[server_id]
-        ctrl_handler.stop()
-        world.clean_up()
-        display.close(exit_status)
-        loginfo('Safe exit.', FONT.control)
+        _, world, display, ctrl_handler, _ = self._physics_servers[server_id]
+        display.close(stop_status)
 
-    def kill(self, server_id=0):
+    def exit(self, ctrl_handler, server_id=0):
         """
-        Kill the simulation, whatsoever the current status is. The
+        Kill the simulation and exit, whatever the current status is. The
         difference from <stop> is that this method erases
         the given simulation from the program.
         :param server_id: physics server id (a.k.a. simulation id,
-        configuration id)) to kill.
+        configuration id)) to exit.
         :return: None
         """
+        ctrl_handler.stop()
+        self.stop(server_id, -1)
+
+        # Clean up world
+        self._physics_servers[server_id][1].clean_up()
+
         # TODO
-        self._process_pool[server_id].terminate()
-        self._process_pool[server_id] = None
+        if self._process_pool:
+            self._process_pool[server_id].terminate()
+            self._process_pool[server_id] = None
+
+        loginfo('Safe exit.', FONT.control)
+        sys.exit(0)
 
     def _control_interrupt(self, world, display, signal, elapsed_time):
         """
@@ -442,6 +474,12 @@ class Controller(object):
                     loginfo('World is reset.', FONT.model)
 
                 elif method == 'reach':
+                    ### Note ###
+                    # To achieve highly accurate, realistic control 
+                    # experience, VR simulation requires absolute 
+                    # position and relative orientation control, while 
+                    # keyboard/phone uses relative position and 
+                    # position control.
 
                     r_pos, r_orn = value
 
@@ -466,15 +504,13 @@ class Controller(object):
                             tool.reach(i_pos, None)
 
                         if r_orn is not None:
-                            ###
-                            # Can try directly setting joint states here
-                            end_orn_pos = math_util.vec(tool.joint_positions)\
-                                [tool.active_joints[-2:]]
-
-                            i_orn = math_util.vec((end_orn_pos[1], end_orn_pos[0], 0))\
-                                    + r_orn * elapsed_time
-
+                            
                             if tool.tid[0] == 'm':
+                                end_orn_pos = math_util.vec(tool.joint_positions)\
+                                    [tool.active_joints[-2:]]
+
+                                i_orn = math_util.vec((end_orn_pos[1], end_orn_pos[0], 0))\
+                                    + r_orn * elapsed_time
                                 eef_joints = tool.active_joints[-2:]
                                 joint_spec = tool.joint_specs
 
@@ -485,17 +521,19 @@ class Controller(object):
                                     math_util.vec(joint_spec['upper'])[eef_joints])
                                 i_orn = math_util.vec((i_orn[0], i_orn[1], 0))
 
-                                # Update the tool's orientation
+                                # Update the arm's orientation
                                 self._states['tool'][tool.tid][1] = \
                                     math_util.vec((i_orn[1], i_orn[0], 0))
                             else:
+                                i_orn += r_orn * elapsed_time
+
                                 # Update the tool's orientation
                                 self._states['tool'][tool.tid][1] = \
                                     math_util.vec(i_orn)
                             tool.reach(None, i_orn)
 
                             # Update the tool's position as orientation changes
-                            self._states['tool'][tool.tid][0] = world.get_states(
+                            self._states['tool'][tool.tid][0] = world.get_env_state(
                                 ('tool', 'tool_pose'))[0][tool.tid][0]
 
                         pos_diff = tool.tool_pos - i_pos \
@@ -504,31 +542,30 @@ class Controller(object):
                         if math_util.rms(pos_diff) > tool.tolerance:
                             loginfo('Tool position out of reach. Set back.',
                                     FONT.warning)
-                            state_pose = world.get_states(
+                            state_pose = world.get_env_state(
                                 ('tool', 'tool_pose'))[0][tool.tid]
                             self._states['tool'][tool.tid][0] = state_pose[0]
                     else:
-                        # Special case: use absolute position for VR
-                        threshold = 1.3
-                        end_orn_pos = math_util.vec(tool.joint_positions) \
-                            [tool.active_joints[-2:]]
+                        threshold = 0.5
 
-                        if math_util.rms(tool.tool_pos - r_pos) < threshold:
-                            a_orn = math_util.vec((end_orn_pos[1], end_orn_pos[0], 0)) \
-                                    + r_orn * elapsed_time
-                            tool.reach(r_pos, a_orn[[1, 0, 2]])
+                        if tool.tid[0] == 'm':
+
+                            # Joint 5, joint 6
+                            end_orn_pos = math_util.vec(tool.joint_positions) \
+                                [tool.active_joints[-2:]]
+                            
+                            if math_util.rms(tool.tool_pos - r_pos) < threshold:
+                                a_orn = math_util.vec((end_orn_pos[0], end_orn_pos[1], 0)) \
+                                        + r_orn * elapsed_time
+                                tool.reach(r_pos, a_orn)
+                        else:
+                            i_orn = r_orn * elapsed_time + self._states['tool'][tool.tid][1]
+                            tool.track(r_pos, i_orn, tool.traction)
 
                 elif method == 'grasp':
                     tool.grasp(value)
                 elif method == 'pick_and_place':
                     tool.pick_and_place(*value)
-
-                    # TODO: GUI frame allow user to interact with the world
-                    # # dynamically, and vividly
-                    # if self._frame == 'gui':
-                    #     info = self._event_handler.signal
-                    #     if info:
-                    #         self._adapter.update_world(info)
 
     def _view_update(self, display):
         """
@@ -550,7 +587,7 @@ class Controller(object):
         :param world: The world model that provides tools
         :return: None
         """
-        init_states = world.get_states(('tool', 'tool_pose'))[0]
+        init_states = world.get_env_state(('tool', 'tool_pose'))[0]
         # First control states
         for tid, init_pose in init_states.items():
             # if tid[0] == 'g':

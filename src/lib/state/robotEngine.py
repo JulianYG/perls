@@ -376,6 +376,13 @@ class InteraEngine(RealStateEngine):
         """
         return NotImplemented
 
+    def add_body_line_marker(self, posA, posB, color, width,
+                             time, uid, lid):
+        """
+        Cannot mark line on given body in real world
+        """
+        return NotImplemented
+
     def remove_body_text_marker(self, marker_id):
         """
         Cannot remove the text by given id in real world

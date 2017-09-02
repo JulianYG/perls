@@ -341,6 +341,10 @@ class BulletRenderEngine(GraphicsEngine):
                 p.startStateLogging(
                     p.STATE_LOGGING_GENERIC_ROBOT,
                     abs_file_name,
+                    
+                    # Most commonly for 7 Dof robots
+                    maxLogDof=7,
+                    logFlags=p.STATE_LOG_JOINT_MOTOR_TORQUES,
                     physicsClientId=self._server_id
                 )
             )
@@ -413,8 +417,10 @@ class BulletRenderEngine(GraphicsEngine):
     def stop(self, exit_code):
 
         # Stop state logging if any
-        for lid in self._logging_id:
-            p.stopStateLogging(lid, self._server_id)
+        if self._logging_id:
+            for lid in self._logging_id:
+                p.stopStateLogging(lid, self._server_id)
+            loginfo('Stop recording.', FONT.control)
 
         if self._job == 'record':
 

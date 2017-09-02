@@ -61,7 +61,7 @@ class ModelDebugger(object):
         self._world.reset()
 
     def update(self, elt=0, step_size=None):
-        self._world.update(elt, step_size)
+        return self._world.update(elt, step_size)
 
     def load_body(self, file_path, pos, orn,
                   fixed=False, record=False):
@@ -78,8 +78,14 @@ class ModelDebugger(object):
     def check_states(self):
         return self._world.check_states()
 
-    def get_states(self, *args):
-        return self._world.get_states(*args)
+    def evaluate(self):
+        return self._world.evaluate()
+
+    def get_env_state(self, *args):
+        return self._world.get_env_state(*args)
+
+    def get_task_state(self, *args):
+        return self._world.get_task_state(*args)
 
     def boot(self, frame):
         return self._world.boot(frame)

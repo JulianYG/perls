@@ -13,28 +13,37 @@ class Timer(Thread):
         self._max_iter = max_iter
         self._done = Event()
         self.daemon = True
+        self._pause = False
 
     def cancel(self):
         """Stop the timer if it hasn't finished yet"""
         self._done.set()
+
+    def pause(self):
+        self._pause = True
+
+    def resume(self):
+        self._pause = False
 
     def run(self):
         if self._max_iter:
             for _ in range(self._max_iter):
                 if self._done.is_set():
                     break
-                old_time = time.time()
-                self._func(*self._args)
-                interval = time.time() - old_time
-                if self._interval > interval:
-                    time.sleep(self._interval - interval)
+                if not self._pause:
+                    old_time = time.time()
+                    self._func(*self._args)
+                    interval = time.time() - old_time
+                    if self._interval > interval:
+                        time.sleep(self._interval - interval)
         else:
-            while 1 and not self._done.is_set():
-                old_time = time.time()
-                self._func(*self._args)
-                interval = time.time() - old_time
-                if self._interval > interval:
-                    time.sleep(self._interval - interval)
+            while not self._done.is_set():
+                if not self._pause:
+                    old_time = time.time()
+                    self._func(*self._args)
+                    interval = time.time() - old_time
+                    if self._interval > interval:
+                        time.sleep(self._interval - interval)
 
 
 def pause(t):

@@ -11,6 +11,12 @@ __license__ = 'private'
 __version__ = '0.1'
 
 
+# Bind raw_input to input in Python 2
+try:
+    input = raw_input
+except NameError:
+    pass
+
 # Force automatic flush when printing
 class Unbuffered(object):
 
@@ -62,7 +68,7 @@ _env_tree = collections.namedtuple(
 
 _config_tree = collections.namedtuple(
     'ConfigTree',
-    ['id', 'build', 'model_desc', 'view_desc',
+    ['num_of_runs', 'id', 'build', 'model_desc', 'view_desc',
      'config_name', 'physics_engine', 'graphics_engine',
      'min_version', 'job', 'video',
      'async', 'step_size', 'max_run_time', 'log',
@@ -145,6 +151,16 @@ def parse_log(file, verbose=True):
                 record.append(values[i])
             log.append(record)
     return log
+
+
+def prompt(question):
+    reply = str(input(question + ' (y/n): ')).lower().strip()
+    if reply[0] == 'y':
+        return True
+    elif reply[0] == 'n':
+        return False
+    else:
+        return prompt('Please enter')
 
 
 def err(*message):
@@ -343,7 +359,7 @@ def parse_disp(file_path):
     options = dict((k, str2bool(v)) for (k, v) in option_attrib.items())
 
     camera_node = root.find('./view/camera')
-    camera_attrib = camera_node.attrib if camera_node else {}
+    camera_attrib = camera_node.attrib if camera_node is not None else {}
 
     camera_info = dict(egocentric=str2bool(camera_attrib.get('ego', 'False')),
                        pitch=float(camera_attrib.get('pitch', -35.)),
@@ -375,6 +391,7 @@ def parse_config(file_path):
                           conf.find('./disp').text)
         config_name = conf.attrib['name']
         conf_id = int(conf.attrib['id'])
+        num_of_runs = int(conf.attrib.get('clone', 1))
 
         # Getting five main attributes
         physics_attrib = conf.find('./build/physics').attrib
@@ -424,7 +441,7 @@ def parse_config(file_path):
         # Append one configuration
         trees.append(
             _config_tree(
-                conf_id, build, model_desc, view_desc,
+                num_of_runs, conf_id, build, model_desc, view_desc,
                 config_name, physics_engine, graphics_engine,
                 min_version, job, video,
                 async, step_size, max_run_time, log_path,

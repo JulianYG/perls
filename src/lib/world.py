@@ -68,7 +68,7 @@ class World(object):
         return dict(
             task='_'.join(list(self.name_str)),
             tools=[t.name for t in self._tools.values()],
-            tracking_bodies=[b[1] for b in self._target_bodies],
+            tracking_bodies=self._target_bodies,
             assets=self._bodies.keys(),
             engine=self._engine.info
         )
@@ -114,7 +114,7 @@ class World(object):
         Get the list of tracked bodies in the world, 
         that is, being recorded.
         :return: A list of target bodies, this is 
-        a subset of all bodies in the world (uid, name)
+        a subset of all bodies in the world (name, uid)
         """
         return self._target_bodies
 
@@ -132,8 +132,14 @@ class World(object):
         """
         for tool in self._tools.values():
             tool.reset()
+            del tool.mark
         for body in self._bodies.values():
             body.reset()
+            del body.mark
+        self._engine.hold()
+        
+        # Fine tune the initial environment setup
+        self._checker.initialize(self)
         self._engine.hold()
 
     def load_body(self, file_path, pos, orn,
@@ -228,7 +234,6 @@ class World(object):
             bodies = self._load_asset(asset)
 
             for i in range(len(bodies) - 1):
-
                 bodies[i]
 
         # TODO: Think if there's other stuff to conf
@@ -243,8 +248,8 @@ class World(object):
         :return: A list of object uids in parent->children order
         """
         def _load_attachment():
-
             pass
+
         def _load_helper(p_elem, body_lst):
 
             asset_body = Body(self._engine,
@@ -291,10 +296,11 @@ class World(object):
         else:
             tool = self._tools[t_id]
         # Mark the current using tool
-        tool.mark = ('controlling', 2.5, (1., 0, 0), None, .2)
+        tool.mark = ('text', 2.5, (1., 0, 0), None,
+                     .2, {'text': 'controlling'})
         return tool
 
-    def get_states(self, *args):
+    def get_env_state(self, *args):
         """
         Get world states by attribute name
         :param args: list of string tuples indicating what
@@ -322,6 +328,14 @@ class World(object):
 
         return state_list
 
+    def get_task_state(self):
+        """
+        Get task states. Typically to get the task goal, or 
+        other task relevant info.
+        :return: states dictionary of task checker.
+        """
+        return self._checker.state
+
     def boot(self, frame):
         """
         Start the physics render.
@@ -331,9 +345,6 @@ class World(object):
         """
         status = self._engine.start_engine(frame)
         self._engine.hold(200)
-
-        # Finetune the initial environment setup
-        self._checker.custom_setup(self)
         return status
 
     def notify_engine(self, stat):
@@ -352,7 +363,14 @@ class World(object):
         :return: tuple boolean <done, success> indicating whether 
         task is done, and whether it is successful.
         """
-        return self._checker.check(self._bodies)
+        return self._checker.check(self)
+
+    def evaluate(self):
+        """
+        Evaluate the agents performance and generates a score
+        :return: User defined score for agent
+        """
+        return self._checker.score(self)
 
     def update(self, elp=0, step_size=None):
         """
@@ -372,3 +390,5 @@ class World(object):
         # Flush error messages
         for err_msg in self._engine.error:
             logerr(err_msg, FONT.model)
+
+        self._engine.stop()
