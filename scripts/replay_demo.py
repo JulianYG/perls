@@ -72,10 +72,8 @@ class Postprocess(object):
             log = parse_log("data.bin", "out.txt", objects=["sawyer", "gripper"],
                             cols=['q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6'])
         """
-        log = np.array(plog(fname, verbose=self.verbose))
-
-        ### Important: Toss the first 2500 rows.
-        log = log[2500:]
+        ### Important: Toss the first 2500 rows (init).
+        log = np.array(plog(fname, verbose=self.verbose))[2500:, :]
 
         col_inds = sorted(self.col_names_dict.values())
         if cols is not None:
@@ -83,7 +81,7 @@ class Postprocess(object):
             assert (set(cols) <= set(self.col_names))
 
             # get column inds to filter out
-            col_inds = map(self.col_names_dict.get, cols)
+            col_inds = list(map(self.col_names_dict.get, cols))
 
         # get object ids to filter out
         if objects is None:
@@ -99,7 +97,7 @@ class Postprocess(object):
 
         def filter_row(row):
             if row[ind] in filter_object_ids:
-                return row[list(col_inds)]
+                return row[col_inds]
             else:
                 return None
 
@@ -142,8 +140,8 @@ class Postprocess(object):
         filt_cube_log = []
         for i in range(num_elems):
             ### Select whether to subsample or not. ###
-            # if i % 24 == 0:
-            if i % 1 == 0:
+            if i % 24 == 0:
+            # if i % 1 == 0:
                 filt_robot_log.append(robot_log[i])
                 filt_cube_log.append(cube_log[i])
 

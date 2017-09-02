@@ -79,7 +79,7 @@ class Checker(object):
         :param world: current environment status object
         :return: User defined format of reward
         """
-        if self._name == 'push_sawyer' or 'push_kuka':
+        if self._name == 'push_sawyer' or self._name == 'push_kuka':
             robot = world.body['titan_0']
             goal = self._states['goal']
             cube = world.body['cube_0']
@@ -93,7 +93,7 @@ class Checker(object):
 
         body_dict = world.body
 
-        if self._name == 'push_sawyer' or 'push_kuka':
+        if self._name == 'push_sawyer' or self._name == 'push_kuka':
 
             cube = body_dict['cube_0']
             table = body_dict['table_0']

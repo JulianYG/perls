@@ -329,7 +329,8 @@ class Controller(object):
                     # Check agent performance & task completion
                     done, success = world.check_states()
 
-                    # TODO: Communicate with the model
+                    # TODO: GUI frame allow user to interact with the world
+                    # dynamically, and vividly
 
                 ctrl_handler.pause()
                 if success:
@@ -473,6 +474,12 @@ class Controller(object):
                     loginfo('World is reset.', FONT.model)
 
                 elif method == 'reach':
+                    ### Note ###
+                    # To achieve highly accurate, realistic control 
+                    # experience, VR simulation requires absolute 
+                    # position and relative orientation control, while 
+                    # keyboard/phone uses relative position and 
+                    # position control.
 
                     r_pos, r_orn = value
 
@@ -497,15 +504,13 @@ class Controller(object):
                             tool.reach(i_pos, None)
 
                         if r_orn is not None:
-                            ###
-                            # Can try directly setting joint states here
-                            end_orn_pos = math_util.vec(tool.joint_positions)\
-                                [tool.active_joints[-2:]]
-
-                            i_orn = math_util.vec((end_orn_pos[1], end_orn_pos[0], 0))\
-                                    + r_orn * elapsed_time
-
+                            
                             if tool.tid[0] == 'm':
+                                end_orn_pos = math_util.vec(tool.joint_positions)\
+                                    [tool.active_joints[-2:]]
+
+                                i_orn = math_util.vec((end_orn_pos[1], end_orn_pos[0], 0))\
+                                    + r_orn * elapsed_time
                                 eef_joints = tool.active_joints[-2:]
                                 joint_spec = tool.joint_specs
 
@@ -516,10 +521,12 @@ class Controller(object):
                                     math_util.vec(joint_spec['upper'])[eef_joints])
                                 i_orn = math_util.vec((i_orn[0], i_orn[1], 0))
 
-                                # Update the tool's orientation
+                                # Update the arm's orientation
                                 self._states['tool'][tool.tid][1] = \
                                     math_util.vec((i_orn[1], i_orn[0], 0))
                             else:
+                                i_orn += r_orn * elapsed_time
+
                                 # Update the tool's orientation
                                 self._states['tool'][tool.tid][1] = \
                                     math_util.vec(i_orn)
@@ -541,25 +548,24 @@ class Controller(object):
                     else:
                         # Special case: use absolute position for VR
                         threshold = 1.3
-                        end_orn_pos = math_util.vec(tool.joint_positions) \
-                            [tool.active_joints[-2:]]
 
-                        if math_util.rms(tool.tool_pos - r_pos) < threshold:
-                            a_orn = math_util.vec((end_orn_pos[1], end_orn_pos[0], 0)) \
-                                    + r_orn * elapsed_time
-                            tool.reach(r_pos, None)#a_orn[[1, 0, 2]])
+                        if tool.tid[0] == 'm':
+                            end_orn_pos = math_util.vec(tool.joint_positions) \
+                                [tool.active_joints[-2:]]
+
+                            if math_util.rms(tool.tool_pos - r_pos) < threshold:
+                                a_orn = math_util.vec((end_orn_pos[1], end_orn_pos[0], 0)) \
+                                        + r_orn * elapsed_time
+                                tool.reach(r_pos, a_orn[[1, 0, 2]])
+
+                        else:
+                            i_orn = r_orn * elapsed_time + self._states['tool'][tool.tid][1]
+                            tool.track(r_pos, i_orn, tool.traction)
 
                 elif method == 'grasp':
                     tool.grasp(value)
                 elif method == 'pick_and_place':
                     tool.pick_and_place(*value)
-
-                    # TODO: GUI frame allow user to interact with the world
-                    # # dynamically, and vividly
-                    # if self._frame == 'gui':
-                    #     info = self._event_handler.signal
-                    #     if info:
-                    #         self._adapter.update_world(info)
 
     def _view_update(self, display):
         """

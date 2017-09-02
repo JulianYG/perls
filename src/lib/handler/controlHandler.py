@@ -124,6 +124,9 @@ class ViveEventHandler(ControlHandler):
     Handles VR controller events/signal
     """
     def __init__(self, ps_id, queue, sensitivity=1, rate=100):
+        """
+        Initialize vive event handler with given rate
+        """
         super(ViveEventHandler, self).__init__(ps_id, queue, sensitivity, rate)
 
         # Initialize positions
