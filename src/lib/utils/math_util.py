@@ -87,6 +87,24 @@ def sign(vector, threshold=None):
     return np.sign(vector)
 
 
+def _filter(vec):
+    """
+    Helper function to do filter
+    """
+    abs_vec = np.absolute(vec)
+    max_vals = np.amax(abs_vec)
+    vec[np.where(abs_vec != max_vals)] = 0.
+
+
+def filter(vec, axis=None):
+    """
+    Given vector, keep only the maximum abs value 
+    in each dimension and mask all other values to 0.
+    """
+    axis = axis or len(vec.shape) - 1
+    np.apply_along_axis(_filter, axis, vec)
+
+
 def approximate(val, n_digits):
     """
     Approximate numbers by given digits.
