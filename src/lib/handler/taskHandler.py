@@ -61,8 +61,11 @@ class Checker(object):
             # Initializes the gripper next to the cube
             initial_gripper_pos = \
                 (cube_pos[0] - 0.05, cube_pos[1], cube_pos[2] + 0.025)
-            robot.grasp(1)
+            
             robot.tool_pos = (initial_gripper_pos, 300)
+
+            # Use this as a mark
+            robot.grasp(1)
 
             loginfo('Initialize finished.', FONT.model)
             loginfo('Initial joint positions: {}'.
