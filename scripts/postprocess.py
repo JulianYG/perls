@@ -224,7 +224,7 @@ class Postprocess(object):
             # action = np.array(joint_vel_elem)
 
             # NOTE: we add the previous eef orientation here, and previous cube orientation
-            state = np.concatenate([prev_eef_pose_pos, prev_cube_pose_pos, prev_cube_pose_orn])
+            state = np.concatenate([prev_eef_pose_pos, prev_cube_pose_pos, prev_cube_pose_orn, [0.6, -0.2, 0.641]])
             action = np.array(eef_pose_pos_elem) - np.array(prev_eef_pose_pos)
 
 
