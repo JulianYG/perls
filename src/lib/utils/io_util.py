@@ -86,6 +86,21 @@ def pjoin(*fname):
     return os.path.join(*fname)
 
 
+def fwrite(content, dest):
+
+    with open(dest, 'wb') as f:
+        # Python 2 & 3 compatible
+        # Convert to dict first in case it is manager dict
+        pickle.dump(content, f, protocol=2)
+
+
+def fread(filename):
+
+    with open(filename, 'rb') as f:
+        data = pickle.load(f)
+    return data
+
+
 def fmove(prev, new):
 
     os.rename(prev, new)
@@ -94,6 +109,10 @@ def fmove(prev, new):
 def fdelete(file):
 
     os.remove(file)
+
+
+def flist(spec):
+    return glob.glob(spec)
 
 
 def loginfo(msg, itype):
@@ -111,18 +130,6 @@ def logerr(msg, etype):
     # msg = pprint.pformat(msg)
     sys.stderr.write('{}{}\n{}'.format(
         etype[1] + FONT.bold, msg, FONT.end))
-
-
-def flist(spec):
-    return glob.glob(spec)
-
-
-def write_log(log, dest):
-
-    with open(dest, 'wb') as f:
-        # Python 2 & 3 compatible
-        # Convert to dict first in case it is manager dict
-        pickle.dump(dict(log), f, protocol=2)
 
 
 def parse_log(file, verbose=True):
