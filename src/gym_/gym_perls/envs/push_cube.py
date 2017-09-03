@@ -36,6 +36,25 @@ class PushCube(PerlsEnv):
         """
         return NotImplemented
 
+    def _reset(self):
+        """
+        Override method.
+        """
+        # Set to top down view to align with real world
+        # Overwrite settings in config file
+        self._display.set_render_view(
+            dict(
+                dim=(512, 424),
+                flen=1.77,
+                # Have to use exact numbers for aligned
+                # Top down view in GUI and non-GUI modes...
+                yaw=90.1,
+                pitch=-89.9,
+                focus=self._world.body['table_0'].pos
+            )
+        )
+        return super(PushCube, self)._reset()
+
     @property
     def state(self):
         eef_pos, _ = math_util.get_relative_pose(

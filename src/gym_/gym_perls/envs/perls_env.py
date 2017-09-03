@@ -119,15 +119,6 @@ class PerlsEnv(gym.Env):
         state space.
         """
         self._world.reset()
-        self._display.set_render_view(
-            dict(
-                dim=(256, 256),
-                flen=1.5,
-                yaw=50,
-                pitch=-35,
-                focus=(0, 0, 0)
-            )
-        )
         return self.state
 
     def _step(self, action):

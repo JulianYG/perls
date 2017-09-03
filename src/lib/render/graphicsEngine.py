@@ -68,15 +68,13 @@ class BulletRenderEngine(GraphicsEngine):
         # Default settings for rendering
         self._render_param = dict(
             frame_width=224, frame_height=224,
-            view_mat=math_util.mat4(
-                p.computeViewMatrixFromYawPitchRoll(
+            view_mat=p.computeViewMatrixFromYawPitchRoll(
                     cameraTargetPosition=(0, 0, 0), 
                     distance=5, 
                     yaw=50, pitch=-35, roll=0, 
-                    upAxisIndex=2)).T,
-            projection_mat=math_util.mat4(
-                p.computeProjectionMatrixFOV(60, 1, 0.02, 100)).T,
-            up=(0, 0, 1),
+                    upAxisIndex=2),
+            projection_mat=p.computeProjectionMatrixFOV(60, 1, 0.02, 100),
+            up=2,
             forward=(-0.6275, 0.5265, -0.5736),
             yaw=50, pitch=-35, flen=5,
             focus=(0, 0, 0)
@@ -154,11 +152,11 @@ class BulletRenderEngine(GraphicsEngine):
             info = p.getDebugVisualizerCamera(self._server_id)
             return dict(
                 frame_width=info[0], frame_height=info[1],
-                view_mat=math_util.mat4(info[2]).T,
-                projection_mat=math_util.mat4(info[3]).T,
+                view_mat=info[2],
+                projection_mat=info[3],
                 up=np.where(info[4])[0][0],
                 forward=math_util.vec(info[5]),
-                yaw=info[8], pitch=info[9], focal_len=info[10],
+                yaw=info[8], pitch=info[9], flen=info[10],
                 focus=math_util.vec(info[11]),
             )
         else:
@@ -179,6 +177,10 @@ class BulletRenderEngine(GraphicsEngine):
     @camera.setter
     def camera(self, params):
         if self._frame == 'gui':
+            # Bullet has a bug at this step.
+            # The same settings results in different
+            # camera pose readings in CMD mode,
+            # and CMD mode is correct.
             p.resetDebugVisualizerCamera(
                 cameraDistance=params['flen'],
                 cameraYaw=params['yaw'],
@@ -205,13 +207,13 @@ class BulletRenderEngine(GraphicsEngine):
 
             # Update view matrix again
             self._render_param['view_mat'] = \
-                math_util.mat4(p.computeViewMatrixFromYawPitchRoll(
+                p.computeViewMatrixFromYawPitchRoll(
                     cameraTargetPosition=self._render_param['focus'], 
                     distance=self._render_param['flen'],
                     yaw=self._render_param['yaw'], 
                     pitch=self._render_param['pitch'], 
                     roll=0, 
-                    upAxisIndex=2)).T
+                    upAxisIndex=2)
 
     @record_dir.setter
     def record_dir(self, name):
@@ -227,12 +229,12 @@ class BulletRenderEngine(GraphicsEngine):
 
     ###
     #  Helper functions
-    def get_camera_pose(self, up=(0.,1.,0.), otype='quat'):
+    def get_camera_pose(self, otype='quat'):
 
-        view_matrix = self.camera['view_mat'].T
+        view_matrix = math_util.mat4(self.camera['view_mat'])
 
         # If up axis is y
-        if up == 1:
+        if self.camera['up'] == 1:
             view_matrix = view_matrix.dot(np.array(
                 [[-1, 0, 0, 0],
                  [0, 0, 1, 0],
@@ -248,16 +250,20 @@ class BulletRenderEngine(GraphicsEngine):
         # This is some weird bullet convention..
         # To match the degrees converted from transformation matrix into
         # pitch/yaw angles from bullet debug visualizer
+
         if math.sin(orn[2]) > 0:
             orn[0] = - (np.pi + orn[0])
         else:
             orn[0] = - orn[0]
             orn[1] = np.pi * 2 - orn[1]
 
+        # In [roll, pitch, yaw] form;
+        # by definition roll is fixed to zero
+        orn = (0, orn[0], orn[1])
         if otype == 'mat':
             orn = transformation_matrix[:3, :3]
         elif otype == 'quat':
-            orn = math_util.euler2quat(tuple(orn))
+            orn = math_util.euler2quat(orn)
         elif otype == 'deg':
             orn = math_util.deg(orn)
         elif otype == 'rad':
@@ -268,7 +274,7 @@ class BulletRenderEngine(GraphicsEngine):
                     FONT.ignore)
         return pos, orn
 
-    def set_camera_pose(self, pos, orn, up=(0., 1., 0.)):
+    def set_camera_pose(self, pos, orn, upAxisIdx=1):
         # TODO
         pass
 
@@ -312,31 +318,19 @@ class BulletRenderEngine(GraphicsEngine):
     def get_camera_image(self, itype):
 
         camera_param = self.camera
-
-        if self._frame == 'vr' or self._frame == 'gui':
-            width, height, rgb_img, depth_img, seg_img = \
-                p.getCameraImage(camera_param['frame_width'],
-                                 camera_param['frame_height'],
-                                 viewMatrix=camera_param['view_mat'],
-                                 projectionMatrix=camera_param['projection_mat'],
-                                 lightDirection=[0, 1, 0], 
-                                 lightColor=[1, 1, 1],
-                                 lightDistance=camera_param['flen'] + 1,
-                                 shadow=1,
-                                 # ... ambient diffuse, specular coeffs
-                                 renderer=p.ER_BULLET_HARDWARE_OPENGL)
-        else:
-            # Without OpenGL
-            width, height, rgb_img, depth_img, seg_img = \
-                p.getCameraImage(camera_param['frame_width'],
-                                 camera_param['frame_height'],
-                                 viewMatrix=camera_param['view_mat'],
-                                 projectionMatrix=camera_param['projection_mat'],
-                                 lightDirection=[0, 1, 0], 
-                                 lightColor=[1, 1, 1],
-                                 lightDistance=camera_param['flen'] + 1,
-                                 shadow=1,
-                                 renderer=p.ER_TINY_RENDERER)
+        width, height, rgb_img, depth_img, seg_img = \
+            p.getCameraImage(camera_param['frame_width'],
+                             camera_param['frame_height'],
+                             viewMatrix=camera_param['view_mat'],
+                             projectionMatrix=camera_param['projection_mat'],
+                             lightDirection=[0, 1, 0], 
+                             lightColor=[1, 1, 1],
+                             lightDistance=camera_param['flen'] + 1,
+                             shadow=1,
+                             # ... ambient diffuse, specular coeffs
+                             lightAmbientCoeff=.9,
+                             # Seems only able to use w/o openGL
+                             renderer=p.ER_TINY_RENDERER)
 
         if itype == 'human':
             rgb_img = np.reshape(rgb_img, (height, width, 4)).astype(np.float32) / 255.
