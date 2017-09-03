@@ -91,6 +91,11 @@ def fmove(prev, new):
     os.rename(prev, new)
 
 
+def fdelete(file):
+
+    os.remove(file)
+
+
 def loginfo(msg, itype):
     """
     Print message and flush to terminal

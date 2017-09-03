@@ -8,12 +8,6 @@ class PushCubeTorque(PushCube):
     """
     Pushing cube across the table
     """
-
-    metadata = {
-        'render.modes': ['human', 'depth', 'segment'],
-        'video.frames_per_second': 50
-    }
-
     def __init__(self, conf_path):
 
         super(PushCubeTorque, self).__init__(conf_path)
@@ -55,12 +49,7 @@ class PushCubeTorque(PushCube):
         super(PushCubeTorque, self)._reset()
         self._robot.torque_mode()
 
-    def __step_helper(self, action):
+    def _step_helper(self, action):
 
-        # Use velocity control
+        # Use torque control
         self._robot.joint_torques = action
-
-        # Step size x in bullet, align with 0.1 real world control
-        for _ in range(int(0.1 / 0.0041666)):
-            self._world.update()
-        return self.state, self.reward, self.done, {'state': self.state}

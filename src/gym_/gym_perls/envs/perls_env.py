@@ -20,13 +20,12 @@ __version__ = '0.1'
 
 class PerlsEnv(gym.Env):
     """
-    Construct an gym_ environment
+    Construct a gym environment for perls simulation
     """
-
     Space = spaces
-
     metadata = {
-        'render.modes': ['human', 'rgb', 'depth', 'segment'],
+        'render.modes': ['human', 'rgb', 'rgbd', 
+                         'depth', 'segment'],
         'video.frames_per_second': 50
     }
 
@@ -120,15 +119,6 @@ class PerlsEnv(gym.Env):
         state space.
         """
         self._world.reset()
-        self._display.set_render_view(
-            dict(
-                dim=(256, 256),
-                flen=1.5,
-                yaw=50,
-                pitch=-35,
-                focus=(0, 0, 0)
-            )
-        )
         return self.state
 
     def _step(self, action):

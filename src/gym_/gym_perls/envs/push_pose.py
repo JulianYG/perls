@@ -8,12 +8,6 @@ class PushCubePose(PushCube):
     """
     Pushing cube across the table
     """
-
-    metadata = {
-        'render.modes': ['human', 'depth', 'segment'],
-        'video.frames_per_second': 50
-    }
-
     def __init__(self, conf_path):
 
         super(PushCubePose, self).__init__(conf_path)

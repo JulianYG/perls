@@ -32,9 +32,11 @@ class BulletRenderEngine(GraphicsEngine):
     Rendering render from bullet physics
     """
 
-    _FRAME_TYPES = dict(off=0, gui=1, cmd=2, vr=3, udp=4, tcp=5)
+    FRAME_TYPES = dict(off=0, gui=1, cmd=2, vr=3, udp=4, tcp=5)
 
-    _DISP_CONF = dict(gui_panel=1,
+    JOB_TYPES = dict(run=0, record=1, replay=2)
+
+    DISP_CONF = dict(gui_panel=1,
                       shadow=2,
                       wire_frame=3,
                       vr_teleporting=4,
@@ -66,14 +68,15 @@ class BulletRenderEngine(GraphicsEngine):
         # Default settings for rendering
         self._render_param = dict(
             frame_width=224, frame_height=224,
-            view_mat=math_util.mat4(
-                p.computeViewMatrixFromYawPitchRoll(
-                    (0, 0, 0), 5, 50, -35, 0, 2)).T,
-            projection_mat=math_util.mat4(
-                p.computeProjectionMatrixFOV(60, 1, 0.02, 100)).T,
-            up=(0, 0, 1),
+            view_mat=p.computeViewMatrixFromYawPitchRoll(
+                    cameraTargetPosition=(0, 0, 0), 
+                    distance=5, 
+                    yaw=50, pitch=-35, roll=0, 
+                    upAxisIndex=2),
+            projection_mat=p.computeProjectionMatrixFOV(60, 1, 0.02, 100),
+            up=2,
             forward=(-0.6275, 0.5265, -0.5736),
-            yaw=50, pitch=-35, focal_len=5,
+            yaw=50, pitch=-35, flen=5,
             focus=(0, 0, 0)
         )
         self._job = job
@@ -145,21 +148,20 @@ class BulletRenderEngine(GraphicsEngine):
 
     @property
     def camera(self):
-        if self._FRAME_TYPES[self._frame] == 1 or \
-           self._FRAME_TYPES[self._frame] == 3:
+        if self._frame == 'vr' or self._frame == 'gui':
             info = p.getDebugVisualizerCamera(self._server_id)
             return dict(
                 frame_width=info[0], frame_height=info[1],
-                view_mat=math_util.mat4(info[2]).T,
-                projection_mat=math_util.mat4(info[3]).T,
+                view_mat=info[2],
+                projection_mat=info[3],
                 up=np.where(info[4])[0][0],
                 forward=math_util.vec(info[5]),
-                yaw=info[8], pitch=info[9], focal_len=info[10],
+                yaw=info[8], pitch=info[9], flen=info[10],
                 focus=math_util.vec(info[11]),
             )
         else:
-            loginfo('Camera not available under frame {}, '
-                    'use default values instead'.format(self._frame),
+            loginfo('Real camera not available under frame {}, '
+                    'use virtual settings instead'.format(self._frame),
                     FONT.ignore)
             return self._render_param
 
@@ -175,13 +177,25 @@ class BulletRenderEngine(GraphicsEngine):
     @camera.setter
     def camera(self, params):
         if self._frame == 'gui':
+            # Bullet has a bug at this step.
+            # The same settings results in different
+            # camera pose readings in CMD mode,
+            # and CMD mode is correct.
             p.resetDebugVisualizerCamera(
-                params['flen'],
-                params['yaw'],
-                params['pitch'],
-                params['focus'],
-                self._server_id
+                cameraDistance=params['flen'],
+                cameraYaw=params['yaw'],
+                cameraPitch=params['pitch'],
+                cameraTargetPosition=params['focus'],
+                physicsClientId=self._server_id
             )
+        elif self._frame == 'vr':
+            cam_pos, cam_orn = params
+            p.setVRCameraState(
+                rootPosition=cam_pos,
+                rootOrientation=cam_orn,
+                physicsClientId=self._server_id
+            )
+        # For non-visualization modes
         else:
             if 'dim' in params:
                 self._render_param['frame_width'] = params['dim'][0]
@@ -193,21 +207,13 @@ class BulletRenderEngine(GraphicsEngine):
 
             # Update view matrix again
             self._render_param['view_mat'] = \
-                math_util.mat4(p.computeViewMatrixFromYawPitchRoll(
-                    params['focus'], params['flen'],
-                    params['yaw'], params['pitch'], 0, 2)).T
-
-        # elif self._frame == 'vr':
-        #     cam_pos, cam_orn = params
-        #     p.setVRCameraState(
-        #         rootPosition=cam_pos,
-        #         rootOrientation=cam_orn,
-        #         physicsClientId=self._server_id
-        #     )
-        # else:
-        #     loginfo('Cannot set camera under frame type <{}>.'.
-        #             format(self._frame),
-        #             FONT.warning)
+                p.computeViewMatrixFromYawPitchRoll(
+                    cameraTargetPosition=self._render_param['focus'], 
+                    distance=self._render_param['flen'],
+                    yaw=self._render_param['yaw'], 
+                    pitch=self._render_param['pitch'], 
+                    roll=0, 
+                    upAxisIndex=2)
 
     @record_dir.setter
     def record_dir(self, name):
@@ -223,12 +229,12 @@ class BulletRenderEngine(GraphicsEngine):
 
     ###
     #  Helper functions
-    def get_camera_pose(self, up=(0.,1.,0.), otype='quat'):
+    def get_camera_pose(self, otype='quat'):
 
-        view_matrix = self.camera['view_mat'].T
+        view_matrix = math_util.mat4(self.camera['view_mat'])
 
         # If up axis is y
-        if up == 1:
+        if self.camera['up'] == 1:
             view_matrix = view_matrix.dot(np.array(
                 [[-1, 0, 0, 0],
                  [0, 0, 1, 0],
@@ -244,16 +250,20 @@ class BulletRenderEngine(GraphicsEngine):
         # This is some weird bullet convention..
         # To match the degrees converted from transformation matrix into
         # pitch/yaw angles from bullet debug visualizer
+
         if math.sin(orn[2]) > 0:
             orn[0] = - (np.pi + orn[0])
         else:
             orn[0] = - orn[0]
             orn[1] = np.pi * 2 - orn[1]
 
+        # In [roll, pitch, yaw] form;
+        # by definition roll is fixed to zero
+        orn = (0, orn[0], orn[1])
         if otype == 'mat':
             orn = transformation_matrix[:3, :3]
         elif otype == 'quat':
-            orn = math_util.euler2quat(tuple(orn))
+            orn = math_util.euler2quat(orn)
         elif otype == 'deg':
             orn = math_util.deg(orn)
         elif otype == 'rad':
@@ -264,13 +274,14 @@ class BulletRenderEngine(GraphicsEngine):
                     FONT.ignore)
         return pos, orn
 
-    def set_camera_pose(self, pos, orn, up=(0., 1., 0.)):
+    def set_camera_pose(self, pos, orn, upAxisIdx=1):
         # TODO
         pass
 
     def _build(self):
+
         # Convert to bullet constant
-        self._disp_args[0] = self._FRAME_TYPES[self._frame]
+        self._disp_args[0] = self.FRAME_TYPES[self._frame]
 
         # The core step: connect to bullet physics server
         if self._job == 'replay':
@@ -279,11 +290,9 @@ class BulletRenderEngine(GraphicsEngine):
             self._server_id = p.connect(*self._disp_args)
         else:
             self._server_id = p.connect(self._disp_args[0])
+
         p.setInternalSimFlags(0, self._server_id)
         p.resetSimulation(self._server_id)
-
-        # logerr('Incompatible frame type <{}>.'.
-        #        format(self._frame), FONT.disp)
 
     ###
     # General display related methods
@@ -293,7 +302,7 @@ class BulletRenderEngine(GraphicsEngine):
 
         for name, switch in config.items():
             p.configureDebugVisualizer(
-                self._DISP_CONF[name],
+                self.DISP_CONF[name],
                 switch, physicsClientId=self._server_id)
 
         # Setup camera
@@ -301,6 +310,9 @@ class BulletRenderEngine(GraphicsEngine):
         self._replay_delay = replay_args['delay']
 
     def disable_hotkeys(self):
+        """
+        Shutdown bullet/openGL built-in hotkeys for keyboard control
+        """
         p.configureDebugVisualizer(9, 0, self._server_id)
 
     def get_camera_image(self, itype):
@@ -309,10 +321,17 @@ class BulletRenderEngine(GraphicsEngine):
         width, height, rgb_img, depth_img, seg_img = \
             p.getCameraImage(camera_param['frame_width'],
                              camera_param['frame_height'],
-                             camera_param['view_mat'],
-                             camera_param['projection_mat'],
-                             [0, 1, 0], [1, 1, 1],
+                             viewMatrix=camera_param['view_mat'],
+                             projectionMatrix=camera_param['projection_mat'],
+                             lightDirection=[0, 1, 0], 
+                             lightColor=[1, 1, 1],
+                             lightDistance=camera_param['flen'] + 1,
+                             shadow=1,
+                             # ... ambient diffuse, specular coeffs
+                             lightAmbientCoeff=.9,
+                             # Seems only able to use w/o openGL
                              renderer=p.ER_TINY_RENDERER)
+
         if itype == 'human':
             rgb_img = np.reshape(rgb_img, (height, width, 4)).astype(np.float32) / 255.
             plot_util.pop(rgb_img, 1.5, dict(interpolation='none'))
@@ -436,9 +455,12 @@ class BulletRenderEngine(GraphicsEngine):
 
         if self._job == 'record':
 
-            # Just ignore the case of error
+            # Just ignore the case of error or cancellation
             if exit_code < 0:
-                loginfo('Record file not classified.', FONT.ignore)
+                io_util.fdelete(pjoin(
+                        self._log_path['trajectory'],
+                        self._base_file_name))
+                loginfo('Record file discarded.', FONT.ignore)
 
             # Save for success cases
             elif exit_code == 0:

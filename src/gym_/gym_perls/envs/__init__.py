@@ -1,6 +1,7 @@
-# ------------perls------------
+#!/usr/bin/env python
 
-from .perls_env import PerlsEnv
-from .push_cube import PushCube
+# ------------PerlsEnv------------
 from .push_vel import PushCubeVel
 from .push_pose import PushCubePose
+from .push_viz_vel import PushVizVel
+from .push_viz_pose import PushVizPose
