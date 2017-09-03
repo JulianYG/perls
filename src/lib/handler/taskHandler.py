@@ -15,7 +15,6 @@ class Checker(object):
     """
     def __init__(self, env_name):
         self._name = env_name
-
         self._states = dict()
 
     @property
@@ -39,13 +38,13 @@ class Checker(object):
             table = world.body['table_0']
 
             # Random goal
-            # box_center = math_util.rand_vec(
-            #     3, (table.pos[0] + 0.1, table.pos[1] - 0.25, 0.641),
-            #     (table.pos[0] + 0.25, table.pos[1] + 0.25, 0.642),
-            #     'uniform')
+            box_center = math_util.rand_vec(
+                3, (table.pos[0] + 0.1, table.pos[1] - 0.25, 0.641),
+                (table.pos[0] + 0.25, table.pos[1] + 0.25, 0.642),
+                'uniform')
 
             # Fixed goal
-            box_center = math_util.vec((0.6, -0.2, 0.641))
+            # box_center = math_util.vec((0.6, -0.2, 0.641))
         
             self._states['goal'] = box_center
 
@@ -61,8 +60,11 @@ class Checker(object):
             # Initializes the gripper next to the cube
             initial_gripper_pos = \
                 (cube_pos[0] - 0.05, cube_pos[1], cube_pos[2] + 0.025)
-            robot.grasp(1)
+            
             robot.tool_pos = (initial_gripper_pos, 300)
+
+            # Use this as a mark
+            robot.grasp(1)
 
             loginfo('Initialize finished.', FONT.model)
             loginfo('Initial joint positions: {}'.
@@ -70,6 +72,9 @@ class Checker(object):
                     FONT.model)
             loginfo('Initial gripper finger position: {}'.
                     format(robot.tool_pos),
+                    FONT.model)
+            loginfo('Initialized goal state: {}'.
+                    format(box_center),
                     FONT.model)
 
     def score(self, world):

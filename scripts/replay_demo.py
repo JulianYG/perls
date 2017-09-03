@@ -6,7 +6,7 @@ import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 from perls.src.lib.utils.io_util import parse_log as plog
-from perls.src.lib.utils.math_util import get_relative_pose, get_absolute_pose, rand_vec
+from perls.src.lib.utils.math_util import get_relative_pose, get_absolute_pose, rand_vec, seed
 from glob import glob
 import numpy as np
 import matplotlib.pyplot as plt
@@ -76,17 +76,15 @@ class Postprocess(object):
         """
         ### Important: Toss the first 2500 rows (init).
 
-        log = np.array(plog(fname, verbose=self.verbose))[2700:, :]
+        log = np.array(plog(fname, verbose=self.verbose))
+        idx = 0
 
-        # cut_off_idx = 0
-        # for row in log:
-        #     pos = np.array(self.fk(row[17: 24])[0])
-        #     if row[2] == 4 and np.sum((pos - np.array([0.37, 0.15, -0.079]))**2) < 0.5:
-        #         break
-        #     cut_off_idx += 1
-        # print('cutoff: ', cut_off_idx)
-        # log = log[cut_off_idx:, :]
-
+        for row in log:
+            if row[2] == 0 and np.allclose(row[17:19], [0, 0], atol=5e-6):
+                break
+            idx += 1
+        
+        log = log[idx:, :]
         col_inds = sorted(self.col_names_dict.values())
         if cols is not None:
             # make sure desired columns are valid
@@ -295,6 +293,7 @@ if __name__ == "__main__":
     elif push_type == 'pose':
         env = gym.make('push-pose-gui-v0')
     
+    seed()
     for i in range(len(demons)):
 
         fname = demons[i]

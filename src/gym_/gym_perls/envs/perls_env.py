@@ -123,7 +123,7 @@ class PerlsEnv(gym.Env):
         self._display.set_render_view(
             dict(
                 dim=(256, 256),
-                flen=4,
+                flen=1.5,
                 yaw=50,
                 pitch=-35,
                 focus=(0, 0, 0)
