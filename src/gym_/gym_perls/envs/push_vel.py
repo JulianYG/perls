@@ -49,8 +49,7 @@ class PushCubeVel(PushCube):
         
         return math_util.concat(self._robot.joint_positions,
                                 self._robot.joint_velocities,
-                                cube_pos, cube_orn,
-                                goal_pos)
+                                cube_pos, cube_orn, goal_pos)
 
     def _step_helper(self, action):
         # Use velocity control
