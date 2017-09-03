@@ -11,14 +11,8 @@ from lib.utils import math_util
 
 class PushCube(PerlsEnv):
     """
-    Pushing cube across the table
+    Pushing cube to a specific goal on table
     """
-
-    metadata = {
-        'render.modes': ['human', 'depth', 'segment'],
-        'video.frames_per_second': 50
-    }
-
     def __init__(self, conf_path):
 
         super(PushCube, self).__init__(conf_path)

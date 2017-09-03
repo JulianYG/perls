@@ -32,9 +32,11 @@ class BulletRenderEngine(GraphicsEngine):
     Rendering render from bullet physics
     """
 
-    _FRAME_TYPES = dict(off=0, gui=1, cmd=2, vr=3, udp=4, tcp=5)
+    FRAME_TYPES = dict(off=0, gui=1, cmd=2, vr=3, udp=4, tcp=5)
 
-    _DISP_CONF = dict(gui_panel=1,
+    JOB_TYPES = dict(run=0, record=1, replay=2)
+
+    DISP_CONF = dict(gui_panel=1,
                       shadow=2,
                       wire_frame=3,
                       vr_teleporting=4,
@@ -68,12 +70,15 @@ class BulletRenderEngine(GraphicsEngine):
             frame_width=224, frame_height=224,
             view_mat=math_util.mat4(
                 p.computeViewMatrixFromYawPitchRoll(
-                    (0, 0, 0), 5, 50, -35, 0, 2)).T,
+                    cameraTargetPosition=(0, 0, 0), 
+                    distance=5, 
+                    yaw=50, pitch=-35, roll=0, 
+                    upAxisIndex=2)).T,
             projection_mat=math_util.mat4(
                 p.computeProjectionMatrixFOV(60, 1, 0.02, 100)).T,
             up=(0, 0, 1),
             forward=(-0.6275, 0.5265, -0.5736),
-            yaw=50, pitch=-35, focal_len=5,
+            yaw=50, pitch=-35, flen=5,
             focus=(0, 0, 0)
         )
         self._job = job
@@ -145,8 +150,7 @@ class BulletRenderEngine(GraphicsEngine):
 
     @property
     def camera(self):
-        if self._FRAME_TYPES[self._frame] == 1 or \
-           self._FRAME_TYPES[self._frame] == 3:
+        if self._frame == 'vr' or self._frame == 'gui':
             info = p.getDebugVisualizerCamera(self._server_id)
             return dict(
                 frame_width=info[0], frame_height=info[1],
@@ -158,8 +162,8 @@ class BulletRenderEngine(GraphicsEngine):
                 focus=math_util.vec(info[11]),
             )
         else:
-            loginfo('Camera not available under frame {}, '
-                    'use default values instead'.format(self._frame),
+            loginfo('Real camera not available under frame {}, '
+                    'use virtual settings instead'.format(self._frame),
                     FONT.ignore)
             return self._render_param
 
@@ -176,12 +180,20 @@ class BulletRenderEngine(GraphicsEngine):
     def camera(self, params):
         if self._frame == 'gui':
             p.resetDebugVisualizerCamera(
-                params['flen'],
-                params['yaw'],
-                params['pitch'],
-                params['focus'],
-                self._server_id
+                cameraDistance=params['flen'],
+                cameraYaw=params['yaw'],
+                cameraPitch=params['pitch'],
+                cameraTargetPosition=params['focus'],
+                physicsClientId=self._server_id
             )
+        elif self._frame == 'vr':
+            cam_pos, cam_orn = params
+            p.setVRCameraState(
+                rootPosition=cam_pos,
+                rootOrientation=cam_orn,
+                physicsClientId=self._server_id
+            )
+        # For non-visualization modes
         else:
             if 'dim' in params:
                 self._render_param['frame_width'] = params['dim'][0]
@@ -194,20 +206,12 @@ class BulletRenderEngine(GraphicsEngine):
             # Update view matrix again
             self._render_param['view_mat'] = \
                 math_util.mat4(p.computeViewMatrixFromYawPitchRoll(
-                    params['focus'], params['flen'],
-                    params['yaw'], params['pitch'], 0, 2)).T
-
-        # elif self._frame == 'vr':
-        #     cam_pos, cam_orn = params
-        #     p.setVRCameraState(
-        #         rootPosition=cam_pos,
-        #         rootOrientation=cam_orn,
-        #         physicsClientId=self._server_id
-        #     )
-        # else:
-        #     loginfo('Cannot set camera under frame type <{}>.'.
-        #             format(self._frame),
-        #             FONT.warning)
+                    cameraTargetPosition=self._render_param['focus'], 
+                    distance=self._render_param['flen'],
+                    yaw=self._render_param['yaw'], 
+                    pitch=self._render_param['pitch'], 
+                    roll=0, 
+                    upAxisIndex=2)).T
 
     @record_dir.setter
     def record_dir(self, name):
@@ -269,8 +273,9 @@ class BulletRenderEngine(GraphicsEngine):
         pass
 
     def _build(self):
+
         # Convert to bullet constant
-        self._disp_args[0] = self._FRAME_TYPES[self._frame]
+        self._disp_args[0] = self.FRAME_TYPES[self._frame]
 
         # The core step: connect to bullet physics server
         if self._job == 'replay':
@@ -279,11 +284,9 @@ class BulletRenderEngine(GraphicsEngine):
             self._server_id = p.connect(*self._disp_args)
         else:
             self._server_id = p.connect(self._disp_args[0])
+
         p.setInternalSimFlags(0, self._server_id)
         p.resetSimulation(self._server_id)
-
-        # logerr('Incompatible frame type <{}>.'.
-        #        format(self._frame), FONT.disp)
 
     ###
     # General display related methods
@@ -293,7 +296,7 @@ class BulletRenderEngine(GraphicsEngine):
 
         for name, switch in config.items():
             p.configureDebugVisualizer(
-                self._DISP_CONF[name],
+                self.DISP_CONF[name],
                 switch, physicsClientId=self._server_id)
 
         # Setup camera
@@ -301,18 +304,40 @@ class BulletRenderEngine(GraphicsEngine):
         self._replay_delay = replay_args['delay']
 
     def disable_hotkeys(self):
+        """
+        Shutdown bullet/openGL built-in hotkeys for keyboard control
+        """
         p.configureDebugVisualizer(9, 0, self._server_id)
 
     def get_camera_image(self, itype):
 
         camera_param = self.camera
-        width, height, rgb_img, depth_img, seg_img = \
-            p.getCameraImage(camera_param['frame_width'],
-                             camera_param['frame_height'],
-                             camera_param['view_mat'],
-                             camera_param['projection_mat'],
-                             [0, 1, 0], [1, 1, 1],
-                             renderer=p.ER_TINY_RENDERER)
+
+        if self._frame == 'vr' or self._frame == 'gui':
+            width, height, rgb_img, depth_img, seg_img = \
+                p.getCameraImage(camera_param['frame_width'],
+                                 camera_param['frame_height'],
+                                 viewMatrix=camera_param['view_mat'],
+                                 projectionMatrix=camera_param['projection_mat'],
+                                 lightDirection=[0, 1, 0], 
+                                 lightColor=[1, 1, 1],
+                                 lightDistance=camera_param['flen'] + 1,
+                                 shadow=1,
+                                 # ... ambient diffuse, specular coeffs
+                                 renderer=p.ER_BULLET_HARDWARE_OPENGL)
+        else:
+            # Without OpenGL
+            width, height, rgb_img, depth_img, seg_img = \
+                p.getCameraImage(camera_param['frame_width'],
+                                 camera_param['frame_height'],
+                                 viewMatrix=camera_param['view_mat'],
+                                 projectionMatrix=camera_param['projection_mat'],
+                                 lightDirection=[0, 1, 0], 
+                                 lightColor=[1, 1, 1],
+                                 lightDistance=camera_param['flen'] + 1,
+                                 shadow=1,
+                                 renderer=p.ER_TINY_RENDERER)
+
         if itype == 'human':
             rgb_img = np.reshape(rgb_img, (height, width, 4)).astype(np.float32) / 255.
             plot_util.pop(rgb_img, 1.5, dict(interpolation='none'))
@@ -435,9 +460,12 @@ class BulletRenderEngine(GraphicsEngine):
 
         if self._job == 'record':
 
-            # Just ignore the case of error
+            # Just ignore the case of error or cancellation
             if exit_code < 0:
-                loginfo('Record file not classified.', FONT.ignore)
+                io_util.fdelete(pjoin(
+                        self._log_path['trajectory'],
+                        self._base_file_name))
+                loginfo('Record file discarded.', FONT.ignore)
 
             # Save for success cases
             elif exit_code == 0:

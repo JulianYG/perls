@@ -20,13 +20,12 @@ __version__ = '0.1'
 
 class PerlsEnv(gym.Env):
     """
-    Construct an gym_ environment
+    Construct a gym environment for perls simulation
     """
-
     Space = spaces
-
     metadata = {
-        'render.modes': ['human', 'rgb', 'depth', 'segment'],
+        'render.modes': ['human', 'rgb', 'rgbd', 
+                         'depth', 'segment'],
         'video.frames_per_second': 50
     }
 
