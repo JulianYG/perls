@@ -42,9 +42,6 @@ class Checker(object):
                 3, (table.pos[0] + 0.1, table.pos[1] - 0.25, 0.641),
                 (table.pos[0] + 0.25, table.pos[1] + 0.25, 0.642),
                 'uniform')
-
-            # Fixed goal
-            # box_center = math_util.vec((0.6, -0.2, 0.641))
         
             self._states['goal'] = box_center
 
