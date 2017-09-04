@@ -422,6 +422,9 @@ class BulletRenderEngine(GraphicsEngine):
                     pos = record[3: 6]
                     orn = record[6: 10]
 
+                    if obj == 1:
+                        print(record)
+
                     # print(record)
                     p.resetBasePositionAndOrientation(obj, pos, orn)
                     n_joints = p.getNumJoints(obj)

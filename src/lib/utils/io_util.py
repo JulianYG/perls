@@ -95,8 +95,11 @@ def fdelete(file):
 
     os.remove(file)
 
+def flist(spec):
+    return glob.glob(spec)
 
-def loginfo(msg, itype):
+
+def loginfo(msg, itype=FONT.disp):
     """
     Print message and flush to terminal
     :param msg: string message to print
