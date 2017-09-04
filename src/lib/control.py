@@ -302,6 +302,7 @@ class Controller(object):
 
             # Reset the world
             world.reset()
+
             ctrl_handler.resume()
 
             # Update initial states:
@@ -360,10 +361,8 @@ class Controller(object):
                 if quit_run:
                     # Exit the program
                     self.exit(ctrl_handler, server_id)
-                    sys.exit(0)
                 else:
                     pass
-        self.exit(ctrl_handler, server_id)
 
     def stop(self, server_id, stop_status):
         """
@@ -398,7 +397,8 @@ class Controller(object):
             self._process_pool[server_id].terminate()
             self._process_pool[server_id] = None
 
-        loginfo('Safe exit server {}.'.format(server_id), FONT.control)  
+        loginfo('Safe exit.', FONT.control)
+        sys.exit(0)
 
     def _control_interrupt(self, world, display, signal, elapsed_time):
         """

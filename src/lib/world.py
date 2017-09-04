@@ -394,4 +394,3 @@ class World(object):
             logerr(err_msg, FONT.model)
 
         self._engine.stop()
-        self._checker.stop()

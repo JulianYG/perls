@@ -188,7 +188,7 @@ class BulletRenderEngine(GraphicsEngine):
                 cameraTargetPosition=params['focus'],
                 physicsClientId=self._server_id
             )
-        elif self._job == 'replay' and self._frame == 'vr':
+        elif self._frame == 'vr':
             cam_pos, cam_orn = params
             p.setVRCameraState(
                 rootPosition=cam_pos,
