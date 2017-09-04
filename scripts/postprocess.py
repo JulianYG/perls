@@ -1,7 +1,12 @@
 from __future__ import print_function
 import pybullet as p
 from perls.src.lib.utils.io_util import parse_log as plog
-from perls.src.lib.utils.math_util import get_relative_pose, get_absolute_pose
+from perls.src.lib.utils.io_util import loginfo, FONT
+from perls.src.lib.utils.math_util import (get_relative_pose, 
+    get_absolute_pose,
+    rand_vec, seed
+)
+import os
 from glob import glob
 import numpy as np
 import matplotlib.pyplot as plt
@@ -79,15 +84,15 @@ class Postprocess(object):
 
         """
 
-        log = np.array(plog(fname, verbose=verbose))
+        log = np.array(plog(fname, verbose=verbose))[2400:]
 
         ### Important: Toss the first 2500 rows.
-        idx = 0
-        for row in log:
-            if row[2] == 0 and np.allclose(row[17:19], [0, 0]):
-                break
-            idx += 1
-        log = log[2500:]
+        # idx = 0
+        # for row in log:
+        #     if row[2] == 0 and np.allclose(row[17:19], [0, 0]):
+        #         break
+        #     idx += 1
+        # log = log[2500:]
 
         col_inds = sorted(self.col_names_dict.values())
         if cols is not None:
@@ -122,7 +127,6 @@ class Postprocess(object):
         """
         WARNING: returns eef pose in world frame
         """
-
         for i in range(7):
             p.resetJointState(self.robot_file, i, joint_pos[i])
 
@@ -146,18 +150,17 @@ class Postprocess(object):
         # Time differences.
         time_diffs = robot_log[1:, 1] - robot_log[:-1, 1]
 
-        # print("Time diff: {}".format(time_diffs[0]))
-
-
         # First subsample one of every 24 points to get control roughly at 10 Hz
         num_elems = min(robot_log.shape[0], cube_log.shape[0])
         filt_robot_log = []
         filt_cube_log = []
         for i in range(num_elems):
             if i % 24 == 0:
-            #if i % 1 == 0:
                 filt_robot_log.append(robot_log[i])
                 filt_cube_log.append(cube_log[i])
+
+        table_pos = [.4, -.3, 0]
+
 
         robot_log = np.array(filt_robot_log)
         cube_log = np.array(filt_cube_log)
@@ -190,6 +193,10 @@ class Postprocess(object):
 
         print("Using robot pose: {}".format(self.robot_base_pose))
 
+        goal_pos = rand_vec(
+                3, (table_pos[0] + 0.1, table_pos[1] - 0.25, 0.641),
+                (table_pos[0] + 0.25, table_pos[1] + 0.25, 0.642),
+                'uniform')
 
         for i in range(1, num_elems):
             timestamp_elem = robot_log[i, 1]
@@ -225,13 +232,14 @@ class Postprocess(object):
             ### State and Action definition here ###
 
             # NOTE: we add the joint angles in state, joint vels in action (one timestep difference)
-            # state = np.concatenate([prev_joint_pos, prev_joint_vel, prev_cube_pose_pos, prev_cube_pose_orn])
-            # action = np.array(joint_vel_elem)
+            state = np.concatenate([prev_joint_pos, prev_joint_vel, 
+                prev_cube_pose_pos, prev_cube_pose_orn, goal_pos])
+            action = np.array(joint_vel_elem)
 
             # NOTE: we add the previous eef orientation here, and previous cube orientation
-            state = np.concatenate([prev_eef_pose_pos, prev_cube_pose_pos, prev_cube_pose_orn, [0.6, -0.2, 0.641]])
-            action = np.array(eef_pose_pos_elem) - np.array(prev_eef_pose_pos)
-
+            # state = np.concatenate([prev_eef_pose_pos, prev_cube_pose_pos, 
+            #     prev_cube_pose_orn, goal_pos])
+            # action = np.array(eef_pose_pos_elem) - np.array(prev_eef_pose_pos)
 
             states.append(state)
             actions.append(action)
@@ -244,7 +252,7 @@ class Postprocess(object):
             prev_cube_pose_pos, prev_cube_pose_orn = cube_pose_pos_elem, cube_pose_orn_elem
 
         print("Number filtered: {} out of {}.".format(num_filtered, num_elems))
-        print("Last cube z-position: {}".format(states[-1][5]))
+        loginfo("Goal region center position: {}".format(goal_pos), FONT.disp)
         
         # timestamps = np.array(timestamps)
         # time_diffs = timestamps[1:] - timestamps[:-1]
@@ -258,7 +266,7 @@ class Postprocess(object):
 
 if __name__ == "__main__":
 
-    env = gym.make('push-pose-v0')
+    env = gym.make('push-vel-v0')
     env.reset()
 
     # robot_position = env._robot.pos
@@ -290,11 +298,13 @@ if __name__ == "__main__":
     # tmp = (np.array([ 0.252, -0.208,  0.84 ]), np.array([0., 1., 0., 0.]))
     # print("EEF pose hardcoded: {}".format(tmp))
 
+    record_path = "../src/log/trajectory/push/success/*.bin"
 
+    files = filter(os.path.isfile, glob(record_path))
+    files.sort(key=lambda x: os.path.getmtime(x))
 
-    for fname in glob("../src/log/trajectory/push/success/*.bin"):
-    #for fname in glob("2017-08-29-11-48-34.bin"):
-    #for fname in glob("success/2017-08-27-22-08-35.bin"):
+    seed()
+    for fname in files:
         states, actions = pp.parse_demonstration(fname)
         all_states.append(states)
         all_actions.append(actions)
@@ -302,16 +312,4 @@ if __name__ == "__main__":
     all_actions = np.concatenate(all_actions, axis=0)
     print(all_states.shape)
     print(all_actions.shape)
-    np.savez("demo_fixed_goal_pose.npz", states=all_states, actions=all_actions)
-
-
-
-
-
-
-
-
-
-
-
-
+    np.savez("demo_rand_goal_vel.npz", states=all_states, actions=all_actions)
