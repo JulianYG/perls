@@ -190,7 +190,7 @@ class BulletRenderEngine(GraphicsEngine):
                 cameraTargetPosition=params['focus'],
                 physicsClientId=self._server_id
             )
-        elif self._frame == 'vr':
+        elif self._job == 'replay' and self._frame == 'vr':
             cam_pos, cam_orn = params
             p.setVRCameraState(
                 rootPosition=cam_pos,
@@ -454,7 +454,8 @@ class BulletRenderEngine(GraphicsEngine):
                     obj = record[2]
                     pos = record[3: 6]
                     orn = record[6: 10]
-
+                    if obj == 1:
+                        print(record[-7:])
                     # print(record)
                     p.resetBasePositionAndOrientation(obj, pos, orn)
                     n_joints = p.getNumJoints(obj)

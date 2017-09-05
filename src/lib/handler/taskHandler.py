@@ -116,7 +116,7 @@ class Checker(object):
             table = body_dict['table_0']
 
             # If cost too high, mark fail and done
-            if -self.score(world) > .2:
+            if -self.score(world) > .5:
                 return True, False
 
             # If collided with table, fail

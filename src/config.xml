@@ -2,7 +2,7 @@
 <batch>
 
 	<!-- The following is for collecting demonstrations. -->
-	<config name="push" id="0" clone="50">
+	<config name="push" id="0" clone="70">
 		<build type="Debug">
 			<graphics name="first person human demo" engine="bullet" type="vr" key="0"/>
 			<physics engine="bullet" version="20170904"/>
