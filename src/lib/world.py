@@ -53,7 +53,6 @@ class World(object):
         # world specific attributes
         self._gravity = math_util.zero_vec(3)
         self._traction = 200
-
         self._checker = None
 
     @property

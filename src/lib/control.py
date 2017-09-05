@@ -269,50 +269,59 @@ class Controller(object):
 
         # Start control in another process
         ctrl_handler.run()
-
+ 
         # Run for given number of runs (used for # trajectories collection)
         for r in range(nruns):
-
-            # Preparing variables
-            time_up, done, success = False, False, False
-            self._init_time_stamp = time_util.get_abs_time()
-
-            track_targets = world.get_env_state(('env', 'target'))[0]
-
-            # Pass in targets uids
-            status = display.run([t[0] for t in track_targets])
-
-            if status == -1:
-                logerr('Error loading simulation', FONT.control)
-                self.stop(server_id, -1)
-                return
-            elif status == 1:
-                self.stop(server_id, 0)
-                loginfo('Replay finished. Exiting...', FONT.control)
-                continue
-            elif status == 2:
-                loginfo('Start recording.', FONT.control)
-            else:
-                loginfo('Display configs loaded. Starting simulation...',
-                        FONT.control)
-
-            # TODO: May be able to move outside loop if display is booted
-            # Kickstart the model, perform frame type check
-            world.boot(display.info['frame'])
-
-            # Reset the world
-            world.reset()
-            ctrl_handler.resume()
-
-            # Update initial states:
-            self._control_update(world)
-
-            # Next display states
-            self._view_update(display)
-            self._update_time_stamp = time_util.get_abs_time()
-
-            # Finally start control loop (Core)
             try:
+                # Preparing variables
+                time_up, done, success = False, False, False
+                self._init_time_stamp = time_util.get_abs_time()
+
+                track_targets = world.get_env_state(('env', 'target'))[0]
+
+                # Pass in targets uids
+                status = display.run([t[0] for t in track_targets])
+
+                if status == -1:
+                    logerr('Error loading simulation', FONT.control)
+                    self.stop(server_id, -1)
+                    break
+                elif status == 1:
+                    self.stop(server_id, 0)
+                    loginfo('Replay finished. Exiting...', FONT.control)
+                    continue
+                elif status == 2:
+                    loginfo('Start recording.', FONT.control)
+                elif status == 3:
+                    self.stop(server_id, 0)
+                    loginfo('User quit during replay.', FONT.control)
+                    break
+                else:
+                    loginfo('Display configs loaded. Starting simulation...',
+                            FONT.control)
+
+                # TODO: May be able to move outside loop if display is booted
+                # Kickstart the model, perform frame type check
+                world.boot(display.info['frame'])
+
+                # Reset the world
+                world.reset()
+
+                # After loading and initialization finish, start rendering
+                # (This can significantly boost performance)
+                display.show()
+                # if 
+
+                ctrl_handler.resume()
+
+                # Update initial states:
+                self._control_update(world)
+
+                # Next display states
+                self._view_update(display)
+                self._update_time_stamp = time_util.get_abs_time()
+
+                # Finally start control loop (Core)
                 while not time_up and not done:
                     elt = time_util.get_elapsed_time(self._init_time_stamp)
 
@@ -359,11 +368,11 @@ class Controller(object):
                 )
                 if quit_run:
                     # Exit the program
-                    self.exit(ctrl_handler, server_id)
+                    self.exit(ctrl_handler, world, server_id)
                     sys.exit(0)
                 else:
-                    pass
-        self.exit(ctrl_handler, server_id)
+                    continue
+        self.exit(ctrl_handler, world, server_id)
 
     def stop(self, server_id, stop_status):
         """
@@ -378,7 +387,7 @@ class Controller(object):
         _, world, display, ctrl_handler, _ = self._physics_servers[server_id]
         display.close(stop_status)
 
-    def exit(self, ctrl_handler, server_id=0):
+    def exit(self, ctrl_handler, world, server_id=0):
         """
         Kill the simulation and exit, whatever the current status is. The
         difference from <stop> is that this method erases
@@ -390,8 +399,8 @@ class Controller(object):
         ctrl_handler.stop()
         self.stop(server_id, -1)
 
-        # Clean up world
-        self._physics_servers[server_id][1].clean_up()
+        # Destroy world
+        world.clean_up()
 
         # TODO
         if self._process_pool:

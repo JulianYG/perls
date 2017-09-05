@@ -102,7 +102,7 @@ HOT_KEY = {65284: None,  # F5
 
 
 def listen_to_bullet_keyboard(ps_id=0):
-    return {101: 3}  # getKeyboardEvents(physicsClientId=ps_id)
+    return getKeyboardEvents(physicsClientId=ps_id)
 
 
 def listen_to_bullet_mouse(ps_id=0):

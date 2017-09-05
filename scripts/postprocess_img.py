@@ -6,6 +6,7 @@ from perls.src.lib.utils.math_util import (get_relative_pose,
     get_absolute_pose,
     rand_vec, seed
 )
+from perls import Controller
 import os
 from glob import glob
 import numpy as np
@@ -15,21 +16,12 @@ import gym
 
 
 class Postprocess(object):
-    def __init__(self, robot_base_pose):
+    def __init__(self, config_file):
 
-        # this one is for computing relative poses
-        self.robot_base_pose = robot_base_pose
+        _, world, display, _ = Controller.load_config(config_file, None)
 
-        # this one is for loading the robot for FK
-        robot_base_pose = (np.array([-0.15, -0.2, 0.9]), np.array([0, 0, 0, 1]))
-
-        ### TODO: why should these be different... FUCK bullet
-
-        p.connect(p.DIRECT)
-        p.setRealTimeSimulation(0)
-        self.robot_file = p.loadURDF("../data/sawyer_robot/sawyer_description/urdf/sawyer_arm.urdf",
-                          robot_base_pose[0], robot_base_pose[1], useFixedBase=True)
-        p.resetBasePositionAndOrientation(self.robot_file, robot_base_pose[0], robot_base_pose[1])
+        display.run()
+        world.boot('cmd')
 
         ### TODO: why does the base pose change here and why is the above line necessary???
         # self.robot_base_pose = (p.getLinkState(self.robot_file, 0)[4], p.getLinkState(self.robot_file, 0)[5])
@@ -56,8 +48,8 @@ class Postprocess(object):
                           u'oriX', u'oriY', u'oriZ', u'oriW', u'velX', u'velY', u'velZ',
                           u'omegaX', u'omegaY', u'omegaZ', u'qNum',
                           u'q0', u'q1', u'q2', u'q3', u'q4', u'q5', u'q6',
-                          u'v0', u'v1', u'v2', u'v3', u'v4', u'v5', u'v6',
-                          u'u0', u'u1', u'u2', u'u3', u'u4', u'u5', u'u6']
+                          u'u0', u'u1', u'u2', u'u3', u'u4', u'u5', u'u6',
+                          u't0', u't1', u't2', u't3', u't4', u't5', u't6']
 
         # dictionary to map column name to index
         self.col_names_dict = {}
@@ -123,16 +115,6 @@ class Postprocess(object):
         filtered = map(filter_row, log)
         return np.array([x for x in filtered if x is not None])
 
-    def fk(self, joint_pos):
-        """
-        WARNING: returns eef pose in world frame
-        """
-        for i in range(7):
-            p.resetJointState(self.robot_file, i, joint_pos[i])
-
-        x = p.getLinkState(self.robot_file, 6)
-        return x[4], x[5]
-
     def parse_demonstration(self, fname):
         """
         Parse a bullet bin file into states and actions.
@@ -140,8 +122,8 @@ class Postprocess(object):
         robot_log = self.parse_log(fname, None, verbose=False, objects=["titan_0"],
                                    cols=['stepCount', 'timeStamp', 'qNum',
                                          'q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6',
-                                         'v0', 'v1', 'v2', 'v3', 'v4', 'v5', 'v6',
-                                         'u0', 'u1', 'u2', 'u3', 'u4', 'u5', 'u6'])
+                                         'u0', 'u1', 'u2', 'u3', 'u4', 'u5', 'u6',
+                                         't0', 't1', 't2', 't3', 't4', 't5', 't6'])
 
         cube_log = self.parse_log(fname, None, verbose=False, objects=["cube_0"],
                                   cols=['stepCount', 'timeStamp', 'qNum', 'posX', 'posY', 'posZ', 'oriX', 'oriY', 'oriZ',

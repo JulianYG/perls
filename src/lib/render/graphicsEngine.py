@@ -89,6 +89,7 @@ class BulletRenderEngine(GraphicsEngine):
         self._logging_id = list()
         self._replay_count = 0
         self._server_id = -1
+        self._active = False
 
         # Initialize logging paths
         log_dir = log_dir or \
@@ -177,10 +178,11 @@ class BulletRenderEngine(GraphicsEngine):
     @camera.setter
     def camera(self, params):
         if self._frame == 'gui':
+
             # Bullet has a bug at this step.
             # The same settings results in different
-            # camera pose readings in CMD mode,
-            # and CMD mode is correct.
+            # camera pose readings between CMD mode
+            # and GUI mode, and CMD mode is correct.
             p.resetDebugVisualizerCamera(
                 cameraDistance=params['flen'],
                 cameraYaw=params['yaw'],
@@ -298,8 +300,13 @@ class BulletRenderEngine(GraphicsEngine):
     # General display related methods
 
     def configure_display(self, config, camera_args, replay_args):
-        # All about cameras
+        
+        # Stop rendering for faster loading
+        p.configureDebugVisualizer(
+            p.COV_ENABLE_RENDERING, 0, 
+            self._server_id)
 
+        # All about cameras
         for name, switch in config.items():
             p.configureDebugVisualizer(
                 self.DISP_CONF[name],
@@ -347,7 +354,15 @@ class BulletRenderEngine(GraphicsEngine):
         else:
             loginfo('Unrecognized image type', FONT.ignore)
 
+    def activate(self):
+        if not self._active:
+            p.configureDebugVisualizer(
+                p.COV_ENABLE_RENDERING, 1, 
+                self._server_id)
+            self._active = True
+
     def boot(self, target_uids):
+
         if self._job == 'record':
             assert self._record_name, \
                 'Must provide record file name!'
@@ -414,16 +429,25 @@ class BulletRenderEngine(GraphicsEngine):
             # TODO: set camera angle for GUI/HMD
             loginfo('Start replaying file {}'.
                     format(file_name), FONT.control)
+
+            self.activate()
+
             try:
                 for record in obj_log:
-                    # time_stamp = float(record[1])
-
+                    ### Each record has following format:
+                    # 'stepCount', 'timeStamp', 'objectId', 
+                    # 'posX', 'posY', 'posZ', 
+                    # 'oriX', 'oriY', 'oriZ', 'oriW', 
+                    # 'velX', 'velY', 'velZ',
+                    # 'omegaX', 'omegaY', 'omegaZ', 'nDOFs',
+                    # 'q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6',
+                    # 'u0', 'u1', 'u2', 'u3', 'u4', 'u5', 'u6',
+                    # 't0', 't1', 't2', 't3', 't4', 't5', 't6'
+                    # where q, u, t stand for joint pos, vel, torq
+                   
                     obj = record[2]
                     pos = record[3: 6]
                     orn = record[6: 10]
-
-                    if obj == 1:
-                        print(record)
 
                     # print(record)
                     p.resetBasePositionAndOrientation(obj, pos, orn)
@@ -436,14 +460,15 @@ class BulletRenderEngine(GraphicsEngine):
 
                     time_util.pause(self._replay_delay)
             except KeyboardInterrupt:
-                loginfo('User quit replay during file {}'.format(file_name),
+                loginfo('Cancelled replaying file {}'.format(file_name),
                         FONT.control)
-                sys.exit(0)
+                return 3
 
             loginfo('Finished replay {}'.format(file_name),
                     FONT.control)
             self._replay_count += 1
-            # TODO: figure out using HMD log to revive FPS
+
+            # TODO: figure out using HMD log to replicate first person view
             return 1
         return 0
 
@@ -459,9 +484,6 @@ class BulletRenderEngine(GraphicsEngine):
 
             # Just ignore the case of error or cancellation
             if exit_code < 0:
-                io_util.fdelete(pjoin(
-                        self._log_path['trajectory'],
-                        self._base_file_name))
                 loginfo('Record file discarded.', FONT.ignore)
 
             # Save for success cases

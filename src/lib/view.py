@@ -62,6 +62,12 @@ class View:
         """
         self.load_config(self._description)
 
+    def show(self):
+        """
+        Start rendering for GUI/VR mode. 
+        """
+        self._engine.activate()
+
     def disable_hotkeys(self):
         """
         Special helper method to disable keyboard hot keys
