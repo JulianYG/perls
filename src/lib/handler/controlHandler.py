@@ -57,6 +57,8 @@ class KeyboardEventHandler(ControlHandler):
     def interrupt(self, queue):
 
         signal = dict()
+        signal['tid'] = 0
+        signal['key'] = 'm'
         signal['cmd'] = list()
         ins = list()
         signal['camera'] = list()

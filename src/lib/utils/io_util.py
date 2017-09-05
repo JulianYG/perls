@@ -61,6 +61,13 @@ class FONT:
     bold = '\033[1m'
     underline = '\033[4m'
 
+
+class Postprocess:
+
+    pass
+
+
+
 _env_tree = collections.namedtuple(
     'EnvTree',
     ['env', 'arm', 'gripper', 'hand',
@@ -95,8 +102,11 @@ def fdelete(file):
 
     os.remove(file)
 
+def flist(spec):
+    return glob.glob(spec)
 
-def loginfo(msg, itype):
+
+def loginfo(msg, itype=FONT.disp):
     """
     Print message and flush to terminal
     :param msg: string message to print

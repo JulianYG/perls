@@ -191,8 +191,9 @@ class StateEngine(object):
 
     @abc.abstractmethod
     def set_body_visual_shape(
-            self, uid, texture, qid, shape_id,
-            rgba_color=(1, 1, 1, 1), spec_color=(1, 1, 1)):
+            self, uid, qid, rgba_color, 
+            spec_color=(1,1,1), shape_id='box',
+            texture=None):
         """
         Set the body visual shape given parameters.
         :param uid: integer body unique id

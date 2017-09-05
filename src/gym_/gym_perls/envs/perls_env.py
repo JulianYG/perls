@@ -39,8 +39,9 @@ class PerlsEnv(gym.Env):
         self._align_iters = 1
 
         _, self._world, self._display, control = Controller.load_config(conf, None)
-        self._status = self._display.run(None)
+
         self._world.boot(self._display.info['frame'])
+        self._status = self._display.run(None)
 
         if not self._world.info['engine']['real_time']:
             step_size = self._world.info['engine']['step_size']
@@ -119,6 +120,7 @@ class PerlsEnv(gym.Env):
         state space.
         """
         self._world.reset()
+        self._display.show()
         return self.state
 
     def _step(self, action):

@@ -19,7 +19,7 @@
 			<orn>0 0 0</orn>
 		</body>
 		<body name="cube" record="True">
-			<asset path="cube_green.urdf"/>
+			<asset path="cube_small.urdf"/>
 			<pos>0.3 -0.2 0.665</pos>
 		</body>
 	</scene>

@@ -1,43 +1,42 @@
-#!/usr/bin/env python
-
 from __future__ import print_function
 import pybullet as p
-import sys, os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
-
 from perls.src.lib.utils.io_util import parse_log as plog
-from perls.src.lib.utils.math_util import get_relative_pose, get_absolute_pose, rand_vec, seed
+from perls.src.lib.utils.io_util import loginfo, FONT
+from perls.src.lib.utils.math_util import (get_relative_pose, 
+    get_absolute_pose,
+    rand_vec, seed
+)
+from perls import Controller
+import os
 from glob import glob
 import numpy as np
 import matplotlib.pyplot as plt
 from IPython import embed
 import gym
-# rand_vec(1)
+
 
 class Postprocess(object):
-    def __init__(self, robot_base_pose, env='vel', verbose=False, real_time=False):
+    def __init__(self, config_file):
 
-        self.verbose = verbose
-        self.env = env
-        self.real_time = real_time
+        _, world, display, _ = Controller.load_config(config_file, None)
 
-        # this one is for computing relative poses
-        self.robot_base_pose = robot_base_pose
-
-        # this one is for loading the robot for FK
-        robot_base_pose = (np.array([-0.15, -0.2, 0.9]), np.array([0, 0, 0, 1]))
-
-        ### TODO: why should these be different... FUCK bullet
-        self.r = p.connect(p.DIRECT)
-        p.setRealTimeSimulation(0)
-
-        ### Change this to your urdf file. ###
-        self.robot_file = p.loadURDF("../data/sawyer_robot/sawyer_description/urdf/sawyer_arm.urdf",
-                          robot_base_pose[0], robot_base_pose[1], useFixedBase=True)
-        p.resetBasePositionAndOrientation(self.robot_file, robot_base_pose[0], robot_base_pose[1])
+        display.run()
+        world.boot('cmd')
 
         ### TODO: why does the base pose change here and why is the above line necessary???
         # self.robot_base_pose = (p.getLinkState(self.robot_file, 0)[4], p.getLinkState(self.robot_file, 0)[5])
+
+        # get mapping between entity ids and entity names
+        # self.object_map = {}
+        # objects_fptr = open(objects_fname, "r")
+        # lines = objects_fptr.readlines()
+        # objects_fptr.close()
+        # for line in lines:
+        #     obj_id, obj_name = line.strip().split(",")
+        #     self.object_map[int(obj_id)] = obj_name
+
+        # self.object_ids = [int(x) for x in self.object_map.keys()]
+        # self.object_names = self.object_map.values()
 
         # hardcoded mapping between entity ids and entity names
         self.object_map = {4: "cube_0", 1: "titan_0"}
@@ -57,8 +56,9 @@ class Postprocess(object):
         for i, name in enumerate(self.col_names):
             self.col_names_dict[name] = i
 
-    def parse_log(self, fname, output_file, objects=None, cols=None):
+    def parse_log(self, fname, output_file, verbose=True, objects=None, cols=None):
         """
+
         This function parses a log saved by PyBullet, but it filters the
         saved objects on the provided keys and the collected data on cols.
         Both keys and cols should be lists of strings.
@@ -72,19 +72,19 @@ class Postprocess(object):
         Same as above, but filter out only the joint positions.
 
             log = parse_log("data.bin", "out.txt", objects=["sawyer", "gripper"],
-                            cols=['q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6'])
+                            cols=['q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8', 'q9', 'q10', 'q11'])
+
         """
-        ### Important: Toss the first 2500 rows (init).
 
-        log = np.array(plog(fname, verbose=self.verbose))
+        log = np.array(plog(fname, verbose=verbose))
+
         col_inds = sorted(self.col_names_dict.values())
-
         if cols is not None:
             # make sure desired columns are valid
             assert (set(cols) <= set(self.col_names))
 
             # get column inds to filter out
-            col_inds = list(map(self.col_names_dict.get, cols))
+            col_inds = map(self.col_names_dict.get, cols)
 
         # get object ids to filter out
         if objects is None:
@@ -107,53 +107,39 @@ class Postprocess(object):
         filtered = map(filter_row, log)
         return np.array([x for x in filtered if x is not None])
 
-    def fk(self, joint_pos):
-        """
-        WARNING: returns eef pose in world frame
-        """
-        for i in range(7):
-            p.resetJointState(self.robot_file, i, joint_pos[i])
-
-        x = p.getLinkState(self.robot_file, 6)
-        return x[4], x[5]
-
     def parse_demonstration(self, fname):
         """
         Parse a bullet bin file into states and actions.
         """
-        robot_log = self.parse_log(fname, None, objects=["titan_0"],
+        robot_log = self.parse_log(fname, None, verbose=False, objects=["titan_0"],
                                    cols=['stepCount', 'timeStamp', 'qNum',
                                          'q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6',
                                          'u0', 'u1', 'u2', 'u3', 'u4', 'u5', 'u6',
                                          't0', 't1', 't2', 't3', 't4', 't5', 't6'])
 
-        cube_log = self.parse_log(fname, None, objects=["cube_0"],
+        cube_log = self.parse_log(fname, None, verbose=False, objects=["cube_0"],
                                   cols=['stepCount', 'timeStamp', 'qNum', 'posX', 'posY', 'posZ', 'oriX', 'oriY', 'oriZ',
                                         'oriW'])
 
         # Time differences.
         time_diffs = robot_log[1:, 1] - robot_log[:-1, 1]
 
-        if self.verbose:
-            print("Time diff: {}".format(time_diffs[0]))
-
         # First subsample one of every 24 points to get control roughly at 10 Hz
         num_elems = min(robot_log.shape[0], cube_log.shape[0])
         filt_robot_log = []
         filt_cube_log = []
-        denominator = 1 if self.real_time == 1 else 24
-
         for i in range(num_elems):
-            if i % denominator == 0:
+            if i % 24 == 0:
                 filt_robot_log.append(robot_log[i])
                 filt_cube_log.append(cube_log[i])
 
+        table_pos = [.4, -.3, 0]
+
+
         robot_log = np.array(filt_robot_log)
         cube_log = np.array(filt_cube_log)
-
-        if self.verbose:
-            print("Number of elems before subsampling: {}".format(num_elems))
-            print("Number of elems after subsampling: {}".format(robot_log.shape[0]))
+        print("Number of elems before subsampling: {}".format(num_elems))
+        print("Number of elems after subsampling: {}".format(robot_log.shape[0]))
 
         num_elems = robot_log.shape[0]
         num_elems1 = cube_log.shape[0]
@@ -172,15 +158,19 @@ class Postprocess(object):
         prev_cube_pose_pos, prev_cube_pose_orn = get_relative_pose(prev_cube_pose, self.robot_base_pose)
         prev_eef_pose = self.fk(prev_joint_pos)
         prev_eef_pose_pos, prev_eef_pose_orn = get_relative_pose(prev_eef_pose, self.robot_base_pose)
+        print("Initial joint angles: {}".format(prev_joint_pos))
+        print("Initial eef pose in world frame: {}".format(prev_eef_pose))
+        print("Initial eef pose in robot frame: {}".format((prev_eef_pose_pos, prev_eef_pose_orn)))
+        print("Initial eef position: {}".format(prev_eef_pose_pos))
         cube_initial_z = prev_cube_pose_pos[-1]
+        print("Initial cube z-location: {}".format(cube_initial_z))
 
-        if self.verbose:
-            print("Initial joint angles: {}".format(prev_joint_pos))
-            print("Initial eef pose in world frame: {}".format(prev_eef_pose))
-            print("Initial eef pose in robot frame: {}".format((prev_eef_pose_pos, prev_eef_pose_orn)))
-            print("Initial eef position: {}".format(prev_eef_pose_pos))
-            print("Initial cube z-location: {}".format(cube_initial_z))
-            print("Using robot pose: {}".format(self.robot_base_pose))
+        print("Using robot pose: {}".format(self.robot_base_pose))
+
+        goal_pos = rand_vec(
+                3, (table_pos[0] + 0.1, table_pos[1] - 0.25, 0.641),
+                (table_pos[0] + 0.25, table_pos[1] + 0.25, 0.642),
+                'uniform')
 
         for i in range(1, num_elems):
             timestamp_elem = robot_log[i, 1]
@@ -216,16 +206,13 @@ class Postprocess(object):
             ### State and Action definition here ###
 
             # NOTE: we add the joint angles in state, joint vels in action (one timestep difference)
-            state = np.concatenate([prev_joint_pos, prev_joint_vel, prev_cube_pose_pos, prev_cube_pose_orn])
-            
-            #### Change actions
-            if self.env == 'vel':
-                action = np.array(joint_vel_elem)
-            elif self.env == 'pose':
-                action = np.array(eef_pose_pos_elem) - np.array(prev_eef_pose_pos)
+            state = np.concatenate([prev_joint_pos, prev_joint_vel, 
+                prev_cube_pose_pos, prev_cube_pose_orn, goal_pos])
+            action = np.array(joint_vel_elem)
 
             # NOTE: we add the previous eef orientation here, and previous cube orientation
-            # state = np.concatenate([prev_eef_pose_pos, prev_cube_pose_pos, prev_cube_pose_orn])
+            # state = np.concatenate([prev_eef_pose_pos, prev_cube_pose_pos, 
+            #     prev_cube_pose_orn, goal_pos])
             # action = np.array(eef_pose_pos_elem) - np.array(prev_eef_pose_pos)
 
             states.append(state)
@@ -239,7 +226,7 @@ class Postprocess(object):
             prev_cube_pose_pos, prev_cube_pose_orn = cube_pose_pos_elem, cube_pose_orn_elem
 
         print("Number filtered: {} out of {}.".format(num_filtered, num_elems))
-        print("Last cube z-position: {}".format(states[-1][5]))
+        loginfo("Goal region center position: {}".format(goal_pos), FONT.disp)
         
         # timestamps = np.array(timestamps)
         # time_diffs = timestamps[1:] - timestamps[:-1]
@@ -250,51 +237,53 @@ class Postprocess(object):
 
         return np.array(states), np.array(actions)
 
-    def close(self):
-        p.disconnect(self.r)
-
 
 if __name__ == "__main__":
 
     env = gym.make('push-vel-v0')
     env.reset()
 
+    # robot_position = env._robot.pos
+    # robot_orn = env._robot.orn
+    # robot_pose = (robot_position, robot_orn)
     robot_base_pose = env._robot.pose
-
+    # robot_base_pose = (np.array([-0.15, -0.2, 0.9]), np.array([0, 0, 0, 1]))
     env.close()
     plt.close("all") # dirty haxxx
 
-    if len(sys.argv) > 1:
-        push_type = sys.argv[1]
-        verbose = sys.argv[2]
-    else:
-        push_type = 'vel'
-        verbose = False
-    pp = Postprocess(robot_base_pose, push_type, verbose)
-    
-    ### Change this to set files to read. ###
-    demons = glob("../src/log/trajectory/push/success/*.bin")
+    # hard-coded robot base pose
+    # robot_position = [-0.2, -0.7, 0.9]
+    # robot_orn = [0.0, 0.0, 0.0, 1.0]
+    # robot_pose = (robot_position, robot_orn)
 
-    parsed_demons = []
-    for i in range(len(demons)):
-        parsed_demons.append((pp.parse_demonstration(demons[i])))
-    pp.close()
+    #fname = "success/2017-08-27-22-08-35.bin"
+    #fname = "success/2017-08-27-22-11-11.bin"
+    #fname = "success/2017-08-27-22-12-14.bin"
 
-    ### Change this index to view a different demonstration, or put in a loop to view all. ###
-    if push_type == 'vel':
-        env = gym.make('push-vel-gui-v0')
-    elif push_type == 'pose':
-        env = gym.make('push-pose-gui-v0')
-    
+    pp = Postprocess(robot_base_pose)
+
+    all_states = list()
+    all_actions = list()
+
+    ### Test FK here.
+    # joint_angles = np.array([-0.406434179930325, -0.5088564232765723, -0.01815209772386096, 2.1507001664115046, -0.22093926951517517, -0.07271383292633793, 3.122028481588129])
+    # tmp = pp.fk(joint_angles)
+    # print("EEF pose after FK: {}".format(tmp))
+    # tmp = (np.array([ 0.252, -0.208,  0.84 ]), np.array([0., 1., 0., 0.]))
+    # print("EEF pose hardcoded: {}".format(tmp))
+
+    record_path = "../src/log/trajectory/push/success/*.bin"
+
+    files = filter(os.path.isfile, glob(record_path))
+    files.sort(key=lambda x: os.path.getmtime(x))
+
     seed()
-    for i in range(len(demons)):
-
-        fname = demons[i]
-        states, actions = parsed_demons[i]
-        env.reset()
-
-        for a in actions:
-            _, _, done, _ = env.step(a)
-            if verbose == 1 or verbose == True:
-                print(a)
-                print(done)
+    for fname in files:
+        states, actions = pp.parse_demonstration(fname)
+        all_states.append(states)
+        all_actions.append(actions)
+    all_states = np.concatenate(all_states, axis=0)
+    all_actions = np.concatenate(all_actions, axis=0)
+    print(all_states.shape)
+    print(all_actions.shape)
+    np.savez("demo_rand_goal_vel.npz", states=all_states, actions=all_actions)
