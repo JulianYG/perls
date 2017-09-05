@@ -190,23 +190,42 @@ class StateEngine(object):
         return NotImplemented
 
     @abc.abstractmethod
-    def set_body_visual_shape(
-            self, uid, qid, rgba_color, 
-            spec_color=(1,1,1), shape_id='box',
-            texture=None):
+    def set_body_visual_shape(self, uid, qid, shape):
         """
         Set the body visual shape given parameters.
         :param uid: integer body unique id
-        :param texture: file path of texture, typcially
-        jpg or png format.
         :param qid: link index of body to be changed, -1 for base
-        :param shape_id: string for shape,
+        :param shape: string for shape,
         choose among 'sphere', 'box', 'capsule', 'cylinder',
         'plane', and 'mesh'.
-        :param rgba_color: vec4 float (r, g, b, alpha) in [0, 1]
-        :param spec_color: vec3 float specular color components,
-         RED, GREEN and BLUE, can be from 0 to large number (>100).
         :return: None
+        """
+        return NotImplemented
+
+    @abc.abstractmethod
+    def set_body_visual_color(self, uid, qid, color, spec=False):
+        """
+        Set the body visual color given parameters.
+        :param uid: integer body unique id
+        :param qid: link index of body to be changed, -1 for base
+        :param color: vec4 float (r, g, b, alpha) in [0, 1] RGBA
+        if spec=False, or vec3 float specular color components,
+        RED, GREEN and BLUE, can be from 0 to large number (>100) if
+        spec=True
+        :param spec: boolean indicating whether specular color or not
+        :return: None
+        """
+        return NotImplemented
+
+    @abc.abstractmethod
+    def set_body_texture(self, uid, qid, texture):
+        """
+        Set the body texture with given file
+        :param uid: integer body unique id
+        :param qid: link index of body to be changed, -1 for base
+        :param texture: file path of texture, typcially
+        jpg or png format.
+        :return:
         """
         return NotImplemented
 

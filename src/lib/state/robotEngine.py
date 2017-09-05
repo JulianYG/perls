@@ -328,13 +328,22 @@ class InteraEngine(RealStateEngine):
         """
         return NotImplemented
 
-    def set_body_visual_shape(
-            self, uid, qid, rgba_color, 
-            spec_color=(1,1,1), shape_id='box',
-            texture=None):
+    def set_body_visual_color(self, uid, qid, color, spec=False):
         """
-        Cannot set the visual shape of body
+        Cannot set the visual color of body
         in real world
+        """
+        return NotImplemented
+
+    def set_body_texture(self, uid, qid, texture):
+        """
+        Cannot set body texture in real world
+        """
+        return NotImplemented
+
+    def set_body_visual_shape(self, uid, qid, shape):
+        """
+        Cannot set body shape in real world
         """
         return NotImplemented
 

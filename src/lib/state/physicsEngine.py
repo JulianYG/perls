@@ -25,7 +25,7 @@ class BulletPhysicsEngine(FakeStateEngine):
     
     """
 
-    _JOINT_TYPES = {
+    JOINT_TYPES = {
         0: 'revolute', 1: 'prismatic', 2: 'spherical',
         3: 'planar', 4: 'fixed',
         5: 'point2point', 6: 'gear'}
@@ -34,7 +34,12 @@ class BulletPhysicsEngine(FakeStateEngine):
         dict(revolute=0, prismatic=1, spherical=2,
              planar=3, fixed=4, point2point=5, gear=6)
 
-    _SHAPE_TYPES = dict(
+    SHAPE_TYPES = {
+        2: 'sphere', 3: 'box', 4: 'cylinder',
+        5: 'mesh', 6: 'plane', 7: 'capsule'
+    }
+
+    _INV_SHAPE_TYPES = dict(
         sphere=2, box=3, cylinder=4, mesh=5,
         plane=6, capsule=7)
 
@@ -248,46 +253,40 @@ class BulletPhysicsEngine(FakeStateEngine):
         return p.getVisualShapeData(
             uid, physicsClientId=self._physics_server_id)
 
-    def set_body_visual_shape(
-            self, uid, qid, rgba_color, 
-            spec_color=(1,1,1), shape_id=None,
-            texture=None):
+    def set_body_texture(self, uid, qid, texture):
         try:
-            if shape_id:
-                if texture:
-                    texture_id = p.loadTexture(texture, self._physics_server_id)
-                    p.changeVisualShape(
-                        uid, qid, 
-                        shapeIndex=self._SHAPE_TYPES[shape_id],
-                        textureUniqueId=texture_id, 
-                        rgbaColor=rgba_color, 
-                        specularColor=spec_color,
-                        physicsClientId=self._physics_server_id)
-                    return texture_id
-                else:
-                    p.changeVisualShape(
-                        uid, qid, 
-                        shapeIndex=self._SHAPE_TYPES[shape_id],
-                        rgbaColor=rgba_color, 
-                        specularColor=spec_color,
-                        physicsClientId=self._physics_server_id)
-            else:
-                if texture:
-                    texture_id = p.loadTexture(texture, self._physics_server_id)
-                    p.changeVisualShape(
-                        uid, qid, 
-                        textureUniqueId=texture_id, 
-                        rgbaColor=rgba_color, 
-                        specularColor=spec_color,
-                        physicsClientId=self._physics_server_id)
-                    return texture_id
-                else:
-                    p.changeVisualShape(
-                        uid, qid, 
-                        rgbaColor=rgba_color, 
-                        specularColor=spec_color,
-                        physicsClientId=self._physics_server_id)
+            texture_id = p.loadTexture(texture, self._physics_server_id)
+            p.changeVisualShape(
+                uid, qid, textureUniqueId=texture_id,
+                physicsClientId=self._physics_server_id)
+            return texture_id
+        except p.error:
+            self.status = BulletPhysicsEngine._STATUS[-1]
+            self._error_message.append(p.error.message)
             return -1
+
+    def set_body_visual_shape(self, uid, qid, shape):
+        try:
+            p.changeVisualShape(
+                uid, qid, shapeIndex=self._INV_SHAPE_TYPES[shape],
+                physicsClientId=self._physics_server_id)
+        except p.error:
+            self.status = BulletPhysicsEngine._STATUS[-1]
+            self._error_message.append(p.error.message)
+            return -1
+
+    def set_body_visual_color(self, uid, qid, color, spec=False):
+        try:
+            if spec:
+                p.changeVisualShape(
+                    uid, qid, 
+                    specularColor=tuple(color),
+                    physicsClientId=self._physics_server_id)
+            else:
+                p.changeVisualShape(
+                    uid, qid, 
+                    rgbaColor=tuple(color),
+                    physicsClientId=self._physics_server_id)
         except p.error:
             self.status = BulletPhysicsEngine._STATUS[-1]
             self._error_message.append(p.error.message)
@@ -327,7 +326,7 @@ class BulletPhysicsEngine(FakeStateEngine):
 
     def get_body_joint_info(self, uid, jid):
         info = list(p.getJointInfo(uid, jid, physicsClientId=self._physics_server_id))
-        info[2] = BulletPhysicsEngine._JOINT_TYPES[info[2]]
+        info[2] = BulletPhysicsEngine.JOINT_TYPES[info[2]]
         return tuple(info)
 
     def get_body_joint_state(self, uid, jid):

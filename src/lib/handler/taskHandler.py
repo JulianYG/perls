@@ -35,21 +35,22 @@ class Checker(object):
         """
         if self._name == 'push_sawyer' or self._name == 'push_kuka':
 
-            table = world.body['table_0']
-            # table.change_texture()
-            floor = world.body['plane_0']
-            # floor.change_texture()
-            gripper = world.body['bax_0']
-
+            world.body['plane_0'].color = (-1, (0, 76, 253, 1))
             cube = world.body['cube_0']
 
-            ### Fine tune the environment to look real
-            table.visual_shape = {'rgba': (0, 1, 0, 1)}
-            floor.visual_shape = {'rgba': (0, 76./255, 253./255, 1)}
-            cube.visual_shape  = {'rgba': (1, 0, 0, 1)}
+            # Fine tune the environment to look real
+            cube.color = (-1, (1, 0, 0, 1))
 
-            gripper.visual_shape = {'jid': 0, 'rgba': (0, 0, 0, 1)}
-            gripper.visual_shape = {'jid': 2, 'rgba': (0, 0, 0, 1)}
+            gripper = world.body['bax_0']
+
+            gripper.color = (0, (0, 0, 0, 1))
+            gripper.color = (1, (0, 0, 0, 1))
+            gripper.color = (2, (0, 0, 0, 1))
+            gripper.color = (3, (0, 0, 0, 1))
+            gripper.color = (4, (0, 0, 0, 1))
+
+            table = world.body['table_0']
+            table.color = (0, (0, 1, 0, 1))
 
             # Random goal
             box_center = math_util.rand_vec(

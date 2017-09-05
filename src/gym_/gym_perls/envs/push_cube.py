@@ -48,8 +48,8 @@ class PushCube(PerlsEnv):
                 flen=1.77,
                 # Have to use exact numbers for aligned
                 # Top down view in GUI and non-GUI modes...
-                yaw=90.1,
-                pitch=-89.9,
+                yaw=90.0001,
+                pitch=-75,
                 focus=self._world.body['table_0'].pos
             )
         )
