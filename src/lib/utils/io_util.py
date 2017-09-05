@@ -61,6 +61,13 @@ class FONT:
     bold = '\033[1m'
     underline = '\033[4m'
 
+
+class Postprocess:
+
+    pass
+
+
+
 _env_tree = collections.namedtuple(
     'EnvTree',
     ['env', 'arm', 'gripper', 'hand',

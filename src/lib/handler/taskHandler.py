@@ -36,6 +36,20 @@ class Checker(object):
         if self._name == 'push_sawyer' or self._name == 'push_kuka':
 
             table = world.body['table_0']
+            # table.change_texture()
+            floor = world.body['plane_0']
+            # floor.change_texture()
+            gripper = world.body['bax_0']
+
+            cube = world.body['cube_0']
+
+            ### Fine tune the environment to look real
+            table.visual_shape = {'rgba': (0, 1, 0, 1)}
+            floor.visual_shape = {'rgba': (0, 76./255, 253./255, 1)}
+            cube.visual_shape  = {'rgba': (1, 0, 0, 1)}
+
+            gripper.visual_shape = {'jid': 0, 'rgba': (0, 0, 0, 1)}
+            gripper.visual_shape = {'jid': 2, 'rgba': (0, 0, 0, 1)}
 
             # Random goal
             box_center = math_util.rand_vec(
@@ -51,7 +65,7 @@ class Checker(object):
                               {'center': box_center,
                                'size': 0.1,})
 
-            cube_pos = world.body['cube_0'].pos
+            cube_pos = cube.pos
             robot = world.body['titan_0']
 
             # Initializes the gripper next to the cube

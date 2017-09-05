@@ -263,12 +263,21 @@ class Body(object):
         bridge your own rendering method with simulation, 
         and synchronize the world transforms manually 
         after each simulation step
-        :return: A list of visual shape data:
-        [uid, linkIndex, visualGeometryType, dimensions (vec3), 
+        :return: A dictionary of lists, of visual shape data:
+        [visualGeometryType, dimensions (vec3, local scale on xyz), 
         meshAssetFileName (str), localVisualFramePos (vec3), 
         localVisualFrameOrn (vec4), rgbaColor (vec4)]
         """
-        return self._engine.get_body_visual_shape(self._uid)
+        visual_data = self._engine.get_body_visual_shape(self._uid)
+        visual_info = dict(
+            geom_type=[d[2] for d in visual_data],
+            dim=[d[3] for d in visual_data],
+            mesh_path=[d[4] for d in visual_data],
+            rel_pos=[d[5] for d in visual_data],
+            rel_orn=[d[6] for d in visual_data],
+            rgba=[d[7] for d in visual_data]
+        )
+        return visual_info
 
     @property
     def collision_shape(self):
@@ -446,22 +455,34 @@ class Body(object):
         Reset visual shape data to change the texture of a shape. 
         Currently only affects the software renderer (getCameraImage), 
         does not show up on OpenGL window
-        :param visual_info: a tuple of 
-        path: the path of texture file (png, jpg, etc);
+        :param visual_info: a dictionary of optional keys:
+        texture: a tuple of the path of texture file (png, jpg, etc), 
+        and the name of texture defined by user;
         name: a string of name to associate with the texture,
         suggested to be something recognizable, like 'sky', 'rainbow';
-        qid: joint index;
         sid: shape index ();
         rgba: vec4 in range [0, 1]. No transparent alpha yet;
         spec: RGB 0-100 vec3;
+        And required key:
+        qid: joint index;
         :return: None
         """
-        path, name, qid, sid, rgba, spec = visual_info
-        texture_id = self._engine.set_body_visual_shape(
-            self._uid, path, qid, sid, rgba, spec)
+        # Make invisible if not there
+        qid = visual_info.get('jid', 0)
+        rgba = visual_info.get('rgba', (1, 1, 1, 0))
+        specular = visual_info.get('spec', (1, 1, 1))
+        shape = visual_info.get('shape', None)
 
-        # Store the texture name with corresponding texture id
-        self._texture[name] = texture_id
+        if 'texture' in visual_info:
+            texture_path, name = visual_info['texture']
+            texture_id = self._engine.set_body_visual_shape(
+                self._uid, qid, rgba, specular, shape, 
+                texture=texture_path)
+            # Store the texture name with corresponding texture id
+            self._texture[name] = texture_id
+        else:
+            self._engine.set_body_visual_shape(
+                self._uid, qid, rgba, specular, shape)
 
     @collision_shape.setter
     def collision_shape(self, *args):

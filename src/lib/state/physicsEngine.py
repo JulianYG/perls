@@ -35,10 +35,8 @@ class BulletPhysicsEngine(FakeStateEngine):
              planar=3, fixed=4, point2point=5, gear=6)
 
     _SHAPE_TYPES = dict(
-        sphere=p.GEOM_SPHERE, box=p.GEOM_BOX,
-        capsule=p.GEOM_CAPSULE, cylinder=p.GEOM_CYLINDER,
-        plane=p.GEOM_PLANE, mesh=p.GEOM_MESH
-    )
+        sphere=2, box=3, cylinder=4, mesh=5,
+        plane=6, capsule=7)
 
     def __init__(self, e_id, identifier, max_run_time,
                  async=False, step_size=0.001):
@@ -248,18 +246,48 @@ class BulletPhysicsEngine(FakeStateEngine):
 
     def get_body_visual_shape(self, uid):
         return p.getVisualShapeData(
-            uid, physicsClientId=self._physics_server_id)[1:]
+            uid, physicsClientId=self._physics_server_id)
 
     def set_body_visual_shape(
-            self, uid, texture, qid, shape_id='box',
-            rgba_color=(1,1,1,1), spec_color=(1,1,1)):
+            self, uid, qid, rgba_color, 
+            spec_color=(1,1,1), shape_id=None,
+            texture=None):
         try:
-            texture_id = p.loadTexture(texture, self._physics_server_id)
-            p.changeVisualShape(
-                uid, qid, self._SHAPE_TYPES[shape_id],
-                texture_id, rgba_color, spec_color,
-                physicsClientId=self._physics_server_id)
-            return texture_id
+            if shape_id:
+                if texture:
+                    texture_id = p.loadTexture(texture, self._physics_server_id)
+                    p.changeVisualShape(
+                        uid, qid, 
+                        shapeIndex=self._SHAPE_TYPES[shape_id],
+                        textureUniqueId=texture_id, 
+                        rgbaColor=rgba_color, 
+                        specularColor=spec_color,
+                        physicsClientId=self._physics_server_id)
+                    return texture_id
+                else:
+                    p.changeVisualShape(
+                        uid, qid, 
+                        shapeIndex=self._SHAPE_TYPES[shape_id],
+                        rgbaColor=rgba_color, 
+                        specularColor=spec_color,
+                        physicsClientId=self._physics_server_id)
+            else:
+                if texture:
+                    texture_id = p.loadTexture(texture, self._physics_server_id)
+                    p.changeVisualShape(
+                        uid, qid, 
+                        textureUniqueId=texture_id, 
+                        rgbaColor=rgba_color, 
+                        specularColor=spec_color,
+                        physicsClientId=self._physics_server_id)
+                    return texture_id
+                else:
+                    p.changeVisualShape(
+                        uid, qid, 
+                        rgbaColor=rgba_color, 
+                        specularColor=spec_color,
+                        physicsClientId=self._physics_server_id)
+            return -1
         except p.error:
             self.status = BulletPhysicsEngine._STATUS[-1]
             self._error_message.append(p.error.message)

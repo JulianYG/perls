@@ -341,10 +341,16 @@ class BulletRenderEngine(GraphicsEngine):
 
         if itype == 'human':
             rgb_img = np.reshape(rgb_img, (height, width, 4)).astype(np.float32) / 255.
-            plot_util.pop(rgb_img, 1.5, dict(interpolation='none'))
+            plot_util.pop(rgb_img[:, :, :3], 1.5, dict(interpolation='none'))
 
         elif itype == 'rgb':
-            return np.reshape(rgb_img, (height, width, 4)).astype(np.float32) / 255.
+            return np.reshape(rgb_img, (height, width, 4))[:, :, :3].astype(np.float32) / 255.
+
+        elif itype == 'rgbd':
+            rgbd = np.reshape(rgb_img, (height, width, 4)).astype(np.float32) / 255.
+            # Now replace channel 3 (alpha) with depth
+            rgbd[:, :, 3] = np.reshape(depth_img, (height, width)).astype(np.float32)
+            return rgbd
 
         elif itype == 'depth':
             return np.reshape(depth_img, (height, width)).astype(np.float32)
