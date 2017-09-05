@@ -84,7 +84,7 @@ class Postprocess(object):
                 break
             idx += 1
         
-        log = log[idx:, :]
+        log = log[2500:, :]
         col_inds = sorted(self.col_names_dict.values())
         if cols is not None:
             # make sure desired columns are valid

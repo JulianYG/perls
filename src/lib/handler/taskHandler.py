@@ -58,10 +58,10 @@ class Checker(object):
             robot = world.body['titan_0']
 
             # Initializes the gripper next to the cube
-            initial_gripper_pos = \
-                (cube_pos[0] - 0.05, cube_pos[1], cube_pos[2] + 0.025)
+            # initial_gripper_pos = \
+            #     (cube_pos[0] - 0.05, cube_pos[1], cube_pos[2] + 0.025)
             
-            robot.tool_pos = (initial_gripper_pos, 300)
+            # robot.tool_pos = (initial_gripper_pos, 300)
 
             # Use this as a mark
             robot.grasp(1)
@@ -104,7 +104,7 @@ class Checker(object):
             table = body_dict['table_0']
 
             # If cost too high, mark fail and done
-            if -self.score(world) > .2:
+            if -self.score(world) > .5:
                 return True, False
 
             # If collided with table, fail
