@@ -1,10 +1,12 @@
+
+from xml.etree import ElementTree
+
 import struct
 import pickle
 import collections
 import numpy as np
 import os, sys
 import glob
-from xml.etree import ElementTree
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
@@ -44,6 +46,9 @@ _singleton_elem = ElementTree.Element(0)
 
 class FONT:
 
+    def __init__(self):
+        pass
+
     # warning for all cases
     warning = ['\033[93m']
     ignore = ['\033[90m']
@@ -60,13 +65,6 @@ class FONT:
     end = '\033[0m'
     bold = '\033[1m'
     underline = '\033[4m'
-
-
-class Postprocess:
-
-    pass
-
-
 
 _env_tree = collections.namedtuple(
     'EnvTree',
@@ -102,6 +100,7 @@ def fdelete(file):
 
     os.remove(file)
 
+
 def flist(spec):
     return glob.glob(spec)
 
@@ -121,10 +120,6 @@ def logerr(msg, etype):
     # msg = pprint.pformat(msg)
     sys.stderr.write('{}{}\n{}'.format(
         etype[1] + FONT.bold, msg, FONT.end))
-
-
-def flist(spec):
-    return glob.glob(spec)
 
 
 def write_log(log, dest):
