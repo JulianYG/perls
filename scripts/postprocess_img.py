@@ -76,15 +76,7 @@ class Postprocess(object):
 
         """
 
-        log = np.array(plog(fname, verbose=verbose))[2400:]
-
-        ### Important: Toss the first 2500 rows.
-        # idx = 0
-        # for row in log:
-        #     if row[2] == 0 and np.allclose(row[17:19], [0, 0]):
-        #         break
-        #     idx += 1
-        # log = log[2500:]
+        log = np.array(plog(fname, verbose=verbose))
 
         col_inds = sorted(self.col_names_dict.values())
         if cols is not None:
