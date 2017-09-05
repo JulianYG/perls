@@ -26,7 +26,7 @@ class View:
         self._engine = graphics_engine
 
         self._simulation_server_id = graphics_engine.ps_id
-        self._frame = 'off'
+        self._frame = self._engine.frame
 
         self._record = True if self._engine.info['job'] == 'record' else False
 
@@ -147,10 +147,7 @@ class View:
         1 represents success of replay, and -1 represent
         error state.
         """
-        status = self._engine.boot(targets)
-        if status > -1:
-            self._frame = self._engine.frame
-        return status
+        return self._engine.boot(targets)
 
     def close(self, exit_code):
         """

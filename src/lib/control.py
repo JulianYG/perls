@@ -279,6 +279,13 @@ class Controller(object):
 
                 track_targets = world.get_env_state(('env', 'target'))[0]
 
+                # TODO: May be able to move outside loop if display is booted
+                # Kickstart the model, perform frame type check
+                world.boot(display.info['frame'])
+
+                # Reset the world
+                world.reset()
+
                 # Pass in targets uids
                 status = display.run([t[0] for t in track_targets])
 
@@ -299,13 +306,6 @@ class Controller(object):
                 else:
                     loginfo('Display configs loaded. Starting simulation...',
                             FONT.control)
-
-                # TODO: May be able to move outside loop if display is booted
-                # Kickstart the model, perform frame type check
-                world.boot(display.info['frame'])
-
-                # Reset the world
-                world.reset()
 
                 # After loading and initialization finish, start rendering
                 # (This can significantly boost performance)
