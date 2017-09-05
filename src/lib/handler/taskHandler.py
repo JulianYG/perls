@@ -1,7 +1,7 @@
 # !/usr/bin/env python
 
 from ..utils import math_util
-from ..utils.io_util import loginfo, FONT, fwrite
+from ..utils.io_util import loginfo, FONT
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
@@ -42,7 +42,7 @@ class Checker(object):
                 3, (table.pos[0] + 0.1, table.pos[1] - 0.25, 0.641),
                 (table.pos[0] + 0.25, table.pos[1] + 0.25, 0.642),
                 'uniform')
-            
+
             self._states['goal'] = box_center
 
             # Only add lines for GUI or demos
@@ -125,11 +125,4 @@ class Checker(object):
         return False, False
 
     def stop(self):
-        """
-        Perform end of task check and fout.
-        """
-        # if self._name == 'push_sawyer' or self._name == 'push_kuka':
-
-        #     fwrite(self._record, '../../log/goals.p')
-        return 
-        
+        return

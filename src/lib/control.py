@@ -310,7 +310,6 @@ class Controller(object):
                 # After loading and initialization finish, start rendering
                 # (This can significantly boost performance)
                 display.show()
-                # if 
 
                 ctrl_handler.resume()
 
@@ -407,7 +406,8 @@ class Controller(object):
             self._process_pool[server_id].terminate()
             self._process_pool[server_id] = None
 
-        loginfo('Safe exit server {}.'.format(server_id), FONT.control)  
+        loginfo('Safe exit.', FONT.control)
+        sys.exit(0)
 
     def _control_interrupt(self, world, display, signal, elapsed_time):
         """
