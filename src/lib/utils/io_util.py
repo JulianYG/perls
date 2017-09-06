@@ -1,9 +1,12 @@
+
+from xml.etree import ElementTree
+
 import struct
 import pickle
 import collections
 import numpy as np
 import os, sys
-from xml.etree import ElementTree
+import glob
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
@@ -42,6 +45,9 @@ _singleton_elem = ElementTree.Element(0)
 
 
 class FONT:
+
+    def __init__(self):
+        pass
 
     # warning for all cases
     warning = ['\033[93m']
@@ -82,7 +88,7 @@ def str2bool(string):
 
 def pjoin(*fname):
 
-    return os.path.join(*fname)
+    return os.path.abspath(os.path.join(*fname))
 
 
 def fmove(prev, new):
@@ -90,7 +96,16 @@ def fmove(prev, new):
     os.rename(prev, new)
 
 
-def loginfo(msg, itype):
+def fdelete(file):
+
+    os.remove(file)
+
+
+def flist(spec):
+    return glob.glob(spec)
+
+
+def loginfo(msg, itype=FONT.disp):
     """
     Print message and flush to terminal
     :param msg: string message to print
@@ -151,6 +166,10 @@ def parse_log(file, verbose=True):
                 record.append(values[i])
             log.append(record)
     return log
+
+
+def pwd(file_path):
+    return os.path.dirname(file_path)
 
 
 def prompt(question):
@@ -370,8 +389,8 @@ def parse_disp(file_path):
 
     replay_node = root.find('./view/replay')
 
-    replay_attrib = replay_node.attrib if replay_node else {}
-    replay_info = dict(delay=float(replay_attrib.get('delay', 1e-4)))
+    replay_attrib = replay_node.attrib if replay_node is not None else {}
+    replay_info = dict(delay=float(replay_attrib.get('delay', 0)))
     return camera_info, replay_info, options
 
 
@@ -385,9 +404,11 @@ def parse_config(file_path):
     for conf in configs:
 
         build = conf.find('./build').attrib['type'].lower()
-        model_desc = pjoin(os.path.dirname(file_path),
+        model_desc = pjoin(os.path.dirname(__file__), 
+                           '../../../configs',
                            conf.find('./env').text)
-        view_desc = pjoin(os.path.dirname(file_path),
+        view_desc = pjoin(os.path.dirname(__file__), 
+                          '../../../configs',
                           conf.find('./disp').text)
         config_name = conf.attrib['name']
         conf_id = int(conf.attrib['id'])

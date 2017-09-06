@@ -28,6 +28,10 @@ _AXES2TUPLE = {
 _TUPLE2AXES = dict((v, k) for k, v in _AXES2TUPLE.items())
 
 
+def seed(s=42):
+    np.random.seed(s)
+
+
 """
 Scalar Calculation / Processing
 """
@@ -74,11 +78,36 @@ def rms(vector):
     return np.sqrt(np.sum(vector ** 2))
 
 
+def max_norm(vector, axis=-1):
+    """
+    Normalize vector by dividing each element
+    with the maximum value in the vector
+    :param vector: vector to be max-normalized
+    :param axis: axis to perform normalization
+    :return: max-normalized vector
+    """
+    return (vector - vector.min(axis)) / vector.ptp(axis)
+
+
+def normalize(vector, axis=-1):
+    """
+    Normalize the vector so that the sum of
+    element squares is 1.
+    :param vector: vector to be normalized
+    :param axis: axis to perform normalization
+    :return: normalized vector
+    """
+    return vector / np.linalg.norm(vector, axis=axis)
+
+
 def sign(vector, threshold=None):
     """
     Returns element-wise indication of the sign
     of a vector
     :param vector: input vector
+    :param threshold: threshold value. Values
+    within the abs range of threshold will be
+    signed as 0.
     :return: sign of each element in the vector
     """
     if threshold:
@@ -96,7 +125,7 @@ def _filter(vec):
     vec[np.where(abs_vec != max_vals)] = 0.
 
 
-def filter(vec, axis=None):
+def react_filter(vec, axis=None):
     """
     Given vector, keep only the maximum abs value 
     in each dimension and mask all other values to 0.

@@ -53,7 +53,6 @@ class World(object):
         # world specific attributes
         self._gravity = math_util.zero_vec(3)
         self._traction = 200
-
         self._checker = None
 
     @property
@@ -205,7 +204,9 @@ class World(object):
             # Only parse if gripper is there
             if gripper_spec:
                 gripper_body = self.GRIPPER_TYPE[gripper_spec['type']](
-                    math_util.rand_bigint(),
+
+                    # Use some random strings
+                    hash(gripper_spec['name']),
                     self._engine,
                     path=gripper_spec['path'])
                 gripper_body.name = gripper_spec['name']

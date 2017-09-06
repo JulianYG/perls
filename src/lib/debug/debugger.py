@@ -125,6 +125,9 @@ class ViewDebugger(object):
     def set_render_view(self, param):
         self._display.set_render_view(param)
 
+    def show(self):
+        self._display.show()
+
     def get_camera_pose(self, otype='quat'):
 
         return self._display.get_camera_pose(otype=otype)

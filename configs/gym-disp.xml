@@ -10,6 +10,6 @@
 		<control type="off" sensitivity="20" rate="10"/>
 		<!--<env>push_kuka.xml</env>-->
 		 <env>push_sawyer.xml</env>
-		<disp>exp.xml</disp>
+		<disp>disp.xml</disp>
 	</config>
 </batch>

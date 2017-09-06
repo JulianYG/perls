@@ -11,14 +11,8 @@ from lib.utils import math_util
 
 class PushCube(PerlsEnv):
     """
-    Pushing cube across the table
+    Pushing cube to a specific goal on table
     """
-
-    metadata = {
-        'render.modes': ['human', 'depth', 'segment'],
-        'video.frames_per_second': 50
-    }
-
     def __init__(self, conf_path):
 
         super(PushCube, self).__init__(conf_path)
@@ -42,6 +36,25 @@ class PushCube(PerlsEnv):
         """
         return NotImplemented
 
+    def _reset(self):
+        """
+        Override method.
+        """
+        # Set to top down view to align with real world
+        # Overwrite settings in config file
+        self._display.set_render_view(
+            dict(
+                dim=(512, 424),
+                flen=1.77,
+                # Have to use exact numbers for aligned
+                # Top down view in GUI and non-GUI modes...
+                yaw=90.0001,
+                pitch=-75,
+                focus=self._world.body['table_0'].pos
+            )
+        )
+        return super(PushCube, self)._reset()
+
     @property
     def state(self):
         eef_pos, _ = math_util.get_relative_pose(
@@ -50,7 +63,6 @@ class PushCube(PerlsEnv):
         goal_pos = self._world.get_task_state()['goal']
 
         return math_util.concat(eef_pos, cube_pos, cube_orn, goal_pos)
-        # return math_util.concat(eef_pos, cube_pos, cube_orn)
 
     def _step_helper(self, action):
         return NotImplemented

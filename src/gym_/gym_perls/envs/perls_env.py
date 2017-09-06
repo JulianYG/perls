@@ -20,13 +20,12 @@ __version__ = '0.1'
 
 class PerlsEnv(gym.Env):
     """
-    Construct an gym_ environment
+    Construct a gym environment for perls simulation
     """
-
     Space = spaces
-
     metadata = {
-        'render.modes': ['human', 'rgb', 'depth', 'segment'],
+        'render.modes': ['human', 'rgb', 'rgbd', 
+                         'depth', 'segment'],
         'video.frames_per_second': 50
     }
 
@@ -40,8 +39,9 @@ class PerlsEnv(gym.Env):
         self._align_iters = 1
 
         _, self._world, self._display, control = Controller.load_config(conf, None)
-        self._status = self._display.run(None)
+
         self._world.boot(self._display.info['frame'])
+        self._status = self._display.run(None)
 
         if not self._world.info['engine']['real_time']:
             step_size = self._world.info['engine']['step_size']
@@ -120,15 +120,7 @@ class PerlsEnv(gym.Env):
         state space.
         """
         self._world.reset()
-        self._display.set_render_view(
-            dict(
-                dim=(256, 256),
-                flen=4,
-                yaw=50,
-                pitch=-35,
-                focus=(0, 0, 0)
-            )
-        )
+        self._display.show()
         return self.state
 
     def _step(self, action):

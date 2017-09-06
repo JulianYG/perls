@@ -96,7 +96,7 @@ class Body(object):
         Get id of body
         :return: unique entity ID of this instance
         """
-        return self._uid
+        return int(self._uid)
 
     @property
     def cid(self):
@@ -257,21 +257,59 @@ class Body(object):
     ###
     # Visual information
     @property
-    def visual_shape(self):
+    def color(self):
         """
-        Get the visual shape information. Can be used to
+        Get the body visual rgba color. Can be used to
         bridge your own rendering method with simulation, 
         and synchronize the world transforms manually 
         after each simulation step
-        :return: A list of visual shape data:
-        [uid, linkIndex, visualGeometryType, dimensions (vec3), 
-        meshAssetFileName (str), localVisualFramePos (vec3), 
-        localVisualFrameOrn (vec4), rgbaColor (vec4)]
+        :return: A list of rgba vec4 float colors,
+        in the order of links
         """
-        return self._engine.get_body_visual_shape(self._uid)
+        visual_data = self._engine.get_body_visual_shape(self._uid)
+        return [d[7] for d in visual_data]
 
     @property
-    def collision_shape(self):
+    def geometry(self):
+        """
+        Get the body visual geometry types for each link.
+        :return: A list of visual geometry shapes,
+        in the order of links
+        """
+        visual_data = self._engine.get_body_visual_shape(self._uid)
+        return [self._engine.SHAPE_TYPES[d[2]] for d in visual_data]
+
+    @property
+    def visual_frame(self):
+        """
+        Get the position and the orientation of the local
+        visual frame, relative to link/joint frame
+        :return: tuple of (vec3 float cartesian, vec4 float quaternion)
+        """
+        visual_data = self._engine.get_body_visual_shape(self._uid)
+        return [(d[5], d[6]) for d in visual_data]
+
+    @property
+    def mesh(self):
+        """
+        Get the path to the mesh file, if any. Commonly referred as
+        urdf, sdf, mjcf file locations.
+        :return: String of absolute path to asset file.
+        """
+        visual_data = self._engine.get_body_visual_shape(self._uid)
+        return [(d[4]) for d in visual_data]
+
+    @property
+    def dimension(self):
+        """
+        Get the local scale of mesh size in xyz
+        :return: vec3 tuple of floats
+        """
+        visual_data = self._engine.get_body_visual_shape(self._uid)
+        return [(d[3]) for d in visual_data]
+
+    @property
+    def collision(self):
         # TODO
         return
 
@@ -283,6 +321,8 @@ class Body(object):
         [{id: {text_string, font_size, color, life_time}}, {}, ...]
         """
         return self._markers
+
+    # Setters
 
     @name.setter
     def name(self, string):
@@ -440,31 +480,42 @@ class Body(object):
                     self._children[child]['cid'])
                 del self._children[child]
 
-    @visual_shape.setter
-    def visual_shape(self, visual_info):
+    @color.setter
+    def color(self, visual_info):
         """
         Reset visual shape data to change the texture of a shape. 
         Currently only affects the software renderer (getCameraImage), 
         does not show up on OpenGL window
-        :param visual_info: a tuple of 
-        path: the path of texture file (png, jpg, etc);
-        name: a string of name to associate with the texture,
-        suggested to be something recognizable, like 'sky', 'rainbow';
-        qid: joint index;
-        sid: shape index ();
-        rgba: vec4 in range [0, 1]. No transparent alpha yet;
-        spec: RGB 0-100 vec3;
+        :param visual_info: a tuple of (link, color). Note
+        that if color is vec4 float, set as RGBA color. If
+        color is vec3, set as specular color.
         :return: None
         """
-        path, name, qid, sid, rgba, spec = visual_info
-        texture_id = self._engine.set_body_visual_shape(
-            self._uid, path, qid, sid, rgba, spec)
+        qid, color = visual_info
+        if len(color) == 3:
+            self._engine.set_body_visual_color(
+                self._uid, qid, color, True)
+        else:
+            if max(color) > 1:
+                color = math_util.vec(color) / 255.
+            self._engine.set_body_visual_color(
+                self._uid, qid, color, False)
 
-        # Store the texture name with corresponding texture id
-        self._texture[name] = texture_id
+    @geometry.setter
+    def geometry(self, shape_info):
+        """
+        Change the shape of the body, choosing from following
+        types: 'sphere', 'box', 'cylinder', 'mesh',
+        'plane', 'capsule'
+        :param shape_info: tuple of
+        (link_id, String of shape describer)
+        :return: None
+        """
+        self._engine.set_body_visual_shape(
+            self._uid, *shape_info)
 
-    @collision_shape.setter
-    def collision_shape(self, *args):
+    @collision.setter
+    def collision(self, *args):
         # TODO
         pass
         
@@ -657,6 +708,21 @@ class Body(object):
             self._engine.apply_torque_to_body(
                 self._uid, lid, torque, pos, ref)
             return 0
+
+    def set_texture(self, link, name, texture):
+        """
+        Set the given texture to a link on body
+        :param link: link id integer
+        :param name: name string to store the texture with
+        :param texture: string of path to texture file,
+        typically JPG, PNG, GIF, or TGA files.
+        :return: loaded texture id integer
+        """
+        texture_id = self._engine.set_body_texture(
+            self._uid, link, texture)
+        # Store the texture name with corresponding texture id
+        self._texture[name] = texture_id
+        return texture_id
 
     def change_texture(self, name, pixels, width, height):
         """

@@ -6,11 +6,11 @@ from glob import glob
 import numpy as np
 import matplotlib.pyplot as plt
 from IPython import embed
-import gym_
+import gym
 
 
 class Postprocess(object):
-    def __init__(self, robot_base_pose, objects_fname="sim_/log/trajectory/body_info.txt"):
+    def __init__(self, robot_base_pose):
 
         # this one is for computing relative poses
         self.robot_base_pose = robot_base_pose
@@ -22,8 +22,9 @@ class Postprocess(object):
 
         p.connect(p.DIRECT)
         p.setRealTimeSimulation(0)
-        self.robot_file = p.loadURDF("/Users/ajaymandlekar/Desktop/Dropbox/Stanford/ccr/bullet3/data/sawyer_robot/sawyer_description/urdf/sawyer_arm.urdf",
+        self.robot_file = p.loadURDF("../data/sawyer_robot/sawyer_description/urdf/sawyer_arm.urdf",
                           robot_base_pose[0], robot_base_pose[1], useFixedBase=True)
+
         p.resetBasePositionAndOrientation(self.robot_file, robot_base_pose[0], robot_base_pose[1])
 
         ### TODO: why does the base pose change here and why is the above line necessary???
@@ -51,8 +52,8 @@ class Postprocess(object):
                           u'oriX', u'oriY', u'oriZ', u'oriW', u'velX', u'velY', u'velZ',
                           u'omegaX', u'omegaY', u'omegaZ', u'qNum',
                           u'q0', u'q1', u'q2', u'q3', u'q4', u'q5', u'q6',
-                          u'v0', u'v1', u'v2', u'v3', u'v4', u'v5', u'v6',
-                          u'u0', u'u1', u'u2', u'u3', u'u4', u'u5', u'u6']
+                          u'u0', u'u1', u'u2', u'u3', u'u4', u'u5', u'u6',
+                          u't0', u't1', u't2', u't3', u't4', u't5', u't6']
 
         # dictionary to map column name to index
         self.col_names_dict = {}
@@ -80,9 +81,6 @@ class Postprocess(object):
         """
 
         log = np.array(plog(fname, verbose=verbose))
-
-        ### Important: Toss the first 2500 rows.
-        log = log[2500:]
 
         col_inds = sorted(self.col_names_dict.values())
         if cols is not None:
@@ -131,8 +129,8 @@ class Postprocess(object):
         robot_log = self.parse_log(fname, None, verbose=False, objects=["titan_0"],
                                    cols=['stepCount', 'timeStamp', 'qNum',
                                          'q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6',
-                                         'v0', 'v1', 'v2', 'v3', 'v4', 'v5', 'v6',
-                                         'u0', 'u1', 'u2', 'u3', 'u4', 'u5', 'u6'])
+                                         'u0', 'u1', 'u2', 'u3', 'u4', 'u5', 'u6',
+                                         't0', 't1', 't2', 't3', 't4', 't5', 't6'])
 
         cube_log = self.parse_log(fname, None, verbose=False, objects=["cube_0"],
                                   cols=['stepCount', 'timeStamp', 'qNum', 'posX', 'posY', 'posZ', 'oriX', 'oriY', 'oriZ',
@@ -220,12 +218,12 @@ class Postprocess(object):
             ### State and Action definition here ###
 
             # NOTE: we add the joint angles in state, joint vels in action (one timestep difference)
-            state = np.concatenate([prev_joint_pos, prev_joint_vel, prev_cube_pose_pos, prev_cube_pose_orn])
-            action = np.array(joint_vel_elem)
+            # state = np.concatenate([prev_joint_pos, prev_joint_vel, prev_cube_pose_pos, prev_cube_pose_orn])
+            # action = np.array(joint_vel_elem)
 
             # NOTE: we add the previous eef orientation here, and previous cube orientation
-            # state = np.concatenate([prev_eef_pose_pos, prev_cube_pose_pos, prev_cube_pose_orn])
-            # action = np.array(eef_pose_pos_elem) - np.array(prev_eef_pose_pos)
+            state = np.concatenate([prev_eef_pose_pos, prev_cube_pose_pos, prev_cube_pose_orn, [0.6, -0.2, 0.641]])
+            action = np.array(eef_pose_pos_elem) - np.array(prev_eef_pose_pos)
 
 
             states.append(state)
@@ -253,7 +251,7 @@ class Postprocess(object):
 
 if __name__ == "__main__":
 
-    env = gym.make('push-vel-v0')
+    env = gym.make('push-pose-v0')
     env.reset()
 
     # robot_position = env._robot.pos
@@ -287,7 +285,7 @@ if __name__ == "__main__":
 
 
 
-    for fname in glob("success_fix_goal_fix_orn/*.bin"):
+    for fname in glob("../src/log/trajectory/push/success/*.bin"):
     #for fname in glob("2017-08-29-11-48-34.bin"):
     #for fname in glob("success/2017-08-27-22-08-35.bin"):
         states, actions = pp.parse_demonstration(fname)
@@ -297,7 +295,7 @@ if __name__ == "__main__":
     all_actions = np.concatenate(all_actions, axis=0)
     print(all_states.shape)
     print(all_actions.shape)
-    np.savez("demo_fixed_goal_vel.npz", states=all_states, actions=all_actions)
+    np.savez("demo_fixed_goal_pose.npz", states=all_states, actions=all_actions)
 
 
 
