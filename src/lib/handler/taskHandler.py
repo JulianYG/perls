@@ -16,6 +16,8 @@ class Checker(object):
     def __init__(self, env_name):
         self._name = env_name
         self._states = dict()
+        self._rand_goal_file = open(
+            pjoin(__file__, '../../log/rand.txt'), 'a')
 
     @property
     def name(self):
@@ -139,9 +141,13 @@ class Checker(object):
             cube_pos = cube.pos
             if goal[0] - .05 < cube_pos[0] < goal[0] + .05 \
                and goal[1] - .05 < cube_pos[1] < goal[1] + .05:
+
+                # In success case, take down the goal pos
+                self._rand_goal_file.write('{}\n'.format(goal))
                 return True, True
 
         return False, False
 
     def stop(self):
-        return
+        self._rand_goal_file.close()
+

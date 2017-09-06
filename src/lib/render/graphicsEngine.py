@@ -293,6 +293,7 @@ class BulletRenderEngine(GraphicsEngine):
         else:
             self._server_id = p.connect(self._disp_args[0])
 
+        # For old version VR, clean up 
         p.setInternalSimFlags(0, self._server_id)
         p.resetSimulation(self._server_id)
 
@@ -454,7 +455,7 @@ class BulletRenderEngine(GraphicsEngine):
                     obj = record[2]
                     pos = record[3: 6]
                     orn = record[6: 10]
-                    
+
                     p.resetBasePositionAndOrientation(obj, pos, orn)
                     n_joints = p.getNumJoints(obj)
                     for i in range(n_joints):
