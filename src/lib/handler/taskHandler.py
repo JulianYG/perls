@@ -1,7 +1,7 @@
 # !/usr/bin/env python
 
 from ..utils import math_util
-from ..utils.io_util import loginfo, FONT, pjoin
+from ..utils.io_util import loginfo, FONT, pjoin, fdelete
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
@@ -16,8 +16,13 @@ class Checker(object):
     def __init__(self, env_name):
         self._name = env_name
         self._states = dict()
-        self._rand_goal_file = open(
-            pjoin(__file__, '../../log/rand.txt'), 'a')
+
+        log_path = pjoin(
+            __file__, 
+            '../../../log/{}.txt'.format(env_name))
+        # Overwrite previous one if exists
+        # fdelete(log_path)
+        self._log_file = open(log_path, 'w')
 
     @property
     def name(self):
@@ -149,5 +154,5 @@ class Checker(object):
         return False, False
 
     def stop(self):
-        self._rand_goal_file.close()
+        self._log_file.close()
 

@@ -97,8 +97,10 @@ def fmove(prev, new):
 
 
 def fdelete(file):
-
-    os.remove(file)
+    try:
+        os.remove(file)
+    except OSError:
+        pass
 
 
 def flist(spec):
