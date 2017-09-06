@@ -45,7 +45,7 @@ class PushCube(PerlsEnv):
         self._display.set_render_view(
             dict(
                 dim=(512, 424),
-                flen=1.77,
+                flen=2.,
                 # Have to use exact numbers for aligned
                 # Top down view in GUI and non-GUI modes...
                 yaw=90.0001,

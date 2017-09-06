@@ -260,7 +260,7 @@ class BulletPhysicsEngine(FakeStateEngine):
             texture_id = p.loadTexture(
                 texture, physicsClientId=self._physics_server_id)
             p.changeVisualShape(
-                uid, -1, textureUniqueId=texture_id,
+                uid, qid, textureUniqueId=texture_id,
                 physicsClientId=self._physics_server_id)
             return texture_id
         except p.error:

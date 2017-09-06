@@ -3,7 +3,8 @@ from math_util import get_relative_pose
 from .io_util import parse_log, loginfo, parse_config
 from ..control import Controller
 import numpy as np
-
+# import cv2
+from PIL import Image
 
 class Postprocess:
 
@@ -21,6 +22,7 @@ class Postprocess:
 
         self.robot = world.body['titan_0']
         self.table = world.body['table_0']
+        self.cube = world.body['cube_0']
 
         self.object_map = {4: "cube_0", 1: "titan_0", 0: 'bax_0'}
         self.object_ids = [int(x) for x in self.object_map.keys()]
@@ -59,9 +61,8 @@ class Postprocess:
         log = np.array(parse_log(fname, verbose=self.verbose))
 
         col_inds = sorted(self.col_names_dict.values())
-        if cols is not None:
-            # make sure desired columns are valid
 
+        if cols is not None:
             # get column inds to filter out
             col_inds = map(self.col_names_dict.get, cols)
 
@@ -126,7 +127,7 @@ class Postprocess:
                 filt_cube_log.append(cube_log[i])
                 filt_gripper_log.append(gripper_log[i])
 
-        table_pos = self.table.pos
+        cube_pos = self.cube.pos
 
         robot_log = np.array(filt_robot_log)
         cube_log = np.array(filt_cube_log)
@@ -141,9 +142,10 @@ class Postprocess:
 
         ### TODO: add in orientation too...
 
+        imgs = []
         states = []
         actions = []
-        timestamps = []
+        # timestamps = []
 
         num_filtered = 0
         prev_joint_pos = robot_log[0, 3:10]
@@ -167,12 +169,12 @@ class Postprocess:
         loginfo("Using robot pose: {}".format(self.robot.pose))
 
         goal_pos = np.random.uniform(
-            size=3, low=(table_pos[0] + 0.1, table_pos[1] - 0.25, 0.641),
-            high=(table_pos[0] + 0.25, table_pos[1] + 0.25, 0.642))
+            size=3, low=(cube_pos[0] + 0.1, cube_pos[1] - 0.25, 0.641),
+            high=(cube_pos[0] + 0.25, cube_pos[1] + 0.25, 0.642))
 
         for i in range(1, num_elems):
 
-            timestamp_elem = robot_log[i, 1]
+            # timestamp_elem = robot_log[i, 1]
             joint_pos_elem = robot_log[i, 3:10]
             joint_vel_elem = robot_log[i, 10:17]
             # joint_torq_elem = robot_log[i, 17:24]
@@ -222,9 +224,45 @@ class Postprocess:
                 action = np.array(eef_pose_pos_elem) - np.array(prev_eef_pose_pos)
             else:
                 return
-            states.append(state)
+
+            if self.state_dim == 'low':
+                states.append(state)
+                
+            # RGBD
+            else:
+                width, height, rgb_img, depth_img, seg_img = \
+                    p.getCameraImage(512, 424,
+                                     viewMatrix=(-1.6779034694991424e-06, -0.9659258127212524, 0.2588190734386444, 0.0, 0.9999999403953552, -1.6093254089355469e-06, 4.768372150465439e-07, 0.0, -4.406524212186014e-08, 0.258819043636322, 0.9659258723258972, 0.0, 0.20000100135803223, 0.5795551538467407, -2.1552913188934326, 1.0), 
+                                     projectionMatrix=(1.732050895690918, 0.0, 0.0, 0.0, 0.0, 1.732050895690918, 0.0, 0.0, 0.0, 0.0, -1.0004000663757324, -1.0, 0.0, 0.0, -0.040008001029491425, 0.0),
+                                     lightDirection=[0, 1, 0], 
+                                     lightColor=[1, 1, 1],
+                                     lightDistance=3,
+                                     shadow=1,
+                                     # ... ambient diffuse, specular coeffs
+                                     lightAmbientCoeff=.9,
+                                     # Seems only able to use w/o openGL
+                                     renderer=p.ER_TINY_RENDERER)
+
+                rgbd = np.reshape(rgb_img, (height, width, 4)).astype(np.float32) / 255.
+                # Now replace channel 3 (alpha) with depth
+                rgbd[:, :, 3] = np.reshape(depth_img, (height, width)).astype(np.float32)
+
+                imgs.append(rgbd)
+                states.append(
+                    np.concatenate([
+                        prev_joint_pos, prev_joint_vel,
+                        prev_cube_pose_pos, prev_cube_pose_orn, goal_pos
+                        ]))
+                # cv2.namedWindow('test', cv2.WINDOW_NORMAL)
+                # cv2.imshow('test', rgbd)
+                # cv2.waitKey(0)
+                im = Image.fromarray(rgbd[:, :, :3])
+                im.show()
+                raw_input()
+
             actions.append(action)
-            timestamps.append(timestamp_elem)
+            
+            # timestamps.append(timestamp_elem)
 
             # remember last positions for filtering and relative stuff
             prev_joint_pos = joint_pos_elem
@@ -241,5 +279,7 @@ class Postprocess:
         # plt.figure()
         # plt.plot(time_diffs)
         # plt.show()
-
-        return np.array(states), np.array(actions)
+        if self.state_dim == 'low':
+            return np.array(states), np.array(actions)
+        else:
+            return np.array(imgs), np.array(states), np.array(actions)

@@ -96,7 +96,7 @@ class Body(object):
         Get id of body
         :return: unique entity ID of this instance
         """
-        return int(self._uid)
+        return self._uid
 
     @property
     def cid(self):

@@ -8,7 +8,7 @@ from perls import postprocess
 
 if __name__ == "__main__":
 
-    pp = postprocess.Postprocess('vel', '../src/gym_/gym_perls/gym-disp.xml')
+    pp = postprocess.Postprocess('pose', '../configs/gym-cmd.xml', dim='rgbd')
 
     all_states = list()
     all_actions = list()
@@ -28,4 +28,4 @@ if __name__ == "__main__":
     all_actions = np.concatenate(all_actions, axis=0)
     print(all_states.shape)
     print(all_actions.shape)
-    np.savez("demo_rand_goal_vel.npz", states=all_states, actions=all_actions)
+    np.savez("high.npz", states=all_states, actions=all_actions)
