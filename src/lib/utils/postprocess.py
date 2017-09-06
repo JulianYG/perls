@@ -241,6 +241,14 @@ class Postprocess:
                 
             # RGBD
             else:
+                vmat = p.computeViewMatrixFromYawPitchRoll(
+                    cameraTargetPosition=self._render_param[‘focus’],
+                    distance=self._render_param[‘flen’],
+                    yaw=self._render_param[‘yaw’],
+                    pitch=self._render_param[‘pitch’],
+                    roll=0,
+                    upAxisIndex=2)
+
                 width, height, rgb_img, depth_img, seg_img = \
                     p.getCameraImage(512, 424,
                                      viewMatrix=(-1.6779034694991424e-06, -0.9659258127212524, 0.2588190734386444, 0.0, 0.9999999403953552, -1.6093254089355469e-06, 4.768372150465439e-07, 0.0, -4.406524212186014e-08, 0.258819043636322, 0.9659258723258972, 0.0, 0.20000100135803223, 0.5795551538467407, -2.1552913188934326, 1.0), 
