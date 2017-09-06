@@ -5,6 +5,8 @@ from ..control import Controller
 import numpy as np
 # import cv2
 from PIL import Image
+import matplotlib.pyplot as plt
+import time
 
 class Postprocess:
 
@@ -91,6 +93,10 @@ class Postprocess:
         """
         Parse a bullet bin file into states and actions.
         """
+
+        if self.state_dim != 'low':
+            disp_im = None
+
         robot_log = self.parse(
             fname, objects=["titan_0"],
             cols=['stepCount', 'timeStamp', 'qNum',
@@ -252,9 +258,22 @@ class Postprocess:
                 # cv2.namedWindow('test', cv2.WINDOW_NORMAL)
                 # cv2.imshow('test', rgbd)
                 # cv2.waitKey(0)
-                im = Image.fromarray(rgbd[:, :, :3])
-                im.show()
-                raw_input()
+                # im = Image.fromarray(rgbd[:, :, :3])
+                # im.show()
+                if disp_im is None:
+                    disp_im = plt.imshow(rgbd[:, :, :3])
+                else:
+                    disp_im.set_data(rgbd[:, :, :3])
+                plt.pause(0.1)
+                plt.draw()
+                # disp_im.axes.figure.canvas.draw()
+                # time.sleep(0.1)
+                # plt.imshow(rgbd[:, :, :3])
+                # plt.draw()
+                # time.sleep(0.1)
+                #plt.show(block=False)
+                #time.sleep(1.0)
+                # raw_input()
 
             actions.append(action)
             
