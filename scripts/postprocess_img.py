@@ -19,9 +19,15 @@ if __name__ == "__main__":
     files = filter(os.path.isfile, glob(record_path))
     files.sort(key=lambda x: os.path.getmtime(x))
 
-    np.random.seed(42)
-    for fname in files:
-        states, actions = pp.parse_demonstration(fname)
+    goals = []
+    with open('../src/log/push_sawyer.txt', 'r') as f:
+        pos_data = f.readlines()
+    
+    goals = [[float(i) for i in x.split()] for x in pos_data]
+    print(goals)
+
+    for i in range(len(files)):
+        states, actions = pp.parse_demonstration(files[i], goals[i])
         all_states.append(states)
         all_actions.append(actions)
     all_states = np.concatenate(all_states, axis=0)

@@ -87,7 +87,7 @@ class Postprocess:
         filtered = map(filter_row, log)
         return np.array([x for x in filtered if x is not None])
 
-    def parse_demonstration(self, fname):
+    def parse_demonstration(self, fname, goal_pos):
         """
         Parse a bullet bin file into states and actions.
         """
@@ -167,10 +167,6 @@ class Postprocess:
         loginfo("Initial cube z-location: {}".format(cube_initial_z))
 
         loginfo("Using robot pose: {}".format(self.robot.pose))
-
-        goal_pos = np.random.uniform(
-            size=3, low=(cube_pos[0] + 0.1, cube_pos[1] - 0.25, 0.641),
-            high=(cube_pos[0] + 0.25, cube_pos[1] + 0.25, 0.642))
 
         for i in range(1, num_elems):
 

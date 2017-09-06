@@ -148,7 +148,7 @@ class Checker(object):
                and goal[1] - .05 < cube_pos[1] < goal[1] + .05:
 
                 # In success case, take down the goal pos
-                self._log_file.write('{}\n'.format(goal))
+                self._log_file.write(' '.join(str(x) for x in goal))
                 return True, True
 
         return False, False
