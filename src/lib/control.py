@@ -285,9 +285,8 @@ class Controller(object):
 
                 # Reset the world
                 world.reset()
-
                 # Pass in targets uids
-                status = display.run([t[0] for t in track_targets])
+                status = display.run([t[1] for t in track_targets])
 
                 if status == -1:
                     logerr('Error loading simulation', FONT.control)

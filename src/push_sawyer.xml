@@ -10,15 +10,15 @@
 	</tool>
 	<scene name="push_sawyer">
 		<body name="plane" fixed="True">
-			<asset path="plane_transparent.urdf"/>
+			<asset path="plane.urdf"/>
 		</body>
 		<body name="table" fixed="True">
-			<asset path="table_square/table_square.urdf"/>
-			<pos>0.4 -0.3 0.0</pos>
-			<orn>0 0 0</orn>
+			<asset path="table/table.urdf"/>
+			<pos>0.6 -0.2 0.0</pos>
+			<orn>0 0 1.57</orn>
 		</body>
 		<body name="cube" record="True">
-			<asset path="cube_gripper_right.urdf"/>
+			<asset path="cube_small.urdf"/>
 			<pos>0.3 -0.2 0.665</pos>
 		</body>
 	</scene>

@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from IPython import embed
 import gym
-# rand_vec(1)
+
 
 class Postprocess(object):
     def __init__(self, robot_base_pose, env='vel', verbose=False, real_time=False):

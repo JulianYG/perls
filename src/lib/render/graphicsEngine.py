@@ -385,9 +385,9 @@ class BulletRenderEngine(GraphicsEngine):
                 p.startStateLogging(
                     p.STATE_LOGGING_GENERIC_ROBOT,
                     abs_file_name,
-                    objectUniqueIds=target_uids,
                     # Most commonly for 7 Dof robots
                     maxLogDof=7,
+                    objectUniqueIds=target_uids,
                     logFlags=p.STATE_LOG_JOINT_MOTOR_TORQUES,
                     physicsClientId=self._server_id
                 )
@@ -440,6 +440,7 @@ class BulletRenderEngine(GraphicsEngine):
 
             try:
                 for record in obj_log:
+                    
                     ### Each record has following format:
                     # 'stepCount', 'timeStamp', 'objectId', 
                     # 'posX', 'posY', 'posZ', 
@@ -450,13 +451,10 @@ class BulletRenderEngine(GraphicsEngine):
                     # 'u0', 'u1', 'u2', 'u3', 'u4', 'u5', 'u6',
                     # 't0', 't1', 't2', 't3', 't4', 't5', 't6'
                     # where q, u, t stand for joint pos, vel, torq
-                   
                     obj = record[2]
                     pos = record[3: 6]
                     orn = record[6: 10]
-                    if obj == 1:
-                        print(record[-7:])
-                    # print(record)
+                    
                     p.resetBasePositionAndOrientation(obj, pos, orn)
                     n_joints = p.getNumJoints(obj)
                     for i in range(n_joints):
