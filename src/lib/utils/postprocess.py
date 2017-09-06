@@ -10,13 +10,14 @@ import time
 
 class Postprocess:
 
-    def __init__(self, modality, conf_path, verbose=False, dim='low'):
+    def __init__(self, modality, conf_path, verbose=False, dim='low', use_display=False):
 
         conf = parse_config(conf_path)[0]
         _, world, display, _ = Controller.load_config(conf, None)
         self.verbose = verbose
         self.modality = modality
         self.state_dim = dim
+        self.use_display = use_display
 
         display.run()
         world.boot('cmd')
@@ -255,25 +256,13 @@ class Postprocess:
                         prev_joint_pos, prev_joint_vel,
                         prev_cube_pose_pos, prev_cube_pose_orn, goal_pos
                         ]))
-                # cv2.namedWindow('test', cv2.WINDOW_NORMAL)
-                # cv2.imshow('test', rgbd)
-                # cv2.waitKey(0)
-                # im = Image.fromarray(rgbd[:, :, :3])
-                # im.show()
-                if disp_im is None:
-                    disp_im = plt.imshow(rgbd[:, :, :3])
-                else:
-                    disp_im.set_data(rgbd[:, :, :3])
-                plt.pause(0.1)
-                plt.draw()
-                # disp_im.axes.figure.canvas.draw()
-                # time.sleep(0.1)
-                # plt.imshow(rgbd[:, :, :3])
-                # plt.draw()
-                # time.sleep(0.1)
-                #plt.show(block=False)
-                #time.sleep(1.0)
-                # raw_input()
+                if self.use_display:
+                    if disp_im is None:
+                        disp_im = plt.imshow(rgbd[:, :, :3])
+                    else:
+                        disp_im.set_data(rgbd[:, :, :3])
+                    plt.pause(0.01)
+                    plt.draw()
 
             actions.append(action)
             

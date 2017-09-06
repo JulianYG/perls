@@ -8,7 +8,7 @@ from perls import postprocess
 
 if __name__ == "__main__":
 
-    pp = postprocess.Postprocess('pose', '../configs/gym-cmd.xml', dim='rgbd')
+    pp = postprocess.Postprocess('pose', '../configs/gym-cmd.xml', dim='rgbd', use_display=True)
 
     all_images = list()
     all_states = list()
@@ -26,6 +26,10 @@ if __name__ == "__main__":
     
     goals = [[float(i) for i in x.split()] for x in pos_data]
     print(goals)
+
+    print("LOOK HERE")
+    print(len(files))
+    print(len(goals))
 
     for i in range(len(files)):
         imgs, states, actions = pp.parse_demonstration(files[i], goals[i])
