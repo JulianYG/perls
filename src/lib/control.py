@@ -361,6 +361,7 @@ class Controller(object):
                     queue.get_nowait()
 
             except KeyboardInterrupt:
+
                 self.stop(server_id, -1)
                 loginfo('User cancelled run {} by ctrl+c.'.format(r),
                         FONT.warning)
