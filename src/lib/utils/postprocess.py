@@ -44,6 +44,14 @@ class Postprocess:
 
         display.show()
 
+    @property
+    def name(self):
+
+        if self.state_dim == 'low':
+            return self.modality
+        else:
+            return self.state_dim
+
     def parse(self, fname, objects=None, cols=None):
         """
         This function parses a log saved by PyBullet, but it filters the

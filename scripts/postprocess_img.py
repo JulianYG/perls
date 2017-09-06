@@ -5,7 +5,8 @@ import shutil
 from glob import glob
 import numpy as np
 
-from perls import postprocess
+from perls import postprocess, io_util
+
 
 if __name__ == "__main__":
 
@@ -22,11 +23,10 @@ if __name__ == "__main__":
     files.sort(key=lambda x: os.path.getmtime(x))
 
     goals = []
-    with open('../src/log/push_sawyer_1.txt', 'r') as f:
+    with open('../src/log/push.txt', 'r') as f:
         pos_data = f.readlines()
     
     goals = [[float(i) for i in x.split()] for x in pos_data]
-    print(goals)
 
     try:
         os.mkdir("tmp")
@@ -37,7 +37,6 @@ if __name__ == "__main__":
     for i in range(len(files)):
         imgs, states, actions = pp.parse_demonstration(files[i], goals[i])
         np.savez("tmp/{}.npz".format(i), imgs=imgs, auxs=states, actions=actions)
-        print("{} : {}".format(i, imgs.shape))
 
     npz_files = filter(os.path.isfile, glob("tmp/*.npz"))
     npz_files.sort(key=lambda x: os.path.getmtime(x))
@@ -49,9 +48,12 @@ if __name__ == "__main__":
     all_images = np.concatenate(all_images, axis=0)
     all_states = np.concatenate(all_states, axis=0)
     all_actions = np.concatenate(all_actions, axis=0)
-    print(all_images.shape)
-    print(all_states.shape)
-    print(all_actions.shape)
+    io_util.loginfo(all_images.shape)
+    io_util.loginfo(all_states.shape)
+    io_util.loginfo(all_actions.shape)
 
-    np.savez("high.npz", imgs=all_images, auxs=all_states, actions=all_actions)
-    shutil.rmtree("tmp", ignore_errors=True)
+    if pp.name != 'pose' and pp.name != 'vel':
+        np.savez("high.npz", imgs=all_images, auxs=all_states, actions=all_actions)
+        shutil.rmtree("tmp", ignore_errors=True)
+    else:
+        np.savez('{}.npz'.format(pp.name), states=all_states, actions=all_actions)
