@@ -58,8 +58,8 @@ class Checker(object):
 
             # Random goal
             box_center = math_util.rand_vec(
-                3, (cube.pos[0] + 0.1, cube.pos[1] - 0.25, 0.641),
-                (cube.pos[0] + 0.25, cube.pos[1] + 0.25, 0.642),
+                3, (cube.pos[0] + 0.2, cube.pos[1] - 0.25, 0.641),
+                (cube.pos[0] + 0.45, cube.pos[1] + 0.25, 0.642),
                 'uniform')
 
             self._states['goal'] = box_center

@@ -59,7 +59,7 @@ class Postprocess:
                                   'q6', 'q7', 'q8', 'q9', 'q10', 'q11'])
         """
         log = np.array(parse_log(fname, verbose=self.verbose))
-
+        print(log.shape)
         col_inds = sorted(self.col_names_dict.values())
 
         if cols is not None:
