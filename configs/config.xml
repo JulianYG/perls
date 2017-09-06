@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<batch>
+
+	<!-- The following is for collecting demonstrations. -->
+	<config name="push" id="0" clone="70">
+		<build type="Debug">
+			<graphics name="first person human demo" engine="bullet" type="vr" key="0"/>
+			<physics engine="bullet" version="20170904"/>
+			<job name="record" video="False" log_path="" replay_path="fail"/>
+			<property async="False" step_size="0.004166" max_run_time="2"/>
+		</build>
+		<control type="vive" sensitivity="20" rate="10"/>
+		<!--<env>push_kuka.xml</env>-->
+		 <env>push_sawyer.xml</env>
+		<disp>disp.xml</disp>
+	</config>
+
+	<!-- The following is for replaying demonstrations. -->
+	<!-- 	<config name="default" id="0">
+		<build type="Debug">
+			<graphics name="first person human demo" engine="bullet" type="vr" key="0"/>
+			<physics engine="bullet" version="20170601"/>
+			<job name="replay" video="False" log_path="" filename="testpush_2017-08-17-00-19-57"/>
+			<property async="False" step_size="0.001" max_run_time="10e6"/>
+		</build>
+		<control type="vive" sensitivity="20" rate="100"/>
+		<env>push.xml</env>
+		<disp>disp.xml</disp>
+	</config> -->
+
+
+	<!-- <config name="default" id="1">
+		<build type="Release">
+			<graphics name="cannot srendergine="bullet" type="cmd" key="0"/>
+			<physrendergine="bullet" version="20170601"/>
+			<job name="record"/>
+			<property async="True" step_size="0.001" max_run_time="10e6"/>
+		</build>
+		<env>env.xml</env>
+		<disp>direct.xml</disp>
+	</config> -->
+</batch>
