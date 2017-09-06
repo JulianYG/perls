@@ -1,7 +1,7 @@
 # !/usr/bin/env python
 
 from ..utils import math_util
-from ..utils.io_util import loginfo, FONT
+from ..utils.io_util import loginfo, FONT, pjoin
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
@@ -35,11 +35,16 @@ class Checker(object):
         """
         if self._name == 'push_sawyer' or self._name == 'push_kuka':
 
-            world.body['plane_0'].color = (-1, (0, 76, 253, 1))
-            cube = world.body['cube_0']
-
             # Fine tune the environment to look real
-            cube.color = (-1, (1, 0, 0, 1))
+            world.body['plane_0'].set_texture(
+                -1, 'floor', pjoin(__file__, '../../../../asset/floor.png'))
+
+            # world.body['plane_0'].color = (-1, (0, 1, 0, 1))
+            cube = world.body['cube_0']
+            # cube.color = (0, (1, 0, 0, 1))
+            cube.set_texture(
+                0, 'cube', pjoin(__file__, '../../../../asset/cube.png'))
+            
 
             gripper = world.body['bax_0']
 
@@ -50,7 +55,8 @@ class Checker(object):
             gripper.color = (4, (0, 0, 0, 1))
 
             table = world.body['table_0']
-            table.color = (0, (0, 1, 0, 1))
+            table.set_texture(
+                0, 'table', pjoin(__file__, '../../../../asset/table.png'))
 
             # Random goal
             box_center = math_util.rand_vec(

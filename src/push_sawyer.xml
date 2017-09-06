@@ -10,7 +10,7 @@
 	</tool>
 	<scene name="push_sawyer">
 		<body name="plane" fixed="True">
-			<asset path="plane_with_restitution.urdf"/>
+			<asset path="plane_transparent.urdf"/>
 		</body>
 		<body name="table" fixed="True">
 			<asset path="table_square/table_square.urdf"/>
@@ -18,7 +18,7 @@
 			<orn>0 0 0</orn>
 		</body>
 		<body name="cube" record="True">
-			<asset path="cube_small.urdf"/>
+			<asset path="cube_gripper_right.urdf"/>
 			<pos>0.3 -0.2 0.665</pos>
 		</body>
 	</scene>

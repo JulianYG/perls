@@ -88,7 +88,7 @@ def str2bool(string):
 
 def pjoin(*fname):
 
-    return os.path.join(*fname)
+    return os.path.abspath(os.path.join(*fname))
 
 
 def fmove(prev, new):

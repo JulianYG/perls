@@ -145,11 +145,12 @@ class BulletPhysicsEngine(FakeStateEngine):
                         uid, -1, -1, -1, p.JOINT_FIXED,
                         [0., 0., 0.], [0., 0., 0.], [0., 0., 0.],
                         physicsClientId=self._physics_server_id)
-            # Leave other possible formats for now
+            # TODO: Leave other possible formats for now
 
-            # Force reset pose... pybullet bug on loadURDF
-            p.resetBasePositionAndOrientation(
-                uid, pos, orn, physicsClientId=self._physics_server_id)
+            # Force reset pose... to align CoM and geometric center
+            if not fixed:
+                p.resetBasePositionAndOrientation(
+                    uid, pos, orn, physicsClientId=self._physics_server_id)
 
             # Get joint and link indices
             joints = list(range(p.getNumJoints(uid, physicsClientId=self._physics_server_id)))
@@ -217,7 +218,8 @@ class BulletPhysicsEngine(FakeStateEngine):
         status = 0
         try:
             p.resetBasePositionAndOrientation(
-                uid, pos, orn, physicsClientId=self._physics_server_id)
+                uid, tuple(pos), tuple(orn), 
+                physicsClientId=self._physics_server_id)
         except p.error:
             status = -1
             logerr('BulletPhysicsEngine captured exception: ' +
@@ -255,9 +257,10 @@ class BulletPhysicsEngine(FakeStateEngine):
 
     def set_body_texture(self, uid, qid, texture):
         try:
-            texture_id = p.loadTexture(texture, self._physics_server_id)
+            texture_id = p.loadTexture(
+                texture, physicsClientId=self._physics_server_id)
             p.changeVisualShape(
-                uid, qid, textureUniqueId=texture_id,
+                uid, -1, textureUniqueId=texture_id,
                 physicsClientId=self._physics_server_id)
             return texture_id
         except p.error:
@@ -280,12 +283,12 @@ class BulletPhysicsEngine(FakeStateEngine):
             if spec:
                 p.changeVisualShape(
                     uid, qid, 
-                    specularColor=tuple(color),
+                    specularColor=list(color),
                     physicsClientId=self._physics_server_id)
             else:
                 p.changeVisualShape(
                     uid, qid, 
-                    rgbaColor=tuple(color),
+                    rgbaColor=list(color),
                     physicsClientId=self._physics_server_id)
         except p.error:
             self.status = BulletPhysicsEngine._STATUS[-1]
@@ -509,8 +512,7 @@ class BulletPhysicsEngine(FakeStateEngine):
         return mid
 
     def remove_body_text_marker(self, marker_id):
-        p.removeUserDebugItem(marker_id,
-                              physicsClientId=self._physics_server_id)
+        p.removeUserDebugItem(marker_id, physicsClientId=self._physics_server_id)
 
     def apply_force_to_body(self, uid, lid, force, pos, ref):
         try:
