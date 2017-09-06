@@ -8,7 +8,7 @@ from perls import postprocess
 
 if __name__ == "__main__":
 
-    pp = postprocess.Postprocess('pose', '../configs/gym-cmd.xml', dim='rgbd')
+    pp = postprocess.Postprocess('pose', '../configs/gym-cmd.xml', dim='low')
 
     all_states = list()
     all_actions = list()
@@ -20,11 +20,10 @@ if __name__ == "__main__":
     files.sort(key=lambda x: os.path.getmtime(x))
 
     goals = []
-    with open('../src/log/push_sawyer.txt', 'r') as f:
+    with open('../src/log/push.txt', 'r') as f:
         pos_data = f.readlines()
     
     goals = [[float(i) for i in x.split()] for x in pos_data]
-    print(goals)
 
     for i in range(len(files)):
         states, actions = pp.parse_demonstration(files[i], goals[i])
@@ -34,4 +33,4 @@ if __name__ == "__main__":
     all_actions = np.concatenate(all_actions, axis=0)
     print(all_states.shape)
     print(all_actions.shape)
-    np.savez("high.npz", states=all_states, actions=all_actions)
+    np.savez("pose.npz", states=all_states, actions=all_actions)
