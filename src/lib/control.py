@@ -369,9 +369,13 @@ class Controller(object):
                 if quit_run:
                     # Exit the program
                     self.exit(ctrl_handler, world, server_id)
-                    sys.exit(0)
                 else:
                     continue
+
+            except Exception:
+
+                self.exit(ctrl_handler, world, server_id)
+
         self.exit(ctrl_handler, world, server_id)
 
     def stop(self, server_id, stop_status):

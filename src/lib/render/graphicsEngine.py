@@ -491,6 +491,11 @@ class BulletRenderEngine(GraphicsEngine):
             # Just ignore the case of error or cancellation
             if exit_code < 0:
                 loginfo('Record file discarded.', FONT.ignore)
+                io_util.fdelete(
+                    pjoin(
+                        self._log_path['trajectory'],
+                        self._base_file_name)
+                )
 
             # Save for success cases
             elif exit_code == 0:

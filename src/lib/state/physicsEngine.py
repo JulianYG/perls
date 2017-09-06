@@ -378,7 +378,7 @@ class BulletPhysicsEngine(FakeStateEngine):
                                             controlMode=p.TORQUE_CONTROL,
                                             physicsClientId=self._physics_server_id,
                                             forces=vals, **kwargs)
-        except AssertionError or p.error:
+        except (AssertionError, p.error) as e:
             self.status = BulletPhysicsEngine._STATUS[-1]
             if p.error:
                 self._error_message.append(p.error.message)
