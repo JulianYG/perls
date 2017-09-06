@@ -4,7 +4,7 @@ from .io_util import parse_log, loginfo, parse_config
 from ..control import Controller
 import numpy as np
 # import cv2
-from PIL import Image
+# from PIL import Image
 import matplotlib.pyplot as plt
 import time
 

@@ -70,6 +70,7 @@ class Checker(object):
                 'uniform')
 
             self._states['goal'] = box_center
+            self._states['dist'] = math_util.pos_diff(box_center, cube.pos)
 
             # Only add lines for GUI or demos
             if world.info['engine']['visual']:
@@ -109,13 +110,12 @@ class Checker(object):
         """
         if self._name == 'push_sawyer' or self._name == 'push_kuka':
             robot = world.body['titan_0']
-            goal = self._states['goal']
             cube = world.body['cube_0']
 
             cost_grip = math_util.pos_diff(robot.tool_pos, cube.pos)
             cost_goal = math_util.pos_diff(cube.pos, self._states['goal'])
 
-            return -(cost_grip * .8 + cost_goal * .2)
+            return -(cost_grip * .8 + cost_goal * .2) * 10. / self._states['dist'] ** 2
 
     def check(self, world):
 
@@ -127,7 +127,7 @@ class Checker(object):
             table = body_dict['table_0']
 
             # If cost too high, mark fail and done
-            if -self.score(world) > .5:
+            if -self.score(world) > 10:#500:
                 return True, False
 
             # If collided with table, fail
