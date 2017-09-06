@@ -44,7 +44,6 @@ class Checker(object):
             # cube.color = (0, (1, 0, 0, 1))
             cube.set_texture(
                 0, 'cube', pjoin(__file__, '../../../../asset/cube.png'))
-            
 
             gripper = world.body['bax_0']
 

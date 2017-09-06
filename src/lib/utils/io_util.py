@@ -168,6 +168,10 @@ def parse_log(file, verbose=True):
     return log
 
 
+def pwd(file_path):
+    return os.path.dirname(file_path)
+
+
 def prompt(question):
     reply = str(input(question + ' (y/n): ')).lower().strip()
     if reply[0] == 'y':
@@ -400,9 +404,11 @@ def parse_config(file_path):
     for conf in configs:
 
         build = conf.find('./build').attrib['type'].lower()
-        model_desc = pjoin(os.path.dirname(file_path),
+        model_desc = pjoin(os.path.dirname(__file__), 
+                           '../../../configs',
                            conf.find('./env').text)
-        view_desc = pjoin(os.path.dirname(file_path),
+        view_desc = pjoin(os.path.dirname(__file__), 
+                          '../../../configs',
                           conf.find('./disp').text)
         config_name = conf.attrib['name']
         conf_id = int(conf.attrib['id'])

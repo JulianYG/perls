@@ -13,7 +13,8 @@ from .debug import debugger, tester
 from .utils import io_util, time_util, math_util
 from .utils.io_util import (FONT,
                             loginfo,
-                            logerr)
+                            logerr,
+                            pjoin)
 from .view import View
 from .world import World
 
@@ -72,7 +73,9 @@ class Controller(object):
         allows spawning/parallel running of multiple simulation
         for training purposes.
         """
-        self._config = config_batch
+        self._config = pjoin(io_util.pwd(__file__),
+                             '../../configs',
+                             config_batch)
         self._physics_servers = dict()
         self._process_pool = list()
 
