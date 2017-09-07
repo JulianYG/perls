@@ -271,11 +271,11 @@ class Controller(object):
         nruns, world, display, ctrl_handler, queue = self._physics_servers[server_id]
 
         # Kickstart the model, perform frame type check
-        world.boot(display.info['frame'])
+        world.boot(display.info['frame'], job=display.info['engine']['job'])
 
         # Start control in another process
         ctrl_handler.run()
- 
+
         # Run for given number of runs (used for # trajectories collection)
         for r in range(nruns):
             try:
@@ -375,9 +375,8 @@ class Controller(object):
                     continue
 
             except Exception:
-
                 self.exit(ctrl_handler, world, server_id)
-
+                
         self.exit(ctrl_handler, world, server_id)
 
     def stop(self, server_id, stop_status):

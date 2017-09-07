@@ -337,13 +337,14 @@ class World(object):
         """
         return self._checker.state
 
-    def boot(self, frame):
+    def boot(self, frame, job='run'):
         """
         Start the physics render.
         :param frame: string of frame type,
         for use of type check
         :return: render start state
         """
+        self._checker.set_job(job)
         status = self._engine.start_engine(frame)
         self._engine.hold(200)
         return status

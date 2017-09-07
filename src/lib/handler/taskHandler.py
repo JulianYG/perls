@@ -16,13 +16,14 @@ class Checker(object):
     def __init__(self, env_name):
         self._name = env_name
         self._states = dict()
+        self._job = 'run'
 
         log_path = pjoin(
             __file__, 
             '../../../log/{}.txt'.format(env_name))
-        # Overwrite previous one if exists
-        # fdelete(log_path)
-        self._log_file = open(log_path, 'w')
+
+        # Appending to previous one if exists
+        self._log_file = open(log_path, 'a')
 
     @property
     def name(self):
@@ -31,6 +32,9 @@ class Checker(object):
     @property
     def state(self):
         return self._states
+
+    def set_job(self, job):
+        self._job = job
 
     def initialize(self, world):
 
@@ -152,9 +156,10 @@ class Checker(object):
             if goal[0] - .05 < cube_pos[0] < goal[0] + .05 \
                and goal[1] - .05 < cube_pos[1] < goal[1] + .05:
 
-                # In success case, take down the goal pos
-                self._log_file.write('{}\n'.format(
-                    ' '.join(str(x) for x in goal)))
+                if self._job == 'record':
+                    # In success case, take down the goal pos
+                    self._log_file.write('{}\n'.format(
+                        ' '.join(str(x) for x in goal)))
                 return True, True
 
         return False, False
