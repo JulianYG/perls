@@ -7,7 +7,6 @@ import math
 Note: for all quaternions, uses [x,y,z,w]
 """
 
-np.random.seed(42)
 pi = np.pi
 EPS = np.finfo(float).eps * 4.
 
