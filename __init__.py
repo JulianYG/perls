@@ -11,4 +11,6 @@ from .src.lib.utils import (math_util,
 
 from .src.lib.control import Controller
 
+from .src.pyrobots import kinect, sawyer
+
 # from src.lib import server
