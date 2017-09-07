@@ -14,5 +14,8 @@ class PushViz(PushCube):
 
     @property
     def state(self):
-        
-        return self._display.get_camera_image('rgb')
+        goal_pos = self._world.get_task_state()['goal']
+        aux = math_util.concat((self._robot.joint_positions,
+                               self._robot.joint_velocities,
+                               goal_pos))
+        return self._display.get_camera_image('rgbd'), aux

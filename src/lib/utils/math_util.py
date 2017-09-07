@@ -60,13 +60,13 @@ Vector Calculation / Processing
 """
 
 
-def concat(*vectors):
+def concat(vectors):
     """
     Concatenate given vectors
-    :param vector: Input vectors to concatenate
+    :param vectors: a tuple of vectors to be concatenated
     :return: the concatenated vector
     """
-    return np.concatenate(tuple(vectors))
+    return np.concatenate((vectors))
 
 
 def rms(vector):
