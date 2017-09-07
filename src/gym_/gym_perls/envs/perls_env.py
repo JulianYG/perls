@@ -48,6 +48,9 @@ class PerlsEnv(gym.Env):
             control_rate = control.freq
             self._align_iters = int(control_rate / step_size)
 
+        # Store last action for regularization purposes
+        self._action = None
+
     @abc.abstractproperty
     def action_space(self):
         """
@@ -130,6 +133,7 @@ class PerlsEnv(gym.Env):
         :param action: Action as defined in action space
         :return: Observations, Rewards, isDone, Info tuple
         """
+        self._action = action
         # Perform extra steps in simulation to align
         # with real time
         for _ in range(self._align_iters):

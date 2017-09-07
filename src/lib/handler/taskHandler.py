@@ -16,13 +16,14 @@ class Checker(object):
     def __init__(self, env_name):
         self._name = env_name
         self._states = dict()
+        self._job = 'run'
 
         log_path = pjoin(
             __file__, 
             '../../../log/{}.txt'.format(env_name))
-        # Overwrite previous one if exists
-        # fdelete(log_path)
-        self._log_file = open(log_path, 'w')
+
+        # Appending to previous one if exists
+        self._log_file = open(log_path, 'a')
 
     @property
     def name(self):
@@ -31,6 +32,9 @@ class Checker(object):
     @property
     def state(self):
         return self._states
+
+    def set_job(self, job):
+        self._job = job
 
     def initialize(self, world):
 
@@ -70,7 +74,7 @@ class Checker(object):
                 'uniform')
 
             self._states['goal'] = box_center
-            self._states['dist'] = math_util.pos_diff(box_center, cube.pos)
+            self._states['goal_norm'] = math_util.l2(box_center - cube.pos)
 
             # Only add lines for GUI or demos
             if world.info['engine']['visual']:
@@ -90,6 +94,8 @@ class Checker(object):
             # Use this as a mark
             robot.grasp(1)
 
+            self._states['cube_norm'] = math_util.l2(robot.tool_pos - cube.pos)
+
             loginfo('Initialize finished.', FONT.model)
             loginfo('Initial joint positions: {}'.
                     format(robot.joint_positions),
@@ -104,7 +110,7 @@ class Checker(object):
     def score(self, world):
         """
         Score the current performance of the agent. Generates
-        the reward
+        the reward / cost
         :param world: current environment status object
         :return: User defined format of reward
         """
@@ -112,10 +118,14 @@ class Checker(object):
             robot = world.body['titan_0']
             cube = world.body['cube_0']
 
-            cost_grip = math_util.pos_diff(robot.tool_pos, cube.pos)
-            cost_goal = math_util.pos_diff(cube.pos, self._states['goal'])
+            dist_gripper = math_util.rms(robot.tool_pos - cube.pos)
+            dist_goal = math_util.rms(cube.pos - self._states['goal'])
 
-            return -(cost_grip * .8 + cost_goal * .2) * 10. / self._states['dist'] ** 2
+            # Scale according to the env's initial states
+            dist_gripper_norm = math_util.l2((0.03,) * 3)
+
+            return - (dist_gripper * .7 / self._states['cube_norm']
+                      + dist_goal * .3 / self._states['goal_norm'])
 
     def check(self, world):
 
@@ -124,10 +134,9 @@ class Checker(object):
         if self._name == 'push_sawyer' or self._name == 'push_kuka':
 
             cube = body_dict['cube_0']
-            table = body_dict['table_0']
 
             # If cost too high, mark fail and done
-            if -self.score(world) > 10:#500:
+            if -self.score(world) > 2.2:
                 return True, False
 
             # If collided with table, fail
@@ -147,13 +156,13 @@ class Checker(object):
             if goal[0] - .05 < cube_pos[0] < goal[0] + .05 \
                and goal[1] - .05 < cube_pos[1] < goal[1] + .05:
 
-                # In success case, take down the goal pos
-                self._log_file.write('{}\n'.format(
-                    ' '.join(str(x) for x in goal)))
+                if self._job == 'record':
+                    # In success case, take down the goal pos
+                    self._log_file.write('{}\n'.format(
+                        ' '.join(str(x) for x in goal)))
                 return True, True
 
         return False, False
 
     def stop(self):
         self._log_file.close()
-

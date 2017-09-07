@@ -87,8 +87,8 @@ class ModelDebugger(object):
     def get_task_state(self, *args):
         return self._world.get_task_state(*args)
 
-    def boot(self, frame):
-        return self._world.boot(frame)
+    def boot(self, frame, job='run'):
+        return self._world.boot(frame, job)
 
     def notify_engine(self, stat):
         self._world.notify_engine(stat)
