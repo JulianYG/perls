@@ -20,4 +20,4 @@ configs/config.xml
 scripts/monitor
 monitor
 */monitor
-tools/calibratoin/calib_data
+./tools/calibratoin/calib_data/kinect/*
