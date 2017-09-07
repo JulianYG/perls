@@ -66,7 +66,7 @@ def concat(vectors):
     :param vectors: a tuple of vectors to be concatenated
     :return: the concatenated vector
     """
-    return np.concatenate((vectors))
+    return np.concatenate(vectors)
 
 
 def rms(vector):
@@ -75,7 +75,16 @@ def rms(vector):
     :param vector: input vector
     :return: float number
     """
-    return np.sqrt(np.sum(vector ** 2))
+    return l2(vector)
+
+
+def l2(vector):
+    """
+    Get the l2 norm of vector
+    :param vector: vector to calculate norm on
+    :return: float scalar
+    """
+    return np.linalg.norm(vector, 2)
 
 
 def max_norm(vector, axis=-1):

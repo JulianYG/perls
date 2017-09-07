@@ -258,7 +258,6 @@ if __name__ == "__main__":
 
     env = gym.make('push-vel-v0')
     env.reset()
-
     robot_base_pose = env._robot.pose
 
     env.close()
