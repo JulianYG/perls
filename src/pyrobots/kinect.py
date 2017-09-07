@@ -1,26 +1,9 @@
 
 import numpy as np
 import cv2
-import pylibfreenect2
-from pylibfreenect2 import Freenect2, SyncMultiFrameListener
-from pylibfreenect2 import FrameType, Registration, Frame
-from pylibfreenect2 import createConsoleLogger, setGlobalLogger
-from pylibfreenect2 import LoggerLevel
-from pylibfreenect2.libfreenect2 import IrCameraParams, ColorCameraParams
-try:
-    from pylibfreenect2 import OpenCLPacketPipeline
-    pipeline = OpenCLPacketPipeline()
-except:
-    try:
-        from pylibfreenect2 import OpenGLPacketPipeline
-        pipeline = OpenGLPacketPipeline()
-    except:
-        from pylibfreenect2 import CpuPacketPipeline
-        pipeline = CpuPacketPipeline()
 
 KINECT_DEPTH_SHIFT = -22.84013555237548
 GRIPPER_SHIFT = 0.0251
-
 
 
 class KinectCamera(object):
@@ -28,6 +11,24 @@ class KinectCamera(object):
 
     def __init__(self, intrinsics=None, distortion=None):
 
+        import pylibfreenect2
+        from pylibfreenect2 import Freenect2, SyncMultiFrameListener
+        from pylibfreenect2 import FrameType, Registration, Frame
+        from pylibfreenect2 import createConsoleLogger, setGlobalLogger
+        from pylibfreenect2 import LoggerLevel
+        from pylibfreenect2.libfreenect2 import IrCameraParams, ColorCameraParams
+
+        try:
+            from pylibfreenect2 import OpenCLPacketPipeline
+            pipeline = OpenCLPacketPipeline()
+        except:
+            try:
+                from pylibfreenect2 import OpenGLPacketPipeline
+                pipeline = OpenGLPacketPipeline()
+            except:
+                from pylibfreenect2 import CpuPacketPipeline
+                pipeline = CpuPacketPipeline()
+            
         self._intrinsics_RGB = intrinsics
         self._distortion_RGB = distortion
 

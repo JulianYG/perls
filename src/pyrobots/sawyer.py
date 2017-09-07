@@ -361,8 +361,9 @@ class SawyerArm(object):
                 'right': PoseStamped(
                     header=hdr,
                     pose=Pose(
-                        position=Point(*(pose[0])),
-                        orientation=Quaternion(pose[1][3], pose[1][0], pose[1][1], pose[1][2]),
+                        position=Point(*pose[0]),
+                        # Initialized as x y z w
+                        orientation=Quaternion(*pose[1]),
                     ),
                 ),
             }
@@ -470,7 +471,7 @@ class SawyerArm(object):
         """
         rospy.signal_shutdown('Safely shut down Sawyer.')
 
-    def move_to(self, x, y, z, orn=(0, 0, 0, 1)):
+    def move_to(self, x, y, z, orn=(0, 1, 0, 0)):
         """
         Move to given position.
         :param x: x coordinate position relative to robot base
@@ -480,7 +481,7 @@ class SawyerArm(object):
         """
         self.tool_pose = ((x, y, z), orn)
 
-    def move_to_with_grasp(self, x, y, z, hover, dive, orn=(0, 0, 0, 1)):
+    def move_to_with_grasp(self, x, y, z, hover, dive, orn=(0, 1, 0, 0)):
         """
         Move to given position and grasp
         :param x: refer to <move_to::x>
