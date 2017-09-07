@@ -274,7 +274,7 @@ class BulletRenderEngine(GraphicsEngine):
             loginfo('Unrecognized orientation type. '
                     'Choose among quat, deg, and rad',
                     FONT.ignore)
-        return pos, orn
+        return pos, orn        
 
     def set_camera_pose(self, pos, orn, upAxisIdx=1):
         # TODO
@@ -327,18 +327,19 @@ class BulletRenderEngine(GraphicsEngine):
 
         camera_param = self.camera
         width, height, rgb_img, depth_img, seg_img = \
-            p.getCameraImage(camera_param['frame_width'],
-                             camera_param['frame_height'],
-                             viewMatrix=camera_param['view_mat'],
-                             projectionMatrix=camera_param['projection_mat'],
-                             lightDirection=[0, 1, 0], 
-                             lightColor=[1, 1, 1],
-                             lightDistance=camera_param['flen'] + 1,
-                             shadow=1,
-                             # ... ambient diffuse, specular coeffs
-                             lightAmbientCoeff=.9,
-                             # Seems only able to use w/o openGL
-                             renderer=p.ER_TINY_RENDERER)
+            p.getCameraImage(
+                camera_param['frame_width'],
+                camera_param['frame_height'],
+                viewMatrix=camera_param['view_mat'],
+                projectionMatrix=camera_param['projection_mat'],
+                lightDirection=[0, 1, 0], 
+                lightColor=[1, 1, 1],
+                lightDistance=camera_param['flen'] + 1,
+                shadow=1,
+                # ... ambient diffuse, specular coeffs
+                lightAmbientCoeff=.9,
+                # Seems only able to use w/o openGL
+                renderer=p.ER_TINY_RENDERER)
 
         if itype == 'human':
             rgb_img = np.reshape(rgb_img, (height, width, 4)).astype(np.float32) / 255.

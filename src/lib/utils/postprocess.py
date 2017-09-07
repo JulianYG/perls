@@ -20,6 +20,18 @@ class Postprocess:
         self.use_display = use_display
 
         display.run()
+        display.set_render_view(
+            dict(
+                dim=(150, 150),
+                flen=2.,
+                # Have to use exact numbers for aligned
+                # Top down view in GUI and non-GUI modes...
+                yaw=90.0001,
+                pitch=-75,
+                focus=world.body['table_0'].pos
+            )
+        )
+        self.display = display
         world.boot('cmd')
         world.reset()
 
@@ -241,31 +253,7 @@ class Postprocess:
                 
             # RGBD
             else:
-                vmat = p.computeViewMatrixFromYawPitchRoll(
-                    cameraTargetPosition=self._render_param[‘focus’],
-                    distance=self._render_param[‘flen’],
-                    yaw=self._render_param[‘yaw’],
-                    pitch=self._render_param[‘pitch’],
-                    roll=0,
-                    upAxisIndex=2)
-
-                width, height, rgb_img, depth_img, seg_img = \
-                    p.getCameraImage(512, 424,
-                                     viewMatrix=(-1.6779034694991424e-06, -0.9659258127212524, 0.2588190734386444, 0.0, 0.9999999403953552, -1.6093254089355469e-06, 4.768372150465439e-07, 0.0, -4.406524212186014e-08, 0.258819043636322, 0.9659258723258972, 0.0, 0.20000100135803223, 0.5795551538467407, -2.1552913188934326, 1.0), 
-                                     projectionMatrix=(1.732050895690918, 0.0, 0.0, 0.0, 0.0, 1.732050895690918, 0.0, 0.0, 0.0, 0.0, -1.0004000663757324, -1.0, 0.0, 0.0, -0.040008001029491425, 0.0),
-                                     lightDirection=[0, 1, 0], 
-                                     lightColor=[1, 1, 1],
-                                     lightDistance=3,
-                                     shadow=1,
-                                     # ... ambient diffuse, specular coeffs
-                                     lightAmbientCoeff=.9,
-                                     # Seems only able to use w/o openGL
-                                     renderer=p.ER_TINY_RENDERER)
-
-                rgbd = np.reshape(rgb_img, (height, width, 4)).astype(np.float32) / 255.
-                # Now replace channel 3 (alpha) with depth
-                rgbd[:, :, 3] = np.reshape(depth_img, (height, width)).astype(np.float32)
-
+                rgbd = self.display.get_camera_image('rgbd')
                 imgs.append(rgbd)
                 states.append(
                     np.concatenate([
