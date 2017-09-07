@@ -161,9 +161,9 @@ class BulletRenderEngine(GraphicsEngine):
                 focus=math_util.vec(info[11]),
             )
         else:
-            loginfo('Real camera not available under frame {}, '
-                    'use virtual settings instead'.format(self._frame),
-                    FONT.ignore)
+            # loginfo('Real camera not available under frame {}, '
+            #         'use virtual settings instead'.format(self._frame),
+            #         FONT.ignore)
             return self._render_param
 
     @property

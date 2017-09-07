@@ -23,7 +23,7 @@ if __name__ == "__main__":
     files.sort(key=lambda x: os.path.getmtime(x))
 
     goals = []
-    with open('../src/log/push.txt', 'r') as f:
+    with open('../src/log/push_sawyer_1.txt', 'r') as f:
         pos_data = f.readlines()
     
     goals = [[float(i) for i in x.split()] for x in pos_data]
