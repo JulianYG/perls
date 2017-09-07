@@ -26,7 +26,7 @@ class PushVizPose(PushViz):
     @property
     def state(self):
 
-        img = super(PushVizVel, self).state
+        img = super(PushVizPose, self).state
         goal_pos = self._world.get_task_state()['goal']
         eef_pos, _ = math_util.get_relative_pose(
             self._robot.eef_pose, self._robot.pose)
