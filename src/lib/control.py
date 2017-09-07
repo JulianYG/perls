@@ -270,19 +270,26 @@ class Controller(object):
         # Get all handlers
         nruns, world, display, ctrl_handler, queue = self._physics_servers[server_id]
 
+        # Kickstart the model, perform frame type check
+        world.boot(display.info['frame'])
+
         # Start control in another process
         ctrl_handler.run()
  
         # Run for given number of runs (used for # trajectories collection)
         for r in range(nruns):
             try:
+                ctrl_handler.pause()
+
+                # Clear the control queue
+                while not queue.empty():
+                    queue.get_nowait()
+
                 # Preparing variables
                 time_up, done, success = False, False, False
                 self._init_time_stamp = time_util.get_abs_time()
 
                 # TODO: May be able to move outside loop if display is booted
-                # Kickstart the model, perform frame type check
-                world.boot(display.info['frame'])
 
                 # Reset the world
                 world.reset()
@@ -311,8 +318,6 @@ class Controller(object):
                 # (This can significantly boost performance)
                 display.show()
 
-                ctrl_handler.resume()
-
                 # Update initial states:
                 self._control_update(world)
 
@@ -321,6 +326,8 @@ class Controller(object):
                 self._update_time_stamp = time_util.get_abs_time()
 
                 # Finally start control loop (Core)
+                ctrl_handler.resume()
+
                 while not time_up and not done:
                     elt = time_util.get_elapsed_time(self._init_time_stamp)
 
@@ -344,7 +351,6 @@ class Controller(object):
                     # TODO: GUI frame allow user to interact with the world
                     # dynamically, and vividly
 
-                ctrl_handler.pause()
                 if success:
                     self.stop(server_id, 0)
                     loginfo('Task success! Exiting run {}...'.format(r),
@@ -353,10 +359,6 @@ class Controller(object):
                     self.stop(server_id, 1)
                     loginfo('Task failed! Exiting run {}...'.format(r),
                             FONT.disp)
-
-                # Clear the control queue
-                while not queue.empty():
-                    queue.get_nowait()
 
             except KeyboardInterrupt:
 
