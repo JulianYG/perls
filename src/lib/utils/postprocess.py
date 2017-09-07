@@ -257,8 +257,7 @@ class Postprocess:
                 imgs.append(rgbd)
                 states.append(
                     np.concatenate([
-                        prev_joint_pos, prev_joint_vel,
-                        prev_cube_pose_pos, prev_cube_pose_orn, goal_pos
+                        prev_joint_pos, prev_joint_vel, goal_pos
                         ]))
                 if self.use_display:
                     if disp_im is None:
