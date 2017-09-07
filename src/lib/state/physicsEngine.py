@@ -260,7 +260,7 @@ class BulletPhysicsEngine(FakeStateEngine):
             texture_id = p.loadTexture(
                 texture, physicsClientId=self._physics_server_id)
             p.changeVisualShape(
-                uid, -1, textureUniqueId=texture_id,
+                uid, qid, textureUniqueId=texture_id,
                 physicsClientId=self._physics_server_id)
             return texture_id
         except p.error:
@@ -378,7 +378,7 @@ class BulletPhysicsEngine(FakeStateEngine):
                                             controlMode=p.TORQUE_CONTROL,
                                             physicsClientId=self._physics_server_id,
                                             forces=vals, **kwargs)
-        except AssertionError or p.error:
+        except (AssertionError, p.error) as e:
             self.status = BulletPhysicsEngine._STATUS[-1]
             if p.error:
                 self._error_message.append(p.error.message)

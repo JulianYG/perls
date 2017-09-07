@@ -274,7 +274,7 @@ class BulletRenderEngine(GraphicsEngine):
             loginfo('Unrecognized orientation type. '
                     'Choose among quat, deg, and rad',
                     FONT.ignore)
-        return pos, orn
+        return pos, orn        
 
     def set_camera_pose(self, pos, orn, upAxisIdx=1):
         # TODO
@@ -293,6 +293,7 @@ class BulletRenderEngine(GraphicsEngine):
         else:
             self._server_id = p.connect(self._disp_args[0])
 
+        # For old version VR, clean up 
         p.setInternalSimFlags(0, self._server_id)
         p.resetSimulation(self._server_id)
 
@@ -326,18 +327,19 @@ class BulletRenderEngine(GraphicsEngine):
 
         camera_param = self.camera
         width, height, rgb_img, depth_img, seg_img = \
-            p.getCameraImage(camera_param['frame_width'],
-                             camera_param['frame_height'],
-                             viewMatrix=camera_param['view_mat'],
-                             projectionMatrix=camera_param['projection_mat'],
-                             lightDirection=[0, 1, 0], 
-                             lightColor=[1, 1, 1],
-                             lightDistance=camera_param['flen'] + 1,
-                             shadow=1,
-                             # ... ambient diffuse, specular coeffs
-                             lightAmbientCoeff=.9,
-                             # Seems only able to use w/o openGL
-                             renderer=p.ER_TINY_RENDERER)
+            p.getCameraImage(
+                camera_param['frame_width'],
+                camera_param['frame_height'],
+                viewMatrix=camera_param['view_mat'],
+                projectionMatrix=camera_param['projection_mat'],
+                lightDirection=[0, 1, 0], 
+                lightColor=[1, 1, 1],
+                lightDistance=camera_param['flen'] + 1,
+                shadow=1,
+                # ... ambient diffuse, specular coeffs
+                lightAmbientCoeff=.9,
+                # Seems only able to use w/o openGL
+                renderer=p.ER_TINY_RENDERER)
 
         if itype == 'human':
             rgb_img = np.reshape(rgb_img, (height, width, 4)).astype(np.float32) / 255.
@@ -454,7 +456,7 @@ class BulletRenderEngine(GraphicsEngine):
                     obj = record[2]
                     pos = record[3: 6]
                     orn = record[6: 10]
-                    
+
                     p.resetBasePositionAndOrientation(obj, pos, orn)
                     n_joints = p.getNumJoints(obj)
                     for i in range(n_joints):
@@ -490,6 +492,11 @@ class BulletRenderEngine(GraphicsEngine):
             # Just ignore the case of error or cancellation
             if exit_code < 0:
                 loginfo('Record file discarded.', FONT.ignore)
+                io_util.fdelete(
+                    pjoin(
+                        self._log_path['trajectory'],
+                        self._base_file_name)
+                )
 
             # Save for success cases
             elif exit_code == 0:

@@ -280,8 +280,6 @@ class Controller(object):
                 time_up, done, success = False, False, False
                 self._init_time_stamp = time_util.get_abs_time()
 
-                track_targets = world.get_env_state(('env', 'target'))[0]
-
                 # TODO: May be able to move outside loop if display is booted
                 # Kickstart the model, perform frame type check
                 world.boot(display.info['frame'])
@@ -289,7 +287,7 @@ class Controller(object):
                 # Reset the world
                 world.reset()
                 # Pass in targets uids
-                status = display.run([t[1] for t in track_targets])
+                status = display.run([t[1] for t in world.target])
 
                 if status == -1:
                     logerr('Error loading simulation', FONT.control)
@@ -361,6 +359,7 @@ class Controller(object):
                     queue.get_nowait()
 
             except KeyboardInterrupt:
+
                 self.stop(server_id, -1)
                 loginfo('User cancelled run {} by ctrl+c.'.format(r),
                         FONT.warning)
@@ -370,9 +369,13 @@ class Controller(object):
                 if quit_run:
                     # Exit the program
                     self.exit(ctrl_handler, world, server_id)
-                    sys.exit(0)
                 else:
                     continue
+
+            except Exception:
+
+                self.exit(ctrl_handler, world, server_id)
+
         self.exit(ctrl_handler, world, server_id)
 
     def stop(self, server_id, stop_status):

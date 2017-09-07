@@ -1,7 +1,7 @@
 # !/usr/bin/env python
 
 from ..utils import math_util
-from ..utils.io_util import loginfo, FONT, pjoin
+from ..utils.io_util import loginfo, FONT, pjoin, fdelete
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
@@ -16,6 +16,13 @@ class Checker(object):
     def __init__(self, env_name):
         self._name = env_name
         self._states = dict()
+
+        log_path = pjoin(
+            __file__, 
+            '../../../log/{}.txt'.format(env_name))
+        # Overwrite previous one if exists
+        # fdelete(log_path)
+        self._log_file = open(log_path, 'w')
 
     @property
     def name(self):
@@ -39,11 +46,10 @@ class Checker(object):
             world.body['plane_0'].set_texture(
                 -1, 'floor', pjoin(__file__, '../../../../asset/floor.png'))
 
-            # world.body['plane_0'].color = (-1, (0, 1, 0, 1))
             cube = world.body['cube_0']
-            # cube.color = (0, (1, 0, 0, 1))
+
             cube.set_texture(
-                0, 'cube', pjoin(__file__, '../../../../asset/cube.png'))
+                -1, 'cube', pjoin(__file__, '../../../../asset/cube.png'))
 
             gripper = world.body['bax_0']
 
@@ -54,16 +60,17 @@ class Checker(object):
             gripper.color = (4, (0, 0, 0, 1))
 
             table = world.body['table_0']
-            table.set_texture(
-                -1, 'table', pjoin(__file__, '../../../../asset/table.png'))
+            # table.set_texture(
+            #     -1, 'table', pjoin(__file__, '../../../../asset/table.png'))
 
             # Random goal
             box_center = math_util.rand_vec(
-                3, (cube.pos[0] + 0.1, cube.pos[1] - 0.25, 0.641),
-                (cube.pos[0] + 0.25, cube.pos[1] + 0.25, 0.642),
+                3, (cube.pos[0] + 0.2, cube.pos[1] - 0.25, 0.641),
+                (cube.pos[0] + 0.45, cube.pos[1] + 0.25, 0.642),
                 'uniform')
 
             self._states['goal'] = box_center
+            self._states['dist'] = math_util.pos_diff(box_center, cube.pos)
 
             # Only add lines for GUI or demos
             if world.info['engine']['visual']:
@@ -76,7 +83,7 @@ class Checker(object):
 
             # Initializes the gripper next to the cube
             initial_gripper_pos = \
-                (cube_pos[0] - 0.05, cube_pos[1], cube_pos[2] + 0.025)
+                (cube_pos[0] - 0.07, cube_pos[1], cube_pos[2] + 0.025)
             
             robot.tool_pos = (initial_gripper_pos, 300)
 
@@ -103,13 +110,12 @@ class Checker(object):
         """
         if self._name == 'push_sawyer' or self._name == 'push_kuka':
             robot = world.body['titan_0']
-            goal = self._states['goal']
             cube = world.body['cube_0']
 
             cost_grip = math_util.pos_diff(robot.tool_pos, cube.pos)
             cost_goal = math_util.pos_diff(cube.pos, self._states['goal'])
 
-            return -(cost_grip * .8 + cost_goal * .2)
+            return -(cost_grip * .8 + cost_goal * .2) * 10. / self._states['dist'] ** 2
 
     def check(self, world):
 
@@ -121,7 +127,7 @@ class Checker(object):
             table = body_dict['table_0']
 
             # If cost too high, mark fail and done
-            if -self.score(world) > .5:
+            if -self.score(world) > 10:#500:
                 return True, False
 
             # If collided with table, fail
@@ -140,9 +146,14 @@ class Checker(object):
             cube_pos = cube.pos
             if goal[0] - .05 < cube_pos[0] < goal[0] + .05 \
                and goal[1] - .05 < cube_pos[1] < goal[1] + .05:
+
+                # In success case, take down the goal pos
+                self._log_file.write('{}\n'.format(
+                    ' '.join(str(x) for x in goal)))
                 return True, True
 
         return False, False
 
     def stop(self):
-        return
+        self._log_file.close()
+

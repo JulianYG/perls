@@ -3,24 +3,41 @@ from math_util import get_relative_pose
 from .io_util import parse_log, loginfo, parse_config
 from ..control import Controller
 import numpy as np
-
+# import cv2
+# from PIL import Image
+import matplotlib.pyplot as plt
+import time
 
 class Postprocess:
 
-    def __init__(self, modality, conf_path, verbose=False, dim='low'):
+    def __init__(self, modality, conf_path, verbose=False, dim='low', use_display=False):
 
         conf = parse_config(conf_path)[0]
         _, world, display, _ = Controller.load_config(conf, None)
         self.verbose = verbose
         self.modality = modality
         self.state_dim = dim
+        self.use_display = use_display
 
         display.run()
+        display.set_render_view(
+            dict(
+                dim=(150, 150),
+                flen=2.,
+                # Have to use exact numbers for aligned
+                # Top down view in GUI and non-GUI modes...
+                yaw=90.0001,
+                pitch=-75,
+                focus=world.body['table_0'].pos
+            )
+        )
+        self.display = display
         world.boot('cmd')
         world.reset()
 
         self.robot = world.body['titan_0']
         self.table = world.body['table_0']
+        self.cube = world.body['cube_0']
 
         self.object_map = {4: "cube_0", 1: "titan_0", 0: 'bax_0'}
         self.object_ids = [int(x) for x in self.object_map.keys()]
@@ -38,6 +55,14 @@ class Postprocess:
             self.col_names_dict[name] = i
 
         display.show()
+
+    @property
+    def name(self):
+
+        if self.state_dim == 'low':
+            return self.modality
+        else:
+            return self.state_dim
 
     def parse(self, fname, objects=None, cols=None):
         """
@@ -57,11 +82,10 @@ class Postprocess:
                                   'q6', 'q7', 'q8', 'q9', 'q10', 'q11'])
         """
         log = np.array(parse_log(fname, verbose=self.verbose))
-
+        print(log.shape)
         col_inds = sorted(self.col_names_dict.values())
-        if cols is not None:
-            # make sure desired columns are valid
 
+        if cols is not None:
             # get column inds to filter out
             col_inds = map(self.col_names_dict.get, cols)
 
@@ -86,10 +110,14 @@ class Postprocess:
         filtered = map(filter_row, log)
         return np.array([x for x in filtered if x is not None])
 
-    def parse_demonstration(self, fname):
+    def parse_demonstration(self, fname, goal_pos):
         """
         Parse a bullet bin file into states and actions.
         """
+
+        if self.state_dim != 'low':
+            disp_im = None
+
         robot_log = self.parse(
             fname, objects=["titan_0"],
             cols=['stepCount', 'timeStamp', 'qNum',
@@ -126,7 +154,7 @@ class Postprocess:
                 filt_cube_log.append(cube_log[i])
                 filt_gripper_log.append(gripper_log[i])
 
-        table_pos = self.table.pos
+        cube_pos = self.cube.pos
 
         robot_log = np.array(filt_robot_log)
         cube_log = np.array(filt_cube_log)
@@ -141,9 +169,10 @@ class Postprocess:
 
         ### TODO: add in orientation too...
 
+        imgs = []
         states = []
         actions = []
-        timestamps = []
+        # timestamps = []
 
         num_filtered = 0
         prev_joint_pos = robot_log[0, 3:10]
@@ -166,13 +195,9 @@ class Postprocess:
 
         loginfo("Using robot pose: {}".format(self.robot.pose))
 
-        goal_pos = np.random.uniform(
-            size=3, low=(table_pos[0] + 0.1, table_pos[1] - 0.25, 0.641),
-            high=(table_pos[0] + 0.25, table_pos[1] + 0.25, 0.642))
-
         for i in range(1, num_elems):
 
-            timestamp_elem = robot_log[i, 1]
+            # timestamp_elem = robot_log[i, 1]
             joint_pos_elem = robot_log[i, 3:10]
             joint_vel_elem = robot_log[i, 10:17]
             # joint_torq_elem = robot_log[i, 17:24]
@@ -222,9 +247,30 @@ class Postprocess:
                 action = np.array(eef_pose_pos_elem) - np.array(prev_eef_pose_pos)
             else:
                 return
-            states.append(state)
+
+            if self.state_dim == 'low':
+                states.append(state)
+                
+            # RGBD
+            else:
+                rgbd = self.display.get_camera_image('rgbd')
+                imgs.append(rgbd)
+                states.append(
+                    np.concatenate([
+                        prev_joint_pos, prev_joint_vel,
+                        prev_cube_pose_pos, prev_cube_pose_orn, goal_pos
+                        ]))
+                if self.use_display:
+                    if disp_im is None:
+                        disp_im = plt.imshow(rgbd[:, :, :3])
+                    else:
+                        disp_im.set_data(rgbd[:, :, :3])
+                    plt.pause(0.01)
+                    plt.draw()
+
             actions.append(action)
-            timestamps.append(timestamp_elem)
+            
+            # timestamps.append(timestamp_elem)
 
             # remember last positions for filtering and relative stuff
             prev_joint_pos = joint_pos_elem
@@ -241,5 +287,7 @@ class Postprocess:
         # plt.figure()
         # plt.plot(time_diffs)
         # plt.show()
-
-        return np.array(states), np.array(actions)
+        if self.state_dim == 'low':
+            return np.array(states), np.array(actions)
+        else:
+            return np.array(imgs), np.array(states), np.array(actions)
