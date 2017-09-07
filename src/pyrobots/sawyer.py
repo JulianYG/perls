@@ -339,11 +339,11 @@ class SawyerArm(object):
             gripper_pose.position.z = pose[0][2]
 
             # TODO: need a transformation for pose
+            gripper_pose.orientation.w = pose[1][3]
             gripper_pose.orientation.x = pose[1][0]
             gripper_pose.orientation.y = pose[1][1]
             gripper_pose.orientation.z = pose[1][2]
-            gripper_pose.orientation.w = pose[1][3]
-
+            
             self._group.set_pose_target(gripper_pose)
             plan = self._group.plan()
 

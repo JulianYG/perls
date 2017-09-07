@@ -161,9 +161,6 @@ class BulletRenderEngine(GraphicsEngine):
                 focus=math_util.vec(info[11]),
             )
         else:
-            # loginfo('Real camera not available under frame {}, '
-            #         'use virtual settings instead'.format(self._frame),
-            #         FONT.ignore)
             return self._render_param
 
     @property
@@ -296,6 +293,11 @@ class BulletRenderEngine(GraphicsEngine):
         # For old version VR, clean up 
         p.setInternalSimFlags(0, self._server_id)
         p.resetSimulation(self._server_id)
+
+        if self._frame != 'vr' and self._frame != 'gui':
+            loginfo('Real camera not available under frame {}, '
+                    'use virtual settings instead'.format(self._frame),
+                    FONT.ignore)
 
     ###
     # General display related methods
