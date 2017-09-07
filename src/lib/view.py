@@ -109,7 +109,6 @@ class View:
     def set_render_view(self, camera_info):
         """
         Update the view, mainly resetting the camera.
-        Only used for rendering under cmd frame type.
         :param camera_info: dictionary of camera parameters.
         For GUI, camera_info is a dictionary of
         {flen: float, yaw: float degree,

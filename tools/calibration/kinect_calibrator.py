@@ -21,8 +21,10 @@ import rosparam
 import intera_interface
 import time
 import pybullet as p
-sys.path.append(os.path.abspath(os.path.join(__file__, '../../')))
-from robot import Robot
+sys.path.append(os.path.abspath(os.path.join(__file__, '../../../src/pyrobots')))
+
+print(os.path.abspath(os.path.join(__file__, '../../')))
+from sawyer import SawyerArm
 
 import pylibfreenect2
 from pylibfreenect2 import Freenect2, SyncMultiFrameListener
@@ -166,12 +168,12 @@ class KinectCalibrator():
                 target_point = target_point - z * LENGTH  #GRIPPER_SHIFT
 
                 print("== desired endeffector pos: {}".format(target_point * 1000))
-                end_state = dict(position=target_point,
-                         orientation=ori)
-                self._arm.reach_absolute(end_state)
+
+                self._arm.tool_pose = (target_point, ori)
                 time.sleep(1)
-                print("== move to {} success".format(self._arm.get_tool_pose()[0]))
-                print(self._arm.get_tool_pose()[0])
+
+                print("== move to {} success".format(self._arm.tool_pose[0]))
+                print(self._arm.tool_pose[0])
 
         cv2.namedWindow('kinect-rgb', cv2.CV_WINDOW_AUTOSIZE)
         cv2.setMouseCallback('kinect-rgb', mouse_callback)
@@ -220,11 +222,8 @@ class KinectCalibrator():
             orn = p.getQuaternionFromEuler(np.random.uniform(
                 [-np.pi/12., -np.pi/12., -np.pi/6.],[np.pi/12., np.pi/12., np.pi/6.]))
 
-            end_state = dict(position=tuple(target),
-                         orientation=orn)
-
             # Move to target position
-            self._arm.reach_absolute(end_state)
+            self._arm.tool_pose = (tuple(target), orn)
             time.sleep(2)
             not_found = 0
 
@@ -261,10 +260,10 @@ class KinectCalibrator():
                         point[2] = depth
                         
                         temp = np.linalg.inv(self._transformation).dot(point)[:3] / 1000
-                        ori = np.array(robot.get_tool_pose()[1], dtype=np.float32)
+                        ori = np.array(self._arm.tool_pose[1], dtype=np.float32)
                         z = np.array(p.getMatrixFromQuaternion(ori)).reshape(3,3)[-1]
                         estimated_gripper_pos = temp - z * GRIPPER_SHIFT
-                        ground_truth = np.array(robot.get_tool_pose()[0], dtype=np.float32)
+                        ground_truth = np.array(self._arm.tool_pose[0], dtype=np.float32)
                         errors[j] += np.sqrt((estimated_gripper_pos - ground_truth) * (estimated_gripper_pos - ground_truth))
                     else:
                     	not_found = not_found + 1
@@ -298,7 +297,7 @@ class KinectCalibrator():
 
         # Reasonable starting position
         origin = np.array([0.43489, -0.2240, 0.1941], dtype=np.float32)
-        orn = np.array([0, 0, 0, 1], dtype=np.float32)
+        orn = np.array([0, 1, 0, 0], dtype=np.float32)
 
         calibration_grid = np.zeros((self._grid[0] * self._grid[1], 3), np.float32)
         calibration_grid[:, :2] = np.mgrid[0: self._grid[0], 
@@ -310,6 +309,7 @@ class KinectCalibrator():
         camera_points, gripper_points = [], []
         total = len(calibration_grid)
         count = 0
+
         for i, pos in enumerate(calibration_grid):
             print("{} / {}".format(i + 1, total))
             # Set position to reach for
@@ -317,25 +317,24 @@ class KinectCalibrator():
 
             # Add randomness to orientation
             orn = p.getQuaternionFromEuler(np.random.uniform(
-                [-np.pi/12., -np.pi/12., -np.pi/6.],[np.pi/12., np.pi/12., np.pi/6.]))
+                [-np.pi/12., -np.pi/12., -np.pi/6.], [np.pi/12., np.pi/12., np.pi/6.]))
 
-            end_state = dict(position=tuple(target),
-                         orientation=orn)
             # Move to target position
-            self._arm.reach_absolute(end_state)
+            self._arm.tool_pose = (tuple(target), orn)
 
             # Wait till stabilize
             time.sleep(1.5)
 
             # Get the real position
-            gripper_pos = np.array(self._arm.get_tool_pose()[0], 
+            gripper_pos = np.array(self._arm.tool_pose[0], 
                                    dtype=np.float32)
-            gripper_ori = np.array(robot.get_tool_pose()[1], dtype=np.float32)
+            gripper_ori = np.array(self._arm.tool_pose[1], dtype=np.float32)
             trans_matrix = np.array(p.getMatrixFromQuaternion(gripper_ori)).reshape(3,3)
             marker_pos = gripper_pos + trans_matrix[-1] * GRIPPER_SHIFT
 
             # Match with pattern location
             color, ir, depth = self.snapshot()
+
             color = cv2.flip(color.asarray(), 1)
             self._listener.release(self._frames)
 
@@ -416,7 +415,7 @@ if rospy.get_name() == '/unnamed':
 
 limb = intera_interface.Limb('right')
 limb.set_joint_position_speed(0.1)
-robot = Robot(limb, None)
+robot = SawyerArm(False)
 
 dimension = (1920, 1080)
 

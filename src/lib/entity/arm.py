@@ -350,7 +350,7 @@ class Arm(Tool):
                  0, 'fixed',
                  [0., 0., 0.], self._tip_offset,
                  [0., 0., 0.],
-                 [0., 0., 0., 1.], [0., 0., 0., 1.])
+                 [0., 0., 0., 1.], [0., 0., 0.707, .707])
             # Next reset gripper
             self._gripper.reset()
 
