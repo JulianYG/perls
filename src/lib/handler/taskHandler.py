@@ -150,7 +150,7 @@ class Checker(object):
             curr_delta = math_util.l2(goal - cube_pos)
             reward = self._states['last_delta'] - curr_delta
             self._states['last_delta'] = math_util.l2(goal - cube_pos)
-            
+
             return reward
 
     def check(self, world):
@@ -168,6 +168,11 @@ class Checker(object):
                 for point in points:
                     if point['uid_other'] < 2:
                         return True, False
+
+            # If gripper too far away from the cube, fail
+            tool_pos = world.body['titan_0'].tool_pos
+            if math_util.l2(tool_pos, cube_pos) > 0.1:
+                return True, False
 
             # If cube is within the boundary, success
             goal = self._states['goal']
