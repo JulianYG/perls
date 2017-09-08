@@ -1,33 +1,36 @@
 #!/usr/bin/env python
 
 import sys, time
-import rospy
-import intera_interface as iif
-from intera_interface import CHECK_VERSION
+try:
+    import rospy
+    import intera_interface as iif
+    from intera_interface import CHECK_VERSION
 
-from geometry_msgs.msg import (
-    PoseStamped,
-    Pose,
-    Point,
-    Quaternion,
-)
+    from geometry_msgs.msg import (
+        PoseStamped,
+        Pose,
+        Point,
+        Quaternion,
+    )
 
-from intera_core_msgs.srv import (
-    SolvePositionIK,
-    SolvePositionIKRequest,
-    SolvePositionFK,
-    SolvePositionFKRequest
-)
+    from intera_core_msgs.srv import (
+        SolvePositionIK,
+        SolvePositionIKRequest,
+        SolvePositionFK,
+        SolvePositionFKRequest
+    )
 
-import moveit_commander
-from moveit_msgs.msg import (
-    Grasp,
-    GripperTranslation,
-    DisplayTrajectory
-)
+    import moveit_commander
+    from moveit_msgs.msg import (
+        Grasp,
+        GripperTranslation,
+        DisplayTrajectory
+    )
 
-from std_msgs.msg import Header
-from sensor_msgs.msg import JointState
+    from std_msgs.msg import Header
+    from sensor_msgs.msg import JointState
+except ImportError:
+    pass
 
 
 KINECT_DEPTH_SHIFT = -22.54013555237548

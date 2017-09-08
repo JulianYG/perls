@@ -23,7 +23,6 @@ import time
 import pybullet as p
 sys.path.append(os.path.abspath(os.path.join(__file__, '../../../src/pyrobots')))
 
-print(os.path.abspath(os.path.join(__file__, '../../')))
 from sawyer import SawyerArm
 
 import pylibfreenect2
@@ -49,8 +48,8 @@ GRIPPER_SHIFT = 0.0251
 class KinectCalibrator():
 
     def __init__(self, robot,
-        board_size=(2,2), itermat=(8, 9), intrinsics_RGB=None, distortion_RGB=None,
-        calib='../../../tools/calibration/calib_data/kinect'):
+        board_size=(2,2), itermat=(8, 9), 
+        intrinsics_RGB=None, distortion_RGB=None):
 
         self._board_size = board_size
         self._checker_size = 0.0247
@@ -58,10 +57,13 @@ class KinectCalibrator():
         self._arm = robot
         self._grid = itermat
 
+        self._calib_directory = os.path.join(
+            os.path.dirname(__file__), 
+            'calib_data', 'kinect')
+
         self._intrinsics_RGB = intrinsics_RGB
         self._distortion_RGB = distortion_RGB
 
-        self._calib_directory = calib
         self._transformation = np.zeros((4, 4), dtype=np.float32)
         self._transformation[3, 3] = 1
         
@@ -280,8 +282,8 @@ class KinectCalibrator():
 
     def track(self):
 
-        rotation_dir = pjoin(self._calib_directory, 'KinectTracker_rotation.p')
-        translation_dir = pjoin(self._calib_directory, 'KinectTracker_translation.p')
+        rotation_dir = pjoin(self._calib_directory, 'KinectCalibrator_rotation.p')
+        translation_dir = pjoin(self._calib_directory, 'KinectCalibrator_translation.p')
 
         if os.path.exists(rotation_dir) and os.path.exists(translation_dir):
             
@@ -370,6 +372,7 @@ class KinectCalibrator():
 
         print("saving data to" + pjoin(self._calib_directory, 
                 '{}_'.format(self.__class__.__name__)))
+
         for name, mat in data.items():
             with open(pjoin(self._calib_directory, 
                 '{}_{}.p'.format(self.__class__.__name__, name)), 'wb') as f:
@@ -428,7 +431,9 @@ distortion_RGB = np.array([ 1.8025470248423700e-02, -4.0380385825573024e-02,
        -6.1365440651701009e-03, -1.4119705487162354e-03,
        9.5413324012517888e-04 ], dtype=np.float32)
 
-tracker = KinectCalibrator(robot, board_size=(4,4), itermat=(15, 15), intrinsics_RGB=intrinsics_RGB, distortion_RGB=distortion_RGB)
+tracker = KinectCalibrator(
+    robot, board_size=(4,4), itermat=(15, 15), 
+    intrinsics_RGB=intrinsics_RGB, distortion_RGB=distortion_RGB)
 np.set_printoptions(formatter={'float': lambda x: "{0:0.8f}".format(x)})
 
 tracker.match_eval()
