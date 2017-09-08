@@ -66,6 +66,8 @@ class KinectCalibrator():
 
         self._transformation = np.zeros((4, 4), dtype=np.float32)
         self._transformation[3, 3] = 1
+
+        self.global_x, self.global_y = 0, 0
         
         self.turn_on()
         self.track()
@@ -138,15 +140,12 @@ class KinectCalibrator():
 
     
     def match_eval(self):
-    	
-        global global_x, global_y
-        global_x, global_y = 858, 489
 
-    	LENGTH = 0.133 #0.24406304511449886
+    	LENGTH = 0.19406304511449886
 
         def mouse_callback(event, x, y, flags, params):
             if event == 1:
-                global_x, global_y = x, y
+                self.global_x, self.global_y = x, y
 
                 depth_map = cv2.flip(self._big_depth.asarray(np.float32)[1:-1, :], 1)
                 depth_avg = depth_map[y, x] + KINECT_DEPTH_SHIFT
