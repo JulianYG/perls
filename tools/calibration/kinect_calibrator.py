@@ -44,15 +44,16 @@ except:
 
 KINECT_DEPTH_SHIFT = -22.54013555237548
 GRIPPER_SHIFT = 0.0251
+# dimension = (1920, 1080)
+
 
 class KinectCalibrator():
 
-    def __init__(self, robot,
-        board_size=(2,2), itermat=(8, 9), 
-        intrinsics_RGB=None, distortion_RGB=None):
+    def __init__(self, robot, checker_size=0.0247, 
+        board_size=(2,2), itermat=(8, 9)):
 
         self._board_size = board_size
-        self._checker_size = 0.0247
+        self._checker_size = checker_size
 
         self._arm = robot
         self._grid = itermat
@@ -61,8 +62,12 @@ class KinectCalibrator():
             os.path.dirname(__file__), 
             'calib_data', 'kinect')
 
-        self._intrinsics_RGB = intrinsics_RGB
-        self._distortion_RGB = distortion_RGB
+        # Calibrated by IAI_Kinect
+        with open(pjoin(self._calib_directory), 'intrinsics.p') as f:
+            self._intrinsics_RGB = pickle.load(f)
+
+        with open(pjoin(self._calib_directory), 'distortion.p') as f: 
+            self._distortion_RGB = pickle.load(f)
 
         self._transformation = np.zeros((4, 4), dtype=np.float32)
         self._transformation[3, 3] = 1
@@ -94,21 +99,13 @@ class KinectCalibrator():
         self._device.setIrAndDepthFrameListener(self._listener)
         self._device.start()
 
-        # NOTE: must be called after device.start()
-        if self._intrinsics_RGB is None:
+        # Read from kinect directly
+        # self._intrinsics_RGB = self._to_matrix(
+        #     self._device.getColorCameraParams())
 
-            self._intrinsics_RGB = self._to_matrix(self._device.getColorCameraParams())
-
-            self._registration = Registration(self._device.getIrCameraParams(), 
-                self._device.getColorCameraParams())
-        else:
-            # IrParams = IrCameraParams(self.K, ...)
-            # colorParams = ColorCameraParams(self.K, ...)
-
-            # registration = Registration(IrParams, colorParams)
-            self._registration = Registration(
-                            self._device.getIrCameraParams(),
-                            self._device.getColorCameraParams())
+        self._registration = Registration(
+            self._device.getIrCameraParams(),
+            self._device.getColorCameraParams())
 
         self._undistorted = Frame(512, 424, 4)
         self._registered = Frame(512, 424, 4)
@@ -419,20 +416,8 @@ limb = intera_interface.Limb('right')
 limb.set_joint_position_speed(0.1)
 robot = SawyerArm(False)
 
-dimension = (1920, 1080)
-
-# Calibrated through IAI_Kinect
-intrinsics_RGB = np.array([[1.0450585754139581e+03, 0., 9.2509741958808945e+02], 
-                       [0., 1.0460057005089166e+03, 5.3081782987073052e+02], 
-                       [0., 0., 1.]], dtype=np.float32)
-
-distortion_RGB = np.array([ 1.8025470248423700e-02, -4.0380385825573024e-02,
-       -6.1365440651701009e-03, -1.4119705487162354e-03,
-       9.5413324012517888e-04 ], dtype=np.float32)
-
 tracker = KinectCalibrator(
-    robot, board_size=(4,4), itermat=(15, 15), 
-    intrinsics_RGB=intrinsics_RGB, distortion_RGB=distortion_RGB)
+    robot, board_size=(4,4), itermat=(15, 15))
 np.set_printoptions(formatter={'float': lambda x: "{0:0.8f}".format(x)})
 
 tracker.match_eval()
