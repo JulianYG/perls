@@ -138,6 +138,7 @@ class Checker(object):
 
             # Check if cube is within the boundary
             cube_pos = cube.pos
+            goal = self._states['goal']
             if goal[0] - .05 < cube_pos[0] < goal[0] + .05 \
                and goal[1] - .05 < cube_pos[1] < goal[1] + .05:
                 return 100
@@ -146,11 +147,11 @@ class Checker(object):
             #           + dist_goal * .3 / self._states['goal_norm']) - penalty
             # print(- dist_goal / self._states['goal_norm'] - penalty)
             # return - dist_goal / self._states['goal_norm'] - penalty
-            curr_delta = math_util.l2(self._states['goal'] - cube_pos)
+            curr_delta = math_util.l2(goal - cube_pos)
 
             reward = self._states['last_delta'] - curr_delta
-            
-            self._states['last_delta'] = math_util.l2(self._states['goal'] - cube_pos)
+
+            self._states['last_delta'] = math_util.l2(goal - cube_pos)
 
             return reward
 
