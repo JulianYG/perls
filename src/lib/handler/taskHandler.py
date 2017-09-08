@@ -171,7 +171,7 @@ class Checker(object):
 
             # If gripper too far away from the cube, fail
             tool_pos = world.body['titan_0'].tool_pos
-            if math_util.l2(tool_pos, cube_pos) > 0.1:
+            if math_util.l2(tool_pos - cube_pos) > 0.1:
                 return True, False
 
             # If cube is within the boundary, success
