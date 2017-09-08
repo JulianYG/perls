@@ -81,7 +81,8 @@ class PerlsEnv(gym.Env):
         Whether the program is finished or not
         :return: Boolean value
         """
-        return self._world.check_states()[0]
+        done, _ = self._world.check_states()
+        return done
 
     @property
     def reward(self):

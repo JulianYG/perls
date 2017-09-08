@@ -94,8 +94,7 @@ class Checker(object):
             # Use this as a mark
             robot.grasp(1)
 
-            self._states['cube_norm'] = math_util.l2(robot.tool_pos - cube.pos)
-
+            # self._states['cube_norm'] = math_util.l2(robot.tool_pos - cube.pos)
             self._states['last_delta'] = math_util.l2(self._states['goal'] - cube.pos)
 
             # loginfo('Initialize finished.', FONT.model)
@@ -126,17 +125,17 @@ class Checker(object):
             # Scale according to the env's initial states
             # dist_gripper_norm = math_util.l2((0.03,) * 3)
 
-            # If the cube bumps or falls, fail directly
+            # If the cube bumps or falls, penalize
             if cube.pos[2] >= 0.68 or cube.pos[2] <= 0.6:
                 return -100
 
-            # If collided with table, fail
+            # If robot/gripper collided with table, penalize
             for points in world.body['table_0'].contact:
                 for point in points:
                     if point['uid_other'] < 2:
                         return -100
 
-            # Check if cube is within the boundary
+            # If cube is within the boundary, award
             cube_pos = cube.pos
             goal = self._states['goal']
             if goal[0] - .05 < cube_pos[0] < goal[0] + .05 \
@@ -147,35 +146,38 @@ class Checker(object):
             #           + dist_goal * .3 / self._states['goal_norm']) - penalty
             # print(- dist_goal / self._states['goal_norm'] - penalty)
             # return - dist_goal / self._states['goal_norm'] - penalty
+
             curr_delta = math_util.l2(goal - cube_pos)
-
             reward = self._states['last_delta'] - curr_delta
-
             self._states['last_delta'] = math_util.l2(goal - cube_pos)
-
+            
             return reward
 
     def check(self, world):
 
-        body_dict = world.body
-
         if self._name == 'push_sawyer' or self._name == 'push_kuka':
 
-            cube = body_dict['cube_0']
+            cube_pos = world.body['cube_0'].pos
 
-            score = self.score(world)
-
-            if score == -100:
+            # If the cube falls, fail directly
+            if cube_pos[2] <= 0.6:
                 return True, False
 
-            elif score == 100:
+            # If collided with table, fail
+            for points in world.body['table_0'].contact:
+                for point in points:
+                    if point['uid_other'] < 2:
+                        return True, False
+
+            # If cube is within the boundary, success
+            goal = self._states['goal']
+            if goal[0] - .05 < cube_pos[0] < goal[0] + .05 \
+               and goal[1] - .05 < cube_pos[1] < goal[1] + .05:
                 if self._job == 'record':
                     # In success case, take down the goal pos
                     self._log_file.write('{}\n'.format(
                         ' '.join(str(x) for x in goal)))
                 return True, True
-            else:
-                return False, False
 
         return False, False
 
