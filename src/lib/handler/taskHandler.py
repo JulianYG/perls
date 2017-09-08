@@ -96,6 +96,8 @@ class Checker(object):
 
             self._states['cube_norm'] = math_util.l2(robot.tool_pos - cube.pos)
 
+            self._states['last_delta'] = math_util.l2(self._states['goal'] - cube.pos)
+
             # loginfo('Initialize finished.', FONT.model)
             # loginfo('Initial joint positions: {}'.
             #         format(robot.joint_positions),
@@ -118,23 +120,39 @@ class Checker(object):
             robot = world.body['titan_0']
             cube = world.body['cube_0']
 
-            dist_gripper = math_util.rms(robot.tool_pos - cube.pos)
-            dist_goal = math_util.rms(cube.pos - self._states['goal'])
+            # dist_gripper = math_util.rms(robot.tool_pos - cube.pos)
+            # dist_goal = math_util.rms(cube.pos - self._states['goal'])
 
             # Scale according to the env's initial states
-            dist_gripper_norm = math_util.l2((0.03,) * 3)
-            penalty = 0.
+            # dist_gripper_norm = math_util.l2((0.03,) * 3)
+
+            # If the cube bumps or falls, fail directly
+            if cube.pos[2] >= 0.68 or cube.pos[2] <= 0.6:
+                return -100
 
             # If collided with table, fail
             for points in world.body['table_0'].contact:
                 for point in points:
                     if point['uid_other'] < 2:
-                        penalty += 10.
+                        return -100
+
+            # Check if cube is within the boundary
+            cube_pos = cube.pos
+            if goal[0] - .05 < cube_pos[0] < goal[0] + .05 \
+               and goal[1] - .05 < cube_pos[1] < goal[1] + .05:
+                return 100
 
             # return 1. / (dist_gripper * .7 / self._states['cube_norm']
             #           + dist_goal * .3 / self._states['goal_norm']) - penalty
             # print(- dist_goal / self._states['goal_norm'] - penalty)
-            return - dist_goal / self._states['goal_norm'] - penalty
+            # return - dist_goal / self._states['goal_norm'] - penalty
+            curr_delta = math_util.l2(self._states['goal'] - cube_pos)
+
+            reward = self._states['last_delta'] - curr_delta
+            
+            self._states['last_delta'] = math_util.l2(self._states['goal'] - cube_pos)
+
+            return reward
 
     def check(self, world):
 
@@ -144,26 +162,19 @@ class Checker(object):
 
             cube = body_dict['cube_0']
 
-            # If cost too high, mark fail and done
-            if self.score(world) < -1.3:
+            score = self.score(world)
+
+            if score == -100:
                 return True, False
 
-            if cube.pos[2] >= 0.68 or cube.pos[2] <= 0.6:
-                # If the cube bumps or falls
-                return True, False
-
-            # Check if cube is within the boundary
-            goal = self._states['goal']
-
-            cube_pos = cube.pos
-            if goal[0] - .05 < cube_pos[0] < goal[0] + .05 \
-               and goal[1] - .05 < cube_pos[1] < goal[1] + .05:
-
+            elif score == 100:
                 if self._job == 'record':
                     # In success case, take down the goal pos
                     self._log_file.write('{}\n'.format(
                         ' '.join(str(x) for x in goal)))
                 return True, True
+            else:
+                return False, False
 
         return False, False
 
