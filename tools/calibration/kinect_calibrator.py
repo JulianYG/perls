@@ -63,10 +63,10 @@ class KinectCalibrator():
             'calib_data', 'kinect')
 
         # Calibrated by IAI_Kinect
-        with open(pjoin(self._calib_directory), 'intrinsics.p') as f:
+        with open(pjoin(self._calib_directory, 'intrinsics.p'), 'rb') as f:
             self._intrinsics_RGB = pickle.load(f)
 
-        with open(pjoin(self._calib_directory), 'distortion.p') as f: 
+        with open(pjoin(self._calib_directory, 'distortion.p'), 'rb') as f: 
             self._distortion_RGB = pickle.load(f)
 
         self._transformation = np.zeros((4, 4), dtype=np.float32)

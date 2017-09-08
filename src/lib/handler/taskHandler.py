@@ -96,16 +96,16 @@ class Checker(object):
 
             self._states['cube_norm'] = math_util.l2(robot.tool_pos - cube.pos)
 
-            loginfo('Initialize finished.', FONT.model)
-            loginfo('Initial joint positions: {}'.
-                    format(robot.joint_positions),
-                    FONT.model)
-            loginfo('Initial gripper finger position: {}'.
-                    format(robot.tool_pos),
-                    FONT.model)
-            loginfo('Initialized goal state: {}'.
-                    format(box_center),
-                    FONT.model)
+            # loginfo('Initialize finished.', FONT.model)
+            # loginfo('Initial joint positions: {}'.
+            #         format(robot.joint_positions),
+            #         FONT.model)
+            # loginfo('Initial gripper finger position: {}'.
+            #         format(robot.tool_pos),
+            #         FONT.model)
+            # loginfo('Initialized goal state: {}'.
+            #         format(box_center),
+            #         FONT.model)
 
     def score(self, world):
         """
@@ -131,8 +131,10 @@ class Checker(object):
                     if point['uid_other'] < 2:
                         penalty += 10.
 
-            return - (dist_gripper * .7 / self._states['cube_norm']
-                      + dist_goal * .3 / self._states['goal_norm']) - penalty
+            # return 1. / (dist_gripper * .7 / self._states['cube_norm']
+            #           + dist_goal * .3 / self._states['goal_norm']) - penalty
+            # print(- dist_goal / self._states['goal_norm'] - penalty)
+            return - dist_goal / self._states['goal_norm'] - penalty
 
     def check(self, world):
 
@@ -143,7 +145,7 @@ class Checker(object):
             cube = body_dict['cube_0']
 
             # If cost too high, mark fail and done
-            if -self.score(world) > 1.2:
+            if self.score(world) < -1.3:
                 return True, False
 
             if cube.pos[2] >= 0.68 or cube.pos[2] <= 0.6:

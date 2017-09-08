@@ -14,6 +14,6 @@ Rotation: https://www.dropbox.com/s/az8g7qfqiir5561/KinectCalibrator_rotation.p?
 
 Translation: https://www.dropbox.com/s/e4k518gmnqgzcr4/KinectCalibrator_translation.p?dl=0
 
-Intrinsics: 
+Intrinsics: https://www.dropbox.com/s/0f6wcv08mt3g5qu/intrinsics.p?dl=0
 
-Distortion: 
+Distortion: https://www.dropbox.com/s/zuvbglapny9n110/distortion.p?dl=0
