@@ -640,6 +640,7 @@ class Body(object):
         :return: None
         """
         del self.fix
+        del self.mark
         pos, orn, fixed = self._init_state
         if not fixed:
             self.pose = (pos, orn)

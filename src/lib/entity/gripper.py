@@ -165,6 +165,7 @@ class PrismaticGripper(Tool):
         Release gripper for reset
         :return: None
         """
+        del self.marker
         pos, orn, _ = self._init_state
         if not self.fix:
             # pos, orn = self.position_transform(pos, orn)

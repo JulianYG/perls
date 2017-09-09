@@ -288,12 +288,8 @@ class Controller(object):
                 # Preparing variables
                 time_up, done, success = False, False, False
                 self._init_time_stamp = time_util.get_abs_time()
-
-                # TODO: May be able to move outside loop if display is booted
-
-                # Reset the world
+                
                 world.reset()
-                # Pass in targets uids
                 status = display.run([t[1] for t in world.target])
 
                 if status == -1:

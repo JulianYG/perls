@@ -97,16 +97,16 @@ class Checker(object):
             # self._states['cube_norm'] = math_util.l2(robot.tool_pos - cube.pos)
             self._states['last_delta'] = math_util.l2(self._states['goal'] - cube.pos)
 
-            loginfo('Initialize finished.', FONT.model)
-            loginfo('Initial joint positions: {}'.
-                    format(robot.joint_positions),
-                    FONT.model)
-            loginfo('Initial gripper finger position: {}'.
-                    format(robot.tool_pos),
-                    FONT.model)
-            loginfo('Initialized goal state: {}'.
-                    format(box_center),
-                    FONT.model)
+            # loginfo('Initialize finished.', FONT.model)
+            # loginfo('Initial joint positions: {}'.
+            #         format(robot.joint_positions),
+            #         FONT.model)
+            # loginfo('Initial gripper finger position: {}'.
+            #         format(robot.tool_pos),
+            #         FONT.model)
+            # loginfo('Initialized goal state: {}'.
+            #         format(box_center),
+            #         FONT.model)
 
     def score(self, world):
         """

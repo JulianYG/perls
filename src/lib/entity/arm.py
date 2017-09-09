@@ -342,6 +342,7 @@ class Arm(Tool):
         Reset tool to initial positions
         :return: None
         """
+        del self.mark
         if self._gripper:
             # First attach gripper
             self.attach_children = \
@@ -354,7 +355,7 @@ class Arm(Tool):
             # Next reset gripper
             self._gripper.reset()
 
-        self._engine.hold()
+        self._engine.hold(200)
 
         # Lastly reset arm
         self.joint_positions = (
