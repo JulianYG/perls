@@ -658,14 +658,12 @@ class BulletPhysicsEngine(FakeStateEngine):
                 logerr(err_msg, FONT.model)
             return -1
         else:
-            if self._async:
-                p.setRealTimeSimulation(0, physicsClientId=self._physics_server_id)
-                p.setTimeStep(
-                    float(self._step_size),
-                    physicsClientId=self._physics_server_id
-                )
-            else:
-                p.setRealTimeSimulation(1, physicsClientId=self._physics_server_id)
+            p.setTimeStep(
+                float(self._step_size),
+                physicsClientId=self._physics_server_id
+            )
+            flag = 0 if self._async else 1
+            p.setRealTimeSimulation(flag, physicsClientId=self._physics_server_id)
 
             # When simulation starts, change state
             self._real_time = not self._async

@@ -69,7 +69,7 @@ class Checker(object):
 
             # Random goal
             box_center = math_util.rand_vec(
-                3, (cube.pos[0] + 0.2, cube.pos[1] - 0.25, 0.641),
+                3, (cube.pos[0] + 0.25, cube.pos[1] - 0.25, 0.641),
                 (cube.pos[0] + 0.45, cube.pos[1] + 0.25, 0.642),
                 'uniform')
 
@@ -87,7 +87,7 @@ class Checker(object):
 
             # Initializes the gripper next to the cube
             initial_gripper_pos = \
-                (cube_pos[0] - 0.07, cube_pos[1], cube_pos[2] + 0.025)
+                (cube_pos[0] - 0.1, cube_pos[1], cube_pos[2] + 0.03)
             
             robot.tool_pos = (initial_gripper_pos, 300)
 
@@ -97,16 +97,16 @@ class Checker(object):
             # self._states['cube_norm'] = math_util.l2(robot.tool_pos - cube.pos)
             self._states['last_delta'] = math_util.l2(self._states['goal'] - cube.pos)
 
-            # loginfo('Initialize finished.', FONT.model)
-            # loginfo('Initial joint positions: {}'.
-            #         format(robot.joint_positions),
-            #         FONT.model)
-            # loginfo('Initial gripper finger position: {}'.
-            #         format(robot.tool_pos),
-            #         FONT.model)
-            # loginfo('Initialized goal state: {}'.
-            #         format(box_center),
-            #         FONT.model)
+            loginfo('Initialize finished.', FONT.model)
+            loginfo('Initial joint positions: {}'.
+                    format(robot.joint_positions),
+                    FONT.model)
+            loginfo('Initial gripper finger position: {}'.
+                    format(robot.tool_pos),
+                    FONT.model)
+            loginfo('Initialized goal state: {}'.
+                    format(box_center),
+                    FONT.model)
 
     def score(self, world):
         """
@@ -171,7 +171,7 @@ class Checker(object):
 
             # If gripper too far away from the cube, fail
             tool_pos = world.body['titan_0'].tool_pos
-            if math_util.l2(tool_pos - cube_pos) > 0.1:
+            if math_util.l2(tool_pos - cube_pos) > 0.3:
                 return True, False
 
             # If cube is within the boundary, success

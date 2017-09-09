@@ -65,7 +65,7 @@ class FakeStateEngine(StateEngine):
             self._max_run_time = int(max_run_time)
             self._step_count = 0
         else:
-            self._step_size = None
+            self._step_size = 0.0041666
             self._max_run_time = max_run_time
 
     @abc.abstractmethod
