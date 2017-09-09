@@ -14,7 +14,7 @@ class PushCubeVel(PushCube):
 
     @property
     def observation_space(self):
-        return PushCube.Space.box(
+        return PushCube.Space.Box(
             low=math_util.concat((
                 math_util.vec(self._robot.joint_specs['lower']),
                 -math_util.vec(self._robot.joint_specs['max_vel']),

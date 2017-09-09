@@ -55,14 +55,14 @@ class PushCube(PerlsEnv):
         )
         return super(PushCube, self)._reset()
 
-    @property
-    def reward(self):
-        """
-        Override reward definition in PerlsEnv, regularize by
-        the magnitude of actions.
-        :return: negative float number of actions
-        """
-        return .85 * self._world.evaluate() - .15 * math_util.l2(self._action)
+    # @property
+    # def reward(self):
+    #     """
+    #     Override reward definition in PerlsEnv, regularize by
+    #     the magnitude of actions.
+    #     :return: negative float number of actions
+    #     """
+    #     return .85 * self._world.evaluate() - .15 * math_util.l2(self._action)
 
     @property
     def state(self):

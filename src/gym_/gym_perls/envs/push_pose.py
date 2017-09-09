@@ -15,7 +15,7 @@ class PushCubePose(PushCube):
 
     @property
     def observation_space(self):
-        return PushCube.Space.box(
+        return PushCube.Space.Box(
             low=math_util.concat((
                 self._robot.pos - math_util.vec((1.5, 1.5, 1.5)),
                 self._table.pos - math_util.vec((.275, .275, -.63)),
