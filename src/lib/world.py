@@ -135,11 +135,11 @@ class World(object):
         for body in self._bodies.values():
             body.reset()
             
-        self._engine.hold(1000)
+        self._engine.hold(500)
         
         # Fine tune the initial environment setup
         self._checker.initialize(self)
-        self._engine.hold(1000)
+        self._engine.hold(500)
 
     def load_body(self, file_path, pos, orn,
                   fixed=False, record=False):
@@ -346,7 +346,7 @@ class World(object):
         """
         self._checker.set_job(job)
         status = self._engine.start_engine(frame)
-        self._engine.hold(500)
+        self._engine.hold(100)
         return status
 
     def notify_engine(self, stat):

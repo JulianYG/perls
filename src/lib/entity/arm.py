@@ -355,8 +355,6 @@ class Arm(Tool):
             # Next reset gripper
             self._gripper.reset()
 
-        self._engine.hold(200)
-
         # Lastly reset arm
         self.joint_positions = (
              self._rest_pose,
