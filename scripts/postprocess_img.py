@@ -10,7 +10,7 @@ from perls import postprocess, io_util
 
 if __name__ == "__main__":
 
-    pp = postprocess.Postprocess('pose', '../configs/gym-cmd.xml', dim='rgbd', use_display=False)
+    pp = postprocess.Postprocess('vel', '../configs/gym-cmd.xml', dim='rgbd', use_display=False)
 
     all_images = list()
     all_states = list()
@@ -23,7 +23,7 @@ if __name__ == "__main__":
     files.sort(key=lambda x: os.path.getmtime(x))
 
     goals = []
-    with open('../src/log/push_sawyer_1.txt', 'r') as f:
+    with open('../src/log/push_sawyer.txt', 'r') as f:
         pos_data = f.readlines()
     
     goals = [[float(i) for i in x.split()] for x in pos_data]

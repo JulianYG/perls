@@ -1,3 +1,6 @@
+### NOTE: I had to make a softlink from .pip to /dev/null/0 to stop AFS from complaining ###
+### NOTE: I had to symlink .keras to a place on /cvgl2/u/amandlek ###
+
 # TODO: replace with your own path
 cd /cvgl2/u/amandlek
 mkdir imitation
@@ -40,7 +43,7 @@ pip install redis
 
 ### DO openvr fix here
 
-### Important: open /cvgl2/u/amandlek/anaconda2/envs/infogail/lib/python2.7/site-packages/openvr/__init__.py
+### Important: open /cvgl2/u/amandlek/installed_libraries/anaconda2/envs/infogail/lib/python2.7/site-packages/openvr/__init__.py
 #   Delete lines 37-38, replace with the following:
 # # Load library
 # if platform.system() == 'Windows':
