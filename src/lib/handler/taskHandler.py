@@ -117,7 +117,7 @@ class Checker(object):
         """
         if self._name == 'push_sawyer' or self._name == 'push_kuka':
             robot = world.body['titan_0']
-            cube = world.body['cube_0']
+            cube_pos = world.body['cube_0'].pos
 
             # dist_gripper = math_util.rms(robot.tool_pos - cube.pos)
             # dist_goal = math_util.rms(cube.pos - self._states['goal'])
@@ -126,7 +126,7 @@ class Checker(object):
             # dist_gripper_norm = math_util.l2((0.03,) * 3)
 
             # If the cube bumps or falls, penalize
-            if cube.pos[2] >= 0.68 or cube.pos[2] <= 0.6:
+            if cube_pos[2] >= 0.68 or cube_pos[2] <= 0.6:
                 return -100
 
             # If robot/gripper collided with table, penalize
@@ -140,7 +140,7 @@ class Checker(object):
                 return -100
 
             # If cube is within the boundary, award
-            cube_pos = cube.pos
+            
             goal = self._states['goal']
             if goal[0] - .05 < cube_pos[0] < goal[0] + .05 \
                and goal[1] - .05 < cube_pos[1] < goal[1] + .05:
