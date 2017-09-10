@@ -7,6 +7,7 @@ import numpy as np
 # from PIL import Image
 import matplotlib.pyplot as plt
 import time
+import cv2
 
 class Postprocess:
 
@@ -254,6 +255,11 @@ class Postprocess:
             # RGBD
             else:
                 rgbd = self.display.get_camera_image('rgbd')
+
+                ### Transformations (cropping and ressizing) ###
+                rgbd = rgbd[:96, 27:123, :] # 96 x 96 cropping
+                rgbd = cv2.resize(rgbd, (64, 64)) # 64 x 64 resizing
+
                 imgs.append(rgbd)
                 states.append(
                     np.concatenate([
