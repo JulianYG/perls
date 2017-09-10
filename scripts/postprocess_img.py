@@ -53,7 +53,7 @@ if __name__ == "__main__":
     io_util.loginfo(all_actions.shape)
 
     if pp.name != 'pose' and pp.name != 'vel':
-        np.savez("high.npz", imgs=all_images, auxs=all_states, actions=all_actions)
+        np.savez("../../Imitation/InfoGAIL/data/vision/velocity.npz", imgs=all_images, auxs=all_states, actions=all_actions)
         shutil.rmtree("tmp", ignore_errors=True)
     else:
         np.savez('{}.npz'.format(pp.name), states=all_states, actions=all_actions)
