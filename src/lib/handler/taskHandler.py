@@ -135,6 +135,10 @@ class Checker(object):
                     if point['uid_other'] < 2:
                         return -100
 
+            tool_pos = world.body['titan_0'].tool_pos
+            if math_util.l2(tool_pos - cube_pos) > 0.3:
+                return -100
+
             # If cube is within the boundary, award
             cube_pos = cube.pos
             goal = self._states['goal']
