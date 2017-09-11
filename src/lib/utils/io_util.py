@@ -114,15 +114,14 @@ def loginfo(msg, itype=FONT.disp):
     :return: None
     """
     # msg = pprint.pformat(msg)
-    sys.stdout.write('{}{}\n{}'.format(
-        itype[0], msg, FONT.end))
-
+    # sys.stdout.write('{}{}\n{}'.format(
+    #     itype[0], msg, FONT.end))
+    pass
 
 def logerr(msg, etype):
-    # msg = pprint.pformat(msg)
-    sys.stderr.write('{}{}\n{}'.format(
-        etype[1] + FONT.bold, msg, FONT.end))
-
+    # sys.stderr.write('{}{}\n{}'.format(
+    #     etype[1] + FONT.bold, msg, FONT.end))
+    pass
 
 def write_log(log, dest):
 
