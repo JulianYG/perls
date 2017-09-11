@@ -125,6 +125,10 @@ class Checker(object):
             # Scale according to the env's initial states
             # dist_gripper_norm = math_util.l2((0.03,) * 3)
 
+            curr_delta = math_util.l2(goal - cube_pos)
+            reward = self._states['last_delta'] - curr_delta
+            self._states['last_delta'] = math_util.l2(goal - cube_pos)
+
             # If the cube bumps or falls, penalize
             if cube_pos[2] >= 0.68 or cube_pos[2] <= 0.6:
                 return -1
@@ -144,16 +148,12 @@ class Checker(object):
             goal = self._states['goal']
             if goal[0] - .05 < cube_pos[0] < goal[0] + .05 \
                and goal[1] - .05 < cube_pos[1] < goal[1] + .05:
-                return 1
+                return reward + 1
 
             # return 1. / (dist_gripper * .7 / self._states['cube_norm']
             #           + dist_goal * .3 / self._states['goal_norm']) - penalty
             # print(- dist_goal / self._states['goal_norm'] - penalty)
             # return - dist_goal / self._states['goal_norm'] - penalty
-
-            curr_delta = math_util.l2(goal - cube_pos)
-            reward = self._states['last_delta'] - curr_delta
-            self._states['last_delta'] = math_util.l2(goal - cube_pos)
 
             return reward
 
