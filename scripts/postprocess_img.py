@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     # Keep files sorted in order to align with random seeds
     files = filter(os.path.isfile, glob(record_path))
-    files.sort(key=lambda x: os.path.getmtime(x))
+    files.sort(key=lambda x: os.path.basename(x))
 
     goals = []
     with open('../src/log/push_sawyer.txt', 'r') as f:
@@ -39,7 +39,7 @@ if __name__ == "__main__":
         np.savez("tmp/{}.npz".format(i), imgs=imgs, auxs=states, actions=actions)
 
     npz_files = filter(os.path.isfile, glob("tmp/*.npz"))
-    npz_files.sort(key=lambda x: os.path.getmtime(x))
+    npz_files.sort(key=lambda x: os.path.basename(x))
     for f in npz_files:
         x = np.load(f)
         all_images.append(x["imgs"])
