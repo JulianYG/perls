@@ -51,6 +51,9 @@ class PerlsEnv(gym.Env):
         # Store last action for regularization purposes
         self._action = None
 
+        # Override Env class to prevent opening window after close
+        self._owns_render = False
+
     @abc.abstractproperty
     def action_space(self):
         """
@@ -64,6 +67,13 @@ class PerlsEnv(gym.Env):
         """
         Get the space of observations in the environment
         :return: Space object
+        """
+        return NotImplemented
+
+    @abc.abstractproperty
+    def reward_range(self):
+        """
+        A tuple corresponding to the min and max possible rewards
         """
         return NotImplemented
 
