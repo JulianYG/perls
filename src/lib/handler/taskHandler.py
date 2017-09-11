@@ -118,6 +118,7 @@ class Checker(object):
         if self._name == 'push_sawyer' or self._name == 'push_kuka':
             robot = world.body['titan_0']
             cube_pos = world.body['cube_0'].pos
+            goal = self._states['goal']
 
             # dist_gripper = math_util.rms(robot.tool_pos - cube.pos)
             # dist_goal = math_util.rms(cube.pos - self._states['goal'])
@@ -144,8 +145,6 @@ class Checker(object):
                 return -1
 
             # If cube is within the boundary, award
-            
-            goal = self._states['goal']
             if goal[0] - .05 < cube_pos[0] < goal[0] + .05 \
                and goal[1] - .05 < cube_pos[1] < goal[1] + .05:
                 return reward + 1
