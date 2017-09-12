@@ -114,14 +114,17 @@ class PerlsLogger(Singleton):
         form = "[$BOLD%(name)-20s$RESET][%(levelname)-18s]  %(message)s ($BOLD%(filename)s$RESET:%(lineno)d)"
 
         console = logging.StreamHandler()
-        log = logging.FileHandler(log_file)
+
+        if _level_encodings[level] > 30:
+            log = logging.FileHandler(log_file)
+            super(PerlsLogger, self).addHandler(log)
+
         color_formatter = ColoredFormatter(
             self._format_message(form, use_color))
         console.setFormatter(color_formatter)
 
         super(PerlsLogger, self).addHandler(console)
-        super(PerlsLogger, self).addHandler(log)
-
+        
     def _format_message(self, msg, bold=False):
 
         if self._use_color:
