@@ -337,7 +337,7 @@ class BulletRenderEngine(GraphicsEngine):
                 lightDirection=[0, 1, 0], 
                 lightColor=[1, 1, 1],
                 lightDistance=camera_param['flen'] + 1,
-                shadow=1,
+                shadow=0,
                 # ... ambient diffuse, specular coeffs
                 lightAmbientCoeff=.9,
                 # Seems only able to use w/o openGL
