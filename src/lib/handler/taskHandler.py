@@ -1,12 +1,16 @@
 # !/usr/bin/env python
 
 from ..utils import math_util
-from ..utils.io_util import loginfo, FONT, pjoin, fdelete
+from ..utils.io_util import pjoin, fdelete, PerlsLogger
+
+import logging 
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
 __license__ = 'private'
 __version__ = '0.1'
+
+logging.setLoggerClass(PerlsLogger)
 
 
 class Checker(object):
@@ -37,7 +41,6 @@ class Checker(object):
         self._job = job
 
     def initialize(self, world):
-
         """
         Customize world for some fine tunings that
         cannot be specified in env xml file
@@ -98,16 +101,13 @@ class Checker(object):
             # self._states['cube_norm'] = math_util.l2(robot.tool_pos - cube.pos)
             self._states['last_delta'] = math_util.l2(self._states['goal'] - cube.pos)
 
-            # loginfo('Initialize finished.', FONT.model)
-            # loginfo('Initial joint positions: {}'.
-            #         format(robot.joint_positions),
-            #         FONT.model)
-            # loginfo('Initial gripper finger position: {}'.
-            #         format(robot.tool_pos),
-            #         FONT.model)
-            # loginfo('Initialized goal state: {}'.
-            #         format(box_center),
-            #         FONT.model)
+            logging.info('Initialize finished.')
+            logging.info('Initial joint positions: {}'.
+                    format(robot.joint_positions))
+            logging.info('Initial gripper finger position: {}'.
+                    format(robot.tool_pos))
+            logging.info('Initialized goal state: {}'.
+                    format(box_center))
 
     def score(self, world):
         """

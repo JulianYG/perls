@@ -1,5 +1,10 @@
+# !/usr/bin/env python
+import logging 
+from ..utils.io_util import PerlsLogger
+
+logging.setLoggerClass(PerlsLogger)
+
 from .math_util import vec, mat4, mat2pose
-from .io_util import loginfo, logerr, FONT
 from .time_util import Timer
 
 from pybullet import (getKeyboardEvents,
@@ -143,8 +148,7 @@ class HTCVive(object):
     def vibrate(self, c_id, duration=50):  # miliseconds
 
         if c_id not in self._devices['controller']:
-            logerr('Given id {} does not correspond to controller.'.format(c_id),
-                    FONT.warning)
+            logging.error('Given id {} does not correspond to controller.'.format(c_id))
             return
 
         vibrator = Timer(0.005, self._pulse, duration, c_id)
@@ -165,8 +169,7 @@ class HTCVive(object):
                       trigger=0.)
 
         if c_id not in self._devices['controller']:
-            logerr('Given id {} does not correspond to controller.'.format(c_id),
-                    FONT.warning)
+            logging.error('Given id {} does not correspond to controller.'.format(c_id))
             return
 
         # Get VR Events

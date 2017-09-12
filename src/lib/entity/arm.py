@@ -1,8 +1,8 @@
 import abc
+import logging
 
 from .body import Tool
 from ..utils import math_util
-from ..utils.io_util import loginfo, FONT
 
 
 class Arm(Tool):

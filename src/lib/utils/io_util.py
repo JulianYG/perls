@@ -7,18 +7,40 @@ import collections
 import numpy as np
 import os, sys
 import glob
+import logging
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
 __license__ = 'private'
 __version__ = '0.1'
 
-
 # Bind raw_input to input in Python 2
 try:
     input = raw_input
 except NameError:
     pass
+
+_level_encodings = dict(
+    critical=logging.CRITICAL,
+    error=logging.ERROR,
+    warning=logging.WARNING,
+    info=logging.INFO,
+    debug=logging.DEBUG,
+    release=logging.NOTSET,
+    test=logging.INFO
+)
+
+_color_encodings = dict(
+    warning=6,#'\033[93m',
+    ignore=0,#'\033[90m',
+    # critical='\033[4m',
+
+    info=2,#'\033[94m',
+    debug=3,#'\033[96m',
+    error=1,#'\033[95m',
+    critical=1#'\033[91m',
+)
+
 
 # Force automatic flush when printing
 class Unbuffered(object):
@@ -44,27 +66,70 @@ np.set_printoptions(precision=3, suppress=True)
 _singleton_elem = ElementTree.Element(0)
 
 
-class FONT:
+class ColoredFormatter(logging.Formatter):
 
-    def __init__(self):
-        pass
+    def __init__(self, msg, use_color=True):
 
-    # warning for all cases
-    warning = ['\033[93m']
-    ignore = ['\033[90m']
+        super(ColoredFormatter, self).__init__(msg)
+        self._use_color = use_color
 
-    # world model color code
-    model = ['\033[94m', '\033[95m']
+    def format(self, record):
 
-    # display color code
-    disp = ['\033[94m', '\033[96m']
+        level_name = record.levelname
+        if self._use_color and levelname in _color_encodings:
+            levelname_color = '\033[1;%dm' % (30 + _color_encodings[levelname]) + levelname + '\033[0m'
+            record.levelname = levelname_color
 
-    # controller color code
-    control = ['\033[92m', '\033[91m']
+        return super(ColoredFormatter, self).format(record)
 
-    end = '\033[0m'
-    bold = '\033[1m'
-    underline = '\033[4m'
+
+class _Singleton(type):
+
+    # A metaclass that creates a Singleton base class when called. 
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = \
+                super(_Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+
+class Singleton(_Singleton('MetaLogger', (logging.Logger,), {})):
+    # A singleton class to make singleton python 2 & 3 compatible
+    pass
+
+
+class PerlsLogger(Singleton):
+
+    def __init__(self, log_file, 
+        level='warning',
+        use_color=True):
+
+        super(PerlsLogger, self).__init__(
+            log_file, _level_encodings[level])
+
+        self._use_color = use_color
+
+        form = "[$BOLD%(name)-20s$RESET][%(levelname)-18s]  %(message)s ($BOLD%(filename)s$RESET:%(lineno)d)"
+
+        console = logging.StreamHandler()
+        log = logging.FileHandler(log_file)
+        color_formatter = ColoredFormatter(
+            self._format_message(form, use_color))
+        console.setFormatter(color_formatter)
+
+        super(PerlsLogger, self).addHandler(console)
+        super(PerlsLogger, self).addHandler(log)
+
+    def _format_message(self, msg, bold=False):
+
+        if self._use_color:
+            msg = msg.replace("$RESET", '\033[0m').replace("$BOLD", '\033[1m')
+        else:
+            msg = msg.replace("$RESET", "").replace("$BOLD", "")
+        return msg
+
 
 _env_tree = collections.namedtuple(
     'EnvTree',
@@ -106,22 +171,6 @@ def fdelete(file):
 def flist(spec):
     return glob.glob(spec)
 
-
-def loginfo(msg, itype=FONT.disp):
-    """
-    Print message and flush to terminal
-    :param msg: string message to print
-    :return: None
-    """
-    # msg = pprint.pformat(msg)
-    # sys.stdout.write('{}{}\n{}'.format(
-    #     itype[0], msg, FONT.end))
-    pass
-
-def logerr(msg, etype):
-    # sys.stderr.write('{}{}\n{}'.format(
-    #     etype[1] + FONT.bold, msg, FONT.end))
-    pass
 
 def write_log(log, dest):
 
