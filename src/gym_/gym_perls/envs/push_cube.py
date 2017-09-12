@@ -49,15 +49,16 @@ class PushCube(PerlsEnv):
         """
         # Set to top down view to align with real world
         # Overwrite settings in config file
+
         self._display.set_render_view(
             dict(
-                dim=(150, 150),
-                flen=2.,
+                dim=(96, 96),
+                flen=1.2,
                 # Have to use exact numbers for aligned
                 # Top down view in GUI and non-GUI modes...
                 yaw=90.0001,
-                pitch=-75,
-                focus=self._world.body['table_0'].pos
+                pitch=-50,
+                focus=self._world.body['cube_0'].pos
             )
         )
         return super(PushCube, self)._reset()
