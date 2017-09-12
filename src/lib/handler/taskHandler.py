@@ -64,6 +64,7 @@ class Checker(object):
             gripper.color = (4, (0, 0, 0, 1))
 
             table = world.body['table_0']
+            # table.dynamics = {-1: dict(lateral_friction=0.05)}
             # table.set_texture(
             #     -1, 'table', pjoin(__file__, '../../../../asset/table.png'))
 
