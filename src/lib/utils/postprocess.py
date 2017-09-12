@@ -1,5 +1,5 @@
 import pybullet as p
-from math_util import get_relative_pose
+from .math_util import get_relative_pose
 from .io_util import parse_log, loginfo, parse_config
 from ..control import Controller
 import numpy as np

@@ -428,7 +428,7 @@ class SawyerArm(object):
             try:
                 rospy.wait_for_service(ns, 5.0)
                 resp = iksvc(ikreq) # get IK response
-            except (rospy.ServiceException, rospy.ROSException), e:
+            except (rospy.ServiceException, rospy.ROSException) as e:
                 rospy.logerr("Service call failed: %s" % (e,))
                 return False
             if resp.result_type[0] > 0:
