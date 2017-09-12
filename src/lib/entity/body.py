@@ -1,14 +1,17 @@
 #!/usr/bin/env python
 
 import abc
+import logging
 
 from ..utils import math_util
-from ..utils.io_util import FONT, logerr, loginfo
+from ..utils.io_util import PerlsLogger
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
 __license__ = 'private'
 __version__ = '0.1'
+
+logging.setLoggerClass(PerlsLogger)
 
 
 class Body(object):
@@ -401,8 +404,7 @@ class Body(object):
         if not self.fix:
             self._engine.set_body_linear_velocity(self._uid, velocity)
         else:
-            logerr('Cannot set linear velocity for fixed body',
-                   FONT.model)
+            logging.error('Cannot set linear velocity for fixed body')
 
     @omega.setter
     def omega(self, velocity):
@@ -414,8 +416,7 @@ class Body(object):
         if not self.fix:
             self._engine.set_body_angular_velocity(self._uid, velocity)
         else:
-            logerr('Cannot set angular velocity for fixed body',
-                   FONT.model)
+            logging.error('Cannot set angular velocity for fixed body')
 
     @dynamics.setter
     def dynamics(self, info):
@@ -682,8 +683,7 @@ class Body(object):
         :return: -1 if failure, 0 if success
         """
         if lid not in self._links:
-            logerr('Invalid link index to apply force on.',
-                   FONT.model)
+            logging.error('Invalid link index to apply force on.')
             return -1
         else:
             self._engine.apply_force_to_body(
@@ -702,8 +702,7 @@ class Body(object):
         :return: -1 if failure, 0 if success
         """
         if lid not in self._links:
-            logerr('Invalid link index to apply force on.',
-                   FONT.model)
+            logging.error('Invalid link index to apply force on.')
             return -1
         else:
             self._engine.apply_torque_to_body(
@@ -749,8 +748,7 @@ class Body(object):
         """
         # Cannot move if fixed already
         if self.fix:
-            loginfo('Fix-based body cannot track.',
-                    FONT.warning)
+            logging.warning('Fix-based body cannot track.')
             return
 
         # Need to constrain to world frame first

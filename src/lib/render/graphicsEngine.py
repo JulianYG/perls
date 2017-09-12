@@ -2,17 +2,17 @@
 
 import os, sys
 import os.path as osp
-from ..utils.io_util import pjoin
 import pybullet as p
 
 import numpy as np
 import math
+import logging
 
 from ..utils import (io_util,
                      math_util, 
                      time_util, 
                      plot_util)
-from ..utils.io_util import FONT, loginfo, parse_log
+from ..utils.io_util import parse_log, pjoin, PerlsLogger
 
 from .renderEngine import GraphicsEngine
 
@@ -20,6 +20,8 @@ __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
 __license__ = 'private'
 __version__ = '0.1'
+
+logging.setLoggerClass(PerlsLogger)
 
 
 class OpenGLEngine(GraphicsEngine):
@@ -268,9 +270,8 @@ class BulletRenderEngine(GraphicsEngine):
         elif otype == 'rad':
             pass
         else:
-            loginfo('Unrecognized orientation type. '
-                    'Choose among quat, deg, and rad',
-                    FONT.ignore)
+            logging.warning('Unrecognized orientation type. '
+                    'Choose among quat, deg, and rad')
         return pos, orn        
 
     def set_camera_pose(self, pos, orn, upAxisIdx=1):
@@ -295,9 +296,8 @@ class BulletRenderEngine(GraphicsEngine):
         p.resetSimulation(self._server_id)
 
         if self._frame != 'vr' and self._frame != 'gui':
-            loginfo('Real camera not available under frame {}, '
-                    'use virtual settings instead'.format(self._frame),
-                    FONT.ignore)
+            logging.info('Real camera not available under frame {}, '
+                    'use virtual settings instead'.format(self._frame))
 
     ###
     # General display related methods
@@ -362,7 +362,7 @@ class BulletRenderEngine(GraphicsEngine):
         elif itype == 'segment':
             return np.reshape(seg_img, (height, width)).astype(np.float32)
         else:
-            loginfo('Unrecognized image type', FONT.ignore)
+            logging.warning('Unrecognized image type')
 
     def activate(self):
         if not self._active:
@@ -437,8 +437,8 @@ class BulletRenderEngine(GraphicsEngine):
             obj_log = parse_log(objects, verbose=False)
 
             # TODO: set camera angle for GUI/HMD
-            loginfo('Start replaying file {}'.
-                    format(file_name), FONT.control)
+            logging.info('Start replaying file {}'.
+                    format(file_name))
 
             self.activate()
 
@@ -469,12 +469,10 @@ class BulletRenderEngine(GraphicsEngine):
 
                     time_util.pause(self._replay_delay)
             except KeyboardInterrupt:
-                loginfo('Cancelled replaying file {}'.format(file_name),
-                        FONT.control)
+                logging.info('Cancelled replaying file {}'.format(file_name))
                 return 3
 
-            loginfo('Finished replay {}'.format(file_name),
-                    FONT.control)
+            logging.info('Finished replay {}'.format(file_name))
             self._replay_count += 1
 
             # TODO: figure out using HMD log to replicate first person view
@@ -487,13 +485,13 @@ class BulletRenderEngine(GraphicsEngine):
         if self._logging_id:
             for lid in self._logging_id:
                 p.stopStateLogging(lid, self._server_id)
-            loginfo('Stop recording.', FONT.control)
+            logging.info('Stop recording.')
 
         if self._job == 'record':
 
             # Just ignore the case of error or cancellation
             if exit_code < 0:
-                loginfo('Record file discarded.', FONT.ignore)
+                logging.info('Record file discarded.')
                 io_util.fdelete(
                     pjoin(
                         self._log_path['trajectory'],
