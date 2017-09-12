@@ -36,6 +36,13 @@ class PushCube(PerlsEnv):
         """
         return NotImplemented
 
+    @property
+    def reward_range(self):
+        """
+        Get the min and max reward range as a tuple
+        """
+        return (-1, 1.5)
+
     def _reset(self):
         """
         Override method.

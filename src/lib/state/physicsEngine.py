@@ -2,18 +2,22 @@
 
 import numpy as np
 import platform
+import logging
+
 import os.path as osp
 
 import pybullet as p
 
 from .stateEngine import FakeStateEngine
 from ..utils import math_util
-from ..utils.io_util import pjoin, FONT, loginfo, logerr
+from ..utils.io_util import pjoin, PerlsLogger
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
 __license__ = 'private'
 __version__ = '0.1'
+
+logging.setLoggerClass(PerlsLogger)
 
 
 class MujocoEngine(FakeStateEngine):
@@ -114,7 +118,7 @@ class BulletPhysicsEngine(FakeStateEngine):
                 self.status = self._STATUS[-1]
                 err_msg = 'Non GUI/VR mode only supports async simulation.'
                 self._error_message.append(err_msg)
-                logerr(err_msg, FONT.control)
+                logging.error(err_msg)
                 return -1
         return 0
 
@@ -182,7 +186,7 @@ class BulletPhysicsEngine(FakeStateEngine):
         elif otype == 'rad':
             return math_util.quat2euler(orn)
         else:
-            loginfo('Unrecognized orientation form.', FONT.ignore)
+            logging.warning('Unrecognized orientation form.')
 
     def get_body_camera_position(self, uid, camera_pos, camera_orn):
 
@@ -207,7 +211,7 @@ class BulletPhysicsEngine(FakeStateEngine):
         elif otype == 'deg':
             return math_util.deg(math_util.mat2euler(orn))
         else:
-            loginfo('Unrecognized orientation form.', FONT.ignore)
+            logging.warning('Unrecognized orientation form.')
 
     def get_body_relative_pose(self, uid, frame_pos, frame_orn):
 
@@ -222,8 +226,8 @@ class BulletPhysicsEngine(FakeStateEngine):
                 physicsClientId=self._physics_server_id)
         except p.error:
             status = -1
-            logerr('BulletPhysicsEngine captured exception: ' +
-                   p.error.message, FONT.model)
+            logging.exception('BulletPhysicsEngine captured exception: ' +
+                   p.error.message)
             self.status = BulletPhysicsEngine._STATUS[-1]
             self._error_message.append(p.error.message)
         return status
@@ -420,8 +424,8 @@ class BulletPhysicsEngine(FakeStateEngine):
                                  physicsClientId=self._physics_server_id)
         except p.error:
             status = -1
-            logerr('BulletPhysicsEngine captured exception: ' + \
-                  p.error.message, FONT.model)
+            logging.exception('BulletPhysicsEngine captured exception: ' + \
+                  p.error.message)
             self.status = BulletPhysicsEngine._STATUS[-1]
             self._error_message.append(p.error.message)
         return status
@@ -523,8 +527,7 @@ class BulletPhysicsEngine(FakeStateEngine):
                 p.applyExternalForce(uid, lid, force, pos, p.LINK_FRAME,
                                      physicsClientId=self._physics_server_id)
             else:
-                loginfo('Unrecognized reference frame. Choose abs or rel',
-                        FONT.ignore)
+                logging.warning('Unrecognized reference frame. Choose abs or rel')
         except p.error:
             self.status = BulletPhysicsEngine._STATUS[-1]
             self._error_message.append(p.error.message)
@@ -538,8 +541,7 @@ class BulletPhysicsEngine(FakeStateEngine):
                 p.applyExternalTorque(uid, lid, torque, p.LINK_FRAME,
                                       physicsClientId=self._physics_server_id)
             else:
-                loginfo('Unrecognized reference frame. Choose abs or rel',
-                        FONT.ignore)
+                logging.warning('Unrecognized reference frame. Choose abs or rel')
         except p.error:
             self.status = BulletPhysicsEngine._STATUS[-1]
             self._error_message.append(p.error.message)
@@ -652,10 +654,10 @@ class BulletPhysicsEngine(FakeStateEngine):
 
         if self.status == 'killed' or self.status == 'error'\
            or self._type_check(frame) != 0:
-            logerr('Cannot start physics physics_engine %d '
-                   'in error state. Errors:' % self.engine_id, FONT.disp)
+            logging.fatal('Cannot start physics physics_engine %d '
+                   'in error state. Errors:' % self.engine_id)
             for err_msg in self._error_message:
-                logerr(err_msg, FONT.model)
+                logging.error(err_msg)
             return -1
         else:
             p.setTimeStep(
@@ -669,8 +671,8 @@ class BulletPhysicsEngine(FakeStateEngine):
             self._real_time = not self._async
             # Set status to running
             self.status = BulletPhysicsEngine._STATUS[0]
-            loginfo('Starting simulation server {}, status: {}'.
-                    format(self.engine_id, self.status), FONT.warning)
+            logging.info('Starting simulation server {}, status: {}'.
+                    format(self.engine_id, self.status))
             return 0
 
     def hold(self, max_steps=30):
@@ -703,4 +705,4 @@ class BulletPhysicsEngine(FakeStateEngine):
         p.resetSimulation(self._physics_server_id)
         p.disconnect(self._physics_server_id)
         self.status = 'finished'
-        loginfo('Physics physics_engine stopped.', FONT.warning)
+        logging.info('Physics physics_engine stopped.')

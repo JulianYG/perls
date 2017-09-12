@@ -72,7 +72,7 @@ class KinectCamera(object):
 
         self._big_depth = Frame(1920, 1082, 4)
         self._color_depth_map = np.zeros((424, 512),  np.int32).ravel()
-        print self._color_depth_map.shape
+        print(self._color_depth_map.shape)
 
 
     def get_image(self):

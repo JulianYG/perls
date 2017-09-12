@@ -1,4 +1,7 @@
 
+import logging
+import platform
+
 from .src.gym_ import gym_perls
 from .src.lib.entity import body
 
@@ -13,4 +16,4 @@ from .src.lib.control import Controller
 
 from .src.pyrobots import kinect, sawyer
 
-# from src.lib import server
+logging.setLoggerClass(io_util.PerlsLogger)

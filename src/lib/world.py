@@ -2,15 +2,19 @@
 
 from .entity.body import Body
 from .utils import io_util, math_util
-from .utils.io_util import logerr, FONT
+from .utils.io_util import PerlsLogger
 from .entity import PR2Gripper, rethinkGripper, WSG50Gripper
 from .entity import sawyer, kuka
 from .handler import taskHandler
+
+import logging
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
 __license__ = 'private'
 __version__ = '0.1'
+
+logging.setLoggerClass(PerlsLogger)
 
 
 class World(object):
@@ -391,6 +395,6 @@ class World(object):
 
         # Flush error messages
         for err_msg in self._engine.error:
-            logerr(err_msg, FONT.model)
+            logging.error(err_msg)
 
         self._engine.stop()

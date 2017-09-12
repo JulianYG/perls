@@ -1,5 +1,6 @@
 import multiprocessing
-import sys
+import sys, logging
+import platform
 
 from .state import physicsEngine#, robotEngine
 from .adapter import Adapter
@@ -9,12 +10,9 @@ from .handler.eventHandler import InteractiveHandler
 from .handler.controlHandler import (KeyboardEventHandler,
                                      ViveEventHandler,
                                      AppEventHandler)
-from .debug import debugger, tester
 from .utils import io_util, time_util, math_util
-from .utils.io_util import (FONT,
-                            loginfo,
-                            logerr,
-                            pjoin)
+from .utils.io_util import pjoin
+from .utils.io_util import PerlsLogger
 from .view import View
 from .world import World
 
@@ -22,6 +20,14 @@ __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
 __license__ = 'private'
 __version__ = '0.1'
+
+logging.setLoggerClass(PerlsLogger)
+
+Logger = PerlsLogger('{}.log'.format(
+    time_util.get_full_time_stamp()),
+    use_color=False \
+    if platform.system() == 'Windows' else True
+)
 
 
 class Controller(object):
@@ -54,6 +60,12 @@ class Controller(object):
         vive=ViveEventHandler,
         phone=AppEventHandler,
         off=NullHandler
+    )
+
+    _LOGGING_LEVELS = dict(
+        debug=logging.DEBUG,
+        release=logging.WARNING,
+        test=logging.INFO
     )
 
     def __init__(self, config_batch):
@@ -149,17 +161,15 @@ class Controller(object):
             queue = multiprocessing.Queue()
             nruns, world, disp, ctrl_hdlr = self.load_config(conf, queue)
             if num_configs > 1 and (not conf.async):
-                logerr('Currently only support multiple instances '
+                err_control('Currently only support multiple instances '
                        'of non-GUI frame and asynchronous simulation. '
                        'GUI or synchronous frame can only run as '
                        'single simulation instance. \nSimulation '
-                       'configuration %d build skipped with error. ' % i,
-                       FONT.control)
+                       'configuration %d build skipped with error. ' % i)
                 world.notify_engine('error')
             else:
-                loginfo('Simulation configuration {} build success. '
-                        'Build type: {}'.format(i, conf.build),
-                        FONT.control)
+                logging.info('Simulation configuration {} build success. '
+                        'Build type: {}'.format(i, conf.build))
                 world.notify_engine('pending')
             self._physics_servers[conf.id] = (nruns, world, disp, ctrl_hdlr, queue)
 
@@ -207,12 +217,7 @@ class Controller(object):
         )
 
         # TODO
-        if conf.build == 'debug':
-            world = debugger.ModelDebugger(world)
-            display = debugger.ViewDebugger(display)
-        elif conf.build == 'test':
-            world = tester.ModelTester(world)
-            display = tester.ViewTester(display)
+        Logger.setLevel(Controller._LOGGING_LEVELS[conf.build])
 
         num_of_runs = conf.num_of_runs
 
@@ -251,7 +256,7 @@ class Controller(object):
         :return: None
         """
         if len(self._physics_servers) < 2:
-            logerr('Cannot call <start_all> for less than 2 instances.',
+            err_control('Cannot call <start_all> for less than 2 instances.',
                    FONT.control)
             return
         for s_id in range(len(self._physics_servers)):
@@ -293,22 +298,21 @@ class Controller(object):
                 status = display.run([t[1] for t in world.target])
 
                 if status == -1:
-                    logerr('Error loading simulation', FONT.control)
+                    logging.error('Error loading simulation')
                     self.stop(server_id, -1)
                     break
                 elif status == 1:
                     self.stop(server_id, 0)
-                    loginfo('Replay finished. Exiting...', FONT.control)
+                    logging.info('Replay finished. Exiting...')
                     continue
                 elif status == 2:
-                    loginfo('Start recording.', FONT.control)
+                    logging.info('Start recording.')
                 elif status == 3:
                     self.stop(server_id, 0)
-                    loginfo('User quit during replay.', FONT.control)
+                    logging.info('User quit during replay.')
                     break
                 else:
-                    loginfo('Display configs loaded. Starting simulation...',
-                            FONT.control)
+                    logging.info('Display configs loaded. Starting simulation...')
 
                 # After loading and initialization finish, start rendering
                 # (This can significantly boost performance)
@@ -349,18 +353,15 @@ class Controller(object):
 
                 if success:
                     self.stop(server_id, 0)
-                    loginfo('Task success! Exiting run {}...'.format(r),
-                            FONT.disp)
+                    logging.info('Task success! Exiting run {}...'.format(r))
                 else:
                     self.stop(server_id, 1)
-                    loginfo('Task failed! Exiting run {}...'.format(r),
-                            FONT.disp)
+                    logging.info('Task failed! Exiting run {}...'.format(r))
 
             except KeyboardInterrupt:
 
                 self.stop(server_id, -1)
-                loginfo('User cancelled run {} by ctrl+c.'.format(r),
-                        FONT.warning)
+                logging.info('User cancelled run {} by ctrl+c.'.format(r))
                 quit_run = io_util.prompt(
                     'Do you wish to skip other runs and quit the program?'
                 )
@@ -408,7 +409,7 @@ class Controller(object):
             self._process_pool[server_id].terminate()
             self._process_pool[server_id] = None
 
-        loginfo('Safe exit.', FONT.control)
+        logging.info('Safe exit.')
         sys.exit(0)
 
     def _control_interrupt(self, world, display, signal, elapsed_time):
@@ -446,8 +447,8 @@ class Controller(object):
                     self._states['camera']['pitch'] += delta[0] * elapsed_time
                     self._states['camera']['yaw'] += delta[1] * elapsed_time
                 else:
-                    loginfo('Unrecognized view command type. Skipped',
-                            FONT.ignore)
+                    logging.warning('Unrecognized view command type. Skipped')
+
             # Apply state changes
             display.set_render_view(self._states['camera'])
 
@@ -470,8 +471,7 @@ class Controller(object):
                 elif method == 'pose':
                     tool.pinpoint(*value)
                 else:
-                    loginfo('Unrecognized control command type. Skipped',
-                            FONT.ignore)
+                    logging.warning('Unrecognized control command type. Skipped')
 
             # Next perform high level instructions
             for ins in instructions:
@@ -482,12 +482,12 @@ class Controller(object):
                 # run time. The user is forced to finish the
                 # task in limited amount of time.
                 if method == 'rst' and value:
-                    loginfo('Resetting...', FONT.model)
+                    logging.info('Resetting...')
                     world.reset()
 
                     # Update the states
                     self._control_update(world)
-                    loginfo('World is reset.', FONT.model)
+                    logging.info_control('World is reset.', FONT.model)
 
                 elif method == 'reach':
                     ### Note ###
@@ -556,8 +556,7 @@ class Controller(object):
                             if tool.tid[0] == 'g' else tool.eef_pose[0] - i_pos
 
                         if math_util.rms(pos_diff) > tool.tolerance:
-                            loginfo('Tool position out of reach. Set back.',
-                                    FONT.warning)
+                            logging.info('Tool position out of reach. Set back.')
                             state_pose = world.get_env_state(
                                 ('tool', 'tool_pose'))[0][tool.tid]
                             self._states['tool'][tool.tid][0] = state_pose[0]
