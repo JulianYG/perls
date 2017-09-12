@@ -2,7 +2,7 @@
 
 Given calibrated extrinsic translation T, rotation matrix M, 
 ```
-t = (- M' x T) / 1000.
+t = - M' x T / 1000.
 H = [M |  1]  (convert M to 4 x 4 homogeneous matrix) 
 q = tf.transformations.quaternion_from_matrix(H') (w, x, y, z)
 ```
