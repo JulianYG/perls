@@ -67,3 +67,37 @@ cd ..
 ln -s /cvgl2/u/amandlek/installed_libraries/bullet3/data/ /cvgl2/u/amandlek/installed_libraries/perls/data
 ln -s /cvgl2/u/amandlek/installed_libraries/perls /cvgl2/u/amandlek/installed_libraries/anaconda2/envs/infogail/lib/python2.7/site-packages/perls
 
+# New Conda Environment
+wget https://repo.continuum.io/archive/Anaconda2-4.3.0-Linux-x86_64.sh
+bash Anaconda2-4.3.0-Linux-x86_64.sh
+conda update conda
+conda create -n imitation python=3.4 pip
+source activate imitation
+pip install tensorflow-gpu==1.2.0
+pip install keras==1.2.2
+pip install gym
+conda install -c menpo opencv
+cd ../imitation
+git clone https://github.com/YunzhuLi/InfoGAIL.git
+# TODO: include our own InfoGAIL "robot" files here...
+pip install -U pip
+pip install IPython
+pip install h5py
+pip install matplotlib
+pip install -U openvr
+pip install redis
+
+### update pybullet to point to python3 in CMakeCache.txt
+### Edit CMakeLists.txt to use python3.4, and set match option to ON
+### //Path to a program.
+### PYTHON_EXECUTABLE:FILEPATH=/usr/bin/python3
+### //Path to a library.
+### PYTHON_LIBRARY:FILEPATH=/usr/lib/python3.4/config-3.4m-x86_64-linux-gnu/libpython3.4.so 
+
+# OpenAI baselines
+git clone https://github.com/openai/baselines.git
+cd baselines
+pip install -e .
+pip uninstall tensorflow
+pip install tensorflow-gpu==1.2.0
+
