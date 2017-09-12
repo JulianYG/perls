@@ -52,13 +52,13 @@ class PushCube(PerlsEnv):
 
         self._display.set_render_view(
             dict(
-                dim=(96, 96),
-                flen=1.2,
+                dim=(120, 120),
+                flen=2.,
                 # Have to use exact numbers for aligned
                 # Top down view in GUI and non-GUI modes...
                 yaw=90.0001,
-                pitch=-50,
-                focus=self._world.body['cube_0'].pos
+                pitch=-75,
+                focus=self._world.body['table_0'].pos
             )
         )
         return super(PushCube, self)._reset()
