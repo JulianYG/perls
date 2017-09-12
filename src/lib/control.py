@@ -165,13 +165,11 @@ class Controller(object):
                        'of non-GUI frame and asynchronous simulation. '
                        'GUI or synchronous frame can only run as '
                        'single simulation instance. \nSimulation '
-                       'configuration %d build skipped with error. ' % i,
-                       FONT.control)
+                       'configuration %d build skipped with error. ' % i)
                 world.notify_engine('error')
             else:
-                logging.info_control('Simulation configuration {} build success. '
-                        'Build type: {}'.format(i, conf.build),
-                        FONT.control)
+                logging.info('Simulation configuration {} build success. '
+                        'Build type: {}'.format(i, conf.build))
                 world.notify_engine('pending')
             self._physics_servers[conf.id] = (nruns, world, disp, ctrl_hdlr, queue)
 
@@ -300,22 +298,21 @@ class Controller(object):
                 status = display.run([t[1] for t in world.target])
 
                 if status == -1:
-                    err_control('Error loading simulation', FONT.control)
+                    logging.error('Error loading simulation')
                     self.stop(server_id, -1)
                     break
                 elif status == 1:
                     self.stop(server_id, 0)
-                    logging.info_control('Replay finished. Exiting...', FONT.control)
+                    logging.info('Replay finished. Exiting...')
                     continue
                 elif status == 2:
-                    logging.info_control('Start recording.', FONT.control)
+                    logging.info('Start recording.')
                 elif status == 3:
                     self.stop(server_id, 0)
-                    logging.info_control('User quit during replay.', FONT.control)
+                    logging.info('User quit during replay.')
                     break
                 else:
-                    logging.info_control('Display configs loaded. Starting simulation...',
-                            FONT.control)
+                    logging.info('Display configs loaded. Starting simulation...')
 
                 # After loading and initialization finish, start rendering
                 # (This can significantly boost performance)
@@ -356,18 +353,15 @@ class Controller(object):
 
                 if success:
                     self.stop(server_id, 0)
-                    logging.info_control('Task success! Exiting run {}...'.format(r),
-                            FONT.disp)
+                    logging.info('Task success! Exiting run {}...'.format(r))
                 else:
                     self.stop(server_id, 1)
-                    logging.info_control('Task failed! Exiting run {}...'.format(r),
-                            FONT.disp)
+                    logging.info('Task failed! Exiting run {}...'.format(r))
 
             except KeyboardInterrupt:
 
                 self.stop(server_id, -1)
-                logging.info_control('User cancelled run {} by ctrl+c.'.format(r),
-                        FONT.warning)
+                logging.info('User cancelled run {} by ctrl+c.'.format(r))
                 quit_run = io_util.prompt(
                     'Do you wish to skip other runs and quit the program?'
                 )
@@ -415,7 +409,7 @@ class Controller(object):
             self._process_pool[server_id].terminate()
             self._process_pool[server_id] = None
 
-        logging.info_control('Safe exit.', FONT.control)
+        logging.info('Safe exit.')
         sys.exit(0)
 
     def _control_interrupt(self, world, display, signal, elapsed_time):
@@ -453,8 +447,8 @@ class Controller(object):
                     self._states['camera']['pitch'] += delta[0] * elapsed_time
                     self._states['camera']['yaw'] += delta[1] * elapsed_time
                 else:
-                    logging.info_control('Unrecognized view command type. Skipped',
-                            FONT.ignore)
+                    logging.warning('Unrecognized view command type. Skipped')
+
             # Apply state changes
             display.set_render_view(self._states['camera'])
 
@@ -477,8 +471,7 @@ class Controller(object):
                 elif method == 'pose':
                     tool.pinpoint(*value)
                 else:
-                    logging.info_control('Unrecognized control command type. Skipped',
-                            FONT.ignore)
+                    logging.warning('Unrecognized control command type. Skipped')
 
             # Next perform high level instructions
             for ins in instructions:
@@ -489,7 +482,7 @@ class Controller(object):
                 # run time. The user is forced to finish the
                 # task in limited amount of time.
                 if method == 'rst' and value:
-                    logging.info_control('Resetting...', FONT.model)
+                    logging.info('Resetting...')
                     world.reset()
 
                     # Update the states
@@ -563,8 +556,7 @@ class Controller(object):
                             if tool.tid[0] == 'g' else tool.eef_pose[0] - i_pos
 
                         if math_util.rms(pos_diff) > tool.tolerance:
-                            logging.info_control('Tool position out of reach. Set back.',
-                                    FONT.warning)
+                            logging.info('Tool position out of reach. Set back.')
                             state_pose = world.get_env_state(
                                 ('tool', 'tool_pose'))[0][tool.tid]
                             self._states['tool'][tool.tid][0] = state_pose[0]
