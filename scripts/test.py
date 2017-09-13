@@ -51,7 +51,6 @@ class GeneralPerception(object):
         self.depth = None
         self.rgb = None
 
-
     def update_rgbd(self):
         rospy.wait_for_message('/kinect2/hd/image_depth_rect', Image)
         rospy.wait_for_message('/kinect2/hd/image_color_rect', Image)
@@ -92,14 +91,12 @@ class GeneralPerception(object):
         k2o.transform.rotation.x = pose.orientation.y
         k2o.transform.rotation.y = pose.orientation.z
         k2o.transform.rotation.z = pose.orientation.w
-
         t.setTransform(k2o)
 
         b2k = TransformStamped()
         b2k.header.frame_id = '/base'
         b2k.child_frame_id = '/kinect2_rgb_optical_frame'
 
-        # Values from readme 
         b2k.transform.translation.x = translation[0]
         b2k.transform.translation.y = translation[1]
         b2k.transform.translation.z = translation[2]
@@ -107,9 +104,9 @@ class GeneralPerception(object):
         b2k.transform.rotation.x = rotation[0]
         b2k.transform.rotation.y = rotation[1]
         b2k.transform.rotation.z = rotation[2]
+
         t.setTransform(b2k)
-        pos, quat = t.lookupTransform("/base", "/object", rospy.Time())
-        return pos,quat
+        return t.lookupTransform("/base", "/object", rospy.Time())
 
     def _get_objects(self, marker_array):
         self.objects = marker_array
@@ -134,41 +131,6 @@ class GeneralPerception(object):
         min_dist_obj = min(obj_with_dists, key=lambda o:o[1])
         return min_dist_obj[0]
 
-    # [(obj,self.distance_from_table_center(obj)) for obj in self.objects.markers]
-
-    # def get_cubes(self):
-    #     self.wait_to_receive()
-    #     if self.task == "stacking":
-    #         obj_with_dists = [(obj,self.distance_from_table_center(obj)) for obj in self.objects.markers]
-    #         min_dist_objs = sorted(obj_with_dists, key=lambda o:o[1])
-    #     result =  []
-    #     i = 0
-    #     for obj in min_dist_objs[:8]:
-    #         obj = obj[0]
-
-    #         # img = CvBridge().imgmsg_to_cv2(self.rgb, 'bgr8')
-    #         # obj_pos = [obj.pose.position.x,obj.pose.position.y,obj.pose.position.z]
-    #         # obj_size = [obj.scale.x,obj.scale.y,obj.scale.z]
-    #         # u1,v1 = convert_point(obj_pos[0]-obj_size[0]/2,obj_pos[1]-obj_size[1]/2,obj_pos[2]-obj_size[2]/2)
-    #         # u2,v2 = convert_point(obj_pos[0]+obj_size[0]/2,obj_pos[1]+obj_size[1]/2,obj_pos[2]-obj_size[2]/2)
-    #         # img = img[int(0.95*v1):int(1.05*v2),int(0.95*u1):int(1.05*u2)]
-    #         # cv2.imshow('img',img)
-    #         # cv2.waitKey(0)
-    #         # cv2.destroyAllWindows()
-
-    #         info = {}
-    #         pos, quat = self.transform(obj.pose)
-    #         info['euler_raw'] = tff.euler_from_quaternion([obj.pose.orientation.x,obj.pose.orientation.y,obj.pose.orientation.z, obj.pose.orientation.w])
-    #         info['pos_raw'] = [obj.pose.position.x,obj.pose.position.y,obj.pose.position.z]
-    #         info['euler'] = tff.euler_from_quaternion(quat)
-    #         info['pos'] = pos
-    #         info['scale'] = [obj.scale.x,obj.scale.y,obj.scale.z]
-    #         info['grasp_orn'] = np.array([0, 0, 0, 0])
-    #         info['name'] = 'cube_'+str(i)
-    #         result.append(info)
-    #         i += 1 # TODO (SURAJ):  Correct this 
-    #     return result
-
 def convert_point(x,y,z):
     u = x / z * intrinsics_RGB[0, 0] +  intrinsics_RGB[0, 2]
     v = y / z * intrinsics_RGB[1, 1] +  intrinsics_RGB[1, 2]
@@ -180,45 +142,10 @@ if __name__ == '__main__':
     rospy.init_node('her')
     receiver = GeneralPerception()
     receiver.boot()
-    # while True:
-    #     receiver.wait_to_receive()
-    #     receiver.unregister()
-    #     img = CvBridge().imgmsg_to_cv2(receiver.rgb, 'bgr8')
-    #     table = receiver.table
-    #     print(type(table))
-    #     print(table)
-    #     print(dir(table))
-    #     cv2.imshow('img',img)
-    #     cv2.waitKey(0)
-    #     cv2.destroyAllWindows()
-
-    # print receiver.get_cubes()
-    # for i, obj in enumerate(receiver.get_cubes()):
-    #     print obj
-    #     obj = obj[0]
-    #     img = CvBridge().imgmsg_to_cv2(receiver.rgb, 'bgr8')
-    #     cv2.imshow('img',img)
-    #     cv2.waitKey(0)
-    #     cv2.destroyAllWindows()
-    #     obj_pos = [obj.pose.position.x,obj.pose.position.y,obj.pose.position.z]
-    #     obj_size = [obj.scale.x,obj.scale.y,obj.scale.z]
-    #     u1,v1 = convert_point(obj_pos[0]-obj_size[0]/2,obj_pos[1]-obj_size[1]/2,obj_pos[2]-obj_size[2]/2)
-    #     u2,v2 = convert_point(obj_pos[0]+obj_size[0]/2,obj_pos[1]+obj_size[1]/2,obj_pos[2]-obj_size[2]/2)
-    #     img = img[int(0.95*v1):int(1.05*v2),int(0.95*u1):int(1.05*u2)]
-    #     cv2.imshow('img',img)
-    #     cv2.waitKey(0)
-    #     cv2.destroyAllWindows()
-
-
-    receiver.unregister()
-    # img = CvBridge().imgmsg_to_cv2(receiver.rgb, 'bgr8')
-    # cv2.imshow('img',img)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
+    
     img = CvBridge().imgmsg_to_cv2(receiver.rgb, 'bgr8')
     for i, obj in enumerate(receiver.objects.markers):
-        # print(obj)
-        
+
         pos, orn = GeneralPerception.transform(obj.pose)
         obj_pos = [obj.pose.position.x,obj.pose.position.y,obj.pose.position.z]
 
@@ -226,33 +153,9 @@ if __name__ == '__main__':
         print('position: {}, orn: {}, size: {}, number: {}'.format(pos, orn, obj_size, i))
         u1,v1 = convert_point(obj_pos[0]-obj_size[0]/2,obj_pos[1]-obj_size[1]/2,obj_pos[2]-obj_size[2]/2)
         u2,v2 = convert_point(obj_pos[0]+obj_size[0]/2,obj_pos[1]+obj_size[1]/2,obj_pos[2]-obj_size[2]/2)
-        # print(u1, v1, u2, v2)
         cv2.rectangle(img, (u1, v1), (u2, v2), (0, 0, 255), 2)
 
-
-        # img = img[int(0.95*v1):int(1.05*v2),int(0.95*u1):int(1.05*u2)]
     cv2.imshow('img',img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-
-
-    # obj = receiver.find_central_object()
-    # receiver.rgb.encoding = 'bgr8'
-    # img = CvBridge().imgmsg_to_cv2(receiver.rgb, 'bgr8')
-    # cv2.imshow('img',img)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-    # obj_pos = [obj.pose.position.x,obj.pose.position.y,obj.pose.position.z]
-    # obj_size = [obj.scale.x,obj.scale.y,obj.scale.z]
-    # u1,v1 = convert_point(obj_pos[0]-obj_size[0]/2,obj_pos[1]-obj_size[1]/2,obj_pos[2]-obj_size[2]/2)
-    # u2,v2 = convert_point(obj_pos[0]+obj_size[0]/2,obj_pos[1]+obj_size[1]/2,obj_pos[2]-obj_size[2]/2)
-    # img = img[int(0.95*v1):int(1.05*v2),int(0.95*u1):int(1.05*u2)]
-    # cv2.imshow('img',img)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-    # receiver.depth.encoding = 'mono16'
-    # img = CvBridge().imgmsg_to_cv2(receiver.depth, 'mono16')
-    # img = img[int(0.95*v1):int(1.05*v2),int(0.95*u1):int(1.05*u2)]
-    # cv2.imshow('img',img)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
+    receiver.unregister()
