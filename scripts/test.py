@@ -143,7 +143,7 @@ if __name__ == '__main__':
     receiver = GeneralPerception()
     receiver.boot()
     
-    img = CvBridge().imgmsg_to_cv2(receiver.rgb, 'bgr8')
+    img = CvBridge().imgmsg_to_cv2(receiver.rgb, 'bgr8')[400:1000, 450:1300]
     for i, obj in enumerate(receiver.objects.markers):
 
         pos, orn = GeneralPerception.transform(obj.pose)
