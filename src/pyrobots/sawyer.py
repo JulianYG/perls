@@ -324,6 +324,13 @@ class SawyerArm(object):
         command = {self._joints[i]: value[i] for i in range(len(value))}
         self._limb.set_joint_torques(command)
 
+    def set_timeout(self, time):
+        """
+        Set the timeout in seconds for the joint controller
+        :param timeout: float timeout in seconds
+        """
+        self._limb.set_command_timeout(time)
+
     def show_image(self, image_path, rate=1.0):
         """
         Display given image on sawyer head display

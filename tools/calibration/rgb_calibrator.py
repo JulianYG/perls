@@ -47,13 +47,12 @@ GRIPPER_SHIFT = 0.0251
 # dimension = (1920, 1080)
 
 
-class KinectCalibrator():
+class KinectRGBCalibrator():
 
-    def __init__(self, robot, checker_size=0.0247, 
+    def __init__(self, robot, 
         board_size=(2,2), itermat=(8, 9)):
 
         self._board_size = board_size
-        self._checker_size = checker_size
 
         self._arm = robot
         self._grid = itermat
@@ -63,10 +62,10 @@ class KinectCalibrator():
             'calib_data', 'kinect')
 
         # Calibrated by IAI_Kinect
-        with open(pjoin(self._calib_directory, 'intrinsics.p'), 'rb') as f:
+        with open(pjoin(self._calib_directory, 'RGB_intrinsics.p'), 'rb') as f:
             self._intrinsics_RGB = pickle.load(f)
 
-        with open(pjoin(self._calib_directory, 'distortion.p'), 'rb') as f: 
+        with open(pjoin(self._calib_directory, 'RGB_distortion.p'), 'rb') as f: 
             self._distortion_RGB = pickle.load(f)
 
         self._transformation = np.zeros((4, 4), dtype=np.float32)
@@ -277,8 +276,8 @@ class KinectCalibrator():
 
     def track(self):
 
-        rotation_dir = pjoin(self._calib_directory, 'KinectCalibrator_rotation.p')
-        translation_dir = pjoin(self._calib_directory, 'KinectCalibrator_translation.p')
+        rotation_dir = pjoin(self._calib_directory, 'KinectRGBCalibrator_rotation.p')
+        translation_dir = pjoin(self._calib_directory, 'KinectRGBCalibrator_translation.p')
 
         if os.path.exists(rotation_dir) and os.path.exists(translation_dir):
             
@@ -293,7 +292,7 @@ class KinectCalibrator():
             return
 
         # Reasonable starting position
-        origin = np.array([0.43489, -0.2240, 0.1441], dtype=np.float32)
+        origin = np.array([0.43489, -0.2240, 0.1241], dtype=np.float32)
         # origin = np.array([0.43489, -0.2240, 0.00941], dtype=np.float32)
         orn = np.array([0, 1, 0, 0], dtype=np.float32)
 
@@ -384,18 +383,18 @@ class KinectCalibrator():
     def _detect_center(self, color):
 
         img = cv2.resize(color, (int(1920), int(1080)))
-        foundPattern, usbCamCornerPoints = cv2.findChessboardCorners(
+        foundPattern, rgbCornerPoints = cv2.findChessboardCorners(
             img, self._board_size, None,
             cv2.CALIB_CB_ADAPTIVE_THRESH
         )
         if foundPattern:
 
             cv2.cornerSubPix(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), 
-                    usbCamCornerPoints, (11, 11), (-1, -1), 
+                    rgbCornerPoints, (11, 11), (-1, -1), 
                     (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001))
 
-            usbCamCornerPoints = np.squeeze(usbCamCornerPoints)
-            recognized_pix = np.mean(usbCamCornerPoints, axis=0)
+            rgbCornerPoints = np.squeeze(rgbCornerPoints)
+            recognized_pix = np.mean(rgbCornerPoints, axis=0)
             return True, recognized_pix
         else:
             return False, None
@@ -410,13 +409,13 @@ class KinectCalibrator():
             dtype=np.float32)
 
 if rospy.get_name() == '/unnamed':
-    rospy.init_node('kinect_tracker')
+    rospy.init_node('kinect_rgb_calibrator')
 
 limb = intera_interface.Limb('right')
 limb.set_joint_position_speed(0.1)
 robot = SawyerArm(False)
 
-tracker = KinectCalibrator(
+tracker = KinectRGBCalibrator(
     robot, board_size=(4,4), itermat=(15, 15))
 np.set_printoptions(formatter={'float': lambda x: "{0:0.8f}".format(x)})
 
