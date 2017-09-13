@@ -4,7 +4,7 @@ Given calibrated extrinsic translation T, rotation matrix M,
 ```
 t = - M' x T / 1000.
 H = [M |  1]  (convert M to 4 x 4 homogeneous matrix) 
-q = tf.transformations.quaternion_from_matrix(H') (w, x, y, z)
+q = tf.transformations.quaternion_from_matrix(H') (x, y, z, w)
 ```
 
 static transform args := $x $q
@@ -20,9 +20,9 @@ q for ada:
 
 t for charles:
 ```
-1.03092698359, 0.09316863157, 0.76020784767
+1.17080859, 0.12849696, 0.63101727
 ```
 q for charles:
 ```
-0.703789173, 0.710379928, 0.00641113624, 0.000230939802
+0.67379288,  0.66603288, -0.22929853, -0.22321635
 ```
