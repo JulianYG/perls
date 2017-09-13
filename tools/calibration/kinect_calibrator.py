@@ -20,7 +20,7 @@ import rospy
 import rosparam
 import intera_interface
 import time
-import pybullet as p
+import tf.transformations as ttf
 sys.path.append(os.path.abspath(os.path.join(__file__, '../../../src/pyrobots')))
 
 from sawyer import SawyerArm
@@ -155,10 +155,8 @@ class KinectCalibrator():
                 point[1] = cam_y
                 point[2] = depth_avg
 
-                ori = p.getQuaternionFromEuler((np.pi, 0, 0))
-                z = np.array(p.getMatrixFromQuaternion(ori)).reshape(3,3)[-1]
-                x = np.array(p.getMatrixFromQuaternion(ori)).reshape(3,3)[0]
-                y = np.array(p.getMatrixFromQuaternion(ori)).reshape(3,3)[1]
+                ori = ttf.quaternion_from_euler(np.pi, 0, 0)
+                z = ttf.quaternion_matrix(ori)[:3, :3][-1]
 
                 target_point = np.linalg.inv(self._transformation).dot(point)[:3] / 1000
                 print("== xyz in robot frame: {}".format(target_point * 1000))
@@ -217,7 +215,7 @@ class KinectCalibrator():
             target = origin + pos
 
             # Add randomness to orientation
-            orn = p.getQuaternionFromEuler(np.random.uniform(
+            orn = ttf.quaternion_from_euler(*np.random.uniform(
                 [-np.pi/12., -np.pi/12., -np.pi/6.],[np.pi/12., np.pi/12., np.pi/6.]))
 
             # Move to target position
@@ -259,7 +257,8 @@ class KinectCalibrator():
                         
                         temp = np.linalg.inv(self._transformation).dot(point)[:3] / 1000
                         ori = np.array(self._arm.tool_pose[1], dtype=np.float32)
-                        z = np.array(p.getMatrixFromQuaternion(ori)).reshape(3,3)[-1]
+                        z = ttf.quaternion_matrix(ori)[:3, :3][-1]
+
                         estimated_gripper_pos = temp - z * GRIPPER_SHIFT
                         ground_truth = np.array(self._arm.tool_pose[0], dtype=np.float32)
                         errors[j] += np.sqrt((estimated_gripper_pos - ground_truth) * (estimated_gripper_pos - ground_truth))
@@ -294,7 +293,8 @@ class KinectCalibrator():
             return
 
         # Reasonable starting position
-        origin = np.array([0.43489, -0.2240, 0.1941], dtype=np.float32)
+        origin = np.array([0.43489, -0.2240, 0.1441], dtype=np.float32)
+        # origin = np.array([0.43489, -0.2240, 0.00941], dtype=np.float32)
         orn = np.array([0, 1, 0, 0], dtype=np.float32)
 
         calibration_grid = np.zeros((self._grid[0] * self._grid[1], 3), np.float32)
@@ -314,8 +314,8 @@ class KinectCalibrator():
             target = origin + pos
 
             # Add randomness to orientation
-            orn = p.getQuaternionFromEuler(np.random.uniform(
-                [-np.pi/12., -np.pi/12., -np.pi/6.], [np.pi/12., np.pi/12., np.pi/6.]))
+            orn = ttf.quaternion_from_euler(*np.random.uniform(
+                [-np.pi/15., -np.pi/15., -np.pi/8.], [np.pi/15., np.pi/15., np.pi/8.]))
 
             # Move to target position
             self._arm.tool_pose = (tuple(target), orn)
@@ -327,7 +327,7 @@ class KinectCalibrator():
             gripper_pos = np.array(self._arm.tool_pose[0], 
                                    dtype=np.float32)
             gripper_ori = np.array(self._arm.tool_pose[1], dtype=np.float32)
-            trans_matrix = np.array(p.getMatrixFromQuaternion(gripper_ori)).reshape(3,3)
+            trans_matrix = ttf.quaternion_matrix(gripper_ori)[:3, :3]
             marker_pos = gripper_pos + trans_matrix[-1] * GRIPPER_SHIFT
 
             # Match with pattern location
