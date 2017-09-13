@@ -10,9 +10,9 @@ Distortion: https://www.dropbox.com/s/au0n6stpv6gubyl/distortion.p?dl=0
 
 Super accurate calibration data for open space setup:
 
-Rotation: https://www.dropbox.com/s/az8g7qfqiir5561/KinectCalibrator_rotation.p?dl=0
+Rotation: https://www.dropbox.com/s/zjp3gk1pgy2hwdg/KinectCalibrator_rotation.p?dl=0
 
-Translation: https://www.dropbox.com/s/e4k518gmnqgzcr4/KinectCalibrator_translation.p?dl=0
+Translation: https://www.dropbox.com/s/3ooayrmrad47uov/KinectCalibrator_translation.p?dl=0
 
 Intrinsics: https://www.dropbox.com/s/0f6wcv08mt3g5qu/intrinsics.p?dl=0
 
