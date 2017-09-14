@@ -37,3 +37,8 @@ stereo_t = IR2ROBOT[:3, 3]
 print('IR static transform quaternion: {}'.format(qfm(IR2ROBOT.T)))
 print('IR static transform translation: {}'.format(-stereo_r.T.dot(stereo_t) / 1000.))
 
+with open(pjoin(ROOT, 'robot_IR_rotation.p'), 'wb') as f:
+    pickle.dump(stereo_r, f)
+
+with open(pjoin(ROOT, 'robot_IR_translation.p'), 'wb') as f:
+    pickle.dump(stereo_t, f)
