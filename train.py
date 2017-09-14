@@ -29,7 +29,9 @@ def train(env_id, num_timesteps, seed):
     env = gym.make(env_id)
 
     def policy_fn(name, ob_space, ac_space): #pylint: disable=W0613
-        return mlp_policy.MlpPolicy(name=name, ob_space=ob_space, ac_space=ac_space)
+        return mlp_policy.MlpPolicy(name=name, 
+            ob_space=ob_space, ac_space=ac_space, 
+            hid_size=16, num_hid_layers=3)
 
     env = bench.Monitor(env, logger.get_dir() and 
         osp.join(logger.get_dir(), "%i.monitor.json" % rank))
