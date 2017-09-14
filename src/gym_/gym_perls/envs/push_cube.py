@@ -49,6 +49,7 @@ class PushCube(PerlsEnv):
         """
         # Set to top down view to align with real world
         # Overwrite settings in config file
+
         self._display.set_render_view(
             dict(
                 dim=(150, 150),

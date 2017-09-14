@@ -76,8 +76,8 @@ class ColoredFormatter(logging.Formatter):
     def format(self, record):
 
         level_name = record.levelname
-        if self._use_color and levelname in _color_encodings:
-            levelname_color = '\033[1;%dm' % (30 + _color_encodings[levelname]) + levelname + '\033[0m'
+        if self._use_color and level_name in _color_encodings:
+            levelname_color = '\033[1;%dm' % (30 + _color_encodings[level_name]) + level_name + '\033[0m'
             record.levelname = levelname_color
 
         return super(ColoredFormatter, self).format(record)

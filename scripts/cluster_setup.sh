@@ -68,12 +68,11 @@ ln -s /cvgl2/u/amandlek/installed_libraries/bullet3/data/ /cvgl2/u/amandlek/inst
 ln -s /cvgl2/u/amandlek/installed_libraries/perls /cvgl2/u/amandlek/installed_libraries/anaconda2/envs/infogail/lib/python2.7/site-packages/perls
 
 # New Conda Environment
-wget https://repo.continuum.io/archive/Anaconda2-4.3.0-Linux-x86_64.sh
-bash Anaconda2-4.3.0-Linux-x86_64.sh
+wget https://repo.continuum.io/archive/Anaconda3-4.4.0-Linux-x86_64.sh
+bash Anaconda3-4.4.0-Linux-x86_64.sh
 conda update conda
 conda create -n imitation python=3.4 pip
 source activate imitation
-pip install tensorflow-gpu==1.2.0
 pip install keras==1.2.2
 pip install gym
 conda install -c menpo opencv

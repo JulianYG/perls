@@ -4,7 +4,7 @@
 
 - [Simplified Block version of Tower of Hanoi](https://www.dropbox.com/s/4sb3of6dawikagf/hanoi.zip?dl=0)
 
-- [Baxter/Sawyer End Effectors URDFs](https://www.dropbox.com/s/9a79s7ixq0zcnoh/rethink_ee_description.zip?dl=0)
+- [Baxter/Sawyer End Effectors URDFs](https://www.dropbox.com/s/vtriqcbaxfbcbfg/rethink_ee_description.zip?dl=0)
 
 - [Sawyer Robot URDF modified for Bullet](https://www.dropbox.com/s/aoxg0z0vheu02mp/sawyer_robot.zip?dl=0)
 

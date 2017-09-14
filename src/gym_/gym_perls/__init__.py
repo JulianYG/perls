@@ -50,3 +50,8 @@ register(
     kwargs=dict(conf_path=osp.abspath(osp.join(__file__, '../../../../configs/gym-disp.xml'))),
 )
 
+register(
+    id='push-robot-v0',
+    entry_point='perls.src.gym_.gym_perls.envs:PushRobot',
+)
+

@@ -20,7 +20,7 @@ import rospy
 import rosparam
 import intera_interface
 import time
-import pybullet as p
+import tf.transformations as ttf
 sys.path.append(os.path.abspath(os.path.join(__file__, '../../../src/pyrobots')))
 
 from sawyer import SawyerArm
@@ -47,13 +47,12 @@ GRIPPER_SHIFT = 0.0251
 # dimension = (1920, 1080)
 
 
-class KinectCalibrator():
+class KinectRGBCalibrator():
 
-    def __init__(self, robot, checker_size=0.0247, 
+    def __init__(self, robot, 
         board_size=(2,2), itermat=(8, 9)):
 
         self._board_size = board_size
-        self._checker_size = checker_size
 
         self._arm = robot
         self._grid = itermat
@@ -63,10 +62,10 @@ class KinectCalibrator():
             'calib_data', 'kinect')
 
         # Calibrated by IAI_Kinect
-        with open(pjoin(self._calib_directory, 'intrinsics.p'), 'rb') as f:
+        with open(pjoin(self._calib_directory, 'RGB_intrinsics.p'), 'rb') as f:
             self._intrinsics_RGB = pickle.load(f)
 
-        with open(pjoin(self._calib_directory, 'distortion.p'), 'rb') as f: 
+        with open(pjoin(self._calib_directory, 'RGB_distortion.p'), 'rb') as f: 
             self._distortion_RGB = pickle.load(f)
 
         self._transformation = np.zeros((4, 4), dtype=np.float32)
@@ -155,10 +154,8 @@ class KinectCalibrator():
                 point[1] = cam_y
                 point[2] = depth_avg
 
-                ori = p.getQuaternionFromEuler((np.pi, 0, 0))
-                z = np.array(p.getMatrixFromQuaternion(ori)).reshape(3,3)[-1]
-                x = np.array(p.getMatrixFromQuaternion(ori)).reshape(3,3)[0]
-                y = np.array(p.getMatrixFromQuaternion(ori)).reshape(3,3)[1]
+                ori = ttf.quaternion_from_euler(np.pi, 0, 0)
+                z = ttf.quaternion_matrix(ori)[:3, :3][-1]
 
                 target_point = np.linalg.inv(self._transformation).dot(point)[:3] / 1000
                 print("== xyz in robot frame: {}".format(target_point * 1000))
@@ -217,7 +214,7 @@ class KinectCalibrator():
             target = origin + pos
 
             # Add randomness to orientation
-            orn = p.getQuaternionFromEuler(np.random.uniform(
+            orn = ttf.quaternion_from_euler(*np.random.uniform(
                 [-np.pi/12., -np.pi/12., -np.pi/6.],[np.pi/12., np.pi/12., np.pi/6.]))
 
             # Move to target position
@@ -259,7 +256,8 @@ class KinectCalibrator():
                         
                         temp = np.linalg.inv(self._transformation).dot(point)[:3] / 1000
                         ori = np.array(self._arm.tool_pose[1], dtype=np.float32)
-                        z = np.array(p.getMatrixFromQuaternion(ori)).reshape(3,3)[-1]
+                        z = ttf.quaternion_matrix(ori)[:3, :3][-1]
+
                         estimated_gripper_pos = temp - z * GRIPPER_SHIFT
                         ground_truth = np.array(self._arm.tool_pose[0], dtype=np.float32)
                         errors[j] += np.sqrt((estimated_gripper_pos - ground_truth) * (estimated_gripper_pos - ground_truth))
@@ -278,8 +276,8 @@ class KinectCalibrator():
 
     def track(self):
 
-        rotation_dir = pjoin(self._calib_directory, 'KinectCalibrator_rotation.p')
-        translation_dir = pjoin(self._calib_directory, 'KinectCalibrator_translation.p')
+        rotation_dir = pjoin(self._calib_directory, 'robot_RGB_rotation.p')
+        translation_dir = pjoin(self._calib_directory, 'robot_RGB_translation.p')
 
         if os.path.exists(rotation_dir) and os.path.exists(translation_dir):
             
@@ -294,7 +292,8 @@ class KinectCalibrator():
             return
 
         # Reasonable starting position
-        origin = np.array([0.43489, -0.2240, 0.1941], dtype=np.float32)
+        origin = np.array([0.43489, -0.2240, 0.1241], dtype=np.float32)
+        # origin = np.array([0.43489, -0.2240, 0.00941], dtype=np.float32)
         orn = np.array([0, 1, 0, 0], dtype=np.float32)
 
         calibration_grid = np.zeros((self._grid[0] * self._grid[1], 3), np.float32)
@@ -314,8 +313,8 @@ class KinectCalibrator():
             target = origin + pos
 
             # Add randomness to orientation
-            orn = p.getQuaternionFromEuler(np.random.uniform(
-                [-np.pi/12., -np.pi/12., -np.pi/6.], [np.pi/12., np.pi/12., np.pi/6.]))
+            orn = ttf.quaternion_from_euler(*np.random.uniform(
+                [-np.pi/15., -np.pi/15., -np.pi/8.], [np.pi/15., np.pi/15., np.pi/8.]))
 
             # Move to target position
             self._arm.tool_pose = (tuple(target), orn)
@@ -327,7 +326,7 @@ class KinectCalibrator():
             gripper_pos = np.array(self._arm.tool_pose[0], 
                                    dtype=np.float32)
             gripper_ori = np.array(self._arm.tool_pose[1], dtype=np.float32)
-            trans_matrix = np.array(p.getMatrixFromQuaternion(gripper_ori)).reshape(3,3)
+            trans_matrix = ttf.quaternion_matrix(gripper_ori)[:3, :3]
             marker_pos = gripper_pos + trans_matrix[-1] * GRIPPER_SHIFT
 
             # Match with pattern location
@@ -371,7 +370,7 @@ class KinectCalibrator():
 
         for name, mat in data.items():
             with open(pjoin(self._calib_directory, 
-                '{}_{}.p'.format(self.__class__.__name__, name)), 'wb') as f:
+                '{}_{}.p'.format('robot_RGB', name)), 'wb') as f:
                 pickle.dump(mat, f)
 
         print(rotation, translation)
@@ -384,18 +383,18 @@ class KinectCalibrator():
     def _detect_center(self, color):
 
         img = cv2.resize(color, (int(1920), int(1080)))
-        foundPattern, usbCamCornerPoints = cv2.findChessboardCorners(
+        foundPattern, rgbCornerPoints = cv2.findChessboardCorners(
             img, self._board_size, None,
             cv2.CALIB_CB_ADAPTIVE_THRESH
         )
         if foundPattern:
 
             cv2.cornerSubPix(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), 
-                    usbCamCornerPoints, (11, 11), (-1, -1), 
+                    rgbCornerPoints, (11, 11), (-1, -1), 
                     (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001))
 
-            usbCamCornerPoints = np.squeeze(usbCamCornerPoints)
-            recognized_pix = np.mean(usbCamCornerPoints, axis=0)
+            rgbCornerPoints = np.squeeze(rgbCornerPoints)
+            recognized_pix = np.mean(rgbCornerPoints, axis=0)
             return True, recognized_pix
         else:
             return False, None
@@ -410,13 +409,13 @@ class KinectCalibrator():
             dtype=np.float32)
 
 if rospy.get_name() == '/unnamed':
-    rospy.init_node('kinect_tracker')
+    rospy.init_node('kinect_rgb_calibrator')
 
 limb = intera_interface.Limb('right')
 limb.set_joint_position_speed(0.1)
 robot = SawyerArm(False)
 
-tracker = KinectCalibrator(
+tracker = KinectRGBCalibrator(
     robot, board_size=(4,4), itermat=(15, 15))
 np.set_printoptions(formatter={'float': lambda x: "{0:0.8f}".format(x)})
 
