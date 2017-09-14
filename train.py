@@ -26,7 +26,7 @@ def train(env_id, num_timesteps, seed):
     def policy_fn(name, ob_space, ac_space): #pylint: disable=W0613
         return mlp_policy.MlpPolicy(name=name, 
             ob_space=ob_space, ac_space=ac_space, 
-            hid_size=16, num_hid_layers=3)
+            hid_size=32, num_hid_layers=3)
 
     env = bench.Monitor(env, logger.get_dir() and 
         osp.join(logger.get_dir(), "%i.monitor.json" % rank))
@@ -34,14 +34,11 @@ def train(env_id, num_timesteps, seed):
     env.seed(workerseed)
     gym.logger.setLevel(logging.WARN)
 
-    # env = wrap_train(env)
-    env.seed(workerseed)
-
     pposgd_simple.learn(env, policy_fn,
         max_timesteps=num_timesteps,
         timesteps_per_batch=60,
         clip_param=0.2, entcoeff=0.01,
-        optim_epochs=4, optim_stepsize=1e-3, optim_batchsize=64,
+        optim_epochs=4, optim_stepsize=1e-3, optim_batchsize=30,
         gamma=0.99, lam=0.95,
         schedule='linear'
     )
