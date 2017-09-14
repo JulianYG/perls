@@ -26,8 +26,10 @@ class PushCubePose(PushCube):
         table_lower = math_util.get_relative_pose(
             (table_abs_lower_bound, table_orn), self._robot.pose)
         
-        goal_abs_lower = math_util.vec((cube.pos[0] + 0.25, cube.pos[1] - 0.25, 0.641))
-        goal_abs_upper = math_util.vec((cube.pos[0] + 0.45, cube.pos[1] + 0.25, 0.642))
+        goal_abs_lower = math_util.vec(
+            (self._cube.pos[0] + 0.25, self._cube.pos[1] - 0.25, 0.641))
+        goal_abs_upper = math_util.vec(
+            (self._cube.pos[0] + 0.45, self._cube.pos[1] + 0.25, 0.642))
 
         goal_upper = math_util.get_relative_pose(
             (goal_abs_upper, table_orn), self._robot.pose)
