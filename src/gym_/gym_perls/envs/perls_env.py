@@ -48,6 +48,12 @@ class PerlsEnv(gym.Env):
             control_rate = control.freq
             self._align_iters = int(control_rate / step_size)
 
+        # Store last action for regularization purposes
+        self._action = None
+
+        # Override Env class to prevent opening window after close
+        self._owns_render = False
+
     @abc.abstractproperty
     def action_space(self):
         """
@@ -65,6 +71,13 @@ class PerlsEnv(gym.Env):
         return NotImplemented
 
     @abc.abstractproperty
+    def reward_range(self):
+        """
+        A tuple corresponding to the min and max possible rewards
+        """
+        return NotImplemented
+
+    @abc.abstractproperty
     def state(self):
         """
         Get the current state of the environment
@@ -78,7 +91,8 @@ class PerlsEnv(gym.Env):
         Whether the program is finished or not
         :return: Boolean value
         """
-        return self._world.check_states()[0]
+        done, _ = self._world.check_states()
+        return done
 
     @property
     def reward(self):
@@ -130,6 +144,7 @@ class PerlsEnv(gym.Env):
         :param action: Action as defined in action space
         :return: Observations, Rewards, isDone, Info tuple
         """
+        self._action = action
         # Perform extra steps in simulation to align
         # with real time
         for _ in range(self._align_iters):

@@ -1,6 +1,7 @@
 from .gripper import PrismaticGripper
 from ..utils import math_util
 
+
 class PR2Gripper(PrismaticGripper):
 
     def __init__(self, tool_id,

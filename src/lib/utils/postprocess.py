@@ -1,12 +1,19 @@
+import logging 
+
 import pybullet as p
-from math_util import get_relative_pose
-from .io_util import parse_log, loginfo, parse_config
+
+from .math_util import get_relative_pose
+from .io_util import parse_log, parse_config, PerlsLogger
 from ..control import Controller
 import numpy as np
 # import cv2
 # from PIL import Image
 import matplotlib.pyplot as plt
 import time
+import cv2
+
+logging.setLoggerClass(PerlsLogger)
+
 
 class Postprocess:
 
@@ -160,8 +167,8 @@ class Postprocess:
         cube_log = np.array(filt_cube_log)
         gripper_log = np.array(filt_gripper_log)
 
-        loginfo("Number of elems before subsampling: {}".format(num_elems))
-        loginfo("Number of elems after subsampling: {}".format(robot_log.shape[0]))
+        logging.info("Number of elems before subsampling: {}".format(num_elems))
+        logging.info("Number of elems after subsampling: {}".format(robot_log.shape[0]))
 
         num_elems = robot_log.shape[0]
         num_elems1 = cube_log.shape[0]
@@ -186,14 +193,14 @@ class Postprocess:
 
         prev_eef_pose_pos, prev_eef_pose_orn = \
             get_relative_pose(prev_eef_pose, self.robot.pose)
-        loginfo("Initial joint angles: {}".format(prev_joint_pos))
-        loginfo("Initial eef pose in world frame: {}".format(prev_eef_pose))
-        loginfo("Initial eef pose in robot frame: {}".format((prev_eef_pose_pos, prev_eef_pose_orn)))
-        loginfo("Initial eef position: {}".format(prev_eef_pose_pos))
+        logging.info("Initial joint angles: {}".format(prev_joint_pos))
+        logging.info("Initial eef pose in world frame: {}".format(prev_eef_pose))
+        logging.info("Initial eef pose in robot frame: {}".format((prev_eef_pose_pos, prev_eef_pose_orn)))
+        logging.info("Initial eef position: {}".format(prev_eef_pose_pos))
         cube_initial_z = prev_cube_pose_pos[-1]
-        loginfo("Initial cube z-location: {}".format(cube_initial_z))
+        logging.info("Initial cube z-location: {}".format(cube_initial_z))
 
-        loginfo("Using robot pose: {}".format(self.robot.pose))
+        logging.info("Using robot pose: {}".format(self.robot.pose))
 
         for i in range(1, num_elems):
 
@@ -254,11 +261,15 @@ class Postprocess:
             # RGBD
             else:
                 rgbd = self.display.get_camera_image('rgbd')
+
+                ### Transformations (cropping and ressizing) ###
+                rgbd = rgbd[:96, 27:123, :] # 96 x 96 cropping
+                # rgbd = cv2.resize(rgbd, (64, 64)) # 64 x 64 resizing
+
                 imgs.append(rgbd)
                 states.append(
                     np.concatenate([
-                        prev_joint_pos, prev_joint_vel,
-                        prev_cube_pose_pos, prev_cube_pose_orn, goal_pos
+                        prev_joint_pos, prev_joint_vel, goal_pos
                         ]))
                 if self.use_display:
                     if disp_im is None:
@@ -278,8 +289,8 @@ class Postprocess:
             prev_eef_pose_pos, prev_eef_pose_orn = eef_pose_pos_elem, eef_pose_orn_elem
             prev_cube_pose_pos, prev_cube_pose_orn = cube_pose_pos_elem, cube_pose_orn_elem
 
-        loginfo("Number filtered: {} out of {}.".format(num_filtered, num_elems))
-        loginfo("Goal region center position: {}".format(goal_pos))
+        logging.info("Number filtered: {} out of {}.".format(num_filtered, num_elems))
+        logging.info("Goal region center position: {}".format(goal_pos))
 
         # timestamps = np.array(timestamps)
         # time_diffs = timestamps[1:] - timestamps[:-1]

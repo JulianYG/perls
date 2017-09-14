@@ -1,33 +1,36 @@
 #!/usr/bin/env python
 
 import sys, time
-import rospy
-import intera_interface as iif
-from intera_interface import CHECK_VERSION
+try:
+    import rospy
+    import intera_interface as iif
+    from intera_interface import CHECK_VERSION
 
-from geometry_msgs.msg import (
-    PoseStamped,
-    Pose,
-    Point,
-    Quaternion,
-)
+    from geometry_msgs.msg import (
+        PoseStamped,
+        Pose,
+        Point,
+        Quaternion,
+    )
 
-from intera_core_msgs.srv import (
-    SolvePositionIK,
-    SolvePositionIKRequest,
-    SolvePositionFK,
-    SolvePositionFKRequest
-)
+    from intera_core_msgs.srv import (
+        SolvePositionIK,
+        SolvePositionIKRequest,
+        SolvePositionFK,
+        SolvePositionFKRequest
+    )
 
-import moveit_commander
-from moveit_msgs.msg import (
-    Grasp,
-    GripperTranslation,
-    DisplayTrajectory
-)
+    import moveit_commander
+    from moveit_msgs.msg import (
+        Grasp,
+        GripperTranslation,
+        DisplayTrajectory
+    )
 
-from std_msgs.msg import Header
-from sensor_msgs.msg import JointState
+    from std_msgs.msg import Header
+    from sensor_msgs.msg import JointState
+except ImportError:
+    pass
 
 
 KINECT_DEPTH_SHIFT = -22.54013555237548
@@ -128,26 +131,39 @@ class SawyerArm(object):
         return tuple(force + torque)
 
     @property
-    def joint_states(self):
+    def joint_positions(self):
         """
-        Get the current state of robot joints
-        :return: a list of dictionaries:
-        string joint name,
-        joint position float (radian),
-        joint velocity float (rad/s),
-        wrench on joint (vec6 float, force3 + torque3),
-        applied motor torque on joint float,
-        in order from base to end effector.
+        Get the joint positions of the body/tool.
+        :return: a list of joint positions in radian, which
+        is ordered by indices from small to large.
+        Typically the order goes from base to end effector.
         """
-        names = self._limb.joint_names()
         positions = self._limb.joint_angles()
-        velocities = self._limb.joint_velocities()
-        efforts = self._limb.joint_efforts()
+        return [positions[n] for n in self._joints]
 
-        return dict(name=names,
-                    position=[positions[n] for n in names],
-                    velocity=[velocities[n] for n in names],
-                    effort=[efforts[n] for n in names])
+    @property
+    def joint_velocities(self):
+        """
+        Get the joint velocities of the body/tool.
+        :return: a list of joint velocities in radian/s, which
+        is ordered by indices from small to large.
+        Typically the order goes from base to end effector.
+        """
+        velocities = self._limb.joint_velocities()
+        return [velocities[n] for n in self._joints]
+
+    @property
+    def joint_torques(self):
+        """
+        Get the joint torques of the body/tool. This is
+        the torque applied by the actuators during last
+        simulation step.
+        :return: a list of joint torques in radian/s, which
+        is ordered by indices from small to large.
+        Typically the order goes from base to end effector.
+        """
+        torques = self._limb.joint_efforts()
+        return [torques[n] for n in self._joints]
 
     @property
     def info(self):
@@ -177,7 +193,7 @@ class SawyerArm(object):
         return self._head.pan()
 
     @head_pan.setter
-    def head_pan(self, (angle, speed, rel)):
+    def head_pan(self, angle_speed_rel):
         """
         Pan at given speed to desired angle
         :param angle: float radian
@@ -185,6 +201,7 @@ class SawyerArm(object):
         :param rel: if True, pan wrt base frame
         :return: None
         """
+        angle, speed, rel = angle_speed_rel
         self._head.set_pan(angle, speed=speed,
                            active_cancellation=rel)
 
@@ -240,37 +257,79 @@ class SawyerArm(object):
         joint_names = self._params.get_joint_names('right')
         return joint_names
 
-    @joint_states.setter
-    def joint_states(self, (jids, vals, ctype, kwargs)):
+    @joint_positions.setter
+    def joint_positions(self, value):
         """
-        Set the body joint state
-        :param uid: integer body unique id
-        :param jids: list of joint indices on body
-        :param vals: list of values to set on joints.
-        Length must align with that of joint indices.
-        :param ctype: string control type, choose among
-        'position', 'velocity', and 'torque'
-        :param kwargs: other key word arguments to the function,
-        such as 'max_speed', 'timeout', 'threshold', 'test', etc.
+        Set joint positions according to given values list. Note
+        that the length of the list must match that of the
+        joint indices, and if one can skip certain joints by
+        setting those values to None.
+        :param value: A list of length DOF, 
+        or a tuple where the first element is the joint velocities list,
+        and the second element is the keyword arguments dictionary.
         :return: None
         """
-        assert len(jids) == len(vals), 'Joint indices and values mismatch'
+        if isinstance(value, tuple) and len(value) == 2:
+            vals, kwargs = value
+        else:
+            vals, kwargs = value, {}
+
         # Safety call
         self._limb.set_joint_position_speed(kwargs.get('max_speed', 0.3))
-
-        # Not passing this to <move_to_joint_positions>
         del kwargs['max_speed']
 
-        command = {self._joints[i]: vals[i] for i in range(len(vals))}
-        if ctype == 'position':
-            # blocking call
-            self._limb.move_to_joint_positions(command, **kwargs)
-        elif ctype == 'velocity':
-            self._limb.set_joint_velocities(command)
-        elif ctype == 'torque':
-            self._limb.set_joint_torques(command)
-        else:
-            self._params.log_message('Cannot recognize control type', 'WARN')
+        jids = [j for j, val in enumerate(vals) if val is not None]
+        value = [v for v in vals if v is not None]
+        assert len(jids) == len(value), \
+            'Input number of position values must match the number of joints'
+
+        command = {self._joints[i]: value[i] for i in range(len(value))}
+
+        # blocking call
+        self._limb.move_to_joint_positions(command, **kwargs)
+
+    @joint_velocities.setter
+    def joint_velocities(self, value):
+        """
+        Set joint velocities according to given values list. Note
+        that the length of the list must match that of the
+        joint indices, and if one can skip certain joints by
+        setting those values to None.
+        :param value: A list of length DOF.
+        :return: None
+        """
+        jids = [j for j, val in enumerate(value) if val is not None]
+        value = [v for v in value if v is not None]
+        assert len(jids) == len(value), \
+            'Input number of position values must match the number of joints'
+
+        command = {self._joints[i]: value[i] for i in range(len(value))}
+        self._limb.set_joint_velocities(command)
+
+    @joint_torques.setter
+    def joint_torques(self, value):
+        """
+        Set joint torques according to given values list. Note
+        that the length of the list must match that of the
+        joint indices, and if one can skip certain joints by
+        setting those values to None.
+        :param value: A list of length DOF.
+        :return: None
+        """
+        jids = [j for j, val in enumerate(value) if val is not None]
+        value = [v for v in value if v is not None]
+        assert len(jids) == len(value), \
+            'Input number of position values must match the number of joints'
+
+        command = {self._joints[i]: value[i] for i in range(len(value))}
+        self._limb.set_joint_torques(command)
+
+    def set_timeout(self, time):
+        """
+        Set the timeout in seconds for the joint controller
+        :param timeout: float timeout in seconds
+        """
+        self._limb.set_command_timeout(time)
 
     def show_image(self, image_path, rate=1.0):
         """
@@ -292,13 +351,14 @@ class SawyerArm(object):
                 for name in self._lights.list_all_lights()}
 
     @light.setter
-    def light(self, (name, on)):
+    def light(self, name_on):
         """
         Set the status of given light
         :param name: string name of the light
         :param on: boolean True for on, False for off
         :return: True if light state is set, False if not
         """
+        name_on = (name, on)
         self._lights.set_light_state(name, on)
 
     @property
@@ -339,11 +399,11 @@ class SawyerArm(object):
             gripper_pose.position.z = pose[0][2]
 
             # TODO: need a transformation for pose
-            gripper_pose.orientation.x = 0#pose[1][0]
-            gripper_pose.orientation.y = 0#pose[1][1]
-            gripper_pose.orientation.z = 0#pose[1][2]
-            gripper_pose.orientation.w = 1#pose[1][3]
-
+            gripper_pose.orientation.w = pose[1][3]
+            gripper_pose.orientation.x = pose[1][0]
+            gripper_pose.orientation.y = pose[1][1]
+            gripper_pose.orientation.z = pose[1][2]
+            
             self._group.set_pose_target(gripper_pose)
             plan = self._group.plan()
 
@@ -361,8 +421,9 @@ class SawyerArm(object):
                 'right': PoseStamped(
                     header=hdr,
                     pose=Pose(
-                        position=Point(*(pose[0])),
-                        orientation=Quaternion(pose[1][3], pose[1][0], pose[1][1], pose[1][2]),
+                        position=Point(*pose[0]),
+                        # Initialized as x y z w
+                        orientation=Quaternion(*pose[1]),
                     ),
                 ),
             }
@@ -374,7 +435,7 @@ class SawyerArm(object):
             try:
                 rospy.wait_for_service(ns, 5.0)
                 resp = iksvc(ikreq) # get IK response
-            except (rospy.ServiceException, rospy.ROSException), e:
+            except (rospy.ServiceException, rospy.ROSException) as e:
                 rospy.logerr("Service call failed: %s" % (e,))
                 return False
             if resp.result_type[0] > 0:
@@ -463,14 +524,14 @@ class SawyerArm(object):
             self._gripper.stop()
 
     @staticmethod
-    def shutdown(self):
+    def shutdown():
         """
         Safely shut down the robot controller
         :return: None
         """
         rospy.signal_shutdown('Safely shut down Sawyer.')
 
-    def move_to(self, x, y, z, orn=(0, 0, 0, 1)):
+    def move_to(self, x, y, z, orn=(0, 1, 0, 0)):
         """
         Move to given position.
         :param x: x coordinate position relative to robot base
@@ -480,7 +541,7 @@ class SawyerArm(object):
         """
         self.tool_pose = ((x, y, z), orn)
 
-    def move_to_with_grasp(self, x, y, z, hover, dive, orn=(0, 0, 0, 1)):
+    def move_to_with_grasp(self, x, y, z, hover, dive, orn=(0, 1, 0, 0)):
         """
         Move to given position and grasp
         :param x: refer to <move_to::x>

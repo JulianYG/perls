@@ -1,14 +1,17 @@
 #!/usr/bin/env python
 
 import abc
+import logging
 
 from .base import StateEngine
-from ..utils.io_util import logerr, FONT
+from ..utils.io_util import PerlsLogger
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
 __license__ = 'private'
 __version__ = '0.1'
+
+logging.setLoggerClass(PerlsLogger)
 
 
 class RealStateEngine(StateEngine):
@@ -59,13 +62,13 @@ class FakeStateEngine(StateEngine):
         if async:
             self._step_size = step_size
             if not isinstance(max_run_time, int):
-                logerr('Need to specify integer max time steps '
-                       'for asynchronous simulation!', FONT.control)
+                logging.error('Need to specify integer max time steps '
+                       'for asynchronous simulation!')
                 return
             self._max_run_time = int(max_run_time)
             self._step_count = 0
         else:
-            self._step_size = None
+            self._step_size = 0.0041666
             self._max_run_time = max_run_time
 
     @abc.abstractmethod

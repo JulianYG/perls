@@ -1,9 +1,11 @@
 
 from .body import Tool, Body
 from ..utils import math_util
-from ..utils.io_util import (FONT,
-                             loginfo,
-                             logerr)
+
+import logging
+from ..utils.io_util import PerlsLogger
+
+logging.setLoggerClass(PerlsLogger)
 
 
 class PrismaticGripper(Tool):
@@ -118,8 +120,7 @@ class PrismaticGripper(Tool):
         :return: None
         """
         if self.fix:
-            logerr('Cannot move attached gripper.',
-                   FONT.model)
+            logging.error('Cannot move attached gripper.')
             return
         pos = self.position_transform(pos_iter[0], self.tool_orn)[0]
 
@@ -165,6 +166,7 @@ class PrismaticGripper(Tool):
         Release gripper for reset
         :return: None
         """
+        del self.mark
         pos, orn, _ = self._init_state
         if not self.fix:
             # pos, orn = self.position_transform(pos, orn)

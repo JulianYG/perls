@@ -16,7 +16,8 @@ data
 .*
 */*.bin
 src/bullet_/log/*
-src/config.xml
+configs/config.xml
 scripts/monitor
 monitor
 */monitor
+./tools/calibratoin/calib_data/kinect/*

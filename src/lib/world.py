@@ -2,15 +2,19 @@
 
 from .entity.body import Body
 from .utils import io_util, math_util
-from .utils.io_util import logerr, FONT
+from .utils.io_util import PerlsLogger
 from .entity import PR2Gripper, rethinkGripper, WSG50Gripper
 from .entity import sawyer, kuka
 from .handler import taskHandler
+
+import logging
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
 __license__ = 'private'
 __version__ = '0.1'
+
+logging.setLoggerClass(PerlsLogger)
 
 
 class World(object):
@@ -131,15 +135,15 @@ class World(object):
         """
         for tool in self._tools.values():
             tool.reset()
-            del tool.mark
+            
         for body in self._bodies.values():
             body.reset()
-            del body.mark
-        self._engine.hold()
+            
+        self._engine.hold(500)
         
         # Fine tune the initial environment setup
         self._checker.initialize(self)
-        self._engine.hold()
+        self._engine.hold(500)
 
     def load_body(self, file_path, pos, orn,
                   fixed=False, record=False):
@@ -337,15 +341,16 @@ class World(object):
         """
         return self._checker.state
 
-    def boot(self, frame):
+    def boot(self, frame, job='run'):
         """
         Start the physics render.
         :param frame: string of frame type,
         for use of type check
         :return: render start state
         """
+        self._checker.set_job(job)
         status = self._engine.start_engine(frame)
-        self._engine.hold(200)
+        self._engine.hold(100)
         return status
 
     def notify_engine(self, stat):
@@ -390,6 +395,6 @@ class World(object):
 
         # Flush error messages
         for err_msg in self._engine.error:
-            logerr(err_msg, FONT.model)
+            logging.error(err_msg)
 
         self._engine.stop()

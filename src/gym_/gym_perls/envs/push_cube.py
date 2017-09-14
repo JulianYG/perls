@@ -36,12 +36,20 @@ class PushCube(PerlsEnv):
         """
         return NotImplemented
 
+    @property
+    def reward_range(self):
+        """
+        Get the min and max reward range as a tuple
+        """
+        return (-1, 1.5)
+
     def _reset(self):
         """
         Override method.
         """
         # Set to top down view to align with real world
         # Overwrite settings in config file
+
         self._display.set_render_view(
             dict(
                 dim=(150, 150),
@@ -55,14 +63,23 @@ class PushCube(PerlsEnv):
         )
         return super(PushCube, self)._reset()
 
+    # @property
+    # def reward(self):
+    #     """
+    #     Override reward definition in PerlsEnv, regularize by
+    #     the magnitude of actions.
+    #     :return: negative float number of actions
+    #     """
+    #     return .85 * self._world.evaluate() - .15 * math_util.l2(self._action)
+
     @property
     def state(self):
-        eef_pos, _ = math_util.get_relative_pose(
-            self._robot.eef_pose, self._robot.pose)
         cube_pos, cube_orn = self._cube.get_pose(self._robot.uid, 0)
         goal_pos = self._world.get_task_state()['goal']
 
-        return math_util.concat(eef_pos, cube_pos, cube_orn, goal_pos)
+        return math_util.concat((self._robot.joint_positions,
+                                 self._robot.joint_velocities,
+                                 cube_pos, cube_orn, goal_pos))
 
     def _step_helper(self, action):
         return NotImplemented

@@ -23,16 +23,6 @@ class PushVizPose(PushViz):
             high=math_util.vec((0.05, 0.05, 0.05))
         )
 
-    @property
-    def state(self):
-
-        img = super(PushVizVel, self).state
-        goal_pos = self._world.get_task_state()['goal']
-        eef_pos, _ = math_util.get_relative_pose(
-            self._robot.eef_pose, self._robot.pose)
-        aux = math_util.concat(eef_pos, goal_pos)
-        return img, aux
-
     def _step_helper(self, action):
 
         eef_bframe_pos, eef_bframe_orn = math_util.get_relative_pose(

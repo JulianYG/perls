@@ -1,8 +1,8 @@
 import abc
+import logging
 
 from .body import Tool
 from ..utils import math_util
-from ..utils.io_util import loginfo, FONT
 
 
 class Arm(Tool):
@@ -342,6 +342,7 @@ class Arm(Tool):
         Reset tool to initial positions
         :return: None
         """
+        del self.mark
         if self._gripper:
             # First attach gripper
             self.attach_children = \
@@ -353,8 +354,6 @@ class Arm(Tool):
                  [0., 0., 0., 1.], [0., 0., 0.707, .707])
             # Next reset gripper
             self._gripper.reset()
-
-        self._engine.hold()
 
         # Lastly reset arm
         self.joint_positions = (

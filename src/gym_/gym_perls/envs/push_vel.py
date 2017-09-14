@@ -14,18 +14,18 @@ class PushCubeVel(PushCube):
 
     @property
     def observation_space(self):
-        return PushCube.Space.box(
-            low=math_util.concat(
+        return PushCube.Space.Box(
+            low=math_util.concat((
                 math_util.vec(self._robot.joint_specs['lower']),
                 -math_util.vec(self._robot.joint_specs['max_vel']),
                 self._table.pos - math_util.vec((.275, .275, -.63)),
-                (-1, -1, -1, -1)
+                (-1, -1, -1, -1))
             ),
-            high=math_util.concat(
+            high=math_util.concat((
                 math_util.vec(self._robot.joint_specs['upper']),
                 math_util.vec(self._robot.joint_specs['max_vel']),
                 self._table.pos + math_util.vec((.275, .275, .69)),
-                (1, 1, 1, 1)
+                (1, 1, 1, 1))
             )
         )
 
@@ -35,15 +35,6 @@ class PushCubeVel(PushCube):
             low=-math_util.vec(self._robot.joint_specs['max_vel']),
             high=math_util.vec(self._robot.joint_specs['max_vel'])
         )
-
-    @property
-    def state(self):
-        cube_pos, cube_orn = self._cube.get_pose(self._robot.uid, 0)
-        goal_pos = self._world.get_task_state()['goal']
-        
-        return math_util.concat(self._robot.joint_positions,
-                                self._robot.joint_velocities,
-                                cube_pos, cube_orn, goal_pos)
 
     def _step_helper(self, action):
         # Use velocity control
