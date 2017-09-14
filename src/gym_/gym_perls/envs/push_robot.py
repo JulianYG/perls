@@ -123,9 +123,10 @@ class PushRobot(gym.Env):
 
         table_pos = self._pcl.table.pose.position
         table_pos = np.array([table_pos.x, table_pos.y, table_pos.z])
-        self._goal = table_pos + np.random.uniform([-0.25, -0.05, 0], [0.25, 0.15, 0])
 
         cube_pos, cube_orn = PCLSegment.transform(cube.pose)
+        self._goal = cube_pos + np.random.uniform([-0.25, -0.05, 0], [0.25, -0.35, 0])
+
         # self._prev_pos = cube_pos
         print('Detected table position: {}, '
               'goal position: {}, cube position: {}'.format(
