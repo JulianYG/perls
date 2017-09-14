@@ -20,9 +20,9 @@ class PushCubeTorque(PushCube):
         table_abs_upper_bound = table_bound + math_util.vec((.325, .2, 0.))
         table_abs_lower_bound = table_bound - math_util.vec((.325, .2, 0.))
 
-        table_upper = math_util.get_relative_pose(
+        table_upper, _ = math_util.get_relative_pose(
             (table_abs_upper_bound, table_orn), self._robot.pose)
-        table_lower = math_util.get_relative_pose(
+        table_lower, _ = math_util.get_relative_pose(
             (table_abs_lower_bound, table_orn), self._robot.pose)
 
         goal_abs_lower = math_util.vec(
@@ -30,9 +30,9 @@ class PushCubeTorque(PushCube):
         goal_abs_upper = math_util.vec(
             (self._cube.pos[0] + 0.45, self._cube.pos[1] + 0.25, 0.642))
 
-        goal_upper = math_util.get_relative_pose(
+        goal_upper, _ = math_util.get_relative_pose(
             (goal_abs_upper, table_orn), self._robot.pose)
-        goal_lower = math_util.get_relative_pose(
+        goal_lower, _ = math_util.get_relative_pose(
             (goal_abs_lower, table_orn), self._robot.pose)
 
         return PushCube.Space.Box(
