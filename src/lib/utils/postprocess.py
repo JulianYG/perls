@@ -186,6 +186,11 @@ class Postprocess:
         prev_joint_vel = robot_log[0, 10:17]
         prev_cube_pose = (cube_log[0, 3:6], cube_log[0, 6:10])
 
+
+        goal_pos, _ = get_relative_pose(
+            (goal_pos, self.table.orn), self.robot.pose
+        )
+
         prev_cube_pose_pos, prev_cube_pose_orn = \
             get_relative_pose(prev_cube_pose, self.robot.pose)
 

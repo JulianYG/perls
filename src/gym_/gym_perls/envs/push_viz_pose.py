@@ -8,9 +8,9 @@ class PushVizPose(PushViz):
     """
     Pushing cube across the table
     """
-    def __init__(self, conf_path):
+    def __init__(self, conf_path, max_step):
 
-        super(PushVizPose, self).__init__(conf_path)
+        super(PushVizPose, self).__init__(conf_path, max_step)
 
     @property
     def observation_space(self):

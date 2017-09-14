@@ -8,7 +8,7 @@ class PushCubePose(PushCube):
     """
     Pushing cube across the table
     """
-    def __init__(self, conf_path):
+    def __init__(self, conf_path, max_step):
 
         super(PushCubePose, self).__init__(conf_path)
         self._action = math_util.zero_vec(3)

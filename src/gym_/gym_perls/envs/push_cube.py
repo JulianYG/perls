@@ -13,9 +13,9 @@ class PushCube(PerlsEnv):
     """
     Pushing cube to a specific goal on table
     """
-    def __init__(self, conf_path):
+    def __init__(self, conf_path, max_step):
 
-        super(PushCube, self).__init__(conf_path)
+        super(PushCube, self).__init__(conf_path, max_step)
         self._cube = self._world.body['cube_0']
         self._robot = self._world.tool['m0']
         self._table = self._world.body['table_0']

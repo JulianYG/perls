@@ -29,14 +29,16 @@ class PerlsEnv(gym.Env):
         'video.frames_per_second': 50
     }
 
-    def __init__(self, conf_path):
+    def __init__(self, conf_path, max_step):
         """
         Initialize the environment
         :param conf_path: the absolute path string to
         the configuration file, default is 'gym_-disp.xml'
         """
         conf = io_util.parse_config(conf_path)[0]
+        self._step_count = 0
         self._align_iters = 1
+        self._max_step = max_step
 
         _, self._world, self._display, control = Controller.load_config(conf, None)
 
@@ -91,6 +93,8 @@ class PerlsEnv(gym.Env):
         Whether the program is finished or not
         :return: Boolean value
         """
+        if self._step_count >= self._max_step:
+            return True
         done, _ = self._world.check_states()
         return done
 
@@ -133,6 +137,7 @@ class PerlsEnv(gym.Env):
         :return: The state defined by users constrained by
         state space.
         """
+        self._step_count = 0
         self._world.reset()
         self._display.show()
         return self.state
@@ -145,6 +150,8 @@ class PerlsEnv(gym.Env):
         :return: Observations, Rewards, isDone, Info tuple
         """
         self._action = action
+        self._step_count += 1
+
         # Perform extra steps in simulation to align
         # with real time
         for _ in range(self._align_iters):
