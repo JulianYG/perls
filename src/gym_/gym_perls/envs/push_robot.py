@@ -3,6 +3,7 @@
 import gym
 import gym.spaces as spaces
 import numpy as np
+import logging
 
 import cv2
 from cv_bridge import CvBridge
@@ -18,6 +19,9 @@ __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
 __license__ = 'private'
 __version__ = '0.1'
+
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.WARNING)
 
 
 class PushRobot(gym.Env):
@@ -42,6 +46,8 @@ class PushRobot(gym.Env):
         self._pcl = PCLSegment()
         self._pcl.boot()
         self._robot = SawyerArm(False)
+
+        self._cube_idx = 1
         
     def action_space(self):
         """
@@ -84,7 +90,7 @@ class PushRobot(gym.Env):
         :return: rendered data
         """
         img = CvBridge().imgmsg_to_cv2(self._pcl.rgb, 'bgr8')
-        cube = self._pcl.objects.markers[1]
+        cube = self._pcl.objects.markers[self._cube_idx]
 
         cube_pos = np.array([cube.pose.position.x, cube.pose.position.y, cube.pose.position.z])
         cube_size = np.array([cube.scale.x, cube.scale.y, cube.scale.z]) / 2.
@@ -104,13 +110,26 @@ class PushRobot(gym.Env):
         """
         self._robot.set_timeout(0.15)
         self._pcl.update_obj()
-        self._pcl.update_table()
+        # self._pcl.update_table()
+
+        cube = self._pcl.objects.markers[self._cube_idx]
+
+        # Filter out other objects
+        for idx, obj in enumerate(self._pcl.objects.markers):
+            if PCLSegment.transform(obj.pose)[0][2] < -0.2:
+                self._cube_idx = idx 
+                cube = obj
+                break
+
         table_pos = self._pcl.table.pose.position
         table_pos = np.array([table_pos.x, table_pos.y, table_pos.z])
         self._goal = table_pos + np.random.uniform([-0.25, -0.05, 0], [0.25, 0.15, 0])
 
-        cube_pos, cube_orn = PCLSegment.transform(self._pcl.objects.markers[1].pose)
+        cube_pos, cube_orn = PCLSegment.transform(cube.pose)
         # self._prev_pos = cube_pos
+        print('Detected table position: {}, '
+              'goal position: {}, cube position: {}'.format(
+                table_pos, self._goal, cube_pos))
 
         return np.concatenate((
             self._robot.joint_positions, 
@@ -126,7 +145,8 @@ class PushRobot(gym.Env):
         """
         self._robot.joint_velocities = action
         self._pcl.update_obj()
-        cube_pos, cube_orn = PCLSegment.transform(self._pcl.objects.markers[1].pose)
+        cube_pos, cube_orn = PCLSegment.transform(
+            self._pcl.objects.markers[self._cube_idx].pose)
 
         done = True if np.allclose(self._goal, cube_pos, rtol=1e-2) else False
 
@@ -138,4 +158,4 @@ class PushRobot(gym.Env):
             self._robot.joint_positions, 
             self._robot.joint_velocities,
             cube_pos, cube_orn, self._goal)), 0, done, \
-            {'cube position': cube_pos, 'reward': reward}
+            {'cube position': cube_pos, 'goal': self._goal}
