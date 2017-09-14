@@ -20,15 +20,12 @@ def train(env_id, num_timesteps, seed):
     workerseed = seed + 10000 * MPI.COMM_WORLD.Get_rank()
     
     set_global_seeds(workerseed)
-
     env = gym.make(env_id)
 
-    policy = mlp_policy.MlpPolicy(name=name, 
+    def policy_fn(name, ob_space, ac_space): #pylint: disable=W0613
+        return mlp_policy.MlpPolicy(name=name, 
             ob_space=ob_space, ac_space=ac_space, 
             hid_size=32, num_hid_layers=3)
-
-    def policy_fn(name, ob_space, ac_space): #pylint: disable=W0613
-        return policy
 
     env = bench.Monitor(env, logger.get_dir() and 
         osp.join(logger.get_dir(), "%i.monitor.json" % rank))
