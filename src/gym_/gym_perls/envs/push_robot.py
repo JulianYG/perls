@@ -5,15 +5,20 @@ import gym.spaces as spaces
 import numpy as np
 import logging
 
-import cv2
-from cv_bridge import CvBridge
-import rospy
+try:
+    import cv2
+    import rospy
 
+    from cv_bridge import CvBridge
+    from sawyer import SawyerArm
+    from utils.pcl_segment import PCLSegment
+except ImportError:
+    pass
+    
 import sys, os
 sys.path.append(os.path.abspath(os.path.join(__file__, '../' * 4, 'pyrobots/')))
 
-from sawyer import SawyerArm
-from utils.pcl_segment import PCLSegment
+
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
