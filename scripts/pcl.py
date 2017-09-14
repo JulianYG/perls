@@ -25,13 +25,13 @@ if __name__ == '__main__':
         pos, orn = PCLSegment.transform(obj.pose)
         obj_pos = np.array([obj.pose.position.x, obj.pose.position.y, obj.pose.position.z])
         obj_size = np.array([obj.scale.x, obj.scale.y, obj.scale.z]) / 2.
-        print('position: {}, orn: {}, size: {}, number: {}'.format(pos, orn, obj_size, i))
+        print('position: {}, orn: {}, number: {}'.format(pos, orn, i))
 
         u1, v1 = PCLSegment.convert(*(obj_pos + obj_size) / 2.)
         u2, v2 = PCLSegment.convert(*(obj_pos - obj_size) / 2.)
         cv2.rectangle(img, (u1, v1), (u2, v2), (0, 0, 255), 2)
 
-    cv2.imshow('img',img)
+    cv2.imshow('img', img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
     receiver.unregister()

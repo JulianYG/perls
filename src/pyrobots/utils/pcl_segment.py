@@ -61,7 +61,6 @@ class PCLSegment(object):
         rospy.wait_for_message('/tabletop_detector/object_markers_aligned', MarkerArray)
 
     def boot(self):
-
         rospy.wait_for_message('/kinect2/sd/image_depth_rect', Image)
         rospy.wait_for_message('/kinect2/sd/image_color_rect', Image)
         rospy.wait_for_message('/tabletop_detector/table_marker_aligned', Marker)

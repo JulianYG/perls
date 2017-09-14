@@ -1,16 +1,18 @@
 # !/usr/bin/env python
 
-import abc
-
 import gym
 import gym.spaces as spaces
-from gym.utils import seeding
+import numpy as np
+
+import cv2
+from cv_bridge import CvBridge
+import rospy
 
 import sys, os
-sys.path.append(os.path.abspath(os.path.join(__file__, '../../../../')))
+sys.path.append(os.path.abspath(os.path.join(__file__, '../' * 4, 'pyrobots/')))
 
-from lib.control import Controller
-from lib.utils import io_util
+from sawyer import SawyerArm
+from utils.pcl_segment import PCLSegment
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
@@ -18,7 +20,7 @@ __license__ = 'private'
 __version__ = '0.1'
 
 
-class PerlsEnv(gym.Env):
+class PushRobot(gym.Env):
     """
     Construct a gym environment for perls simulation
     """
@@ -34,21 +36,13 @@ class PerlsEnv(gym.Env):
         Initialize the environment
         :param conf_path: the absolute path string to
         the configuration file, default is 'gym_-disp.xml'
-        """  
-        self._status = self._display.run(None)
-
-        if not self._world.info['engine']['real_time']:
-            step_size = self._world.info['engine']['step_size']
-            control_rate = control.freq
-            self._align_iters = int(control_rate / step_size)
-
-        # Store last action for regularization purposes
-        self._action = None
-
-        # Override Env class to prevent opening window after close
-        self._owns_render = False
-
-    @abc.abstractproperty
+        """
+        rospy.init_node('robot_gym')
+        self._goal = None
+        self._pcl = PCLSegment()
+        self._pcl.boot()
+        self._robot = SawyerArm(False)
+        
     def action_space(self):
         """
         Get the space of actions in the environment
@@ -56,7 +50,6 @@ class PerlsEnv(gym.Env):
         """
         return NotImplemented
 
-    @abc.abstractproperty
     def observation_space(self):
         """
         Get the space of observations in the environment
@@ -64,45 +57,20 @@ class PerlsEnv(gym.Env):
         """
         return NotImplemented
 
-    @abc.abstractproperty
     def reward_range(self):
         """
         A tuple corresponding to the min and max possible rewards
         """
         return NotImplemented
 
-    @abc.abstractproperty
-    def state(self):
-        """
-        Get the current state of the environment
-        :return: state as defined in state space
-        """
-        return NotImplemented
-
-    @property
-    def done(self):
-        """
-        Whether the program is finished or not
-        :return: Boolean value
-        """
-        done, _ = self._world.check_states()
-        return done
-
-    @property
-    def reward(self):
-        """
-        Get the reward defined by algorithm
-        :return: Some form of reward value, usually float
-        """
-        return self._world.evaluate()
-
     def _close(self):
         """
         Shutdown the environment
         :return: None
         """
-        self._world.clean_up()
-        self._display.close(0)
+        cv2.destroyAllWindows()
+        self._pcl.unregister()
+        self._robot.shutdown()
 
     def _render(self, mode='rgb', close=False):
         """
@@ -115,11 +83,18 @@ class PerlsEnv(gym.Env):
         :param close: close all open renderings
         :return: rendered data
         """
-        if mode in self.metadata['render.modes']:
-            return self._display.get_camera_image(mode)
-        else:
-            # just raise an exception
-            super(PerlsEnv, self).render(mode=mode)
+        img = CvBridge().imgmsg_to_cv2(self._pcl.rgb, 'bgr8')
+        cube = self._pcl.objects.markers[1]
+
+        cube_pos = np.array([cube.pose.position.x, cube.pose.position.y, cube.pose.position.z])
+        cube_size = np.array([cube.scale.x, cube.scale.y, cube.scale.z]) / 2.
+
+        u1, v1 = self._pcl.convert(*(cube_pos + cube_size) / 2.)
+        u2, v2 = self._pcl.convert(*(cube_pos - cube_size) / 2.)
+        cv2.rectangle(img, (u1, v1), (u2, v2), (0, 0, 255), 2)
+
+        cv2.imshow('img', img)
+        cv2.waitKey(0)
 
     def _reset(self):
         """
@@ -127,9 +102,20 @@ class PerlsEnv(gym.Env):
         :return: The state defined by users constrained by
         state space.
         """
-        self._world.reset()
-        self._display.show()
-        return self.state
+        self._robot.set_timeout(0.15)
+        self._pcl.update_obj()
+        self._pcl.update_table()
+        table_pos = self._pcl.table.pose.position
+        table_pos = np.array([table_pos.x, table_pos.y, table_pos.z])
+        self._goal = table_pos + np.random.uniform([-0.25, -0.05, 0], [0.25, 0.15, 0])
+
+        cube_pos, cube_orn = PCLSegment.transform(self._pcl.objects.markers[1].pose)
+        # self._prev_pos = cube_pos
+
+        return np.concatenate((
+            self._robot.joint_positions, 
+            self._robot.joint_velocities,
+            cube_pos, cube_orn, self._goal))
 
     def _step(self, action):
         """
@@ -138,22 +124,18 @@ class PerlsEnv(gym.Env):
         :param action: Action as defined in action space
         :return: Observations, Rewards, isDone, Info tuple
         """
-        self._action = action
-        # Perform extra steps in simulation to align
-        # with real time
-        for _ in range(self._align_iters):
-            self._step_helper(action)
-            self._world.update()
+        self._robot.joint_velocities = action
+        self._pcl.update_obj()
+        cube_pos, cube_orn = PCLSegment.transform(self._pcl.objects.markers[1].pose)
 
-        return self.state, self.reward, self.done, {'state': self.state}
+        done = True if np.allclose(self._goal, cube_pos, rtol=1e-2) else False
 
-    @abc.abstractmethod
-    def _step_helper(self, action):
-        """
-        The actual stepping function that needs to be implemented
-        by children classes. This is necessary so that base class
-        can align the simulation time with real gym_ control time.
-        :param action: actions to be executed during step
-        :return: None
-        """
-        return NotImplemented
+        # reward = np.sqrt(np.sum((self._prev_pos - self._goal) ** 2)) - \
+        #     np.sqrt(np.sum((cube_pos - self._goal) ** 2))
+        # self._prev_pos = cube_pos
+
+        return np.concatenate((
+            self._robot.joint_positions, 
+            self._robot.joint_velocities,
+            cube_pos, cube_orn, self._goal)), 0, done, \
+            {'cube position': cube_pos, 'reward': reward}

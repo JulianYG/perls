@@ -524,7 +524,7 @@ class SawyerArm(object):
             self._gripper.stop()
 
     @staticmethod
-    def shutdown(self):
+    def shutdown():
         """
         Safely shut down the robot controller
         :return: None
