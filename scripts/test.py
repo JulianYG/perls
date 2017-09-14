@@ -20,10 +20,10 @@ with open(pjoin(CAMERA_PARAM_DIR, 'IR_intrinsics.p'), 'rb') as f:
 with open(pjoin(CAMERA_PARAM_DIR, 'IR_distortion.p'), 'rb') as f:
     distortion_RGB = pickle.load(f)
 
-with open(pjoin(CAMERA_PARAM_DIR, 'KinectIRCalibrator_rotation.p'), 'rb') as f:
+with open(pjoin(CAMERA_PARAM_DIR, 'robot_RGB_rotation.p'), 'rb') as f:
     rotation = pickle.load(f)
 
-with open(pjoin(CAMERA_PARAM_DIR, 'KinectIRCalibrator_translation.p'), 'rb') as f:
+with open(pjoin(CAMERA_PARAM_DIR, 'robot_RGB_translation.p'), 'rb') as f:
     translation = pickle.load(f)
 
 rmat = np.zeros((4, 4))

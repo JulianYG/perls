@@ -1,37 +1,44 @@
 ## To calculate /base to /RGB transformation from RGB extrinsics:
 
-Given extrinsic RGB translation T, RGB rotation matrix M, 
+Given extrinsic RGB translation `T`, RGB rotation matrix `M`, 
 ```
 t = - M' x T / 1000.
 H = [M |  1]  (convert M to 4 x 4 homogeneous matrix) 
 q = tf.transformations.quaternion_from_matrix(H') (x, y, z, w)
 ```
 
-static transform args := $x $q
+static transform args := `$x $q`
 
-t for ada:
+`t` for ada:
 ```
 0.68717610909, 0.10101958479, 0.91475941674
 ```
-q for ada:
+`q` for ada:
 ```
 0.66823929, 0.705541, -0.18376103, -0.14798658
 ```
 
-t for charles:
+
+RGB `t` for charles:
 ```
 1.17080859, 0.12849696, 0.63101727
 ```
-q for charles:
+RGB `q` for charles:
 ```
 0.67379288,  0.66603288, -0.22929853, -0.22321635
+```
+IR `t` for charles:
+```
+1.17819428  0.14306091  0.61401135
+```
+IR `q` for charles:
+```
+0.67648737  0.66054851 -0.24221597 -0.21765094
 ```
 
 ## To calculate /base to /IR transformation from RGB extrinsics and IR_RGB extrinsics:
 
-Given RGB Extrinsics T, R, and IAI calibrated stereo extrinsics,
-
- 
+Given RGB Extrinsics `T`, `R`, and IAI calibrated stereo extrinsics, combine `T`, `R` into a 4x4 homogeneous pose matrix `P`. Also combine the stereo extrinsics into a 4x4 `H`, compute `P x H` and repeat above operations. Follow the example of `compute_transform.py`.
 
 
 Accurate calibration data for Ada:

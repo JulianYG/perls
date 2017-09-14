@@ -276,8 +276,8 @@ class KinectRGBCalibrator():
 
     def track(self):
 
-        rotation_dir = pjoin(self._calib_directory, 'KinectRGBCalibrator_rotation.p')
-        translation_dir = pjoin(self._calib_directory, 'KinectRGBCalibrator_translation.p')
+        rotation_dir = pjoin(self._calib_directory, 'robot_RGB_rotation.p')
+        translation_dir = pjoin(self._calib_directory, 'robot_RGB_translation.p')
 
         if os.path.exists(rotation_dir) and os.path.exists(translation_dir):
             
@@ -370,7 +370,7 @@ class KinectRGBCalibrator():
 
         for name, mat in data.items():
             with open(pjoin(self._calib_directory, 
-                '{}_{}.p'.format(self.__class__.__name__, name)), 'wb') as f:
+                '{}_{}.p'.format('robot_RGB', name)), 'wb') as f:
                 pickle.dump(mat, f)
 
         print(rotation, translation)

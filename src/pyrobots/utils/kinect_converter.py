@@ -28,8 +28,8 @@ class KinectConverter:
         self._intrinsics_RGB = k
         self._distortion_RBG = d
 
-        rotation_dir = pjoin(param_dir, 'KinectTracker_rotation.p')
-        translation_dir = pjoin(param_dir, 'KinectTracker_translation.p')
+        rotation_dir = pjoin(param_dir, 'robot_RGB_rotation.p')
+        translation_dir = pjoin(param_dir, 'robot_RGB_translation.p')
 
         with open(rotation_dir, 'rb') as f:
             r = pickle.load(f)
