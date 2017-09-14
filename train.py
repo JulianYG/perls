@@ -39,7 +39,7 @@ def train(env_id, num_timesteps, seed):
 
     pposgd_simple.learn(env, policy_fn,
         max_timesteps=num_timesteps,
-        timesteps_per_batch=1024,
+        timesteps_per_batch=60,
         clip_param=0.2, entcoeff=0.01,
         optim_epochs=4, optim_stepsize=1e-3, optim_batchsize=64,
         gamma=0.99, lam=0.95,
@@ -53,7 +53,7 @@ def main():
     parser.add_argument('--env', help='environment ID', default='push-vel-v0')
     parser.add_argument('--seed', help='RNG seed', type=int, default=42)
     args = parser.parse_args()
-    train(args.env, num_timesteps=60, seed=args.seed)
+    train(args.env, num_timesteps=1e5, seed=args.seed)
 
 if __name__ == '__main__':
     main()
