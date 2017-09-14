@@ -76,9 +76,6 @@ source activate imitation
 pip install keras==1.2.2
 pip install gym
 conda install -c menpo opencv
-cd ../imitation
-git clone https://github.com/YunzhuLi/InfoGAIL.git
-# TODO: include our own InfoGAIL "robot" files here...
 pip install -U pip
 pip install IPython
 pip install h5py
@@ -92,6 +89,7 @@ pip install redis
 ### PYTHON_EXECUTABLE:FILEPATH=/usr/bin/python3
 ### //Path to a library.
 ### PYTHON_LIBRARY:FILEPATH=/usr/lib/python3.4/config-3.4m-x86_64-linux-gnu/libpython3.4.so 
+### /vision/u/amandlek/installed_libraries/anaconda2/envs/imitation/lib/python3.4/config-3.4m/libpython3.4m.a
 
 # OpenAI baselines
 git clone https://github.com/openai/baselines.git
@@ -99,4 +97,7 @@ cd baselines
 pip install -e .
 pip uninstall tensorflow
 pip install tensorflow-gpu==1.2.0
+
+ln -s /vision/u/amandlek/installed_libraries/perls /vision/u/amandlek/installed_libraries/anaconda2/envs/imitation/lib/python3.4/site-packages/perls
+
 
