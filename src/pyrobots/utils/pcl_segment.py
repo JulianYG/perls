@@ -1,24 +1,23 @@
 #!/usr/bin/env python
+
 import rospy
-import math
-import cv2
-import numpy as np
-from cv_bridge import CvBridge, CvBridgeError
-from visualization_msgs.msg import Marker,MarkerArray
-from sensor_msgs.msg import Image
-import tf.transformations as tff
 import tf
-from geometry_msgs.msg import Point, TransformStamped 
 import pickle
+import os
+
+import numpy as np
 from os.path import join as pjoin
 
-CAMERA_PARAM_DIR = '../tools/calibration/calib_data/kinect/'
+from visualization_msgs.msg import Marker,MarkerArray
+from sensor_msgs.msg import Image
+from geometry_msgs.msg import Point, TransformStamped 
+
+
+CAMERA_PARAM_DIR = os.path.abspath(pjoin(__file__, 
+    '../../../../tools/calibration/calib_data/kinect/'))
 
 with open(pjoin(CAMERA_PARAM_DIR, 'IR_intrinsics.p'), 'rb') as f:
-    intrinsics_RGB = pickle.load(f)
-
-with open(pjoin(CAMERA_PARAM_DIR, 'IR_distortion.p'), 'rb') as f:
-    distortion_RGB = pickle.load(f)
+    intrinsics = pickle.load(f)
 
 with open(pjoin(CAMERA_PARAM_DIR, 'robot_IR_rotation.p'), 'rb') as f:
     rotation = pickle.load(f)
@@ -34,7 +33,7 @@ translation = - rotation.T.dot(translation) / 1000.
 rotation = tf.transformations.quaternion_from_matrix(rmat.T)
 
 
-class GeneralPerception(object):
+class PCLSegment(object):
 
     def __init__(self):
 
@@ -43,20 +42,19 @@ class GeneralPerception(object):
         self.table_receiver = rospy.Subscriber(
             "/tabletop_detector/table_marker", Marker, self._get_table)
         self.depth_receiver = rospy.Subscriber(
-            "/kinect2/hd/image_depth_rect", Image, self._get_depth)
+            "/kinect2/sd/image_depth_rect", Image, self._get_depth)
         self.rgb_receiver = rospy.Subscriber(
-            "/kinect2/hd/image_color_rect", Image, self._get_rgb)
+            "/kinect2/sd/image_color_rect", Image, self._get_rgb)
         self.objects = None
         self.table = None
         self.depth = None
         self.rgb = None
 
     def update_rgbd(self):
-        rospy.wait_for_message('/kinect2/hd/image_depth_rect', Image)
-        rospy.wait_for_message('/kinect2/hd/image_color_rect', Image)
+        rospy.wait_for_message('/kinect2/sd/image_depth_rect', Image)
+        rospy.wait_for_message('/kinect2/sd/image_color_rect', Image)
 
     def update_table(self):
-
         rospy.wait_for_message('/tabletop_detector/table_marker_aligned', Marker)
 
     def update_obj(self):
@@ -64,8 +62,8 @@ class GeneralPerception(object):
 
     def boot(self):
 
-        rospy.wait_for_message('/kinect2/hd/image_depth_rect', Image)
-        rospy.wait_for_message('/kinect2/hd/image_color_rect', Image)
+        rospy.wait_for_message('/kinect2/sd/image_depth_rect', Image)
+        rospy.wait_for_message('/kinect2/sd/image_color_rect', Image)
         rospy.wait_for_message('/tabletop_detector/table_marker_aligned', Marker)
         rospy.wait_for_message('/tabletop_detector/object_markers_aligned', MarkerArray)
 
@@ -108,6 +106,12 @@ class GeneralPerception(object):
         t.setTransform(b2k)
         return t.lookupTransform("/base", "/object", rospy.Time())
 
+    @staticmethod
+    def convert(x, y, z):
+        u = x / z * intrinsics[0, 0] +  intrinsics[0, 2]
+        v = y / z * intrinsics[1, 1] +  intrinsics[1, 2]
+        return int(u), int(v)
+
     def _get_objects(self, marker_array):
         self.objects = marker_array
 
@@ -121,41 +125,12 @@ class GeneralPerception(object):
         self.rgb = rgb
 
     def distance_from_table_center(self,obj):
-        obj_pos = [obj.pose.position.x,obj.pose.position.y,obj.pose.position.z]
-        table_pos = [self.table.pose.position.x,self.table.pose.position.y,self.table.pose.position.z]
-        dist = math.sqrt(sum([(o-t)**2 for o,t in zip(obj_pos,table_pos)]))
+        obj_pos = np.array([obj.pose.position.x, obj.pose.position.y, obj.pose.position.z])
+        table_pos = np.array([self.table.pose.position.x, self.table.pose.position.y, self.table.pose.position.z])
+        dist = np.sqrt(np.sum([(o - t)**2 for o, t in zip(obj_pos, table_pos)]))
         return dist
 
     def find_central_object(self):
-        obj_with_dists = [(obj,self.distance_from_table_center(obj)) for obj in self.objects.markers]
+        obj_with_dists = [(obj, self.distance_from_table_center(obj)) for obj in self.objects.markers]
         min_dist_obj = min(obj_with_dists, key=lambda o:o[1])
         return min_dist_obj[0]
-
-def convert_point(x,y,z):
-    u = x / z * intrinsics_RGB[0, 0] +  intrinsics_RGB[0, 2]
-    v = y / z * intrinsics_RGB[1, 1] +  intrinsics_RGB[1, 2]
-    return int(u), int(v)
-
-
-if __name__ == '__main__':
-
-    rospy.init_node('her')
-    receiver = GeneralPerception()
-    receiver.boot()
-    img = CvBridge().imgmsg_to_cv2(receiver.rgb, 'bgr8')#[400:1000, 450:1300]
-
-    for i, obj in enumerate(receiver.objects.markers):
-
-        pos, orn = GeneralPerception.transform(obj.pose)
-        obj_pos = [obj.pose.position.x,obj.pose.position.y,obj.pose.position.z]
-
-        obj_size = [obj.scale.x,obj.scale.y,obj.scale.z]
-        print('position: {}, orn: {}, size: {}, number: {}'.format(pos, orn, obj_size, i))
-        u1,v1 = convert_point(obj_pos[0]-obj_size[0]/2,obj_pos[1]-obj_size[1]/2,obj_pos[2]-obj_size[2]/2)
-        u2,v2 = convert_point(obj_pos[0]+obj_size[0]/2,obj_pos[1]+obj_size[1]/2,obj_pos[2]-obj_size[2]/2)
-        cv2.rectangle(img, (u1, v1), (u2, v2), (0, 0, 255), 2)
-
-    cv2.imshow('img',img)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-    receiver.unregister()
