@@ -77,7 +77,12 @@ class Checker(object):
                 (cube.pos[0] + 0.45, cube.pos[1] + 0.25, 0.642),
                 'uniform')
 
-            self._states['goal'] = box_center
+            robot_pose = world.body['titan_0'].pose
+            goal_pos, _ = math_util.get_relative_pose(
+                (box_center, robot_pose[1]), robot_pose)
+
+            self._states['goal'] = goal_pos
+            self._states['goal_abs'] = box_center
             self._states['goal_norm'] = math_util.l2(box_center - cube.pos)
 
             # Only add lines for GUI or demos
@@ -98,8 +103,7 @@ class Checker(object):
             # Use this as a mark
             robot.grasp(1)
 
-            # self._states['cube_norm'] = math_util.l2(robot.tool_pos - cube.pos)
-            self._states['last_delta'] = math_util.l2(self._states['goal'] - cube.pos)
+            self._states['last_delta'] = math_util.l2(self._states['goal_abs'] - cube.pos)
 
             logging.info('Initialize finished.')
             logging.info('Initial joint positions: {}'.
@@ -119,7 +123,7 @@ class Checker(object):
         if self._name == 'push_sawyer' or self._name == 'push_kuka':
             robot = world.body['titan_0']
             cube_pos = world.body['cube_0'].pos
-            goal = self._states['goal']
+            goal = self._states['goal_abs']
 
             # dist_gripper = math_util.rms(robot.tool_pos - cube.pos)
             # dist_goal = math_util.rms(cube.pos - self._states['goal'])
@@ -179,7 +183,7 @@ class Checker(object):
                 return True, False
 
             # If cube is within the boundary, success
-            goal = self._states['goal']
+            goal = self._states['goal_abs']
             if goal[0] - .05 < cube_pos[0] < goal[0] + .05 \
                and goal[1] - .05 < cube_pos[1] < goal[1] + .05:
                 if self._job == 'record':

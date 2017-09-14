@@ -15,16 +15,30 @@ class PushCubePose(PushCube):
 
     @property
     def observation_space(self):
+
+        table_bound, table_orn = self._table.pose
+
+        table_abs_upper_bound = table_bound + math_util.vec((.325, .2, 0.))
+        table_abs_lower_bound = table_bound - math_util.vec((.325, .2, 0.))
+
+        table_upper = math_util.get_relative_pose(
+            (table_abs_upper_bound, table_orn), self._robot.pose)
+        table_lower = math_util.get_relative_pose(
+            (table_abs_lower_bound, table_orn), self._robot.pose)
+        goal_pos = self._world.get_task_state()['goal']
+
         return PushCube.Space.Box(
             low=math_util.concat((
                 self._robot.pos - math_util.vec((1.5, 1.5, 1.5)),
-                self._table.pos - math_util.vec((.275, .275, -.63)),
-                math_util.vec((-1, -1, -1, -1)))
+                table_lower,
+                math_util.vec((-1, -1, -1, -1)),
+                goal_pos)
             ),
             high=math_util.concat((
                 self._robot.pos + math_util.vec((1.5, 1.5, 1.5)),
-                self._table.pos + math_util.vec((.275, .275, .69)),
-                math_util.vec((1, 1, 1, 1)))
+                table_upper,
+                math_util.vec((1, 1, 1, 1)),
+                goal_pos)
             )
         )
 
@@ -44,7 +58,7 @@ class PushCubePose(PushCube):
             self._robot.eef_pose, self._robot.pose)
         cube_pos, cube_orn = self._cube.get_pose(self._robot.uid, 0)
         goal_pos = self._world.get_task_state()['goal']
-
+       
         return math_util.concat((eef_pos, cube_pos, cube_orn, goal_pos))
 
     def _step_helper(self, action):
