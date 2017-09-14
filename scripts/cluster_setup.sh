@@ -73,7 +73,6 @@ bash Anaconda3-4.4.0-Linux-x86_64.sh
 conda update conda
 conda create -n imitation python=3.4 pip
 source activate imitation
-pip install tensorflow-gpu==1.2.0
 pip install keras==1.2.2
 pip install gym
 conda install -c menpo opencv
