@@ -16,7 +16,7 @@ def wrap_train(env):
 
 def train(env_id, num_timesteps, seed):
 
-    from baselines.ppo1 import pposgd_simple, cnn_policy
+    from baselines.ppo1 import pposgd_simple, mlp_policy
     import baselines.common.tf_util as U
 
     rank = MPI.COMM_WORLD.Get_rank()
@@ -29,13 +29,14 @@ def train(env_id, num_timesteps, seed):
     env = gym.make(env_id)
 
     def policy_fn(name, ob_space, ac_space): #pylint: disable=W0613
-        return cnn_policy.CnnPolicy(name=name, ob_space=ob_space, ac_space=ac_space)
+        return mlp_policy.MlpPolicy(name=name, ob_space=ob_space, ac_space=ac_space)
+
     env = bench.Monitor(env, logger.get_dir() and 
         osp.join(logger.get_dir(), "%i.monitor.json" % rank))
     env.seed(workerseed)
     gym.logger.setLevel(logging.WARN)
 
-    env = wrap_train(env)
+    # env = wrap_train(env)
     env.seed(workerseed)
 
     pposgd_simple.learn(env, policy_fn,
