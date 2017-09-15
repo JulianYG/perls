@@ -272,7 +272,7 @@ if __name__ == "__main__":
     pp = Postprocess(robot_base_pose, push_type, verbose)
     
     ### Change this to set files to read. ###
-    demons = glob("../src/log/trajectory/push/success/*.bin")
+    demons = glob("../perls/log/trajectory/push/success/*.bin")
 
     parsed_demons = []
     for i in range(len(demons)):

@@ -6,11 +6,10 @@ import gym
 import gym.spaces as spaces
 from gym.utils import seeding
 
-import sys, os
-sys.path.append(os.path.abspath(os.path.join(__file__, '../../../../')))
+# import sys, os
+# sys.path.append(os.path.abspath(os.path.join(__file__, '../../../../')))
 
-from lib.control import Controller
-from lib.utils import io_util
+from perls import Controller, io_util
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
@@ -33,7 +32,7 @@ class PerlsEnv(gym.Env):
         """
         Initialize the environment
         :param conf_path: the absolute path string to
-        the configuration file, default is 'gym_-disp.xml'
+        the configuration file, default is 'gym-disp.xml'
         """
         conf = io_util.parse_config(conf_path)[0]
         self._step_count = 0

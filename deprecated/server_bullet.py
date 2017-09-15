@@ -5,7 +5,7 @@ from os.path import join as pjoin
 
 path = os.path.dirname(os.path.abspath(__file__))
 rpath = os.path.normpath(pjoin(path, '..'))
-sys.path.append(pjoin(path, '../src'))
+sys.path.append(pjoin(path, '../perls'))
 
 from bullet_ import simulation
 from comm import db
@@ -18,7 +18,7 @@ from .interface import IVR, IKeyboard, ICmd
 from .simulator import BulletSimulator
 from .utils import build_util
 
-bullet_path = pjoin(rpath, 'src/sim_')
+bullet_path = pjoin(rpath, 'perls/sim_')
 TASK_DIR = pjoin(bullet_path, 'configs', 'task.json')
 SCENE_DIR = pjoin(bullet_path, 'configs', 'scene.json')
 RECORD_LOG_DIR = pjoin(bullet_path, 'log', 'record', 'trajectory')

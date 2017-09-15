@@ -3,7 +3,7 @@
 import abc
 
 from .perls_env import PerlsEnv
-from lib.utils import math_util
+from perls import math_util
 
 # TODO: register gym env
 # TODO: cutoff demons when cube z pos decreases??

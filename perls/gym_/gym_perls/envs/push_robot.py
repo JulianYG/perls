@@ -10,7 +10,7 @@ try:
     import rospy
 
     from cv_bridge import CvBridge
-    from sawyer import SawyerArm
+    from perls import SawyerArm
     from utils.pcl_segment import PCLSegment
 except ImportError:
     pass

@@ -6,7 +6,7 @@ from demo import execute
 
 path = os.path.dirname(os.path.abspath(__file__))
 rpath = os.path.normpath(pjoin(path, '..'))
-sys.path.append(pjoin(path, '../src'))
+sys.path.append(pjoin(path, '../perls'))
 
 from comm import db
 from bullet_ import simulation
@@ -19,11 +19,11 @@ from .utils import io, build_util
 
 def run(*args):
 
-	CONFIG_DIR = pjoin(rpath, 'src/sim_/configs', args[0][0] + '.json')
+	CONFIG_DIR = pjoin(rpath, 'perls/sim_/configs', args[0][0] + '.json')
 	_CONFIGS = io.read_config(CONFIG_DIR)
 
 	simulator = build_util.build_by_config(_CONFIGS, 
-		pjoin(rpath, 'src/sim_'), True)
+		pjoin(rpath, 'perls/sim_'), True)
 
 	try:
 		simulator.run_as_client(_CONFIGS)

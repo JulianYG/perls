@@ -1,7 +1,7 @@
 # !/usr/bin/env python
 
 from .push_viz import PushViz
-from lib.utils import math_util
+from perls import math_util
 
 
 class PushVizVel(PushViz):
@@ -18,7 +18,7 @@ class PushVizVel(PushViz):
 
     @property
     def action_space(self):
-        return PushCube.Space.Box(
+        return PushViz.Space.Box(
             low=-math_util.vec(self._robot.joint_specs['max_vel']),
             high=math_util.vec(self._robot.joint_specs['max_vel'])
         )

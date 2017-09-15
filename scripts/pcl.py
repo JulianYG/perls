@@ -8,7 +8,7 @@ import numpy as np
 from cv_bridge import CvBridge
 
 from os.path import join as pjoin
-sys.path.append(os.path.abspath(pjoin(__file__, '../../src/pyrobots/utils')))
+sys.path.append(os.path.abspath(pjoin(__file__, '../../perls/pyrobots/utils')))
 
 from pcl_segment import PCLSegment
 

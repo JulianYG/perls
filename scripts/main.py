@@ -1,13 +1,11 @@
+#!/usr/bin/env python
 
-import sys, os
-sys.path.append(os.path.join(os.path.dirname(__file__), '../src'))
+import perls
 
-from lib.control import Controller as sc
-
-# Prevent recursively spawning subprocesses
+# Prevent recursively spawning sub-processes
 if __name__ == '__main__':
 
-	s = sc('config.xml')
-# s.start_all()
+    s = perls.Controller('config.xml')
+    # s.start_all()
 
-	s.start()
+    s.start()

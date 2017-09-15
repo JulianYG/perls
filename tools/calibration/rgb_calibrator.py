@@ -21,7 +21,7 @@ import rosparam
 import intera_interface
 import time
 import tf.transformations as ttf
-sys.path.append(os.path.abspath(os.path.join(__file__, '../../../src/pyrobots')))
+sys.path.append(os.path.abspath(os.path.join(__file__, '../../../perls/pyrobots')))
 
 from sawyer import SawyerArm
 

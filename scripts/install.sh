@@ -164,7 +164,7 @@ sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 50
 sudo apt-get install g++-4.9
 sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.9 50
 
-### NOTE: In src/redis/RedisClient.cpp comment out line 39, "tcp" is a problem
+### NOTE: In perls/redis/RedisClient.cpp comment out line 39, "tcp" is a problem
 
 sh make.sh 
 

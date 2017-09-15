@@ -39,15 +39,15 @@ class BulletRenderEngine(GraphicsEngine):
     JOB_TYPES = dict(run=0, record=1, replay=2)
 
     DISP_CONF = dict(gui_panel=1,
-                      shadow=2,
-                      wire_frame=3,
-                      vr_teleporting=4,
-                      vr_picking=5,
-                      vr_render_controllers=6,
-                      rendering=7,
-                      # 8: Wait for pybullet
-                      keyboard_shortcut=9,
-                      mouse_picking=10)
+                     shadow=2,
+                     wire_frame=3,
+                     vr_teleporting=4,
+                     vr_picking=5,
+                     vr_render_controllers=6,
+                     rendering=7,
+                     # 8: Wait for pybullet
+                     keyboard_shortcut=9,
+                     mouse_picking=10)
 
     def __init__(self, disp_info,
                  job='run', video=False,
@@ -95,7 +95,7 @@ class BulletRenderEngine(GraphicsEngine):
 
         # Initialize logging paths
         log_dir = log_dir or \
-                  osp.abspath(pjoin(osp.dirname(__file__), '../../log'))
+                  osp.abspath(pjoin(osp.dirname(__file__), '../log'))
         self._log_path = dict(
             root=log_dir,
             device=pjoin(log_dir, 'device'),

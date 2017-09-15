@@ -16,14 +16,14 @@ if __name__ == "__main__":
     all_states = list()
     all_actions = list()
 
-    record_path = "../src/log/trajectory/push/success/*.bin"
+    record_path = "../perls/log/trajectory/push/success/*.bin"
 
     # Keep files sorted in order to align with random seeds
     files = filter(os.path.isfile, glob(record_path))
     files.sort(key=lambda x: os.path.basename(x))
 
     goals = []
-    with open('../src/log/push_sawyer.txt', 'r') as f:
+    with open('../perls/log/push_sawyer.txt', 'r') as f:
         pos_data = f.readlines()
     
     goals = [[float(i) for i in x.split()] for x in pos_data]
