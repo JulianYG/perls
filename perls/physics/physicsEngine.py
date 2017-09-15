@@ -161,7 +161,7 @@ class BulletPhysicsEngine(FakeStateEngine):
             joints = list(range(p.getNumJoints(uid, physicsClientId=self._physics_server_id)))
             links = [-1] + joints
             return int(uid), links, joints
-        except p.error, e:
+        except p.error as e:
             self.status = BulletPhysicsEngine._STATUS[-1]
             self._error_message.append(e.message)
 
@@ -225,7 +225,7 @@ class BulletPhysicsEngine(FakeStateEngine):
             p.resetBasePositionAndOrientation(
                 uid, tuple(pos), tuple(orn), 
                 physicsClientId=self._physics_server_id)
-        except p.error, e:
+        except p.error as e:
             status = -1
             logging.exception('BulletPhysicsEngine captured exception: ' +
                    e.message)
@@ -252,7 +252,7 @@ class BulletPhysicsEngine(FakeStateEngine):
             if isinstance(link_str, bytes):
                 link_str = link_str.decode('utf-8')
             return str(link_str)
-        except p.error, e:
+        except p.error as e:
             self.status = BulletPhysicsEngine._STATUS[-1]
             self._error_message.append(e.message)
 
@@ -268,7 +268,7 @@ class BulletPhysicsEngine(FakeStateEngine):
                 uid, qid, textureUniqueId=texture_id,
                 physicsClientId=self._physics_server_id)
             return texture_id
-        except p.error, e:
+        except p.error as e:
             self.status = BulletPhysicsEngine._STATUS[-1]
             self._error_message.append(e.message)
             return -1
@@ -278,7 +278,7 @@ class BulletPhysicsEngine(FakeStateEngine):
             p.changeVisualShape(
                 uid, qid, shapeIndex=self._INV_SHAPE_TYPES[shape],
                 physicsClientId=self._physics_server_id)
-        except p.error, e:
+        except p.error as e:
             self.status = BulletPhysicsEngine._STATUS[-1]
             self._error_message.append(e.message)
             return -1
@@ -295,7 +295,7 @@ class BulletPhysicsEngine(FakeStateEngine):
                     uid, qid, 
                     rgbaColor=list(color),
                     physicsClientId=self._physics_server_id)
-        except p.error, e:
+        except p.error as e:
             self.status = BulletPhysicsEngine._STATUS[-1]
             self._error_message.append(e.message)
 
@@ -310,7 +310,7 @@ class BulletPhysicsEngine(FakeStateEngine):
         try:
             return p.resetBaseVelocity(
                 uid, linearVelocity=vel, physicsClientId=self._physics_server_id)
-        except p.error, e:
+        except p.error as e:
             self.status = BulletPhysicsEngine._STATUS[-1]
             self._error_message.append(e.message)
 
@@ -322,7 +322,7 @@ class BulletPhysicsEngine(FakeStateEngine):
         try:
             return p.resetBaseVelocity(
                 uid, angularVelocity=vel, physicsClientId=self._physics_server_id)
-        except p.error, e:
+        except p.error as e:
             self.status = BulletPhysicsEngine._STATUS[-1]
             self._error_message.append(e.message)
 
@@ -423,7 +423,7 @@ class BulletPhysicsEngine(FakeStateEngine):
                 p.changeDynamics(uid, lid,
                                  restitution=info['restitution'],
                                  physicsClientId=self._physics_server_id)
-        except p.error, e:
+        except p.error as e:
             status = -1
             logging.exception('BulletPhysicsEngine captured exception: ' + \
                   e.message)
@@ -529,7 +529,7 @@ class BulletPhysicsEngine(FakeStateEngine):
                                      physicsClientId=self._physics_server_id)
             else:
                 logging.warning('Unrecognized reference frame. Choose abs or rel')
-        except p.error, e:
+        except p.error as e:
             self.status = BulletPhysicsEngine._STATUS[-1]
             self._error_message.append(e.message)
 
@@ -543,7 +543,7 @@ class BulletPhysicsEngine(FakeStateEngine):
                                       physicsClientId=self._physics_server_id)
             else:
                 logging.warning('Unrecognized reference frame. Choose abs or rel')
-        except p.error, e:
+        except p.error as e:
             self.status = BulletPhysicsEngine._STATUS[-1]
             self._error_message.append(e.message)
 
@@ -592,7 +592,7 @@ class BulletPhysicsEngine(FakeStateEngine):
                                       parentFrameOrientation=tuple(parent_orn),
                                       childFrameOrientation=tuple(child_orn),
                                       physicsClientId=self._physics_server_id)
-        except p.error, e:
+        except p.error as e:
             self.status = BulletPhysicsEngine._STATUS[-1]
             self._error_message.append(e.message)
 
@@ -606,7 +606,7 @@ class BulletPhysicsEngine(FakeStateEngine):
                                jointChildFrameOrientation=tuple(orn),
                                maxForce=force,
                                physicsClientId=self._physics_server_id)
-        except p.error, e:
+        except p.error as e:
             self.status = BulletPhysicsEngine._STATUS[-1]
             self._error_message.append(e.message)
 
