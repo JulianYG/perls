@@ -8,7 +8,7 @@ from perls import postprocess
 
 if __name__ == "__main__":
 
-    pp = postprocess.Postprocess('pose', '../configs/gym-cmd.xml', dim='low')
+    pp = postprocess.Postprocess('vel', '../configs/gym-cmd.xml', dim='low')
 
     all_states = list()
     all_actions = list()
@@ -34,4 +34,4 @@ if __name__ == "__main__":
     all_actions = np.concatenate(all_actions, axis=0)
     print(all_states.shape)
     print(all_actions.shape)
-    np.savez("pose.npz", states=all_states, actions=all_actions)
+    np.savez("velocity.npz", states=all_states, actions=all_actions)

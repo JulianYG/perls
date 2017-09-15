@@ -48,9 +48,9 @@ if __name__ == "__main__":
     all_images = np.concatenate(all_images, axis=0)
     all_states = np.concatenate(all_states, axis=0)
     all_actions = np.concatenate(all_actions, axis=0)
-    io_util.loginfo(all_images.shape)
-    io_util.loginfo(all_states.shape)
-    io_util.loginfo(all_actions.shape)
+    print(all_images.shape)
+    print(all_states.shape)
+    print(all_actions.shape)
 
     if pp.name != 'pose' and pp.name != 'vel':
         np.savez("../../Imitation/InfoGAIL/data/vision/velocity.npz", imgs=all_images, auxs=all_states, actions=all_actions)
