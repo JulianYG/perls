@@ -13,6 +13,6 @@ from .utils import (math_util,
 
 from .control import Controller
 
-from .pyrobots import kinect, sawyer
+from .robot import kinect, sawyer
 
 logging.setLoggerClass(io_util.PerlsLogger)

@@ -3,7 +3,7 @@
 from .stateEngine import RealStateEngine
 
 import sys, os 
-from ..pyrobots.sawyer import SawyerArm
+from ..robot.sawyer import SawyerArm
 
 try:
     import rospy
