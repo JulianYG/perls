@@ -6,11 +6,7 @@ import os
 
 import numpy as np
 from cv_bridge import CvBridge
-
-from os.path import join as pjoin
-sys.path.append(os.path.abspath(pjoin(__file__, '../../perls/pyrobots/utils')))
-
-from pcl_segment import PCLSegment
+from perls.pcl_segment import PCLSegment
 
 if __name__ == '__main__':
 

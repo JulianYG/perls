@@ -14,5 +14,6 @@ from .utils import (math_util,
 from .control import Controller
 
 from .robot import kinect, sawyer
+from .robot.utils import pcl_segment
 
 logging.setLoggerClass(io_util.PerlsLogger)
