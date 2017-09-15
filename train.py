@@ -7,11 +7,10 @@ import os.path as osp
 import gym, logging
 from baselines import logger
 import perls
+from baselines.ppo1 import pposgd_simple, mlp_policy
+import baselines.common.tf_util as U
 
 def train(env_id, num_timesteps, seed):
-
-    from baselines.ppo1 import pposgd_simple, mlp_policy
-    import baselines.common.tf_util as U
 
     rank = MPI.COMM_WORLD.Get_rank()
     U.single_threaded_session().__enter__()
@@ -50,6 +49,7 @@ def main():
     parser.add_argument('--seed', help='RNG seed', type=int, default=42)
     args = parser.parse_args()
     train(args.env, num_timesteps=1e5, seed=args.seed)
+    U.save_state('haha')
 
 if __name__ == '__main__':
     main()

@@ -2,6 +2,7 @@
 
 import pickle
 import os, sys
+import logging
 
 import numpy as np
 from os.path import join as pjoin
@@ -19,31 +20,34 @@ except ImportError:
 CAMERA_PARAM_DIR = os.path.abspath(pjoin(os.path.dirname(__file__), 
     '../' * 3, 'tools/calibration/calib_data/kinect/'))
 
-if sys.version_info >= (2, 7):
-    with open(pjoin(CAMERA_PARAM_DIR, 'IR_intrinsics.p'), 'rb') as f:
-        intrinsics = pickle.load(f, encoding='latin1')
-    with open(pjoin(CAMERA_PARAM_DIR, 'robot_IR_rotation.p'), 'rb') as f:
-        rotation = pickle.load(f, encoding='latin1')
-    with open(pjoin(CAMERA_PARAM_DIR, 'robot_IR_translation.p'), 'rb') as f:
-        translation = pickle.load(f, encoding='latin1')
-else:
-    with open(pjoin(CAMERA_PARAM_DIR, 'IR_intrinsics.p'), 'rb') as f:
-        intrinsics = pickle.load(f)
-    with open(pjoin(CAMERA_PARAM_DIR, 'robot_IR_rotation.p'), 'rb') as f:
-        rotation = pickle.load(f)
-    with open(pjoin(CAMERA_PARAM_DIR, 'robot_IR_translation.p'), 'rb') as f:
-        translation = pickle.load(f)
-
-rmat = np.zeros((4, 4))
-rmat[:3, :3] = rotation
-rmat[3, 3] = 1.
-
-translation = - rotation.T.dot(translation) / 1000.
-
 try:
+    if sys.version_info >= (2, 7):
+        with open(pjoin(CAMERA_PARAM_DIR, 'IR_intrinsics.p'), 'rb') as f:
+            intrinsics = pickle.load(f, encoding='latin1')
+        with open(pjoin(CAMERA_PARAM_DIR, 'robot_IR_rotation.p'), 'rb') as f:
+            rotation = pickle.load(f, encoding='latin1')
+        with open(pjoin(CAMERA_PARAM_DIR, 'robot_IR_translation.p'), 'rb') as f:
+            translation = pickle.load(f, encoding='latin1')
+    else:
+        with open(pjoin(CAMERA_PARAM_DIR, 'IR_intrinsics.p'), 'rb') as f:
+            intrinsics = pickle.load(f)
+        with open(pjoin(CAMERA_PARAM_DIR, 'robot_IR_rotation.p'), 'rb') as f:
+            rotation = pickle.load(f)
+        with open(pjoin(CAMERA_PARAM_DIR, 'robot_IR_translation.p'), 'rb') as f:
+            translation = pickle.load(f)
+    rmat = np.zeros((4, 4))
+    rmat[:3, :3] = rotation
+    rmat[3, 3] = 1.
+
+    translation = - rotation.T.dot(translation) / 1000.
     rotation = tf.transformations.quaternion_from_matrix(rmat.T)
+
+except IOError:
+    logging.info('No calibrated camera data found.')
+
 except NameError:
     pass
+
 
 class PCLSegment(object):
 
