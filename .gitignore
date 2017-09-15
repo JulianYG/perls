@@ -11,3 +11,5 @@ data
 perls/log
 perls/configs/config.xml
 tools/calibration/calib_data/
+*/__pycache__
+*/*/__pycache__

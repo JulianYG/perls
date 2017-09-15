@@ -1,37 +1,49 @@
 #!/usr/bin/env python
 
-import rospy
-import tf
 import pickle
-import os
+import os, sys
 
 import numpy as np
 from os.path import join as pjoin
 
-from visualization_msgs.msg import Marker,MarkerArray
-from sensor_msgs.msg import Image
-from geometry_msgs.msg import Point, TransformStamped 
+try:
+    import rospy
+    import tf
 
+    from visualization_msgs.msg import Marker,MarkerArray
+    from sensor_msgs.msg import Image
+    from geometry_msgs.msg import Point, TransformStamped 
+except ImportError:
+    pass
 
-CAMERA_PARAM_DIR = os.path.abspath(pjoin(__file__, 
-    '../../../../tools/calibration/calib_data/kinect/'))
+CAMERA_PARAM_DIR = os.path.abspath(pjoin(os.path.dirname(__file__), 
+    '../' * 3, 'tools/calibration/calib_data/kinect/'))
 
-with open(pjoin(CAMERA_PARAM_DIR, 'IR_intrinsics.p'), 'rb') as f:
-    intrinsics = pickle.load(f)
-
-with open(pjoin(CAMERA_PARAM_DIR, 'robot_IR_rotation.p'), 'rb') as f:
-    rotation = pickle.load(f)
-
-with open(pjoin(CAMERA_PARAM_DIR, 'robot_IR_translation.p'), 'rb') as f:
-    translation = pickle.load(f)
+if sys.version_info >= (2, 7):
+    with open(pjoin(CAMERA_PARAM_DIR, 'IR_intrinsics.p'), 'rb') as f:
+        intrinsics = pickle.load(f, encoding='latin1')
+    with open(pjoin(CAMERA_PARAM_DIR, 'robot_IR_rotation.p'), 'rb') as f:
+        rotation = pickle.load(f, encoding='latin1')
+    with open(pjoin(CAMERA_PARAM_DIR, 'robot_IR_translation.p'), 'rb') as f:
+        translation = pickle.load(f, encoding='latin1')
+else:
+    with open(pjoin(CAMERA_PARAM_DIR, 'IR_intrinsics.p'), 'rb') as f:
+        intrinsics = pickle.load(f)
+    with open(pjoin(CAMERA_PARAM_DIR, 'robot_IR_rotation.p'), 'rb') as f:
+        rotation = pickle.load(f)
+    with open(pjoin(CAMERA_PARAM_DIR, 'robot_IR_translation.p'), 'rb') as f:
+        translation = pickle.load(f)
 
 rmat = np.zeros((4, 4))
 rmat[:3, :3] = rotation
 rmat[3, 3] = 1.
 
 translation = - rotation.T.dot(translation) / 1000.
-rotation = tf.transformations.quaternion_from_matrix(rmat.T)
 
+try:
+    rotation = tf.transformations.quaternion_from_matrix(rmat.T)
+except NameError:
+    pass
 
 class PCLSegment(object):
 
