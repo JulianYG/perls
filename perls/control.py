@@ -41,7 +41,6 @@ class Controller(object):
         # Simulation
         bullet=physicsEngine.BulletPhysicsEngine,
         mujoco=physicsEngine.MujocoEngine,
-        # gazebo=physicsEngine.OpenRaveEngine,
 
         # Reality
         intera=robotEngine.InteraEngine,
