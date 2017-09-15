@@ -24,7 +24,7 @@ class Checker(object):
 
         log_path = pjoin(
             __file__, 
-            '../../../log/{}.txt'.format(env_name))
+            '../../log/{}.txt'.format(env_name))
 
         # Appending to previous one if exists
         self._log_file = open(log_path, 'a')
@@ -51,12 +51,12 @@ class Checker(object):
 
             # Fine tune the environment to look real
             world.body['plane_0'].set_texture(
-                -1, 'floor', pjoin(__file__, '../../../../asset/floor.png'))
+                -1, 'floor', pjoin(__file__, '../../asset/floor.png'))
 
             cube = world.body['cube_0']
 
             cube.set_texture(
-                -1, 'cube', pjoin(__file__, '../../../../asset/cube.png'))
+                -1, 'cube', pjoin(__file__, '../../asset/cube.png'))
 
             gripper = world.body['bax_0']
 
@@ -69,7 +69,7 @@ class Checker(object):
             table = world.body['table_0']
             # table.dynamics = {-1: dict(lateral_friction=0.05)}
             # table.set_texture(
-            #     -1, 'table', pjoin(__file__, '../../../../asset/table.png'))
+            #     -1, 'table', pjoin(__file__, '../../asset/table.png'))
 
             # Random goal
             box_center = math_util.rand_vec(

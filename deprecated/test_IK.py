@@ -29,7 +29,7 @@ from lib.utils import math_util
 np.set_printoptions(precision=8, suppress=True)
 
 # root = '/home/cvgl_ros/bullet3/data/sawyer_robot/sawyer_description/urdf/'
-root = '/home/cvgl_ros/ros_ws/src/sawyer_robot_openrave/sawyer_description_openrave/urdf/'
+root = '/home/cvgl_ros/ros_ws/perls/sawyer_robot_openrave/sawyer_description_openrave/urdf/'
 
 openravepy.RaveInitialize(True, level=openravepy.DebugLevel.Error)
 env = openravepy.Environment()

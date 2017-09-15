@@ -3,7 +3,7 @@ import os, sys
 from os.path import join as pjoin
 path = os.path.abspath(os.getcwd()).rsplit('/')
 rpath = '/'.join(path[: path.index('perls') + 1])
-sys.path.append(pjoin(rpath, 'src/real_'))
+sys.path.append(pjoin(rpath, 'perls/real_'))
 
 import cv2
 import numpy as np

@@ -2,7 +2,7 @@ import multiprocessing
 import sys, logging
 import platform
 
-from .state import physicsEngine#, robotEngine
+from .physics import physicsEngine, robotEngine
 from .adapter import Adapter
 from .render import graphicsEngine, camera
 from .handler.base import NullHandler
@@ -25,7 +25,7 @@ logging.setLoggerClass(PerlsLogger)
 
 Logger = PerlsLogger('{}.log'.format(
     time_util.get_full_time_stamp()),
-    use_color=False \
+    use_color=False\
     if platform.system() == 'Windows' else True
 )
 
@@ -44,7 +44,7 @@ class Controller(object):
         # gazebo=physicsEngine.OpenRaveEngine,
 
         # Reality
-        # intera=robotEngine.InteraEngine,
+        intera=robotEngine.InteraEngine,
     )
 
     _GRAPHICS_ENGINES = dict(
@@ -86,7 +86,7 @@ class Controller(object):
         for training purposes.
         """
         self._config = pjoin(io_util.pwd(__file__),
-                             '../../configs',
+                             'configs',
                              config_batch)
         self._physics_servers = dict()
         self._process_pool = list()
@@ -161,15 +161,17 @@ class Controller(object):
             queue = multiprocessing.Queue()
             nruns, world, disp, ctrl_hdlr = self.load_config(conf, queue)
             if num_configs > 1 and (not conf.async):
-                err_control('Currently only support multiple instances '
-                       'of non-GUI frame and asynchronous simulation. '
-                       'GUI or synchronous frame can only run as '
-                       'single simulation instance. \nSimulation '
-                       'configuration %d build skipped with error. ' % i)
+                logging.error(
+                    'Currently only support multiple instances '
+                    'of non-GUI frame and asynchronous simulation. '
+                    'GUI or synchronous frame can only run as '
+                    'single simulation instance. \nSimulation '
+                    'configuration %d build skipped with error. ' % i)
                 world.notify_engine('error')
             else:
-                logging.info('Simulation configuration {} build success. '
-                        'Build type: {}'.format(i, conf.build))
+                logging.info(
+                    'Simulation configuration {} build success. '
+                    'Build type: {}'.format(i, conf.build))
                 world.notify_engine('pending')
             self._physics_servers[conf.id] = (nruns, world, disp, ctrl_hdlr, queue)
 
@@ -256,8 +258,7 @@ class Controller(object):
         :return: None
         """
         if len(self._physics_servers) < 2:
-            err_control('Cannot call <start_all> for less than 2 instances.',
-                   FONT.control)
+            logging.error('Cannot call <start_all> for less than 2 instances.')
             return
         for s_id in range(len(self._physics_servers)):
             # Dispatch to new threads
@@ -487,7 +488,7 @@ class Controller(object):
 
                     # Update the states
                     self._control_update(world)
-                    logging.info_control('World is reset.', FONT.model)
+                    logging.info('World is reset.')
 
                 elif method == 'reach':
                     ### Note ###

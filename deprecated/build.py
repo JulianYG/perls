@@ -4,8 +4,8 @@ base = None
 
 executables = [Executable("demo.py", base=base)]
 
-paths = ['../src/bullet_', '../src', '../src/bullet_/simulation', 
-	'../src/comm', '../src/bullet_/simulation/utils',
+paths = ['../perls/bullet_', '../perls', '../perls/bullet_/simulation', 
+	'../perls/comm', '../perls/bullet_/simulation/utils',
 	'c:/users/vive/appdata/local/programs/python/python36-32/lib/site-packages', ]
 
 packages = ["pybullet", "os", "glob", "redis", "gym_", "numpy", "matplotlib", "csv"]

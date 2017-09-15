@@ -5,7 +5,7 @@ from os.path import join as pjoin
 
 path = os.path.dirname(os.path.abspath(__file__))
 rpath = os.path.normpath(pjoin(path, '..'))
-sys.path.append(pjoin(path, '../src'))
+sys.path.append(pjoin(path, '../perls'))
 
 import rospy
 import intera_interface

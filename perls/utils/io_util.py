@@ -458,10 +458,10 @@ def parse_config(file_path):
 
         build = conf.find('./build').attrib['type'].lower()
         model_desc = pjoin(os.path.dirname(__file__), 
-                           '../../../configs',
+                           '../configs',
                            conf.find('./env').text)
         view_desc = pjoin(os.path.dirname(__file__), 
-                          '../../../configs',
+                          '../configs',
                           conf.find('./disp').text)
         config_name = conf.attrib['name']
         conf_id = int(conf.attrib['id'])

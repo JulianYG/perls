@@ -1,7 +1,7 @@
 # !/usr/bin/env python
 
 from .push_viz import PushViz
-from lib.utils import math_util
+from perls import math_util
 
 
 class PushVizPose(PushViz):
@@ -18,7 +18,7 @@ class PushVizPose(PushViz):
 
     @property
     def action_space(self):
-        return PushCube.Space.Box(
+        return PushViz.Space.Box(
             low=-math_util.vec((0.05, 0.05, 0.05)),
             high=math_util.vec((0.05, 0.05, 0.05))
         )

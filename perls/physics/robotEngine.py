@@ -3,12 +3,14 @@
 from .stateEngine import RealStateEngine
 
 import sys, os 
-sys.path.append(os.path.abspath(os.path.join(__file__, '../../pyrobots')))
+from ..robot.sawyer import SawyerArm
 
-import rospy
-import moveit_commander
+try:
+    import rospy
+    import moveit_commander
 
-# from sawyer import SawyerArm
+except ImportError:
+    pass
 
 __author__ = 'Julian Gao'
 __email__ = 'julianyg@stanford.edu'
