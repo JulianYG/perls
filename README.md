@@ -1,7 +1,7 @@
 ## perls
 
 ### System Design
-![Block Diagram](https://raw.githubusercontent.com/JulianYG/perls/deploy/structure.jpg)
+![Block Diagram](structure.jpg)
 
 Read more about API docs in this [Wiki](https://github.com/JulianYG/perls/wiki).
 
