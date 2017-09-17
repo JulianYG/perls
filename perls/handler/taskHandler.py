@@ -18,6 +18,12 @@ class Checker(object):
     Check if given task is finished
     """
     def __init__(self, env_name):
+        """
+        Initialize task checker.
+        :param env_name: string of environment
+        description name, as defined in world.xml
+        scene tag.
+        """
         self._name = env_name
         self._states = dict()
         self._job = 'run'
@@ -31,13 +37,28 @@ class Checker(object):
 
     @property
     def name(self):
-        return 'TaskCompletionChecker'
+        """
+        Get name of this checker.
+        :return: name string of task
+        """
+        return 'Checker::{}'.format(self._name)
 
     @property
     def state(self):
+        """
+        Get task checker states
+        :return: dictionary where key is state name
+        and value is state value
+        """
         return self._states
 
     def set_job(self, job):
+        """
+        Tell task checker what's the current run's job
+        :param job: job string among 'record',
+        'run', and 'replay'
+        :return: None
+        """
         self._job = job
 
     def initialize(self, world):
@@ -47,7 +68,7 @@ class Checker(object):
         :param world: the world object to be setup
         :return: None
         """
-        if self._name == 'push_sawyer' or self._name == 'push_kuka':
+        if self._name == 'push_sawyer':
 
             # Fine tune the environment to look real
             world.body['plane_0'].set_texture(
@@ -120,7 +141,7 @@ class Checker(object):
         :param world: current environment status object
         :return: User defined format of reward
         """
-        if self._name == 'push_sawyer' or self._name == 'push_kuka':
+        if self._name == 'push_sawyer':
             robot = world.body['titan_0']
             cube_pos = world.body['cube_0'].pos
             goal = self._states['goal_abs']
@@ -154,16 +175,15 @@ class Checker(object):
                and goal[1] - .05 < cube_pos[1] < goal[1] + .05:
                 return reward + 1
 
-            # return 1. / (dist_gripper * .7 / self._states['cube_norm']
-            #           + dist_goal * .3 / self._states['goal_norm']) - penalty
-            # print(- dist_goal / self._states['goal_norm'] - penalty)
-            # return - dist_goal / self._states['goal_norm'] - penalty
-
             return reward
 
     def check(self, world):
-
-        if self._name == 'push_sawyer' or self._name == 'push_kuka':
+        """
+        Perform task completion check
+        :param world: the current world task running in
+        :return: Boolean done, boolean success
+        """
+        if self._name == 'push_sawyer':
 
             cube_pos = world.body['cube_0'].pos
 
@@ -187,7 +207,9 @@ class Checker(object):
             if goal[0] - .05 < cube_pos[0] < goal[0] + .05 \
                and goal[1] - .05 < cube_pos[1] < goal[1] + .05:
                 if self._job == 'record':
+
                     # In success case, take down the goal pos
+                    # as bookkeeping for post-processing
                     self._log_file.write('{}\n'.format(
                         ' '.join(str(x) for x in goal)))
                 return True, True
@@ -195,4 +217,8 @@ class Checker(object):
         return False, False
 
     def stop(self):
+        """
+        Stop Task checker
+        :return: None
+        """
         self._log_file.close()
