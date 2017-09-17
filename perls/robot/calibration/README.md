@@ -38,7 +38,7 @@ IR `q` for charles:
 
 ## To calculate /base to /IR transformation from RGB extrinsics and IR_RGB extrinsics:
 
-Given RGB Extrinsics `T`, `R`, and IAI calibrated stereo extrinsics, combine `T`, `R` into a 4x4 homogeneous pose matrix `P`. Also combine the stereo extrinsics into a 4x4 `H`, compute `P x H` and repeat above operations. Follow the example of `compute_transform.py`.
+Given RGB Extrinsics `T`, `R`, and IAI calibrated stereo extrinsics, combine `T`, `R` into a 4x4 homogeneous pose matrix `P`. Also combine the stereo extrinsics into a 4x4 `H`, compute `P x H` and repeat above operations. Follow the example of [`compute_transform.py`](../../../tools/calibration/compute_transform.py).
 
 
 Accurate calibration data for Ada:
