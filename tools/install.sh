@@ -67,6 +67,7 @@ sudo apt-get install libasound2-dev
 sudo apt-get install libusb-1.0-0-dev
 sudo apt-get install redis-server
 sudo apt-get install libyaml-cpp-dev
+sudo apt-get install libv4l-dev
 
 # update cmake
 sudo apt-get install software-properties-common

@@ -26,7 +26,7 @@ class MujocoEngine(FakeStateEngine):
 
 class BulletPhysicsEngine(FakeStateEngine):
     """
-    
+    Bullet Physics simulation engine.
     """
 
     JOINT_TYPES = {
@@ -163,7 +163,8 @@ class BulletPhysicsEngine(FakeStateEngine):
             return int(uid), links, joints
         except p.error as e:
             self.status = BulletPhysicsEngine._STATUS[-1]
-            self._error_message.append(e.message)
+            self._error_message.append(e)
+            logging.exception('BulletPhysicsEngine captured exception: ' + e)
 
     ###
     # Body related methods
@@ -227,10 +228,9 @@ class BulletPhysicsEngine(FakeStateEngine):
                 physicsClientId=self._physics_server_id)
         except p.error as e:
             status = -1
-            logging.exception('BulletPhysicsEngine captured exception: ' +
-                   e.message)
             self.status = BulletPhysicsEngine._STATUS[-1]
-            self._error_message.append(e.message)
+            self._error_message.append(e)
+            logging.exception('BulletPhysicsEngine captured exception: ' + e)
         return status
 
     def get_body_name(self, uid):
@@ -254,7 +254,8 @@ class BulletPhysicsEngine(FakeStateEngine):
             return str(link_str)
         except p.error as e:
             self.status = BulletPhysicsEngine._STATUS[-1]
-            self._error_message.append(e.message)
+            self._error_message.append(e)
+            logging.exception('BulletPhysicsEngine captured exception: ' + e)
 
     def get_body_visual_shape(self, uid):
         return p.getVisualShapeData(
@@ -270,7 +271,8 @@ class BulletPhysicsEngine(FakeStateEngine):
             return texture_id
         except p.error as e:
             self.status = BulletPhysicsEngine._STATUS[-1]
-            self._error_message.append(e.message)
+            self._error_message.append(e)
+            logging.exception('BulletPhysicsEngine captured exception: ' + e)
             return -1
 
     def set_body_visual_shape(self, uid, qid, shape):
@@ -280,7 +282,8 @@ class BulletPhysicsEngine(FakeStateEngine):
                 physicsClientId=self._physics_server_id)
         except p.error as e:
             self.status = BulletPhysicsEngine._STATUS[-1]
-            self._error_message.append(e.message)
+            self._error_message.append(e)
+            logging.exception('BulletPhysicsEngine captured exception: ' + e)
             return -1
 
     def set_body_visual_color(self, uid, qid, color, spec=False):
@@ -297,7 +300,8 @@ class BulletPhysicsEngine(FakeStateEngine):
                     physicsClientId=self._physics_server_id)
         except p.error as e:
             self.status = BulletPhysicsEngine._STATUS[-1]
-            self._error_message.append(e.message)
+            self._error_message.append(e)
+            logging.exception('BulletPhysicsEngine captured exception: ' + e)
 
     def change_loaded_texture(self, texture_id, pixels, w, h):
         p.changeTexture(texture_id, pixels, w, h, self._physics_server_id)
@@ -312,7 +316,8 @@ class BulletPhysicsEngine(FakeStateEngine):
                 uid, linearVelocity=vel, physicsClientId=self._physics_server_id)
         except p.error as e:
             self.status = BulletPhysicsEngine._STATUS[-1]
-            self._error_message.append(e.message)
+            self._error_message.append(e)
+            logging.exception('BulletPhysicsEngine captured exception: ' + e)
 
     def get_body_angular_velocity(self, uid):
         return np.array(p.getBaseVelocity(
@@ -324,7 +329,8 @@ class BulletPhysicsEngine(FakeStateEngine):
                 uid, angularVelocity=vel, physicsClientId=self._physics_server_id)
         except p.error as e:
             self.status = BulletPhysicsEngine._STATUS[-1]
-            self._error_message.append(e.message)
+            self._error_message.append(e)
+            logging.exception('BulletPhysicsEngine captured exception: ' + e)
 
     def get_body_link_state(self, uid, lid):
         return tuple(
@@ -361,6 +367,7 @@ class BulletPhysicsEngine(FakeStateEngine):
                     p.resetJointState(
                         uid, jid, targetValue=val, targetVelocity=0.,
                         physicsClientId=self._physics_server_id)
+
             # Remove 'reset' from kwargs
             kwargs.pop('reset', None)
             if ctype == 'position':
@@ -377,7 +384,6 @@ class BulletPhysicsEngine(FakeStateEngine):
                                             physicsClientId=self._physics_server_id,
                                             **kwargs)
             elif ctype == 'torque':
-
                 # Need to disable joint motors first
                 p.setJointMotorControlArray(uid, jointIndices=jids,
                                             controlMode=p.TORQUE_CONTROL,
@@ -386,7 +392,8 @@ class BulletPhysicsEngine(FakeStateEngine):
         except (AssertionError, p.error) as e:
             self.status = BulletPhysicsEngine._STATUS[-1]
             if p.error:
-                self._error_message.append(e.message)
+                self._error_message.append(e)
+                logging.exception('BulletPhysicsEngine captured exception: ' + e)
 
     def enable_body_joint_motors(self, uid, jids, forces):
         p.setJointMotorControlArray(uid, jids, controlMode=p.VELOCITY_CONTROL,
@@ -425,10 +432,9 @@ class BulletPhysicsEngine(FakeStateEngine):
                                  physicsClientId=self._physics_server_id)
         except p.error as e:
             status = -1
-            logging.exception('BulletPhysicsEngine captured exception: ' + \
-                  e.message)
             self.status = BulletPhysicsEngine._STATUS[-1]
-            self._error_message.append(e.message)
+            self._error_message.append(e)
+            logging.exception('BulletPhysicsEngine captured exception: ' + e)
         return status
 
     def get_body_bounding_box(self, uid, lid):
@@ -531,7 +537,8 @@ class BulletPhysicsEngine(FakeStateEngine):
                 logging.warning('Unrecognized reference frame. Choose abs or rel')
         except p.error as e:
             self.status = BulletPhysicsEngine._STATUS[-1]
-            self._error_message.append(e.message)
+            self._error_message.append(e)
+            logging.exception('BulletPhysicsEngine captured exception: ' + e)
 
     def apply_torque_to_body(self, uid, lid, torque, ref):
         try:
@@ -545,7 +552,8 @@ class BulletPhysicsEngine(FakeStateEngine):
                 logging.warning('Unrecognized reference frame. Choose abs or rel')
         except p.error as e:
             self.status = BulletPhysicsEngine._STATUS[-1]
-            self._error_message.append(e.message)
+            self._error_message.append(e)
+            logging.exception('BulletPhysicsEngine captured exception: ' + e)
 
     def get_body_attachment(self, uid):
 
@@ -594,7 +602,8 @@ class BulletPhysicsEngine(FakeStateEngine):
                                       physicsClientId=self._physics_server_id)
         except p.error as e:
             self.status = BulletPhysicsEngine._STATUS[-1]
-            self._error_message.append(e.message)
+            self._error_message.append(e)
+            logging.exception('BulletPhysicsEngine captured exception: ' + e)
 
     def remove_body_attachment(self, cid):
         p.removeConstraint(cid, physicsClientId=self._physics_server_id)
@@ -608,7 +617,8 @@ class BulletPhysicsEngine(FakeStateEngine):
                                physicsClientId=self._physics_server_id)
         except p.error as e:
             self.status = BulletPhysicsEngine._STATUS[-1]
-            self._error_message.append(e.message)
+            self._error_message.append(e)
+            logging.exception('BulletPhysicsEngine captured exception: ' + e)
 
     def delete_body(self, uid):
         p.removeBody(uid, physicsClientId=self._physics_server_id)
