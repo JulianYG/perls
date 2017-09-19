@@ -1,7 +1,6 @@
 #!/usr/bin/env/ python
 
 import numpy as np
-import platform
 import logging
 
 import os.path as osp
@@ -80,10 +79,9 @@ class BulletPhysicsEngine(FakeStateEngine):
         self._viz = False
         self._sensor_enabled = False
 
-        if platform.system() != 'Windows':
-            p.setAdditionalSearchPath(
-                pjoin(osp.dirname(__file__),
-                      '../data'))
+        p.setAdditionalSearchPath(
+            pjoin(osp.dirname(__file__),
+                  '../data'))
 
     @property
     def version(self):
