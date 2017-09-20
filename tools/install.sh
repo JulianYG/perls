@@ -83,6 +83,7 @@ echo "deb http://ppa.launchpad.net/keithw/glfw3/ubuntu trusty main" | sudo tee -
 echo "deb-src http://ppa.launchpad.net/keithw/glfw3/ubuntu trusty main" | sudo tee -a /etc/apt/sources.list.d/fillwave_ext.list
 sudo apt-get update
 sudo apt-get install libglfw3 libglfw3-dev
+sudo apt-get install libopenscenegraph-dev
 
 sudo apt-get purge libglfw3-dev
 git clone https://github.com/glfw/glfw.git
@@ -92,8 +93,6 @@ cd build
 cmake -D BUILD_SHARED_LIBS=ON ..
 sudo make install
 sudo ldconfig
-
-
 
 cd rbdl
 mkdir build 
@@ -229,6 +228,8 @@ sudo pip install IPython
 # Consult the following document and follow the instructions there.
 # https://docs.google.com/document/d/1TFPzeHz8cX4zU0iIxAR3wJV1JN4H-T5fpzOayP-qTu0/edit
 
+sudo apt-get install ros-indigo-octomap-mapping ros-indigo-octomap-ros ros-indigo-octomap-rviz-plugins ros-indigo-octomap-server
+
 ### Install all kinect stuff
 cd ~/installed_libraries
 git clone https://github.com/OpenKinect/libfreenect2.git
@@ -313,10 +314,11 @@ pip install h5py
 pip install matplotlib
 
 pip install openvr
+
 ##  Install glfw for python
 pip install glfw
-
 pip install redis
+
 ### Important: open ~/Desktop/imitation/.env/lib/python2.7/site-packages/openvr/__init__.py
 #   Delete lines 37-38, replace with the following:
 # # Load library
@@ -325,7 +327,9 @@ pip install redis
 #     os.environ['PATH'] += os.pathsep + os.path.dirname(__file__)
 # else:
 #     _openvr_lib_name = os.path.join(os.path.dirname(__file__), _openvr_lib_name)
-sudo apt-get install screen # used to start processes in new shells
+
+# used to start processes in new shells
+sudo apt-get install screen 
 cd ../..
 
 ### TODO: put instructions for modified InfoGAIL here... ###
@@ -388,4 +392,56 @@ sudo apt-get install
 # Go to properties, and select Beta
 # Good to go!!!
 
+### OpenRAVE installation ###
+sudo apt-get install libassimp-dev libavcodec-dev libavformat-dev libavformat-dev libboost-all-dev libboost-date-time-dev libbullet-dev libfaac-dev libglew-dev  libgsm1-dev liblapack-dev libmpfr-dev libode-dev libogg-dev libopenscenegraph-dev libpcrecpp0 libpcre3-dev libqhull-dev libqt4-dev libsoqt-dev-common libsoqt4-dev libswscale-dev libswscale-dev libvorbis-dev libx264-dev libxml2-dev libxvidcore-dev
+sudo add-apt-repository ppa:openrave/release
+sudo sh -c 'echo "deb-src http://ppa.launchpad.net/openrave/release/ubuntu `lsb_release -cs` main" >> /etc/apt/sources.list.d/openrave-release-`lsb_release -cs`.list'
+sudo apt-get update
+sudo apt-get install collada-dom-dev
+sudo apt-get install libccd-dev
+
+cd ~/installed_libraries
+git clone --branch latest_stable https://github.com/rdiankov/openrave.git
+cd openrave
+mkdir build
+cd ~/installed_libraries
+
+# Install m4
+sudo apt-get install m4
+
+# Install libccd
+git clone https://github.com/danfis/libccd.git
+mkdir build && cd build 
+cmake -G "Unix Makefiles" ..
+make -j4
+sudo make install
+
+# Install FCL
+git clone https://github.com/flexible-collision-library/fcl.git
+cd fcl
+mkdir build 
+cd build 
+make -j8
+sudo make install
+
+cd ~/installed_libraries/openrave/build
+cmake ..
+# Before make, modify ln 1556, 1557 in build/CMakeCache.txt:
+# FCL_fcl_LIBDIR:INTERNAL=/opt/ros/indigo/lib
+# FCL_fcl_INCLUDEDIR:INTERNAL=/opt/ros/indigo/include/fcl
+make -j8
+sudo make install
+
+# Install trajopt
+git clone https://github.com/joschu/trajopt.git
+mkdir build
+cd build
+cmake ..
+
+# In CMakeCache.txt:
+# //build point cloud processing stuff
+# BUILD_CLOUDPROC:BOOL=ON
+make -j8
+
+# Set PYTHONPATH to point to trajopt
 
