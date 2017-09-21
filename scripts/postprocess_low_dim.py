@@ -8,7 +8,7 @@ from perls import postprocess
 
 if __name__ == "__main__":
 
-    pp = postprocess.Postprocess('vel', '../configs/gym-cmd.xml', dim='low')
+    pp = postprocess.Postprocess('vel', '../perls/configs/gym-cmd.xml', dim='low')
 
     all_states = list()
     all_actions = list()
@@ -16,7 +16,7 @@ if __name__ == "__main__":
     record_path = "../perls/log/trajectory/push/success/*.bin"
 
     # Keep files sorted in order to align with random seeds
-    files = filter(os.path.isfile, glob(record_path))
+    files = list(filter(os.path.isfile, glob(record_path)))
     files.sort(key=lambda x: os.path.basename(x))
 
     goals = []

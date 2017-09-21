@@ -88,7 +88,7 @@ class Checker(object):
             gripper.color = (4, (0, 0, 0, 1))
 
             table = world.body['table_0']
-            # table.dynamics = {-1: dict(lateral_friction=0.05)}
+            table.dynamics = {-1: dict(lateral_friction=1.0)}
             # table.set_texture(
             #     -1, 'table', pjoin(__file__, '../../asset/table.png'))
 
@@ -104,7 +104,6 @@ class Checker(object):
 
             self._states['goal'] = goal_pos
             self._states['goal_abs'] = box_center
-            self._states['goal_norm'] = math_util.l2(box_center - cube.pos)
 
             # Only add lines for GUI or demos
             if world.info['engine']['visual']:
@@ -124,7 +123,7 @@ class Checker(object):
             # Use this as a mark
             robot.grasp(1)
 
-            self._states['last_delta'] = math_util.l2(self._states['goal_abs'] - cube.pos)
+            self._states['last_delta'] = math_util.l2(box_center - cube.pos)
 
             logging.info('Initialize finished.')
             logging.info('Initial joint positions: {}'.
@@ -157,7 +156,7 @@ class Checker(object):
             self._states['last_delta'] = math_util.l2(goal - cube_pos)
 
             # If the cube bumps or falls, penalize
-            if cube_pos[2] >= 0.68 or cube_pos[2] <= 0.6:
+            if cube_pos[2] >= 0.69 or cube_pos[2] <= 0.6:
                 return -1
 
             # If robot/gripper collided with table, penalize
@@ -211,7 +210,7 @@ class Checker(object):
                     # In success case, take down the goal pos
                     # as bookkeeping for post-processing
                     self._log_file.write('{}\n'.format(
-                        ' '.join(str(x) for x in goal)))
+                        ' '.join(str(x) for x in self._states['goal'])))
                 return True, True
 
         return False, False
