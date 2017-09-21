@@ -33,8 +33,8 @@ class BulletRenderEngine(GraphicsEngine):
     """
     Rendering render from bullet physics
     """
-
-    FRAME_TYPES = dict(off=0, gui=1, cmd=2, vr=3, udp=4, tcp=5)
+    # Always use server process for GUI (7 instead of 1)
+    FRAME_TYPES = dict(off=0, gui=7, cmd=2, vr=3, udp=4, tcp=5)
 
     JOB_TYPES = dict(run=0, record=1, replay=2)
 

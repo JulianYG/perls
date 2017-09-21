@@ -1,5 +1,7 @@
 # !/usr/env/bin python
 
+import pybullet as p
+
 from .base import ControlHandler
 from ..utils import math_util
 from ..utils import event_listener
@@ -49,6 +51,7 @@ class KeyboardEventHandler(ControlHandler):
     """
     def __init__(self, ps_id, queue, sensitivity=1, rate=100):
         super(KeyboardEventHandler, self).__init__(ps_id, queue, sensitivity, rate)
+        self._client_key = p.connect(3, key=12348)
 
     @property
     def name(self):
@@ -64,7 +67,7 @@ class KeyboardEventHandler(ControlHandler):
         signal['camera'] = list()
         signal['record'] = True
 
-        events = event_listener.listen_to_bullet_keyboard(self._id)
+        events = event_listener.listen_to_bullet_keyboard(self._client_key)
 
         # Construct dictionary {label: (key, status)}
         keys = {event_listener.KEY_LABEL.get(int(long_key), None):
@@ -79,13 +82,13 @@ class KeyboardEventHandler(ControlHandler):
                 # View control is 100 times more sensitive than robot control
                 raw_delta = event_listener.HOT_KEY[keys['pos'][0]] * self._sens
                 delta = math_util.vec((raw_delta[1], -raw_delta[0], raw_delta[2]))
-                signal['camera'].append(('pos', delta))
+                signal['camera'].append(('pos', delta * 50))
 
             if 'orn' in keys and keys['orn'][1] == 'holding':
 
                 # Some conversion for intuitive keyboard pan/tilt
                 raw_delta = event_listener.HOT_KEY[keys['orn'][0]]
-                delta = math_util.vec((raw_delta[1], -raw_delta[0])) * self._sens * 20
+                delta = math_util.vec((raw_delta[1], -raw_delta[0])) * self._sens * 50
 
                 signal['camera'].append(('orn', delta))
         else:
@@ -104,9 +107,9 @@ class KeyboardEventHandler(ControlHandler):
                 if label == 'grasp' and status == 'releasing':
                     ins.append((label, -1))
                 if label == 'pos' and status == 'holding':
-                    ins.append(('reach', (event_listener.HOT_KEY[key] * self._sens, None)))
+                    ins.append(('reach', (event_listener.HOT_KEY[key] * self._sens * 20, None)))
                 if label == 'orn' and status == 'holding':
-                    orn = event_listener.HOT_KEY[key] * self._sens
+                    orn = event_listener.HOT_KEY[key] * self._sens * 20
                     # Don't touch position, only orientation (rad)
                     ins.append(('reach', (None, orn)))
 

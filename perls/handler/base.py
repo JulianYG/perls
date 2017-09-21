@@ -8,7 +8,7 @@ class ControlHandler(object):
     Base class for control interrupt handling
     """
     def __init__(self, ps_id, queue, sensitivity, rate):
-        self._id = ps_id
+        # self._id = ps_id
         self._sens = sensitivity
         self._rate = rate
         self._handler = Timer(1. / rate, self.interrupt, None, queue)
