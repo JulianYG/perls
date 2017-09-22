@@ -156,11 +156,11 @@ class Checker(object):
             # reward = self._states['last_delta'] - curr_delta
             # self._states['last_delta'] = math_util.l2(goal - cube_pos)
 
-            reward = - math_util.l2(goal, cube_pos) - \
-                math_util.l2(robot.eef_pose[0], cube_pos)
+            reward = - math_util.l2(goal - cube_pos) - \
+                math_util.l2(robot.eef_pose[0] - cube_pos)
 
-            v_obj_eef = math_util.l2(cube_pos - robot.eef_pose[0])
-            v_goal_obj = math_util.l2(goal - cube_pos)
+            v_obj_eef = math_util.vec(cube_pos) - math_util.vec(robot.eef_pose[0])
+            v_goal_obj = math_util.vec(goal) - math_util.vec(cube_pos)
 
             reward += v_obj_eef.dot(v_goal_obj)
 
