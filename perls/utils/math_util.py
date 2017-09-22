@@ -199,6 +199,15 @@ def zero_vec(size):
     return np.zeros(size, dtype=np.float32)
 
 
+def one_vec(size):
+    """
+    Generate a vector of ones
+    :param size: desired size of the vector
+    :return: one vector with given size
+    """
+    return np.ones(size, dtype=np.float32)
+
+
 def clip_vec(vec, low, high):
     """
     Clip the vector

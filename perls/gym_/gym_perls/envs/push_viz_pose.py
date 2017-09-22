@@ -13,10 +13,6 @@ class PushVizPose(PushViz):
         super(PushVizPose, self).__init__(conf_path, max_step)
 
     @property
-    def observation_space(self):
-        return NotImplemented
-
-    @property
     def action_space(self):
         return PushViz.Space.Box(
             low=-math_util.vec((0.05, 0.05, 0.05)),

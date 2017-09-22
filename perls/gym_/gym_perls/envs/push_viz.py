@@ -13,6 +13,34 @@ class PushViz(PushCube):
         super(PushViz, self).__init__(conf_path, max_step)
 
     @property
+    def observation_space(self):
+        img_space = \
+            PushViz.Space.Box(
+                low=math_util.zero_vec((96, 96, 4)),
+                high=math_util.one_vec((96, 96, 4))
+            )
+
+        aux_space = \
+            PushViz.Space.Box(
+                low=math_util.concat((
+                    math_util.vec(self._robot.joint_specs['lower']),
+                    -math_util.vec(self._robot.joint_specs['max_vel']),
+                    goal_lower,
+                    (-1, -1, -1),
+                    (-1, -1, -1))
+                ),
+                high=math_util.concat((
+                    math_util.vec(self._robot.joint_specs['upper']),
+                    math_util.vec(self._robot.joint_specs['max_vel']),
+                    goal_upper,
+                    (1, 1, 1),
+                    (1, 1, 1))
+                )
+            )
+
+        return PushViz.Space.Tuple((img_space, aux_space))
+
+    @property
     def state(self):
         goal_pos = self._world.get_task_state()['goal']
 
