@@ -249,13 +249,21 @@ class Postprocess:
             # NOTE: we add the joint angles in state, joint vels in action (one timestep difference)
             if self.modality == 'vel':
                 state = np.concatenate([prev_joint_pos, prev_joint_vel,
-                                        prev_cube_pose_pos, prev_cube_pose_orn, goal_pos])
+                                        prev_cube_pose_pos, prev_cube_pose_orn, goal_pos,
+                                        # Additional states with prior knowledge
+                                        prev_cube_pose_pos - prev_eef_pose_pos,
+                                        goal_pos - prev_cube_pose_pos
+                                        ])
                 action = np.array(joint_vel_elem)
 
             # NOTE: we add the previous eef orientation here, and previous cube orientation
             elif self.modality == 'pose':
                 state = np.concatenate([prev_eef_pose_pos, prev_cube_pose_pos,
-                    prev_cube_pose_orn, goal_pos])
+                    prev_cube_pose_orn, goal_pos, 
+                    # Additional states with prior knowledge
+                    prev_cube_pose_pos - prev_eef_pose_pos,
+                    goal_pos - prev_cube_pose_pos
+                    ])
                 action = np.array(eef_pose_pos_elem) - np.array(prev_eef_pose_pos)
             else:
                 return

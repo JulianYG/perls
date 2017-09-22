@@ -68,7 +68,12 @@ class PushCubePose(PushCube):
         cube_pos, cube_orn = self._cube.get_pose(self._robot.uid, 0)
         goal_pos = self._world.get_task_state()['goal']
        
-        return math_util.concat((eef_pos, cube_pos, cube_orn, goal_pos))
+        return math_util.concat((
+            eef_pos, cube_pos, cube_orn, goal_pos,
+            # Additional states with prior knowledge
+            cube_pos - eef_pos,
+            goal_pos - eef_pos
+        ))
 
     def _step_helper(self, action):
 
