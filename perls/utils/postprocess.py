@@ -2,7 +2,7 @@ import logging
 
 import pybullet as p
 
-from .math_util import get_relative_pose
+from .math_util import get_relative_pose, vec
 from .io_util import parse_log, parse_config, PerlsLogger
 from ..control import Controller
 import numpy as np
@@ -251,8 +251,8 @@ class Postprocess:
                 state = np.concatenate([prev_joint_pos, prev_joint_vel,
                                         prev_cube_pose_pos, prev_cube_pose_orn, goal_pos,
                                         # Additional states with prior knowledge
-                                        math_util.vec(prev_cube_pose_pos) - math_util.vec(prev_eef_pose_pos),
-                                        math_util.vec(goal_pos) - math_util.vec(prev_cube_pose_pos)
+                                        vec(prev_cube_pose_pos) - vec(prev_eef_pose_pos),
+                                        vec(goal_pos) - vec(prev_cube_pose_pos)
                                         ])
                 action = np.array(joint_vel_elem)
 
@@ -261,8 +261,8 @@ class Postprocess:
                 state = np.concatenate([prev_eef_pose_pos, prev_cube_pose_pos,
                     prev_cube_pose_orn, goal_pos, 
                     # Additional states with prior knowledge
-                    math_util.vec(prev_cube_pose_pos) - math_util.vec(prev_eef_pose_pos),
-                    math_util.vec(goal_pos) - math_util.vec(prev_cube_pose_pos)
+                    vec(prev_cube_pose_pos) - vec(prev_eef_pose_pos),
+                    vec(goal_pos) - vec(prev_cube_pose_pos)
                     ])
                 action = np.array(eef_pose_pos_elem) - np.array(prev_eef_pose_pos)
             else:
