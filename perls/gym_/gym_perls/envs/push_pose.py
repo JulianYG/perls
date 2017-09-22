@@ -41,13 +41,17 @@ class PushCubePose(PushCube):
                 self._robot.pos - math_util.vec((1.5, 1.5, 1.5)),
                 table_lower,
                 math_util.vec((-1, -1, -1, -1)),
-                goal_lower)
+                goal_lower,
+                (-1, -1, -1),
+                (-1, -1, -1))
             ),
             high=math_util.concat((
                 self._robot.pos + math_util.vec((1.5, 1.5, 1.5)),
                 table_upper,
                 math_util.vec((1, 1, 1, 1)),
-                goal_upper)
+                goal_upper,
+                (1, 1, 1),
+                (1, 1, 1))
             )
         )
 
@@ -70,9 +74,10 @@ class PushCubePose(PushCube):
        
         return math_util.concat((
             eef_pos, cube_pos, cube_orn, goal_pos,
+            
             # Additional states with prior knowledge
-            cube_pos - eef_pos,
-            goal_pos - eef_pos
+            math_util.vec(cube_pos) - math_util.vec(eef_pos),
+            math_util.vec(goal_pos) - math_util.vec(cube_pos)
         ))
 
     def _step_helper(self, action):

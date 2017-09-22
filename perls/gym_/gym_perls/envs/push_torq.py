@@ -41,14 +41,18 @@ class PushCubeTorque(PushCube):
                 -math_util.vec(self._robot.joint_specs['max_vel']),
                 table_lower,
                 (-1, -1, -1, -1),
-                goal_lower)
+                goal_lower,
+                (-1, -1, -1),
+                (-1, -1, -1))
             ),
             high=math_util.concat((
                 math_util.vec(self._robot.joint_specs['upper']),
                 math_util.vec(self._robot.joint_specs['max_vel']),
                 table_upper,
                 (1, 1, 1, 1),
-                goal_upper)
+                goal_upper,
+                (1, 1, 1),
+                (1, 1, 1))
             )
         )
 
@@ -63,9 +67,16 @@ class PushCubeTorque(PushCube):
     def state(self):
         cube_pos, cube_orn = self._cube.get_pose(self._robot.uid, 0)
         goal_pos = self._world.get_task_state()['goal']
-        return math_util.concat((self._robot.joint_positions,
-                                 self._robot.joint_velocities,
-                                 cube_pos, cube_orn, goal_pos))
+
+        eef_pos, _ = math_util.get_relative_pose(
+            self._robot.eef_pose, self._robot.pose)
+        
+        return math_util.concat((
+            self._robot.joint_positions,
+            self._robot.joint_velocities,
+            cube_pos, cube_orn, goal_pos,
+            math_util.vec(cube_pos) - math_util.vec(eef_pos),
+            math_util.vec(goal_pos) - math_util.vec(cube_pos)))
 
     def _reset(self):
 
