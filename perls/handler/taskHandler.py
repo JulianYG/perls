@@ -166,17 +166,17 @@ class Checker(object):
 
             # If the cube bumps or falls, penalize
             if cube_pos[2] >= 0.69 or cube_pos[2] <= 0.6:
-                return -10
+                return -100
 
             # If robot/gripper collided with table, penalize
             for points in world.body['table_0'].contact:
                 for point in points:
                     if point['uid_other'] < 2:
-                        return -10
+                        return -100
 
             tool_pos = world.body['titan_0'].tool_pos
             if math_util.l2(tool_pos - cube_pos) > 0.3:
-                return -10
+                return -100
 
             # If cube is within the boundary, award
             # if goal[0] - .05 < cube_pos[0] < goal[0] + .05 \
