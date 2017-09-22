@@ -41,14 +41,18 @@ class PushCubeVel(PushCube):
                 -math_util.vec(self._robot.joint_specs['max_vel']),
                 table_lower,
                 (-1, -1, -1, -1),
-                goal_lower)
+                goal_lower,
+                (-1, -1, -1),
+                (-1, -1, -1))
             ),
             high=math_util.concat((
                 math_util.vec(self._robot.joint_specs['upper']),
                 math_util.vec(self._robot.joint_specs['max_vel']),
                 table_upper,
                 (1, 1, 1, 1),
-                goal_upper)
+                goal_upper,
+                (1, 1, 1),
+                (1, 1, 1))
             )
         )
 

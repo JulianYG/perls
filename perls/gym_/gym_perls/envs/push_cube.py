@@ -41,7 +41,7 @@ class PushCube(PerlsEnv):
         """
         Get the min and max reward range as a tuple
         """
-        return (-1, 1.5)
+        return (-10.1, 10.)
 
     def _reset(self):
         """
