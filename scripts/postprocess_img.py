@@ -53,7 +53,7 @@ if __name__ == "__main__":
     print(all_actions.shape)
 
     if pp.name != 'pose' and pp.name != 'vel':
-        np.savez("velocity.npz", imgs=all_images, auxs=all_states, actions=all_actions)
+        np.savez("velocity_new.npz", imgs=all_images, auxs=all_states, actions=all_actions)
         shutil.rmtree("tmp", ignore_errors=True)
     else:
         np.savez('{}.npz'.format(pp.name), states=all_states, actions=all_actions)

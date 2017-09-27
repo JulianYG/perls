@@ -1,6 +1,17 @@
 #!/usr/bin/env python
 
 import sys, time
+
+try:
+    import moveit_commander
+    from moveit_msgs.msg import (
+        Grasp,
+        GripperTranslation,
+        DisplayTrajectory
+    )
+except ImportError:
+    print('Problems with moveit!')
+
 try:
     import rospy
     import intera_interface as iif
@@ -18,13 +29,6 @@ try:
         SolvePositionIKRequest,
         SolvePositionFK,
         SolvePositionFKRequest
-    )
-
-    import moveit_commander
-    from moveit_msgs.msg import (
-        Grasp,
-        GripperTranslation,
-        DisplayTrajectory
     )
 
     from std_msgs.msg import Header

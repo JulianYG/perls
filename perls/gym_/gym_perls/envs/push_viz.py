@@ -14,6 +14,19 @@ class PushViz(PushCube):
 
     @property
     def observation_space(self):
+
+        _, table_orn = self._table.pose
+
+        goal_abs_lower = math_util.vec(
+            (self._cube.pos[0] + 0.25, self._cube.pos[1] - 0.25, 0.641))
+        goal_abs_upper = math_util.vec(
+            (self._cube.pos[0] + 0.45, self._cube.pos[1] + 0.25, 0.642))
+
+        goal_upper, _ = math_util.get_relative_pose(
+            (goal_abs_upper, table_orn), self._robot.pose)
+        goal_lower, _ = math_util.get_relative_pose(
+            (goal_abs_lower, table_orn), self._robot.pose)
+
         img_space = \
             PushViz.Space.Box(
                 low=math_util.zero_vec((96, 96, 4)),

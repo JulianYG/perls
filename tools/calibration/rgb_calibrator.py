@@ -21,7 +21,7 @@ import rosparam
 import intera_interface
 import time
 import tf.transformations as ttf
-sys.path.append(os.path.abspath(os.path.join(__file__, '../../../perls/pyrobots')))
+sys.path.append(os.path.abspath(os.path.join(__file__, '../../../perls/robot')))
 
 from sawyer import SawyerArm
 
@@ -137,7 +137,7 @@ class KinectRGBCalibrator():
     
     def match_eval(self):
 
-    	LENGTH = 0.19406304511449886
+        LENGTH = 0.19406304511449886
 
         def mouse_callback(event, x, y, flags, params):
             if event == 1:
@@ -207,8 +207,8 @@ class KinectRGBCalibrator():
         counts = []
         itrs = np.arange(0, 30.0, 5.0)
         for j in range(len(itrs)):
-        	errors.append(np.zeros((3,)))
-        	counts.append(0)
+            errors.append(np.zeros((3,)))
+            counts.append(0)
         for i, pos in enumerate(calibration_grid):
             print("{} / 9".format(i + 1))
             target = origin + pos
@@ -262,12 +262,12 @@ class KinectRGBCalibrator():
                         ground_truth = np.array(self._arm.tool_pose[0], dtype=np.float32)
                         errors[j] += np.sqrt((estimated_gripper_pos - ground_truth) * (estimated_gripper_pos - ground_truth))
                     else:
-                    	not_found = not_found + 1
+                        not_found = not_found + 1
 
                     self._listener.release(self._frames)
 
         for j, shift in enumerate(itrs):
-        	print("shift: {}, err avg: {}".format(shift, errors[j] / counts[j]))
+            print("shift: {}, err avg: {}".format(shift, errors[j] / counts[j]))
 
     def turn_off(self):
         self._device.stop()

@@ -278,7 +278,7 @@ class Postprocess:
                 ### Transformations (cropping and ressizing) ###
                 rgbd = rgbd[:96, 27:123, :] # 96 x 96 cropping
                 # rgbd = cv2.resize(rgbd, (64, 64)) # 64 x 64 resizing
-
+                # print(rgbd.shape, np.max(rgbd), np.min(rgbd))
                 imgs.append(rgbd)
                 states.append(
                     np.concatenate([

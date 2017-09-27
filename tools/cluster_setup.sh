@@ -101,3 +101,8 @@ pip install tensorflow-gpu==1.2.0
 ln -s /vision/u/amandlek/installed_libraries/perls /vision/u/amandlek/installed_libraries/anaconda2/envs/imitation/lib/python3.4/site-packages/perls
 
 
+
+# Also create py27 env for robot
+conda create -n robot python=2.7 anaconda
+
+
