@@ -89,7 +89,6 @@ class Postprocess:
                                   'q6', 'q7', 'q8', 'q9', 'q10', 'q11'])
         """
         log = np.array(parse_log(fname, verbose=self.verbose))
-        print(log.shape)
         col_inds = sorted(self.col_names_dict.values())
 
         if cols is not None:
@@ -272,7 +271,7 @@ class Postprocess:
                 states.append(state)
                 
             # RGBD
-            else:
+            elif self.state_dim == 'vision':
                 rgbd = self.display.get_camera_image('rgbd')
 
                 ### Transformations (cropping and ressizing) ###
@@ -282,8 +281,10 @@ class Postprocess:
                 imgs.append(rgbd)
                 states.append(
                     np.concatenate([
-                        prev_joint_pos, prev_joint_vel, goal_pos
-                        ]))
+                        prev_joint_pos, prev_joint_vel, goal_pos,
+                        vec(prev_cube_pose_pos) - vec(prev_eef_pose_pos),
+                        vec(goal_pos) - vec(prev_cube_pose_pos)
+                    ]))
                 if self.use_display:
                     if disp_im is None:
                         disp_im = plt.imshow(rgbd[:, :, :3])
@@ -294,8 +295,6 @@ class Postprocess:
 
             actions.append(action)
             
-            # timestamps.append(timestamp_elem)
-
             # remember last positions for filtering and relative stuff
             prev_joint_pos = joint_pos_elem
             prev_joint_vel = joint_vel_elem
