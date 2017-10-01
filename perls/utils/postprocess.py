@@ -271,7 +271,7 @@ class Postprocess:
                 states.append(state)
                 
             # RGBD
-            elif self.state_dim == 'vision':
+            else:
                 rgbd = self.display.get_camera_image('rgbd')
 
                 ### Transformations (cropping and ressizing) ###
@@ -280,10 +280,9 @@ class Postprocess:
                 # print(rgbd.shape, np.max(rgbd), np.min(rgbd))
                 imgs.append(rgbd)
                 states.append(
+                    # No additional states with prior knowledge!!!
                     np.concatenate([
-                        prev_joint_pos, prev_joint_vel, goal_pos,
-                        vec(prev_cube_pose_pos) - vec(prev_eef_pose_pos),
-                        vec(goal_pos) - vec(prev_cube_pose_pos)
+                        prev_joint_pos, prev_joint_vel, goal_pos
                     ]))
                 if self.use_display:
                     if disp_im is None:
