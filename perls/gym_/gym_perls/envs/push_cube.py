@@ -41,7 +41,7 @@ class PushCube(PerlsEnv):
         """
         Get the min and max reward range as a tuple
         """
-        return (-10.1, 10.)
+        return (0, 2)
 
     def _reset(self):
         """
@@ -71,9 +71,12 @@ class PushCube(PerlsEnv):
         eef_pos, _ = math_util.get_relative_pose(
             self._robot.eef_pose, self._robot.pose)
 
+        cube_vel = self._cube.v
+
         return math_util.concat((self._robot.joint_positions,
                                  self._robot.joint_velocities,
-                                 #cube_pos, cube_orn, goal_pos, 
+                                 cube_pos, cube_orn, cube_vel,
+                                 # goal_pos, 
                                  #math_util.vec(cube_pos) - math_util.vec(eef_pos),
                                  math_util.vec(goal_pos) - math_util.vec(cube_pos)))
 
