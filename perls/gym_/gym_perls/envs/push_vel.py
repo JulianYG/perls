@@ -41,7 +41,7 @@ class PushCubeVel(PushCube):
                 -math_util.vec(self._robot.joint_specs['max_vel']),
                 table_lower,
                 (-1, -1, -1, -1),
-                (0, 0, 0),
+                (-1, -1, -1),
                 #goal_lower,
                 #(-1, -1, -1),
                 (.25, -.25, -.1),
