@@ -31,6 +31,9 @@ def seed(s=42):
     np.random.seed(s)
 
 
+def exp(n):
+    return np.exp(n)
+
 """
 Scalar Calculation / Processing
 """
