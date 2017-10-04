@@ -263,6 +263,7 @@ def listen_to_redis(queue):
         # parses into AST (Source Tree),
         # only evaluates/returns if it's literal,
         # so no safety issue
-        signal_dic = ast.literal_eval(item)
+        data = str(item.decode('utf-8'))
+        signal_dic = ast.literal_eval(data)
         events.append(signal_dic)
     return events

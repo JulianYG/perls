@@ -350,7 +350,6 @@ class Controller(object):
 
                     # TODO: GUI frame allow user to interact with the world
                     # dynamically, and vividly
-
                 if success:
                     self.stop(server_id, 0)
                     logging.info('Task success! Exiting run {}...'.format(r))

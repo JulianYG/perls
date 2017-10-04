@@ -23,11 +23,20 @@ CAMERA_PARAM_DIR = os.path.abspath(pjoin(os.path.dirname(__file__),
 try:
     if sys.version_info >= (2, 7):
         with open(pjoin(CAMERA_PARAM_DIR, 'IR_intrinsics.p'), 'rb') as f:
-            intrinsics = pickle.load(f, encoding='latin1')
+            if sys.version_info[0] < 3:
+                intrinsics = pickle.load(f)
+            else:
+                intrinsics = pickle.load(f, encoding='latin1')
         with open(pjoin(CAMERA_PARAM_DIR, 'robot_IR_rotation.p'), 'rb') as f:
-            rotation = pickle.load(f, encoding='latin1')
+            if sys.version_info[0] < 3:
+                rotation = pickle.load(f)
+            else:
+                rotation = pickle.load(f, encoding='latin1')
         with open(pjoin(CAMERA_PARAM_DIR, 'robot_IR_translation.p'), 'rb') as f:
-            translation = pickle.load(f, encoding='latin1')
+            if sys.version_info[0] < 3:
+                translation = pickle.load(f)
+            else:
+                translation = pickle.load(f, encoding='latin1')
     else:
         with open(pjoin(CAMERA_PARAM_DIR, 'IR_intrinsics.p'), 'rb') as f:
             intrinsics = pickle.load(f)
