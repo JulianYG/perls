@@ -49,9 +49,9 @@ class PushCubeVel(PushCube):
         #         (.45, .25, .1)))
         # )
 
-        # return PushViz.Space.Tuple((robot_space, cube_space))
+        # return PushCube.Space.Tuple((robot_space, cube_space))
 
-        return PushViz.Space.Box(
+        return PushCube.Space.Box(
             low=math_util.concat((
                 math_util.vec(self._robot.joint_specs['lower']),
                 -math_util.vec(self._robot.joint_specs['max_vel']),
