@@ -25,29 +25,50 @@ class PushCubeVel(PushCube):
         table_lower, _ = math_util.get_relative_pose(
             (table_abs_lower_bound, table_orn), self._robot.pose)
 
-        robot_space = PushCube.Space.Box(
+        # robot_space = PushCube.Space.Box(
+        #     low=math_util.concat((
+        #         math_util.vec(self._robot.joint_specs['lower']),
+        #         -math_util.vec(self._robot.joint_specs['max_vel']))),
+        #     high=math_util.concat((
+        #         math_util.vec(self._robot.joint_specs['upper']),
+        #         math_util.vec(self._robot.joint_specs['max_vel']))))
+
+
+
+        # cube_space = PushCube.Space.Box(
+        #     low=math_util.concat((
+        #         table_lower,    # pos
+        #         (-1, -1, -1, -1),   # orn
+        #         (-1, -1, -1)    # vel
+        #         (.25, -.25, -.1)
+        #         )),
+        #     high=math_util.concat((
+        #         table_upper,
+        #         (1, 1, 1, 1),
+        #         (1, 1, 1),
+        #         (.45, .25, .1)))
+        # )
+
+        # return PushViz.Space.Tuple((robot_space, cube_space))
+
+        return PushViz.Space.Box(
             low=math_util.concat((
                 math_util.vec(self._robot.joint_specs['lower']),
-                -math_util.vec(self._robot.joint_specs['max_vel']))),
-            high=math_util.concat((
-                math_util.vec(self._robot.joint_specs['upper']),
-                math_util.vec(self._robot.joint_specs['max_vel']))))
-
-        cube_space = PushCube.Space.Box(
-            low=math_util.concat((
+                -math_util.vec(self._robot.joint_specs['max_vel']),
                 table_lower,    # pos
                 (-1, -1, -1, -1),   # orn
-                (-1, -1, -1)    # vel
+                (-1, -1, -1),    # vel
                 (.25, -.25, -.1)
-                )),
+            )),
             high=math_util.concat((
+                math_util.vec(self._robot.joint_specs['lower']),
+                math_util.vec(self._robot.joint_specs['max_vel']),
                 table_upper,
                 (1, 1, 1, 1),
                 (1, 1, 1),
-                (.45, .25, .1)))
+                (.45, .25, .1)
+            ))
         )
-
-        return PushViz.Space.Tuple((robot_space, cube_space))
 
     @property
     def action_space(self):
