@@ -74,11 +74,16 @@ class PushCube(PerlsEnv):
         cube_vel = self._cube.v
 
         return math_util.concat((self._robot.joint_positions,
-                                 self._robot.joint_velocities)),\
-               math_util.concat((cube_pos, cube_orn, cube_vel,
-                                 # goal_pos, 
-                                 #math_util.vec(cube_pos) - math_util.vec(eef_pos),
+                                 self._robot.joint_velocities,
+                                 cube_pos, cube_orn, cube_vel,
                                  math_util.vec(goal_pos) - math_util.vec(cube_pos)))
+
+        # return math_util.concat((self._robot.joint_positions,
+        #                          self._robot.joint_velocities)),\
+        #        math_util.concat((cube_pos, cube_orn, cube_vel,
+        #                          # goal_pos, 
+        #                          #math_util.vec(cube_pos) - math_util.vec(eef_pos),
+        #                          math_util.vec(goal_pos) - math_util.vec(cube_pos)))
 
     def _step_helper(self, action):
         return NotImplemented
