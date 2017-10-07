@@ -238,7 +238,7 @@ class HTCVive(object):
                 ])
             )
             # calibrated_pos = tuple((pos[0], -pos[2], pos[1]))
-            calibrated_pos = tuple((pos[0] + 1.3, -pos[2]- 1.0, pos[1]- 0.42))
+            calibrated_pos = tuple((pos[0] + 1.3, - pos[2] + 0.17, pos[1] - 0.42))
 
             return calibrated_pos, tuple(orn)
 
