@@ -7,7 +7,7 @@ from ..robot.sawyer import SawyerArm
 
 try:
     import rospy
-    import moveit_commander
+    # import moveit_commander
 
 except ImportError:
     pass
@@ -26,7 +26,7 @@ class InteraEngine(RealStateEngine):
 
         self._uids = dict()
 
-        moveit_commander.roscpp_initialize(sys.argv)
+        # moveit_commander.roscpp_initialize(sys.argv)
         self._robot = SawyerArm(plan)
         # self._virtual_scene = moveit_commander.PlanningSceneInterface()
         # self._group = moveit_commander.MoveGroupCommander("right_arm")

@@ -35,6 +35,7 @@ class PerlsEnv(gym.Env):
         the configuration file, default is 'gym-disp.xml'
         """
         conf = io_util.parse_config(conf_path)[0]
+
         self._step_count = 0
         self._align_iters = 1
         self._max_step = max_step

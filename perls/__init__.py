@@ -9,7 +9,8 @@ from .utils import (math_util,
                     plot_util,
                     time_util,
                     postprocess,
-                    event_listener)
+                    event_listener
+)
 
 from .control import Controller
 
