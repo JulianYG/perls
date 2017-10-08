@@ -21,7 +21,7 @@ register(
 register(
     id='push-pose-gui-v0',
     entry_point='perls.gym_.gym_perls.envs:PushCubePose',
-    kwargs=dict(conf_ptah=osp.abspath(osp.join(__file__, '../../../configs/gym-disp.xml')),
+    kwargs=dict(conf_path=osp.abspath(osp.join(__file__, '../../../configs/gym-disp.xml')),
                 max_step=300),
 )
 

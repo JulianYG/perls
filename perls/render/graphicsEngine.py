@@ -287,7 +287,6 @@ class BulletRenderEngine(GraphicsEngine):
         if self._job == 'replay':
             self._server_id = p.connect(p.GUI)
         elif self._frame != 'vr':
-            print(self._disp_args[0], 'fuck' * 200)
             self._server_id = p.connect(*self._disp_args)
         else:
             self._server_id = p.connect(self._disp_args[0])

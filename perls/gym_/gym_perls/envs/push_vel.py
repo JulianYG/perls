@@ -25,36 +25,10 @@ class PushCubeVel(PushCube):
         table_lower, _ = math_util.get_relative_pose(
             (table_abs_lower_bound, table_orn), self._robot.pose)
 
-        # robot_space = PushCube.Space.Box(
-        #     low=math_util.concat((
-        #         math_util.vec(self._robot.joint_specs['lower']),
-        #         -math_util.vec(self._robot.joint_specs['max_vel']))),
-        #     high=math_util.concat((
-        #         math_util.vec(self._robot.joint_specs['upper']),
-        #         math_util.vec(self._robot.joint_specs['max_vel']))))
-
-
-
-        # cube_space = PushCube.Space.Box(
-        #     low=math_util.concat((
-        #         table_lower,    # pos
-        #         (-1, -1, -1, -1),   # orn
-        #         (-1, -1, -1)    # vel
-        #         (.25, -.25, -.1)
-        #         )),
-        #     high=math_util.concat((
-        #         table_upper,
-        #         (1, 1, 1, 1),
-        #         (1, 1, 1),
-        #         (.45, .25, .1)))
-        # )
-
-        # return PushCube.Space.Tuple((robot_space, cube_space))
-
         return PushCube.Space.Box(
             low=math_util.concat((
                 math_util.vec(self._robot.joint_specs['lower']),
-                -math_util.vec(self._robot.joint_specs['max_vel']),
+                -math_util.vec(self._robot.joint_specs['max_vel']) * 0.3,
                 table_lower,    # pos
                 (-1, -1, -1, -1),   # orn
                 (-1, -1, -1),    # vel
@@ -62,7 +36,7 @@ class PushCubeVel(PushCube):
             )),
             high=math_util.concat((
                 math_util.vec(self._robot.joint_specs['lower']),
-                math_util.vec(self._robot.joint_specs['max_vel']),
+                math_util.vec(self._robot.joint_specs['max_vel']) * 0.3,
                 table_upper,
                 (1, 1, 1, 1),
                 (1, 1, 1),
@@ -73,8 +47,8 @@ class PushCubeVel(PushCube):
     @property
     def action_space(self):
         return PushCube.Space.Box(
-            low=-math_util.vec(self._robot.joint_specs['max_vel']),
-            high=math_util.vec(self._robot.joint_specs['max_vel'])
+            low=-math_util.vec(self._robot.joint_specs['max_vel']) * 0.3,
+            high=math_util.vec(self._robot.joint_specs['max_vel']) * 0.3
         )
 
     def _step_helper(self, action):

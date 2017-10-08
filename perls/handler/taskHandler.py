@@ -99,8 +99,11 @@ class Checker(object):
             #     'uniform')
 
             # Fixed goal
-            box_center = math_util.vec((
-                cube.pos[0] + 0.33, cube.pos[1] - 0.23, 0.641))
+            # box_center = math_util.vec((
+            #     cube.pos[0] + 0.33, cube.pos[1] - 0.23, 0.641))
+
+            # To prevent cube pose from last demo affects this one..
+            box_center = math_util.vec((0.63, -0.43, 0.641))
 
             robot_pose = world.body['titan_0'].pose
             goal_pos, _ = math_util.get_relative_pose(
@@ -149,51 +152,15 @@ class Checker(object):
             cube_pos = world.body['cube_0'].pos
             goal = self._states['goal_abs']
 
-            # dist_gripper = math_util.rms(robot.tool_pos - cube.pos)
-            # dist_goal = math_util.rms(cube.pos - self._states['goal'])
-
-            # Scale according to the env's initial states
-            # dist_gripper_norm = math_util.l2((0.03,) * 3)
-
             curr_delta = math_util.l2(goal - cube_pos)
-
-            # reward = self._states['last_delta'] - curr_delta
-            # self._states['last_delta'] = math_util.l2(goal - cube_pos)
-
-            # reward = - math_util.l2(goal - cube_pos) - \
-            #     math_util.l2(robot.eef_pose[0] - cube_pos)
-
             v_obj_eef = math_util.vec(cube_pos) - math_util.vec(robot.eef_pose[0])
             v_goal_obj = math_util.vec(goal) - math_util.vec(cube_pos)
-
-            # reward += v_obj_eef.dot(v_goal_obj)
-
-            # If the cube bumps or falls, penalize
-            # if cube_pos[2] >= 0.69 or cube_pos[2] <= 0.6:
-            #     return -100
-
-            # If robot/gripper collided with table, penalize
-            # for points in world.body['table_0'].contact:
-            #     for point in points:
-            #         if point['uid_other'] < 2:
-            #             return -100
-
-            # tool_pos = world.body['titan_0'].tool_pos
-            # if math_util.l2(tool_pos - cube_pos) > 0.3:
-            #     return -100
-
-            # If cube is within the boundary, award
-            # if goal[0] - .05 < cube_pos[0] < goal[0] + .05 \
-            #    and goal[1] - .05 < cube_pos[1] < goal[1] + .05:
-            #     return reward + 10
 
             reached = 0.
             if goal[0] - .05 < cube_pos[0] < goal[0] + .05 \
                and goal[1] - .05 < cube_pos[1] < goal[1] + .05:
                reached = 1.
-            reward = reached + math_util.exp(-15 * math_util.l2(v_goal_obj) ** 2)
-            print( reward)
-            return reward
+            return reached + math_util.exp(-15 * math_util.l2(v_goal_obj) ** 2)
 
     def check(self, world):
         """

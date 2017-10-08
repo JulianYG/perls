@@ -10,7 +10,7 @@ class PushCubePose(PushCube):
     """
     def __init__(self, conf_path, max_step):
 
-        super(PushCubePose, self).__init__(conf_path)
+        super(PushCubePose, self).__init__(conf_path, max_step)
         self._action = math_util.zero_vec(3)
 
     @property
