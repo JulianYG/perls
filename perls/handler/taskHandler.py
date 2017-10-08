@@ -130,8 +130,6 @@ class Checker(object):
             # Use this as a mark
             robot.grasp(1)
 
-            self._states['last_delta'] = math_util.l2(box_center - cube.pos)
-
             logging.info('Initialize finished.')
             logging.info('Initial joint positions: {}'.
                     format(robot.joint_positions))
@@ -160,7 +158,7 @@ class Checker(object):
             if goal[0] - .05 < cube_pos[0] < goal[0] + .05 \
                and goal[1] - .05 < cube_pos[1] < goal[1] + .05:
                reached = 1.
-            return reached + math_util.exp(-15 * math_util.l2(v_goal_obj) ** 2)
+            return reached + math_util.exp(-40 * math_util.l2(v_goal_obj) ** 2)
 
     def check(self, world):
         """
