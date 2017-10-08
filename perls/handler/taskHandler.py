@@ -122,15 +122,11 @@ class Checker(object):
             robot = world.body['titan_0']
 
             # Initializes the gripper next to the cube
-            initial_gripper_pos = \
-                (cube_pos[0] - 0.1, cube_pos[1], cube_pos[2] + 0.03)
-            
+            initial_gripper_pos = (.2, -.2, .695)
             robot.tool_pos = (initial_gripper_pos, 300)
 
             # Use this as a mark
             robot.grasp(1)
-
-            self._states['last_delta'] = math_util.l2(box_center - cube.pos)
 
             logging.info('Initialize finished.')
             logging.info('Initial joint positions: {}'.
@@ -169,7 +165,6 @@ class Checker(object):
         :return: Boolean done, boolean success
         """
         if self._name == 'push_sawyer':
-
             cube_pos = world.body['cube_0'].pos
 
             # If the cube falls, fail directly
@@ -198,7 +193,6 @@ class Checker(object):
                     self._log_file.write('{}\n'.format(
                         ' '.join(str(x) for x in self._states['goal'])))
                 return True, True
-
         return False, False
 
     def stop(self):
