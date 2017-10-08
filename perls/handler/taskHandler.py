@@ -171,16 +171,16 @@ class Checker(object):
             if cube_pos[2] <= 0.6:
                 return True, False
 
-            # If collided with table, fail
-            for points in world.body['table_0'].contact:
-                for point in points:
-                    if point['uid_other'] < 2:
-                        return True, False
+            # # If collided with table, fail
+            # for points in world.body['table_0'].contact:
+            #     for point in points:
+            #         if point['uid_other'] < 2:
+            #             return True, False
 
-            # If gripper too far away from the cube, fail
-            tool_pos = world.body['titan_0'].tool_pos
-            if math_util.l2(tool_pos - cube_pos) > 0.3:
-                return True, False
+            # # If gripper too far away from the cube, fail
+            # tool_pos = world.body['titan_0'].tool_pos
+            # if math_util.l2(tool_pos - cube_pos) > 0.3:
+            #     return True, False
 
             # If cube is within the boundary, success
             goal = self._states['goal_abs']
