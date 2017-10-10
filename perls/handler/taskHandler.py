@@ -103,7 +103,7 @@ class Checker(object):
             #     cube.pos[0] + 0.33, cube.pos[1] - 0.23, 0.641))
 
             # To prevent cube pose from last demo affects this one..
-            box_center = math_util.vec((0.63, -0.43, 0.641))
+            box_center = math_util.vec((0.63, -0.43, 0.641)) # (0.4, -0.2, 0.641)
 
             robot_pose = world.body['titan_0'].pose
             goal_pos, _ = math_util.get_relative_pose(
@@ -122,7 +122,7 @@ class Checker(object):
             robot = world.body['titan_0']
 
             # Initializes the gripper next to the cube
-            initial_gripper_pos = (.2, -.2, .695)
+            initial_gripper_pos = (.22, -.2, .67)
             robot.tool_pos = (initial_gripper_pos, 300)
 
             # Use this as a mark
@@ -156,7 +156,9 @@ class Checker(object):
             if goal[0] - .05 < cube_pos[0] < goal[0] + .05 \
                and goal[1] - .05 < cube_pos[1] < goal[1] + .05:
                reached = 1.
-            return reached + math_util.exp(-40 * math_util.l2(v_goal_obj) ** 2)
+
+            reward = reached + math_util.exp(-50 * math_util.l2(v_goal_obj) ** 2)
+            return reward
 
     def check(self, world):
         """
@@ -177,10 +179,10 @@ class Checker(object):
             #         if point['uid_other'] < 2:
             #             return True, False
 
-            # # If gripper too far away from the cube, fail
-            # tool_pos = world.body['titan_0'].tool_pos
-            # if math_util.l2(tool_pos - cube_pos) > 0.3:
-            #     return True, False
+            # If gripper too far away from the cube, fail
+            tool_pos = world.body['titan_0'].tool_pos
+            if math_util.l2(tool_pos - cube_pos) > 0.3:
+                return True, False
 
             # If cube is within the boundary, success
             goal = self._states['goal_abs']

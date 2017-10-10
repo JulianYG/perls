@@ -28,7 +28,7 @@ class PushCubeVel(PushCube):
         return PushCube.Space.Box(
             low=math_util.concat((
                 math_util.vec(self._robot.joint_specs['lower']),
-                -math_util.vec(self._robot.joint_specs['max_vel']) * 0.3,
+                -math_util.vec(self._robot.joint_specs['max_vel']),
                 table_lower,    # pos
                 (-1, -1, -1, -1),   # orn
                 (-1, -1, -1),    # vel
@@ -36,7 +36,7 @@ class PushCubeVel(PushCube):
             )),
             high=math_util.concat((
                 math_util.vec(self._robot.joint_specs['lower']),
-                math_util.vec(self._robot.joint_specs['max_vel']) * 0.3,
+                math_util.vec(self._robot.joint_specs['max_vel']),
                 table_upper,
                 (1, 1, 1, 1),
                 (1, 1, 1),
@@ -47,10 +47,11 @@ class PushCubeVel(PushCube):
     @property
     def action_space(self):
         return PushCube.Space.Box(
-            low=-math_util.vec(self._robot.joint_specs['max_vel']) * 0.3,
-            high=math_util.vec(self._robot.joint_specs['max_vel']) * 0.3
+            low=-math_util.vec((-1,)*7),
+            high=math_util.vec((1,)*7)
         )
 
     def _step_helper(self, action):
+        # Note that action is uniformly scaled in range of [-1, 1]
         # Use velocity control
-        self._robot.joint_velocities = action
+        self._robot.joint_velocities = action * math_util.vec(self._robot.joint_specs['max_vel'])

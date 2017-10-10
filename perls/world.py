@@ -139,7 +139,7 @@ class World(object):
         for body in self._bodies.values():
             body.reset()
             
-        self._engine.hold(500)
+        self._engine.hold(1000)
         
         # Fine tune the initial environment setup
         self._checker.initialize(self)
