@@ -288,6 +288,7 @@ class BulletRenderEngine(GraphicsEngine):
             self._server_id = p.connect(p.GUI)
         elif self._frame != 'vr':
             self._server_id = p.connect(*self._disp_args)
+            # self._server_id = p.connect(p.SHARED_MEMORY, 12348)
         else:
             self._server_id = p.connect(self._disp_args[0])
 
