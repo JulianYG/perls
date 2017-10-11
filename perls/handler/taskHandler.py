@@ -89,8 +89,8 @@ class Checker(object):
 
             table = world.body['table_0']
             table.dynamics = {-1: dict(lateral_friction=1.0)}
-            # table.set_texture(
-            #     -1, 'table', pjoin(__file__, '../../asset/table.png'))
+            table.set_texture(
+                -1, 'table', pjoin(__file__, '../../asset/table.png'))
 
             # Random goal
             # box_center = math_util.rand_vec(
