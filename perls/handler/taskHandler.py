@@ -180,9 +180,9 @@ class Checker(object):
             #             return True, False
 
             # If gripper too far away from the cube, fail
-            tool_pos = world.body['titan_0'].tool_pos
-            if math_util.l2(tool_pos - cube_pos) > 0.3:
-                return True, False
+            # tool_pos = world.body['titan_0'].tool_pos
+            # if math_util.l2(tool_pos - cube_pos) > 0.3:
+            #     return True, False
 
             # If cube is within the boundary, success
             goal = self._states['goal_abs']
@@ -194,7 +194,7 @@ class Checker(object):
                     # as bookkeeping for post-processing
                     self._log_file.write('{}\n'.format(
                         ' '.join(str(x) for x in self._states['goal'])))
-                return True, True
+                return False, True
         return False, False
 
     def stop(self):
