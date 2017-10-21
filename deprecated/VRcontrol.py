@@ -1,6 +1,5 @@
 # !/usr/bin/env python
-import intera_interface.cfg.\
-    SawyerVelocityJointTrajectoryActionServerConfig as cfg
+import intera_interface.cfg.SawyerVelocityJointTrajectoryActionServerConfig as cfg
 import math
 import numpy as np
 
@@ -13,6 +12,8 @@ import intera_control
 from std_msgs.msg import UInt16
 from Queue import Queue
 import sys
+
+from IPython import embed
 
 # TODO: the following applies to the online_trajectory.py file
 # TODO: restructure code to:
@@ -39,6 +40,8 @@ class RobotController(object):
         :param redis_channel: The redis channel name to use to interface with the controller.
         """
 
+        embed()
+
         # the name of the limb
         self.limb_name = limb_name
 
@@ -46,7 +49,7 @@ class RobotController(object):
         self.limb = intera_interface.Limb(limb_name)
         self.cuff = intera_interface.Cuff(limb=limb_name)
 
-        self._action_name = rospy.get_name()
+        self.node_name = rospy.get_name()
         self._enable = intera_interface.RobotEnable()
 
         # control rate in Hz
@@ -62,6 +65,7 @@ class RobotController(object):
         self.limb.set_joint_position_speed(0.3)
 
         # TODO: look at where these are stored, should we change these settings?
+        # TODO: what is this????
         ### Configuration settings. ###
         self._dyn = Server(cfg, lambda config, level: config)
         self._path_thresh = dict()
@@ -70,6 +74,9 @@ class RobotController(object):
             self._path_thresh[jnt] = path_error
 
         # Create PID controllers per joint.
+
+        # Currently, it is a P-controller with gain 2. 
+        
         # print("PID Controllers")
         self._pid = dict()
         for jnt in self.joint_names:
@@ -317,7 +324,7 @@ class RobotController(object):
                 # some error checking
                 if self.limb.has_collided() or not self.robot_is_enabled() or self.cuff.cuff_button():
                     rospy.logerr("{0}: Robot arm in Error state. Stopping execution.".format(
-                        self._action_name))
+                        self.node_name))
                     self.limb.exit_control_mode()
                     return False
 
@@ -328,7 +335,7 @@ class RobotController(object):
                 for jnt, delta in zip(self.joint_names, deltas):
                     if math.fabs(delta) >= self._path_thresh[jnt] >= 0.0:
                         rospy.logerr("%s: Exceeded Error Threshold on %s: %s" %
-                                     (self._action_name, jnt, str(delta),))
+                                     (self.node_name, jnt, str(delta),))
                         self.limb.exit_control_mode()
                         return False
                     velocities[jnt] = self._pid[jnt].compute_output(delta)

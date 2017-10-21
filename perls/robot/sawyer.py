@@ -504,6 +504,11 @@ class SawyerArm(object):
             if not self._gripper.is_calibrated():
                 self._gripper.calibrate()
 
+    def neutral(self):
+
+        self._limb.move_to_neutral()
+
+
     def reset(self):
         """
         Reset the robot and move to rest pose
