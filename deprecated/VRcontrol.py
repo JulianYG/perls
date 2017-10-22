@@ -255,7 +255,7 @@ class RobotController(object):
         :return: the current error in the joint positions
         """
         current = self._get_current_position()
-        error = set_point - current
+        error = current - set_point
         return error
 
     def control_loop(self):
@@ -327,8 +327,8 @@ class RobotController(object):
                     return False
 
                 # use PID controllers to control the arm via joint velocities
-                velocities = dict()
-                # torques = dict()
+                # velocities = dict()
+                torques = dict()
                 deltas = self._get_current_error(inter_pos)
 
                 for jnt, delta in zip(self.joint_names, deltas):
@@ -340,14 +340,14 @@ class RobotController(object):
 
                     ### This is where we apply the PID controller ###
                     # velocities[jnt] = self._pid[jnt].compute_output(delta)
-                    velocities[jnt] = self.kp[jnt] * delta
-                    # torques[jnt] = self.kp[jnt] * delta + self.kd[jnt] * self.limb.joint_velocity(jnt)
+                    # velocities[jnt] = self.kp[jnt] * delta
+                    torques[jnt] = - self.kp[jnt] * delta - self.kd[jnt] * self.limb.joint_velocity(jnt)
 
-                    print(velocities[jnt])
-                    if velocities[jnt] >= 0.5:
-                        velocities[jnt] = 0.5
-                    # if torques[jnt] >= 5.0:
-                    #     torques[jnt] = 5.0
+                    # print(velocities[jnt])
+                    # if velocities[jnt] >= 0.5:
+                        # velocities[jnt] = 0.5
+                    if torques[jnt] >= 5.0:
+                        torques[jnt] = 5.0
 
                 # self.limb.set_joint_velocities(velocities)
                 self.limb.set_joint_torques(torques)
