@@ -22,7 +22,7 @@ LOWER_LIMITS = [-3.05, -3.82, -3.05, -3.05, -2.98, -2.98, -4.71]
 UPPER_LIMITS = [3.05, 2.28, 3.05, 3.05, 2.98, 2.98, 4.71]
 JOINT_RANGE = [6.1, 6.1, 6.1, 6.1, 5.96, 5.96, 9.4]	
 
-FIXED = False
+FIXED = True
 
 p.connect(p.SHARED_MEMORY, 12348)
 p.resetSimulation()
