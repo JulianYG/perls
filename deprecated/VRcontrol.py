@@ -1,10 +1,8 @@
 # !/usr/bin/env python
-import intera_interface.cfg.SawyerVelocityJointTrajectoryActionServerConfig as cfg
 import math
 import numpy as np
 
 import rospy
-from dynamic_reconfigure.server import Server
 from intera_interface import CHECK_VERSION
 import intera_interface
 import intera_control
@@ -17,15 +15,14 @@ from IPython import embed
 
 # TODO: the following applies to the online_trajectory.py file
 # TODO: restructure code to:
-# 2. recover self.dyn_config, maybe hardcode them / pickle it?
 # 3. put interpolation between subsequent points, see performance (to mimic online setting)
-# 4. remove Server class too
 
 ### PID Control info. ###
 
 # You can check out the PId implementation under ~/ros_ws/src/intera_sdk/intera_interface/src/intera_control/pid.py
 # That is an implementation of a PID controller where we only have access to the error signal e(t), so it
 # approximates the derivative and integral terms with discrete approximations. 
+# This could be useful in the future, but we aren't using it right now. 
 
 # Instead, we implement our own simple PD controller since we have access to both joint positions (P) and joint velocities (D).
 # This is the equivalent of having a damped spring-mass system, where F = -k * (delta x) - beta * v.
@@ -48,12 +45,6 @@ class RobotController(object):
         :param redis_db: The db number for Redis.
         :param redis_channel: The redis channel name to use to interface with the controller.
         """
-
-        # These are thresholds for deviation, beyond which we stop controlling the arm.
-        # This corresponds to the error input to the PID controller. 
-        # If we deviate by too much from our desired setpoint, we might want to terminate.
-        # For now, a negative value means that it is not used.
-        self._path_thresh = {joint_name: -1.0 for joint_name in self.joint_names}
 
         # the name of the limb
         self.limb_name = limb_name
@@ -93,8 +84,15 @@ class RobotController(object):
         #     self._pid[jid].initialize()
 
         ### Our own custom PD controller, instead of Intera's version above. ###
-        self.kp = np.array([50, 30, 20, 15, 10, 5, 2])
-        self.kd = np.array([8, 7, 6, 4, 2, 0.5, 0.1])
+        # self.kp = dict(zip(self.joint_names,[2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]))
+        self.kp = dict(zip(self.joint_names,[50.0, 30.0, 20.0, 15.0, 10.0, 5.0, 2.0]))
+        self.kd = dict(zip(self.joint_names, [8.0, 7.0, 6.0, 4.0, 2.0, 0.5, 0.1]))
+
+        # These are thresholds for deviation, beyond which we stop controlling the arm.
+        # This corresponds to the error input to the PID controller. 
+        # If we deviate by too much from our desired setpoint, we might want to terminate.
+        # For now, a negative value means that it is not used.
+        self._path_thresh = {joint_name: -1.0 for joint_name in self.joint_names}
 
         # Set joint state publishing to specified control rate
         self._pub_rate = rospy.Publisher(
@@ -330,6 +328,7 @@ class RobotController(object):
 
                 # use PID controllers to control the arm via joint velocities
                 velocities = dict()
+                # torques = dict()
                 deltas = self._get_current_error(inter_pos)
 
                 for jnt, delta in zip(self.joint_names, deltas):
@@ -338,11 +337,20 @@ class RobotController(object):
                                      (self.node_name, jnt, str(delta),))
                         self.limb.exit_control_mode()
                         return False
-                    velocities[jnt] = self._pid[jnt].compute_output(delta)
-                    # print(velocities[jnt])
+
+                    ### This is where we apply the PID controller ###
+                    # velocities[jnt] = self._pid[jnt].compute_output(delta)
+                    velocities[jnt] = self.kp[jnt] * delta
+                    # torques[jnt] = self.kp[jnt] * delta + self.kd[jnt] * self.limb.joint_velocity(jnt)
+
+                    print(velocities[jnt])
                     if velocities[jnt] >= 0.5:
                         velocities[jnt] = 0.5
-                self.limb.set_joint_velocities(velocities)
+                    # if torques[jnt] >= 5.0:
+                    #     torques[jnt] = 5.0
+
+                # self.limb.set_joint_velocities(velocities)
+                self.limb.set_joint_torques(torques)
 
                 # enforce the control rate
                 control_rate.sleep()
