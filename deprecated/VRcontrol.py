@@ -17,10 +17,19 @@ from IPython import embed
 
 # TODO: the following applies to the online_trajectory.py file
 # TODO: restructure code to:
-# 1. remove goal, put our own data structure
 # 2. recover self.dyn_config, maybe hardcode them / pickle it?
 # 3. put interpolation between subsequent points, see performance (to mimic online setting)
 # 4. remove Server class too
+
+### PID Control info. ###
+
+# You can check out the PId implementation under ~/ros_ws/src/intera_sdk/intera_interface/src/intera_control/pid.py
+# That is an implementation of a PID controller where we only have access to the error signal e(t), so it
+# approximates the derivative and integral terms with discrete approximations. 
+
+# Instead, we implement our own simple PD controller since we have access to both joint positions (P) and joint velocities (D).
+# This is the equivalent of having a damped spring-mass system, where F = -k * (delta x) - beta * v.
+# Here, instead of forces, we control torques, and our natural spring length is instead our desired joint positions. 
 
 class RobotController(object):
     """
@@ -40,7 +49,11 @@ class RobotController(object):
         :param redis_channel: The redis channel name to use to interface with the controller.
         """
 
-        embed()
+        # These are thresholds for deviation, beyond which we stop controlling the arm.
+        # This corresponds to the error input to the PID controller. 
+        # If we deviate by too much from our desired setpoint, we might want to terminate.
+        # For now, a negative value means that it is not used.
+        self._path_thresh = {joint_name: -1.0 for joint_name in self.joint_names}
 
         # the name of the limb
         self.limb_name = limb_name
@@ -64,30 +77,24 @@ class RobotController(object):
         self.max_joint_velocity = None
         self.limb.set_joint_position_speed(0.3)
 
-        # TODO: look at where these are stored, should we change these settings?
-        # TODO: what is this????
-        ### Configuration settings. ###
-        self._dyn = Server(cfg, lambda config, level: config)
-        self._path_thresh = dict()
-        for jnt in self.joint_names:
-            path_error = self._dyn.config[jnt + '_trajectory']
-            self._path_thresh[jnt] = path_error
+        ### Create PID controllers per joint.###
 
-        # Create PID controllers per joint.
+        # ### PID Controller Settings ###
+        # self.kp = np.array([2.0 for _ in self.joint_names])
+        # self.kd = np.array([0.0 for _ in self.joint_names])
+        # self.ki = np.array([0.0 for _ in self.joint_names])
 
-        # Currently, it is a P-controller with gain 2. 
-        
-        # print("PID Controllers")
-        self._pid = dict()
-        for jnt in self.joint_names:
-            self._pid[jnt] = intera_control.PID()
-            self._pid[jnt].set_kp(self._dyn.config[jnt + '_kp'])
-            self._pid[jnt].set_ki(self._dyn.config[jnt + '_ki'])
-            self._pid[jnt].set_kd(self._dyn.config[jnt + '_kd'])
-            self._pid[jnt].initialize()
-            # print("{} : {} {} {}".format(jnt, self._dyn.config[jnt + '_kp'], 
-            #                                   self._dyn.config[jnt + '_ki'], 
-            #                                   self._dyn.config[jnt + '_kd']))
+        # self._pid = list()
+        # for jid in range(self.num_joints):
+        #     self._pid.append(intera_control.PID())
+        #     self._pid[jid].set_kp(self.kp[jid])
+        #     self._pid[jid].set_ki(self.kd[jid])
+        #     self._pid[jid].set_kd(self.ki[jid])
+        #     self._pid[jid].initialize()
+
+        ### Our own custom PD controller, instead of Intera's version above. ###
+        self.kp = np.array([50, 30, 20, 15, 10, 5, 2])
+        self.kd = np.array([8, 7, 6, 4, 2, 0.5, 0.1])
 
         # Set joint state publishing to specified control rate
         self._pub_rate = rospy.Publisher(
@@ -97,16 +104,9 @@ class RobotController(object):
         self._pub_rate.publish(self.control_rate)
 
         ### keep array of control points and durations ###
-        # self.control_points = [None, None, None]
-        # self.control_durations = [None, None]
-
         self.control_points = [None, None]
         self.control_durations = [None]
 
-        # reset to base position
-        # self.reset()
-
-        # TODO: make sure command queue allows us to do asynch polling
         self.command_queue = Queue(maxsize=3)
         assert(self.command_queue is not None)
 
@@ -344,7 +344,6 @@ class RobotController(object):
                         velocities[jnt] = 0.5
                 self.limb.set_joint_velocities(velocities)
 
-                # print('haha')
                 # enforce the control rate
                 control_rate.sleep()
 

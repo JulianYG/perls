@@ -13,6 +13,7 @@ from .utils import (math_util,
 )
 
 from .control import Controller
+from .handler import controlHandler
 
 from .robot import kinect, sawyer
 from .robot.utils import pcl_segment

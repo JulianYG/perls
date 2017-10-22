@@ -51,6 +51,7 @@ class VRSawyer(object):
 		self.engaged = False
 
 		self._arm = SawyerArm(False)
+		self._arm.reset()
 		self.controller = RobotController(rate=100)
 
 		self.r = redis.StrictRedis(host='localhost', port=6379, db=0)
@@ -85,7 +86,7 @@ class VRSawyer(object):
 
 	@property
 	def joint_positions(self):
-		return np.array(self._arm.get_joint_angles().values()[::-1])
+		return np.array(self._arm.joint_positions)#[::-1])
 
 	def gripper_controller(self, event):
 
