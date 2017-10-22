@@ -164,11 +164,13 @@ class ViveEventHandler(ControlHandler):
                 slide = events['trigger']
                 reset_flag = event_listener.KEY_STATUS[events['menu']]
                 engage_flag = event_listener.KEY_STATUS[events['pad']]
+
+                # print(engage_flag)
                 pos, orn = pose
                 # self._listener.vibrate(3)
 
                 # Always use the gripper slider for push task
-                ins.append(('grasp', 1))
+                ins.append(('grasp', slide)) # 1
 
                 # Reset button
                 if reset_flag == 'releasing':
