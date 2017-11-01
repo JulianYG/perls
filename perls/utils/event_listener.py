@@ -142,7 +142,6 @@ class HTCVive(object):
             d_type = self._vr_system.getTrackedDeviceClass(i)
             if d_type > 0:
                 devices[self.DEVICE_TYPE[d_type]].append(i)
-
         return devices
 
     def vibrate(self, c_id, duration=50):  # miliseconds
@@ -187,7 +186,6 @@ class HTCVive(object):
             events['grip'] = int(bool_state[31] == '1')
             events['pad'] = int(bool_state[1] == '1')
             events['pos'], events['orn'] = self._get_device_pose(c_id)
-
         return events
 
     def _get_device_pose(self, c_id):
@@ -213,6 +211,8 @@ class HTCVive(object):
             calibrated_pos = tuple((pos[0] + 1.3, - pos[2] + 0.17, pos[1] - 0.42))
 
             return calibrated_pos, tuple(orn)
+        else:
+            return None, None
 
     def close(self):
 

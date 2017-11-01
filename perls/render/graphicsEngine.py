@@ -291,9 +291,9 @@ class BulletRenderEngine(GraphicsEngine):
             # self._server_id = p.connect(p.SHARED_MEMORY, 12348)
         else:
             self._server_id = p.connect(self._disp_args[0])
-
+            
         # For old version VR, clean up 
-        p.setInternalSimFlags(0, self._server_id)
+        # p.setInternalSimFlags(0, self._server_id)
         p.resetSimulation(self._server_id)
 
         if self._frame != 'vr' and self._frame != 'gui':

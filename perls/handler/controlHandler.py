@@ -155,7 +155,7 @@ class ViveEventHandler(ControlHandler):
         ins = list()
 
         if self._devices['controller']:
-            events = self._listener.get_controller_state(self._devices['controller'][0])
+            events = self._listener.get_controller_state(self._devices['controller'][1])
             if not events:
                 self._devices = self._listener.get_registered_device()
             else:
