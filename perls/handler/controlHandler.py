@@ -156,29 +156,24 @@ class ViveEventHandler(ControlHandler):
 
         if self._devices['controller']:
             events = self._listener.get_controller_state(self._devices['controller'][0])
-            pose = self._listener.get_device_pose(self._devices['controller'][0])
-            if not events or not pose:
+            if not events:
                 self._devices = self._listener.get_registered_device()
             else:
-
                 slide = events['trigger']
-                reset_flag = event_listener.KEY_STATUS[events['menu']]
-                engage_flag = event_listener.KEY_STATUS[events['pad']]
-                pos, orn = pose
+                reset_flag = events['grip']
+                engage_flag = events['pad']
+                pos, orn = events['pos'], events['orn']
                 # self._listener.vibrate(3)
 
                 # Always use the gripper slider for push task
                 ins.append(('grasp', 1))
 
                 # Reset button
-                if reset_flag == 'releasing':
+                if reset_flag:
                     ins.append(('rst', 1))
 
                 # Engage button
-                if engage_flag == 'triggered':
-                    self._orn_state = math_util.quat2euler(orn)
-
-                if engage_flag == 'pressing':
+                if engage_flag:
                     orn_delta = (math_util.quat2euler(orn) - self._orn_state)[[0, 2, 1]]
                     math_util.react_filter(orn_delta)
                     orn_delta[0] = - orn_delta[0]

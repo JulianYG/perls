@@ -181,44 +181,15 @@ class HTCVive(object):
         if valid:
             events['pad_point'] = (state.rAxis[0].x, state.rAxis[0].y)  # in range [-1, 1]
             events['trigger'] = state.rAxis[1].x  # in range [0, 1], 0 is unpressed, 1 is pressed
+            # Line of magic
+            bool_state = '{0:034b}'.format(state.ulButtonPressed)
+            events['grip'] = int(bool_state[31] == '1')
+            events['pad'] = int(bool_state[1] == '1')
+            events['pos'], events['orn'] = self._get_device_pose(c_id)
 
-            press_mask = c_ulonglong(state.ulButtonPressed).value
-            touch_mask = c_ulonglong(state.ulButtonTouched).value
-
-            if press_mask == 4:
-                events['grip'] = 3
-            elif press_mask == 2:
-                events['menu'] = 3
-            elif press_mask == 4294967296:
-                events['pad'] = 3
-
-            # Only overwrite by touch when not pressing
-            if touch_mask == 4294967296 and press_mask != 4294967296:
-                events['pad'] = 8
-
-        if self._vr_system.pollNextEvent(event_struct):
-            info = event_struct.data
-            button_id = info.controller.button  # identifies button
-
-            if event_struct.trackedDeviceIndex == c_id:
-                if button_id == openvr.k_EButton_ApplicationMenu:
-                    if event_struct.eventType == openvr.VREvent_ButtonPress:
-                        events['menu'] = 2
-                    elif event_struct.eventType == openvr.VREvent_ButtonUnpress:
-                        events['menu'] = 4
-                elif button_id == openvr.k_EButton_Grip:
-                    if event_struct.eventType == openvr.VREvent_ButtonPress:
-                        events['grip'] = 2
-                    elif event_struct.eventType == openvr.VREvent_ButtonUnpress:
-                        events['grip'] = 4
-                elif button_id == openvr.k_EButton_SteamVR_Touchpad:
-                    if event_struct.eventType == openvr.VREvent_ButtonPress:
-                        events['pad'] = 2
-                    elif event_struct.eventType == openvr.VREvent_ButtonUnpress:
-                        events['pad'] = 4
         return events
 
-    def get_device_pose(self, c_id):
+    def _get_device_pose(self, c_id):
 
         poses = self._vr_system.getDeviceToAbsoluteTrackingPose(
             openvr.TrackingUniverseStanding,
