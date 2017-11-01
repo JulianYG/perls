@@ -162,7 +162,8 @@ class HTCVive(object):
 
     def get_controller_state(self, c_id):
 
-        events = dict(menu=0,
+        events = dict(pos=(0, 0, 0),
+                      orn=(0, 0, 0, 1),
                       grip=0,
                       pad=0,
                       pad_point=(0., 0.),
