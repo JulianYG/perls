@@ -4,30 +4,15 @@
 
 import redis 
 import time
+import pybullet as p
 
-from perls import controlHandler
-from multiprocessing import Queue
+p.connect(p.SHARED_MEMORY)
+r = redis.StrictRedis(host='charles.stanford.edu', port=6379)
 
-def get_registered_device()
-
-
-if __name__ == '__main__':
-
-    queue = Queue()
-    r = redis.StrictRedis(host='charles.stanford.edu', port=6379)
-    vr = controlHandler.ViveEventHandler(0, queue, 5)
-
-    
-    while True:
-
-        try:
-            if not queue.empty():
-                signal = queue.get_nowait()
-
-                print(signal)
-
-
-
-
-        except KeyboardInterrupt:
-            vr.close()
+while True:
+    cur = time.time()
+    events = p.getVREvents()
+    for e in (events):
+        r.publish('event_channel', e)
+    diff = time.time() - cur
+    time.sleep(0.2 - diff)

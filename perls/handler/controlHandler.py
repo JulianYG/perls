@@ -166,7 +166,7 @@ class ViveEventHandler(ControlHandler):
                 # self._listener.vibrate(3)
 
                 # Always use the gripper slider for push task
-                ins.append(('grasp', 1))
+                ins.append(('grasp', slide)) # 1
 
                 # Reset button
                 if reset_flag:

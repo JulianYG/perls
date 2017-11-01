@@ -445,3 +445,21 @@ make -j8
 
 # Set PYTHONPATH to point to trajopt
 
+# Catkin build
+sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu `lsb_release -sc` main" > /etc/apt/sources.list.d/ros-latest.list'
+wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
+sudo apt-get install python-catkin-tools
+# Track ik
+sudo apt-get install ros-kinetic-trac-ik-kinematics-plugin
+
+"""
+source devel/setup.bash 
+
+roscore   
+
+roslaunch sawyer_description test_sawyer_description.launch 
+rosrun safeNet test_collision_checking 
+rosrun rviz rviz
+
+"""
+
