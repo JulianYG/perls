@@ -4,6 +4,7 @@ import abc
 
 from .perls_env import PerlsEnv
 from perls import math_util
+import numpy as np 
 
 # TODO: register gym env
 # TODO: cutoff demons when cube z pos decreases??
@@ -73,10 +74,14 @@ class PushCube(PerlsEnv):
 
         cube_vel = self._cube.v
 
-        return math_util.concat((self._robot.joint_positions,
+        return math_util.concat((np.cos(self._robot.joint_positions),   
+                                 np.sin(self._robot.joint_positions),
                                  self._robot.joint_velocities / math_util.vec(self._robot.joint_specs['max_vel']),
-                                 cube_pos, cube_orn, cube_vel,
+                                 cube_pos, 
+                                 #cube_orn,
+                                 cube_vel,
                                  math_util.vec(goal_pos) - math_util.vec(cube_pos)))
+        # State space: 7 + 7 + 7 + 3 + 3 + 3 = 30
 
         # return math_util.concat((self._robot.joint_positions,
         #                          self._robot.joint_velocities)),\

@@ -27,19 +27,23 @@ class PushCubeVel(PushCube):
 
         return PushCube.Space.Box(
             low=math_util.concat((
-                math_util.vec(self._robot.joint_specs['lower']),
+                #math_util.vec(self._robot.joint_specs['lower']),
+                -1 * math_util.one_vec(7),
+                -1 * math_util.one_vec(7),
                 -1 * math_util.one_vec(7),
                 table_lower,    # pos
-                (-1, -1, -1, -1),   # orn
+                #(-1, -1, -1, -1),   # orn
                 (-1, -1, -1),    # vel
                 (.25, -.25, -.1)
             )),
             high=math_util.concat((
-                math_util.vec(self._robot.joint_specs['lower']),
+               # math_util.vec(self._robot.joint_specs['lower']),
                 # math_util.vec(self._robot.joint_specs['max_vel']),
                 math_util.one_vec(7),
+                math_util.one_vec(7),
+                math_util.one_vec(7),
                 table_upper,
-                (1, 1, 1, 1),
+                # (1, 1, 1, 1),
                 (1, 1, 1),
                 (.45, .25, .1)
             ))

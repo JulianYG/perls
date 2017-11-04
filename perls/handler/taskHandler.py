@@ -194,7 +194,7 @@ class Checker(object):
                     # as bookkeeping for post-processing
                     self._log_file.write('{}\n'.format(
                         ' '.join(str(x) for x in self._states['goal'])))
-                return False, True
+                return True, True
         return False, False
 
     def stop(self):
