@@ -31,6 +31,8 @@ try:
         SolvePositionFKRequest
     )
 
+    from intera_core_msgs.msg import JointCommand
+
     from std_msgs.msg import Header
     from sensor_msgs.msg import JointState
 except ImportError:
@@ -45,12 +47,13 @@ FINGER_OFFSET = 0.066
 
 class SawyerArm(object):
 
+
     def __init__(self, motion_planning=True):
         """
         Initialize set of wrappers
         """
-        if rospy.get_name() == '/unnamed':
-            rospy.init_node('robot')
+        # rospy.init_node('sawyer')
+        assert rospy.get_name() != '/unnamed', 'Must init node!'
         self.motion_planning = motion_planning
         self._head = iif.Head()
         self._display = iif.HeadDisplay()
@@ -58,8 +61,15 @@ class SawyerArm(object):
 
         self._limb = iif.Limb()
         self._joints = self._limb.joint_names()
-
+        
         # self._navigator = iif.Navigator()
+        
+        self._safenet = rospy.Publisher(
+            '/safeNet/joint_command',
+            JointCommand, queue_size=1)
+
+        self._command_msg = JointCommand()
+        self._command_msg.names = self._joints
 
         try:
             self._gripper = iif.Gripper()
@@ -505,9 +515,23 @@ class SawyerArm(object):
                 self._gripper.calibrate()
 
     def neutral(self):
-
         self._limb.move_to_neutral()
 
+    def velocity_control_safe(self, velocities):
+
+        assert len(velocities) == len(self._joints)
+        self._command_msg.mode = JointCommand.VELOCITY_MODE
+        self._command_msg.velocity = list(velocities)
+        self._command_msg.header.stamp = rospy.Time.now()
+        self._safenet.publish(self._command_msg)
+
+    def torque_control_safe(self, torques):
+
+        assert len(torques) == len(self._joints)
+        self._command_msg.mode = JointCommand.TORQUE_MODE
+        self._command_msg.effort = list(torques)
+        self._command_msg.header.stamp = rospy.Time.now()
+        self._safenet.publish(self._command_msg)
 
     def reset(self):
         """

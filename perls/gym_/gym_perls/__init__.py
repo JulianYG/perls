@@ -65,3 +65,7 @@ register(
     entry_point='perls.gym_.gym_perls.envs:PushRobot',
 )
 
+register(
+    id='reach-v0',
+    entry_point='perls.gym_.gym_perls.envs:Reach',
+)

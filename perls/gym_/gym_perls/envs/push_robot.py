@@ -8,16 +8,13 @@ import logging
 try:
     import cv2
     import rospy
-
     from cv_bridge import CvBridge
-    from perls import SawyerArm
     from utils.pcl_segment import PCLSegment
 except ImportError:
     pass
     
 import sys, os
-sys.path.append(os.path.abspath(os.path.join(__file__, '../' * 4, 'pyrobots/')))
-
+from perls.robot.sawyer import SawyerArm
 
 
 __author__ = 'Julian Gao'

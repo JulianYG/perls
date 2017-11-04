@@ -458,7 +458,8 @@ source devel/setup.bash
 roscore   
 
 roslaunch sawyer_description test_sawyer_description.launch 
-rosrun safeNet test_collision_checking 
+rosrun safeNet test_collision_checking
+rosrun safeNet safeNetFcl
 rosrun rviz rviz
 
 """
