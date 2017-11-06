@@ -3,6 +3,7 @@
 from .push_cube import PushCube
 from perls import math_util
 
+import numpy as np 
 
 class PushCubePose(PushCube):
     """
@@ -40,7 +41,6 @@ class PushCubePose(PushCube):
             low=math_util.concat((
                 self._robot.pos - math_util.vec((1.5, 1.5, 1.5)),
                 table_lower,
-                math_util.vec((-1, -1, -1, -1)),
                 goal_lower,
                 (-1, -1, -1),
                 (-1, -1, -1))
@@ -48,7 +48,6 @@ class PushCubePose(PushCube):
             high=math_util.concat((
                 self._robot.pos + math_util.vec((1.5, 1.5, 1.5)),
                 table_upper,
-                math_util.vec((1, 1, 1, 1)),
                 goal_upper,
                 (1, 1, 1),
                 (1, 1, 1))
@@ -60,8 +59,8 @@ class PushCubePose(PushCube):
 
         # No large movements
         return PushCube.Space.Box(
-            low=-math_util.vec((0.05, 0.05, 0.05)),
-            high=math_util.vec((0.05, 0.05, 0.05))
+            low=math_util.vec((-.05,) * 3),
+            high=math_util.vec((.05,) * 3)
         )
 
     @property
@@ -69,11 +68,11 @@ class PushCubePose(PushCube):
 
         eef_pos, _ = math_util.get_relative_pose(
             self._robot.eef_pose, self._robot.pose)
-        cube_pos, cube_orn = self._cube.get_pose(self._robot.uid, 0)
+        cube_pos, _ = self._cube.get_pose(self._robot.uid, 0)
         goal_pos = self._world.get_task_state()['goal']
        
         return math_util.concat((
-            eef_pos, cube_pos, cube_orn, goal_pos,
+            eef_pos, cube_pos, goal_pos,
             
             # Additional states with prior knowledge
             math_util.vec(cube_pos) - math_util.vec(eef_pos),
@@ -90,17 +89,19 @@ class PushCubePose(PushCube):
         # base frame, in order to add with delta,
         # then transfer the sum back to abs world frame.
 
-        self._action = action
+        self._action = action # np.clip(action, -.05, .05)
 
         eef_bframe_pos, eef_bframe_orn = math_util.get_relative_pose(
             self._robot.eef_pose, self._robot.pose
         )
 
-        eef_bframe_pos += math_util.vec(action)
+        eef_bframe_pos += math_util.vec(self._action)
         eef_wframe_pose = math_util.get_absolute_pose(
             (eef_bframe_pos, eef_bframe_orn), 
             self._robot.pose
         )
+
+        # print(self._action)
 
         self._robot.set_eef_pose(
             eef_wframe_pose[0],

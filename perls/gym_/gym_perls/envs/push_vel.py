@@ -52,11 +52,13 @@ class PushCubeVel(PushCube):
     @property
     def action_space(self):
         return PushCube.Space.Box(
-            low=-math_util.vec((-1,)*7),
+            low=-math_util.vec((-.1,)*7),
             high=math_util.vec((1,)*7)
         )
 
     def _step_helper(self, action):
         # Note that action is uniformly scaled in range of [-1, 1]
         # Use velocity control
+
+        print(action)
         self._robot.joint_velocities = action * math_util.vec(self._robot.joint_specs['max_vel'])# * 0.3
