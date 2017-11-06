@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys, time
+from threading import Thread, Event
 
 try:
     import moveit_commander
@@ -45,15 +46,46 @@ LENGTH = 0.133
 FINGER_OFFSET = 0.066
 
 
+class Commander(Thread):
+
+    def __init__(self, freq, func, *args):
+
+        super(Commander, self).__init__()
+        self._func = func
+        self._args = args
+        self._done = Event()
+        self.daemon = True
+        self._pause = False
+        self._rate = rospy.Rate(freq)
+
+    def cancel(self):
+        """Stop the timer if it hasn't finished yet"""
+        self._done.set()
+
+    def pause(self):
+        self._pause = True
+
+    def resume(self):
+        self._pause = False
+
+    def run(self):
+        while not self._done.is_set():
+            if not self._pause:
+                self._func(*self._args)
+                self._rate.sleep()
+
+
 class SawyerArm(object):
 
 
-    def __init__(self, motion_planning=True):
+    def __init__(self, safe=True, motion_planning=False):
         """
         Initialize set of wrappers
         """
         # rospy.init_node('sawyer')
         assert rospy.get_name() != '/unnamed', 'Must init node!'
+        start = time.time()
+        print('Initializing robot...')
         self.motion_planning = motion_planning
         self._head = iif.Head()
         self._display = iif.HeadDisplay()
@@ -63,13 +95,16 @@ class SawyerArm(object):
         self._joints = self._limb.joint_names()
         
         # self._navigator = iif.Navigator()
-        
+        self.cmd = []
+
         self._safenet = rospy.Publisher(
             '/safeNet/joint_command',
             JointCommand, queue_size=1)
 
         self._command_msg = JointCommand()
         self._command_msg.names = self._joints
+
+        self._commanders = dict(velocity=None, torque=None)
 
         try:
             self._gripper = iif.Gripper()
@@ -86,7 +121,9 @@ class SawyerArm(object):
             moveit_commander.roscpp_initialize(sys.argv)
             self._scene = moveit_commander.PlanningSceneInterface()
             self._group = moveit_commander.MoveGroupCommander("right_arm")
-        self._safe = False
+        self._safe = safe
+
+        print('Initialization finished after {} seconds'.format(time.time() - start))
 
     @property
     def version(self):
@@ -278,6 +315,7 @@ class SawyerArm(object):
         that the length of the list must match that of the
         joint indices, and if one can skip certain joints by
         setting those values to None.
+        Not suggested to use since it has no safety precautions
         :param value: A list of length DOF, 
         or a tuple where the first element is the joint velocities list,
         and the second element is the keyword arguments dictionary.
@@ -312,13 +350,36 @@ class SawyerArm(object):
         :param value: A list of length DOF.
         :return: None
         """
-        jids = [j for j, val in enumerate(value) if val is not None]
-        value = [v for v in value if v is not None]
-        assert len(jids) == len(value), \
-            'Input number of position values must match the number of joints'
+        if self._safe:
+            assert len(value) == len(self._joints)
+            self._command_msg.mode = JointCommand.VELOCITY_MODE
+            self._command_msg.velocity = list(value)
+            self._command_msg.header.stamp = rospy.Time.now()
+            self._safenet.publish(self._command_msg)
+        else:
+            jids = [j for j, val in enumerate(value) if val is not None]
+            value = [v for v in value if v is not None]
+            assert len(jids) == len(value), \
+                'Input number of position values must match the number of joints'
 
-        command = {self._joints[i]: value[i] for i in range(len(value))}
-        self._limb.set_joint_velocities(command)
+            command = {self._joints[i]: value[i] for i in range(len(value))}
+            self._limb.set_joint_velocities(command)
+
+    def _msg_wrapper(self, ctype): 
+
+        if len(self.cmd) == len(self._joints):
+            if ctype == 'velocity':
+                self._command_msg.mode = JointCommand.VELOCITY_MODE
+                self._command_msg.velocity = self.cmd
+
+            elif ctype == 'torque':
+                self._command_msg.mode = JointCommand.TORQUE_MODE
+                self._command_msg.effort = self.cmd
+            else:
+                raise NotImplemented
+
+            self._command_msg.header.stamp = rospy.Time.now()
+            self._safenet.publish(self._command_msg)
 
     @joint_torques.setter
     def joint_torques(self, value):
@@ -330,13 +391,29 @@ class SawyerArm(object):
         :param value: A list of length DOF.
         :return: None
         """
-        jids = [j for j, val in enumerate(value) if val is not None]
-        value = [v for v in value if v is not None]
-        assert len(jids) == len(value), \
-            'Input number of position values must match the number of joints'
+        if self._safe:
+            assert len(value) == len(self._joints)
+            self._command_msg.mode = JointCommand.TORQUE_MODE
+            self._command_msg.effort = list(value)
+            self._command_msg.header.stamp = rospy.Time.now()
+            self._safenet.publish(self._command_msg)
+        else:
+            jids = [j for j, val in enumerate(value) if val is not None]
+            value = [v for v in value if v is not None]
+            assert len(jids) == len(value), \
+                'Input number of position values must match the number of joints'
 
-        command = {self._joints[i]: value[i] for i in range(len(value))}
-        self._limb.set_joint_torques(command)
+            command = {self._joints[i]: value[i] for i in range(len(value))}
+            self._limb.set_joint_torques(command)
+
+    def spin(self, rate=20, ctype='velocity'):
+
+        self._commanders[ctype] = Commander(
+            rate, self._msg_wrapper, 
+            # message wrapper arguments
+            ctype)
+
+        self._commanders[ctype].start()
 
     def set_timeout(self, time):
         """
@@ -405,7 +482,7 @@ class SawyerArm(object):
         :param pose: (pos, orn) tuple vec3 float cartesian in robot base frame,
         and vec4 float quaternion in robot base frame.
         """
-        if self.motion_planning and not self._safe:
+        if self.motion_planning:
             gripper_pose = Pose()
 
             gripper_pose.position.x = pose[0][0]
@@ -502,6 +579,9 @@ class SawyerArm(object):
         if self._has_gripper:
             self._gripper.stop()
         self._robot_enable.disable()
+        for commander in self._commanders.values():
+            if commander is not None:
+                commander.pause()
 
     def start(self):
         """
@@ -513,36 +593,21 @@ class SawyerArm(object):
             self._gripper.start()
             if not self._gripper.is_calibrated():
                 self._gripper.calibrate()
+        for commander in self._commanders.values():
+            if commander is not None:
+                commander.resume()
 
-    def neutral(self):
-        self._limb.move_to_neutral()
-
-    def velocity_control_safe(self, velocities):
-
-        assert len(velocities) == len(self._joints)
-        self._command_msg.mode = JointCommand.VELOCITY_MODE
-        self._command_msg.velocity = list(velocities)
-        self._command_msg.header.stamp = rospy.Time.now()
-        self._safenet.publish(self._command_msg)
-
-    def torque_control_safe(self, torques):
-
-        assert len(torques) == len(self._joints)
-        self._command_msg.mode = JointCommand.TORQUE_MODE
-        self._command_msg.effort = list(torques)
-        self._command_msg.header.stamp = rospy.Time.now()
-        self._safenet.publish(self._command_msg)
-
-    def reset(self):
+    def reset(self, reboot=False):
         """
         Reset the robot and move to rest pose
         :return: None
         """
-        if self._robot_enable.state().error:
-            self._robot_enable.reset()
-        if self._has_gripper:
-            self._gripper.reboot()
-            self._gripper.calibrate()
+        if reboot:
+            if self._robot_enable.state().error:
+                self._robot_enable.reset()
+            if self._has_gripper:
+                self._gripper.reboot()
+                self._gripper.calibrate()
         self._limb.move_to_neutral()
         self._gripper.start()
 
@@ -555,6 +620,10 @@ class SawyerArm(object):
         self._robot_enable.stop()
         if self._has_gripper:
             self._gripper.stop()
+
+        for commander in self._commanders.values():
+            if commander is not None:
+                commander.cancel()
 
     @staticmethod
     def shutdown():

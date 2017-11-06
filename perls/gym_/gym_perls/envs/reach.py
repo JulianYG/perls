@@ -31,8 +31,8 @@ class Reach(gym.Env):
         """
         assert rospy.get_name() != '/unnamed', 'Must init node!'
         self._goal = np.array([.44, -.165, .13558])
-        self._robot = SawyerArm(False)
-        self._rate = rospy.Rate(5)
+        self._robot = SawyerArm()
+        self._robot.spin(20, ctype='velocity')
     
     @property
     def action_space(self):
@@ -100,8 +100,7 @@ class Reach(gym.Env):
         # Initialize to random position
         rand_start = np.random.uniform((0.233, 0.347, 0), (0.545, 0.177, 0.521))
         # self._robot.tool_pose = (rand_start, (0, 1, 0, 0))
-        self._robot.neutral()
-
+        self._robot.reset()
         return self._state
 
     def _step(self, action):
@@ -113,8 +112,8 @@ class Reach(gym.Env):
         """
         action = np.clip(action, -0.4, 0.4)
         
-        self._robot.velocity_control_safe(action)
-        self._rate.sleep()
+        self._robot.cmd = action
+        
         tool_pos = np.array(self._robot.tool_pose[0])
         done = True if np.allclose(self._goal, tool_pos, rtol=1e-2) else False
         rew = int(done) + np.exp(-1. * np.linalg.norm(self._goal - tool_pos, 2))

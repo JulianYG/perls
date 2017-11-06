@@ -47,7 +47,7 @@ class PushRobot(gym.Env):
         self._goal = None
         self._pcl = PCLSegment()
         self._pcl.boot()
-        self._robot = SawyerArm(False)
+        self._robot = SawyerArm()
 
         self._cube_idx = 1
         
@@ -111,6 +111,7 @@ class PushRobot(gym.Env):
         state space.
         """
         self._robot.set_timeout(0.15)
+        self._robot.reset()
         self._pcl.update_obj()
         # self._pcl.update_table()
 
