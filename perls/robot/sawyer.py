@@ -406,7 +406,7 @@ class SawyerArm(object):
             command = {self._joints[i]: value[i] for i in range(len(value))}
             self._limb.set_joint_torques(command)
 
-    def spin(self, rate=20, ctype='velocity'):
+    def spin(self, rate=100, ctype='velocity'):
 
         self._commanders[ctype] = Commander(
             rate, self._msg_wrapper, 
@@ -602,6 +602,7 @@ class SawyerArm(object):
         Reset the robot and move to rest pose
         :return: None
         """
+        self.cmd = []
         if reboot:
             if self._robot_enable.state().error:
                 self._robot_enable.reset()
