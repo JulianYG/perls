@@ -60,5 +60,4 @@ class PushCubeVel(PushCube):
         # Note that action is uniformly scaled in range of [-1, 1]
         # Use velocity control
 
-        print(action)
         self._robot.joint_velocities = action * math_util.vec(self._robot.joint_specs['max_vel'])# * 0.3

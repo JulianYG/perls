@@ -157,7 +157,7 @@ class Checker(object):
                and goal[1] - .05 < cube_pos[1] < goal[1] + .05:
                reached = 1.
 
-            reward = reached + math_util.exp(-50 * math_util.l2(v_goal_obj) ** 2)
+            reward = reached + math_util.exp(-50 * math_util.l2(v_goal_obj) ** 2) - 1
             return reward
 
     def check(self, world):

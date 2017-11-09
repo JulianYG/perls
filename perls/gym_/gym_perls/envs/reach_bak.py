@@ -6,7 +6,11 @@ import numpy as np
 import logging
     
 import sys, os
-import pybullet as p
+from perls.robot.sawyer import SawyerArm
+import rospy
+
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.WARNING)
 
 
 class Reach(gym.Env):
@@ -26,23 +30,11 @@ class Reach(gym.Env):
         the configuration file, default is 'gym_-disp.xml'
         """
         assert(action_space_scale > 0)
-        p.connect(p.DIRECT)
-        p.resetSimulation()
-
-        self._robot = p.loadURDF('/home/cvgl_ros/bullet3/data/sawyer_robot/sawyer_description/urdf/sawyer_arm.urdf',
-            (0, 0, 0.9), useFixedBase=True, flags=p.URDF_USE_SELF_COLLISION)
-        p.loadURDF('/home/cvgl_ros/bullet3/data/plane.urdf')
-
-        p.setGravity(0, 0, -9.81)
-        p.setRealTimeSimulation(0)
-
-        # Sawyer control rate 200Hz
-        p.setTimeStep(0.05)
+        assert rospy.get_name() != '/unnamed', 'Must init node!'
         self._goal = np.array(goal)
-        
-
-        # self._robot.spin(hz, ctype='velocity')
-        self._scale = np.array([p.getJointInfo(self._robot, i)[11] for i in range(7)])
+        self._robot = SawyerArm()
+        self._robot.spin(hz, ctype='velocity')
+        self._scale = action_space_scale
     
     @property
     def action_space(self):
@@ -51,8 +43,8 @@ class Reach(gym.Env):
         :return: Space object
         """
         return spaces.Box(
-            low=-self._scale,
-            high=self._scale)
+            low=np.ones(7) * -self._scale,
+            high=np.ones(7) * self._scale)
 
     @property
     def observation_space(self):
@@ -61,8 +53,8 @@ class Reach(gym.Env):
         :return: Space object
         """
         return spaces.Box(
-            low=np.array([-1] * 14 + list(-self._scale)),
-            high=np.array([1] * 14 + list(self._scale)))
+            low=np.array([-1] * 14 + [-self._scale] * 7),
+            high=np.array([1] * 14 + [self._scale] * 7))
 
     @property
     def reward_range(self):
@@ -76,8 +68,7 @@ class Reach(gym.Env):
         Shutdown the environment
         :return: None
         """
-        p.resetSimulation()
-        p.disconnect()
+        self._robot.shutdown()
 
     def _render(self, mode='rgb', close=False):
         """
@@ -94,14 +85,10 @@ class Reach(gym.Env):
 
     @property
     def _state(self):
-
-        jpos = [p.getJointState(self._robot, i)[0] for i in range(7)]
-        jvel = [p.getJointState(self._robot, i)[1] for i in range(7)]
-
         return np.concatenate((
-            np.cos(jpos), 
-            np.sin(jpos), 
-            jvel))
+            np.cos(self._robot.joint_positions), 
+            np.sin(self._robot.joint_positions), 
+            self._robot.joint_velocities))
 
     def _reset(self):
         """
@@ -109,15 +96,13 @@ class Reach(gym.Env):
         :return: The state defined by users constrained by
         state space.
         """
+        print('********************* start *********************')
+        # self._robot.set_timeout(0.15)
+
         # Initialize to random position
         rand_start = np.random.uniform((0.233, 0.347, 0), (0.545, 0.177, 0.521))
         # self._robot.tool_pose = (rand_start, (0, 1, 0, 0))
-
-        rest = [0, -1.18, 0.00, 2.18, 0.00, 0.57, 3.3161]
-
-        for i in range(7):
-            p.resetJointState(self._robot, i, targetValue=rest[i])
-
+        self._robot.reset()
         return self._state
 
     def _step(self, action):
@@ -128,12 +113,11 @@ class Reach(gym.Env):
         :return: Observations, Rewards, isDone, Info tuple
         """
         # Scaling action
-        # action *= self._scale
-        p.setJointMotorControlArray(self._robot, range(7), p.VELOCITY_CONTROL, targetVelocities=tuple(action))
-        # 20 hz
-        # for _ in range(20):
-        p.stepSimulation()
-        tool_pos = np.array(p.getLinkState(self._robot, 6)[0])
+        action *= self._scale
+        # print(action)
+        self._robot.cmd = action
+        
+        tool_pos = np.array(self._robot.tool_pose[0])
         done = True if np.allclose(self._goal, tool_pos, rtol=1e-2) else False
         rew = int(done) + np.exp(-10. * np.linalg.norm(self._goal - tool_pos, 2)) - 1
         return self._state, rew, done, \
