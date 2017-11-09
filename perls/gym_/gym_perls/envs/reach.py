@@ -6,6 +6,8 @@ import numpy as np
 import logging
     
 import sys, os
+import os.path as osp
+from os.path import join as pjoin
 import pybullet as p
 
 
@@ -27,11 +29,14 @@ class Reach(gym.Env):
         """
         assert(action_space_scale > 0)
         p.connect(p.DIRECT)
+        p.setAdditionalSearchPath(
+            osp.abspath(pjoin(osp.dirname(__file__),
+                  '../../../data')))
         p.resetSimulation()
 
-        self._robot = p.loadURDF('/home/cvgl_ros/bullet3/data/sawyer_robot/sawyer_description/urdf/sawyer_arm.urdf',
+        self._robot = p.loadURDF('sawyer_robot/sawyer_description/urdf/sawyer_arm.urdf',
             (0, 0, 0.9), useFixedBase=True, flags=p.URDF_USE_SELF_COLLISION)
-        p.loadURDF('/home/cvgl_ros/bullet3/data/plane.urdf')
+        p.loadURDF('plane.urdf')
 
         p.setGravity(0, 0, -9.81)
         p.setRealTimeSimulation(0)
@@ -39,7 +44,6 @@ class Reach(gym.Env):
         # Sawyer control rate 200Hz
         p.setTimeStep(0.05)
         self._goal = np.array(goal)
-        
 
         # self._robot.spin(hz, ctype='velocity')
         self._scale = np.array([p.getJointInfo(self._robot, i)[11] for i in range(7)])
@@ -51,8 +55,8 @@ class Reach(gym.Env):
         :return: Space object
         """
         return spaces.Box(
-            low=-self._scale,
-            high=self._scale)
+            low=np.array((-1,) * 7),
+            high=np.array((1,) * 7))
 
     @property
     def observation_space(self):
@@ -117,7 +121,7 @@ class Reach(gym.Env):
 
         for i in range(7):
             p.resetJointState(self._robot, i, targetValue=rest[i])
-
+        p.stepSimulation()
         return self._state
 
     def _step(self, action):
@@ -128,13 +132,13 @@ class Reach(gym.Env):
         :return: Observations, Rewards, isDone, Info tuple
         """
         # Scaling action
-        # action *= self._scale
+        action *= self._scale
         p.setJointMotorControlArray(self._robot, range(7), p.VELOCITY_CONTROL, targetVelocities=tuple(action))
         # 20 hz
         # for _ in range(20):
         p.stepSimulation()
         tool_pos = np.array(p.getLinkState(self._robot, 6)[0])
         done = True if np.allclose(self._goal, tool_pos, rtol=1e-2) else False
-        rew = int(done) + np.exp(-10. * np.linalg.norm(self._goal - tool_pos, 2)) - 1
+        rew = int(done) + np.exp(-2. * np.linalg.norm(self._goal - tool_pos, 2)) - 1
         return self._state, rew, done, \
             {'eef position': tool_pos, 'goal': self._goal}
