@@ -47,6 +47,7 @@ class Reach(gym.Env):
 
         # self._robot.spin(hz, ctype='velocity')
         self._scale = np.array([p.getJointInfo(self._robot, i)[11] for i in range(7)])
+        print(self._scale)
     
     @property
     def action_space(self):

@@ -11,7 +11,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='perls',
+    name='ccr',
 
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
@@ -64,7 +64,7 @@ setup(
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
     packages=[package for package in find_packages()
-                if package.startswith('perls')],
+                if package.startswith('ccr')],
 
     # Alternatively, if you want to distribute just a my_module.py, uncomment
     # this:
