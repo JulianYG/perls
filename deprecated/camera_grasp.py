@@ -178,7 +178,7 @@ class GraspSawyer(object):
             for i in range(self._board_size[1]):
                 for j in range(self._board_size[0]):
                     # Use 0 for z as for lying on the plane
-                    raw_points[i, j] = [i * self._checker_size, j * self._checker_size, 0.]
+                    raw_points[i, j] = [j * self._checker_size, i * self._checker_size, 0.]
 
             object_points = np.reshape(raw_points, (self._numCornerPoints, 3)).astype(np.float32)
 
